@@ -1,0 +1,652 @@
+[
+  {
+    "id": 1,
+    "name": "回流焊-001",
+    "line_id": 1,
+    "model": "1913 MKIII",
+    "manufacturer": "Heller",
+    "install_date": "2024-03-10",
+    "status": "maintenance",
+    "health_score": 49.8
+  },
+  {
+    "id": 2,
+    "name": "数控车床-002",
+    "line_id": 1,
+    "model": "QT-250",
+    "manufacturer": "Mazak",
+    "install_date": "2025-03-31",
+    "status": "running",
+    "health_score": 90.6
+  },
+  {
+    "id": 3,
+    "name": "三坐标测量仪-003",
+    "line_id": 1,
+    "model": "Global S",
+    "manufacturer": "Hexagon",
+    "install_date": "2022-04-01",
+    "status": "maintenance",
+    "health_score": 53.1
+  },
+  {
+    "id": 4,
+    "name": "焊接机器人-004",
+    "line_id": 2,
+    "model": "ARC Mate 100iD",
+    "manufacturer": "FANUC",
+    "install_date": "2024-08-20",
+    "status": "maintenance",
+    "health_score": 59.1
+  },
+  {
+    "id": 5,
+    "name": "回流焊-005",
+    "line_id": 2,
+    "model": "1913 MKIII",
+    "manufacturer": "Heller",
+    "install_date": "2021-12-24",
+    "status": "maintenance",
+    "health_score": 52.4
+  },
+  {
+    "id": 6,
+    "name": "回流焊-006",
+    "line_id": 2,
+    "model": "1913 MKIII",
+    "manufacturer": "Heller",
+    "install_date": "2022-04-02",
+    "status": "fault",
+    "health_score": 39.6
+  },
+  {
+    "id": 7,
+    "name": "焊接机器人-007",
+    "line_id": 2,
+    "model": "ARC Mate 100iD",
+    "manufacturer": "FANUC",
+    "install_date": "2024-06-09",
+    "status": "running",
+    "health_score": 69.7
+  },
+  {
+    "id": 8,
+    "name": "焊接机器人-008",
+    "line_id": 2,
+    "model": "ARC Mate 100iD",
+    "manufacturer": "FANUC",
+    "install_date": "2024-04-19",
+    "status": "running",
+    "health_score": 65.0
+  },
+  {
+    "id": 9,
+    "name": "回流焊-009",
+    "line_id": 3,
+    "model": "1913 MKIII",
+    "manufacturer": "Heller",
+    "install_date": "2021-07-03",
+    "status": "maintenance",
+    "health_score": 56.1
+  },
+  {
+    "id": 10,
+    "name": "AGV搬运车-010",
+    "line_id": 3,
+    "model": "MR-C2S4-2000",
+    "manufacturer": "海康机器人",
+    "install_date": "2025-08-19",
+    "status": "fault",
+    "health_score": 38.6
+  },
+  {
+    "id": 11,
+    "name": "AGV搬运车-011",
+    "line_id": 3,
+    "model": "MR-C2S4-2000",
+    "manufacturer": "海康机器人",
+    "install_date": "2024-04-23",
+    "status": "maintenance",
+    "health_score": 55.5
+  },
+  {
+    "id": 12,
+    "name": "数控车床-012",
+    "line_id": 3,
+    "model": "QT-250",
+    "manufacturer": "Mazak",
+    "install_date": "2022-08-19",
+    "status": "maintenance",
+    "health_score": 48.7
+  },
+  {
+    "id": 13,
+    "name": "六轴机器人-013",
+    "line_id": 4,
+    "model": "IRB 6700",
+    "manufacturer": "ABB",
+    "install_date": "2023-08-05",
+    "status": "running",
+    "health_score": 77.6
+  },
+  {
+    "id": 14,
+    "name": "液压机-014",
+    "line_id": 4,
+    "model": "YH-315T",
+    "manufacturer": "纵横",
+    "install_date": "2023-03-29",
+    "status": "running",
+    "health_score": 94.4
+  },
+  {
+    "id": 15,
+    "name": "焊接机器人-015",
+    "line_id": 4,
+    "model": "ARC Mate 100iD",
+    "manufacturer": "FANUC",
+    "install_date": "2024-06-05",
+    "status": "maintenance",
+    "health_score": 52.2
+  },
+  {
+    "id": 16,
+    "name": "老化测试箱-016",
+    "line_id": 4,
+    "model": "PL-3KPH",
+    "manufacturer": "ESPEC",
+    "install_date": "2024-05-03",
+    "status": "running",
+    "health_score": 71.5
+  },
+  {
+    "id": 17,
+    "name": "老化测试箱-017",
+    "line_id": 4,
+    "model": "PL-3KPH",
+    "manufacturer": "ESPEC",
+    "install_date": "2022-07-16",
+    "status": "running",
+    "health_score": 73.0
+  },
+  {
+    "id": 18,
+    "name": "冲压机-018",
+    "line_id": 5,
+    "model": "NC1-2000",
+    "manufacturer": "AIDA",
+    "install_date": "2025-01-13",
+    "status": "maintenance",
+    "health_score": 49.3
+  },
+  {
+    "id": 19,
+    "name": "AOI检测设备-019",
+    "line_id": 5,
+    "model": "Zenith",
+    "manufacturer": "KOH YOUNG",
+    "install_date": "2021-07-29",
+    "status": "running",
+    "health_score": 67.1
+  },
+  {
+    "id": 20,
+    "name": "CNC加工中心-020",
+    "line_id": 5,
+    "model": "CMX 800 V",
+    "manufacturer": "DMG MORI",
+    "install_date": "2024-12-14",
+    "status": "running",
+    "health_score": 91.0
+  },
+  {
+    "id": 21,
+    "name": "回流焊-021",
+    "line_id": 5,
+    "model": "1913 MKIII",
+    "manufacturer": "Heller",
+    "install_date": "2021-12-30",
+    "status": "maintenance",
+    "health_score": 45.4
+  },
+  {
+    "id": 22,
+    "name": "三坐标测量仪-022",
+    "line_id": 5,
+    "model": "Global S",
+    "manufacturer": "Hexagon",
+    "install_date": "2023-08-27",
+    "status": "running",
+    "health_score": 73.8
+  },
+  {
+    "id": 23,
+    "name": "三坐标测量仪-023",
+    "line_id": 5,
+    "model": "Global S",
+    "manufacturer": "Hexagon",
+    "install_date": "2023-03-10",
+    "status": "running",
+    "health_score": 73.7
+  },
+  {
+    "id": 24,
+    "name": "AOI检测设备-024",
+    "line_id": 6,
+    "model": "Zenith",
+    "manufacturer": "KOH YOUNG",
+    "install_date": "2025-09-30",
+    "status": "running",
+    "health_score": 91.0
+  },
+  {
+    "id": 25,
+    "name": "回流焊-025",
+    "line_id": 6,
+    "model": "1913 MKIII",
+    "manufacturer": "Heller",
+    "install_date": "2021-12-27",
+    "status": "running",
+    "health_score": 81.8
+  },
+  {
+    "id": 26,
+    "name": "液压机-026",
+    "line_id": 6,
+    "model": "YH-315T",
+    "manufacturer": "纵横",
+    "install_date": "2024-04-25",
+    "status": "running",
+    "health_score": 69.9
+  },
+  {
+    "id": 27,
+    "name": "AGV搬运车-027",
+    "line_id": 6,
+    "model": "MR-C2S4-2000",
+    "manufacturer": "海康机器人",
+    "install_date": "2025-03-09",
+    "status": "running",
+    "health_score": 76.7
+  },
+  {
+    "id": 28,
+    "name": "注塑机-028",
+    "line_id": 6,
+    "model": "MA3200",
+    "manufacturer": "海天",
+    "install_date": "2023-04-08",
+    "status": "running",
+    "health_score": 63.3
+  },
+  {
+    "id": 29,
+    "name": "老化测试箱-029",
+    "line_id": 7,
+    "model": "PL-3KPH",
+    "manufacturer": "ESPEC",
+    "install_date": "2024-05-02",
+    "status": "running",
+    "health_score": 91.9
+  },
+  {
+    "id": 30,
+    "name": "AOI检测设备-030",
+    "line_id": 7,
+    "model": "Zenith",
+    "manufacturer": "KOH YOUNG",
+    "install_date": "2022-12-19",
+    "status": "running",
+    "health_score": 84.5
+  },
+  {
+    "id": 31,
+    "name": "液压机-031",
+    "line_id": 7,
+    "model": "YH-315T",
+    "manufacturer": "纵横",
+    "install_date": "2022-04-22",
+    "status": "maintenance",
+    "health_score": 41.9
+  },
+  {
+    "id": 32,
+    "name": "激光切割机-032",
+    "line_id": 8,
+    "model": "TruLaser 3030",
+    "manufacturer": "Trumpf",
+    "install_date": "2022-05-25",
+    "status": "running",
+    "health_score": 76.5
+  },
+  {
+    "id": 33,
+    "name": "六轴机器人-033",
+    "line_id": 8,
+    "model": "IRB 6700",
+    "manufacturer": "ABB",
+    "install_date": "2021-07-15",
+    "status": "maintenance",
+    "health_score": 44.9
+  },
+  {
+    "id": 34,
+    "name": "焊接机器人-034",
+    "line_id": 8,
+    "model": "ARC Mate 100iD",
+    "manufacturer": "FANUC",
+    "install_date": "2021-06-12",
+    "status": "running",
+    "health_score": 70.1
+  },
+  {
+    "id": 35,
+    "name": "液压机-035",
+    "line_id": 8,
+    "model": "YH-315T",
+    "manufacturer": "纵横",
+    "install_date": "2025-10-22",
+    "status": "running",
+    "health_score": 69.5
+  },
+  {
+    "id": 36,
+    "name": "贴片机-036",
+    "line_id": 8,
+    "model": "NXT-III",
+    "manufacturer": "FUJI",
+    "install_date": "2025-09-14",
+    "status": "maintenance",
+    "health_score": 56.1
+  },
+  {
+    "id": 37,
+    "name": "液压机-037",
+    "line_id": 9,
+    "model": "YH-315T",
+    "manufacturer": "纵横",
+    "install_date": "2024-02-02",
+    "status": "maintenance",
+    "health_score": 58.6
+  },
+  {
+    "id": 38,
+    "name": "六轴机器人-038",
+    "line_id": 9,
+    "model": "IRB 6700",
+    "manufacturer": "ABB",
+    "install_date": "2022-08-19",
+    "status": "fault",
+    "health_score": 38.8
+  },
+  {
+    "id": 39,
+    "name": "数控车床-039",
+    "line_id": 9,
+    "model": "QT-250",
+    "manufacturer": "Mazak",
+    "install_date": "2023-02-01",
+    "status": "maintenance",
+    "health_score": 40.6
+  },
+  {
+    "id": 40,
+    "name": "AGV搬运车-040",
+    "line_id": 10,
+    "model": "MR-C2S4-2000",
+    "manufacturer": "海康机器人",
+    "install_date": "2025-02-08",
+    "status": "running",
+    "health_score": 69.6
+  },
+  {
+    "id": 41,
+    "name": "焊接机器人-041",
+    "line_id": 10,
+    "model": "ARC Mate 100iD",
+    "manufacturer": "FANUC",
+    "install_date": "2022-09-24",
+    "status": "running",
+    "health_score": 77.9
+  },
+  {
+    "id": 42,
+    "name": "焊接机器人-042",
+    "line_id": 10,
+    "model": "ARC Mate 100iD",
+    "manufacturer": "FANUC",
+    "install_date": "2022-05-30",
+    "status": "maintenance",
+    "health_score": 52.2
+  },
+  {
+    "id": 43,
+    "name": "六轴机器人-043",
+    "line_id": 11,
+    "model": "IRB 6700",
+    "manufacturer": "ABB",
+    "install_date": "2021-07-30",
+    "status": "running",
+    "health_score": 95.4
+  },
+  {
+    "id": 44,
+    "name": "老化测试箱-044",
+    "line_id": 11,
+    "model": "PL-3KPH",
+    "manufacturer": "ESPEC",
+    "install_date": "2021-10-24",
+    "status": "running",
+    "health_score": 79.8
+  },
+  {
+    "id": 45,
+    "name": "注塑机-045",
+    "line_id": 11,
+    "model": "MA3200",
+    "manufacturer": "海天",
+    "install_date": "2022-01-17",
+    "status": "running",
+    "health_score": 60.9
+  },
+  {
+    "id": 46,
+    "name": "回流焊-046",
+    "line_id": 11,
+    "model": "1913 MKIII",
+    "manufacturer": "Heller",
+    "install_date": "2022-11-29",
+    "status": "maintenance",
+    "health_score": 59.3
+  },
+  {
+    "id": 47,
+    "name": "超声波清洗机-047",
+    "line_id": 11,
+    "model": "JP-120ST",
+    "manufacturer": "洁盟",
+    "install_date": "2024-07-20",
+    "status": "maintenance",
+    "health_score": 42.9
+  },
+  {
+    "id": 48,
+    "name": "数控车床-048",
+    "line_id": 11,
+    "model": "QT-250",
+    "manufacturer": "Mazak",
+    "install_date": "2022-07-07",
+    "status": "maintenance",
+    "health_score": 57.0
+  },
+  {
+    "id": 49,
+    "name": "贴片机-049",
+    "line_id": 12,
+    "model": "NXT-III",
+    "manufacturer": "FUJI",
+    "install_date": "2025-05-31",
+    "status": "maintenance",
+    "health_score": 49.3
+  },
+  {
+    "id": 50,
+    "name": "老化测试箱-050",
+    "line_id": 12,
+    "model": "PL-3KPH",
+    "manufacturer": "ESPEC",
+    "install_date": "2024-07-12",
+    "status": "running",
+    "health_score": 76.0
+  },
+  {
+    "id": 51,
+    "name": "数控车床-051",
+    "line_id": 12,
+    "model": "QT-250",
+    "manufacturer": "Mazak",
+    "install_date": "2023-12-17",
+    "status": "running",
+    "health_score": 93.9
+  },
+  {
+    "id": 52,
+    "name": "数控车床-052",
+    "line_id": 12,
+    "model": "QT-250",
+    "manufacturer": "Mazak",
+    "install_date": "2024-04-01",
+    "status": "running",
+    "health_score": 68.4
+  },
+  {
+    "id": 53,
+    "name": "六轴机器人-053",
+    "line_id": 13,
+    "model": "IRB 6700",
+    "manufacturer": "ABB",
+    "install_date": "2021-10-03",
+    "status": "running",
+    "health_score": 70.1
+  },
+  {
+    "id": 54,
+    "name": "液压机-054",
+    "line_id": 13,
+    "model": "YH-315T",
+    "manufacturer": "纵横",
+    "install_date": "2022-07-31",
+    "status": "running",
+    "health_score": 92.4
+  },
+  {
+    "id": 55,
+    "name": "超声波清洗机-055",
+    "line_id": 13,
+    "model": "JP-120ST",
+    "manufacturer": "洁盟",
+    "install_date": "2023-02-28",
+    "status": "maintenance",
+    "health_score": 50.8
+  },
+  {
+    "id": 56,
+    "name": "AGV搬运车-056",
+    "line_id": 13,
+    "model": "MR-C2S4-2000",
+    "manufacturer": "海康机器人",
+    "install_date": "2025-04-13",
+    "status": "running",
+    "health_score": 61.5
+  },
+  {
+    "id": 57,
+    "name": "数控车床-057",
+    "line_id": 13,
+    "model": "QT-250",
+    "manufacturer": "Mazak",
+    "install_date": "2023-10-29",
+    "status": "running",
+    "health_score": 77.8
+  },
+  {
+    "id": 58,
+    "name": "三坐标测量仪-058",
+    "line_id": 13,
+    "model": "Global S",
+    "manufacturer": "Hexagon",
+    "install_date": "2021-09-21",
+    "status": "running",
+    "health_score": 61.7
+  },
+  {
+    "id": 59,
+    "name": "回流焊-059",
+    "line_id": 14,
+    "model": "1913 MKIII",
+    "manufacturer": "Heller",
+    "install_date": "2022-03-10",
+    "status": "running",
+    "health_score": 77.5
+  },
+  {
+    "id": 60,
+    "name": "数控车床-060",
+    "line_id": 14,
+    "model": "QT-250",
+    "manufacturer": "Mazak",
+    "install_date": "2021-09-23",
+    "status": "fault",
+    "health_score": 38.9
+  },
+  {
+    "id": 61,
+    "name": "冲压机-061",
+    "line_id": 14,
+    "model": "NC1-2000",
+    "manufacturer": "AIDA",
+    "install_date": "2025-03-14",
+    "status": "running",
+    "health_score": 87.0
+  },
+  {
+    "id": 62,
+    "name": "六轴机器人-062",
+    "line_id": 15,
+    "model": "IRB 6700",
+    "manufacturer": "ABB",
+    "install_date": "2023-04-19",
+    "status": "maintenance",
+    "health_score": 47.4
+  },
+  {
+    "id": 63,
+    "name": "焊接机器人-063",
+    "line_id": 15,
+    "model": "ARC Mate 100iD",
+    "manufacturer": "FANUC",
+    "install_date": "2024-04-01",
+    "status": "running",
+    "health_score": 62.4
+  },
+  {
+    "id": 64,
+    "name": "超声波清洗机-064",
+    "line_id": 15,
+    "model": "JP-120ST",
+    "manufacturer": "洁盟",
+    "install_date": "2025-05-22",
+    "status": "maintenance",
+    "health_score": 51.2
+  },
+  {
+    "id": 65,
+    "name": "超声波清洗机-065",
+    "line_id": 15,
+    "model": "JP-120ST",
+    "manufacturer": "洁盟",
+    "install_date": "2022-09-22",
+    "status": "running",
+    "health_score": 87.5
+  }
+]

@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "name": "45#圆钢",
+    "material_type": "钢材",
+    "specs": "φ80mm",
+    "unit": "kg",
+    "safety_stock": 5000
+  },
+  {
+    "id": 2,
+    "name": "铝合金锭ADC12",
+    "material_type": "有色金属",
+    "specs": "标准锭",
+    "unit": "kg",
+    "safety_stock": 3000
+  },
+  {
+    "id": 3,
+    "name": "FR-4覆铜板",
+    "material_type": "电子材料",
+    "specs": "1.6mm 4层",
+    "unit": "片",
+    "safety_stock": 500
+  },
+  {
+    "id": 4,
+    "name": "BGA芯片",
+    "material_type": "电子元件",
+    "specs": "0.5mm间距",
+    "unit": "个",
+    "safety_stock": 10000
+  },
+  {
+    "id": 5,
+    "name": "液压油46#",
+    "material_type": "油品",
+    "specs": "L-HM46",
+    "unit": "L",
+    "safety_stock": 2000
+  },
+  {
+    "id": 6,
+    "name": "氟橡胶生胶",
+    "material_type": "橡胶",
+    "specs": "FKM",
+    "unit": "kg",
+    "safety_stock": 500
+  },
+  {
+    "id": 7,
+    "name": "M12连接器针脚",
+    "material_type": "连接器零件",
+    "specs": "镀金",
+    "unit": "个",
+    "safety_stock": 20000
+  },
+  {
+    "id": 8,
+    "name": "焊锡丝",
+    "material_type": "焊接材料",
+    "specs": "Sn96.5/Ag3.0/Cu0.5 0.5mm",
+    "unit": "卷",
+    "safety_stock": 200
+  }
+]

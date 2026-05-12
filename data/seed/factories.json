@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "宁海智能制造中心",
+    "location": "浙江省宁波市宁海县",
+    "capacity": 50000,
+    "status": "active",
+    "description": "集团总部工厂，涵盖精密加工、装配和检验全流程"
+  },
+  {
+    "id": 2,
+    "name": "苏州精密部件厂",
+    "location": "江苏省苏州市工业园区",
+    "capacity": 30000,
+    "status": "active",
+    "description": "专注精密机械部件加工"
+  },
+  {
+    "id": 3,
+    "name": "武汉电子组装厂",
+    "location": "湖北省武汉市光谷",
+    "capacity": 80000,
+    "status": "active",
+    "description": "电子元器件组装与测试"
+  }
+]

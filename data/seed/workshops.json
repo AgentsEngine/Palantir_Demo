@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "name": "CNC加工车间",
+    "factory_id": 1,
+    "area": 2000,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 2,
+    "name": "焊接车间",
+    "factory_id": 1,
+    "area": 1500,
+    "workshop_type": "welding"
+  },
+  {
+    "id": 3,
+    "name": "装配车间",
+    "factory_id": 1,
+    "area": 3000,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 4,
+    "name": "质检中心",
+    "factory_id": 1,
+    "area": 800,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 5,
+    "name": "精密铸造车间",
+    "factory_id": 2,
+    "area": 1800,
+    "workshop_type": "casting"
+  },
+  {
+    "id": 6,
+    "name": "表面处理车间",
+    "factory_id": 2,
+    "area": 1200,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 7,
+    "name": "SMT贴片车间",
+    "factory_id": 3,
+    "area": 2500,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 8,
+    "name": "测试老化车间",
+    "factory_id": 3,
+    "area": 2000,
+    "workshop_type": "testing"
+  }
+]

@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "name": "宝钢股份",
+    "location": "上海",
+    "rating": 3.7,
+    "lead_time_days": 7,
+    "contact": "contact1@supplier.com"
+  },
+  {
+    "id": 2,
+    "name": "中铝集团",
+    "location": "北京",
+    "rating": 4.2,
+    "lead_time_days": 10,
+    "contact": "contact2@supplier.com"
+  },
+  {
+    "id": 3,
+    "name": "生益科技",
+    "location": "广东东莞",
+    "rating": 4.6,
+    "lead_time_days": 5,
+    "contact": "contact3@supplier.com"
+  },
+  {
+    "id": 4,
+    "name": "村田制作所",
+    "location": "日本京都",
+    "rating": 4.0,
+    "lead_time_days": 14,
+    "contact": "contact4@supplier.com"
+  },
+  {
+    "id": 5,
+    "name": "昆仑润滑",
+    "location": "辽宁大连",
+    "rating": 4.4,
+    "lead_time_days": 7,
+    "contact": "contact5@supplier.com"
+  },
+  {
+    "id": 6,
+    "name": "3M中国",
+    "location": "上海",
+    "rating": 4.3,
+    "lead_time_days": 5,
+    "contact": "contact6@supplier.com"
+  },
+  {
+    "id": 7,
+    "name": "TE Connectivity",
+    "location": "上海",
+    "rating": 4.1,
+    "lead_time_days": 10,
+    "contact": "contact7@supplier.com"
+  },
+  {
+    "id": 8,
+    "name": "千住金属",
+    "location": "日本大阪",
+    "rating": 4.4,
+    "lead_time_days": 14,
+    "contact": "contact8@supplier.com"
+  },
+  {
+    "id": 9,
+    "name": "巴斯夫",
+    "location": "上海",
+    "rating": 3.9,
+    "lead_time_days": 7,
+    "contact": "contact9@supplier.com"
+  },
+  {
+    "id": 10,
+    "name": "信越化学",
+    "location": "日本东京",
+    "rating": 4.6,
+    "lead_time_days": 21,
+    "contact": "contact10@supplier.com"
+  },
+  {
+    "id": 11,
+    "name": "博世",
+    "location": "江苏无锡",
+    "rating": 3.5,
+    "lead_time_days": 7,
+    "contact": "contact11@supplier.com"
+  },
+  {
+    "id": 12,
+    "name": "斯凯孚",
+    "location": "上海",
+    "rating": 4.9,
+    "lead_time_days": 10,
+    "contact": "contact12@supplier.com"
+  }
+]

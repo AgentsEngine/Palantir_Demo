@@ -1,0 +1,21 @@
+# Production-style compose: built static frontend served by nginx,
+# backend without --reload, no source mounts.
+# Usage: docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --build
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      - LOG_LEVEL=INFO
+      - DEMO_AUTH_OPTIONAL=false
+    volumes: []   # override dev source mount
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    volumes: []
+    command: ["nginx", "-g", "daemon off;"]

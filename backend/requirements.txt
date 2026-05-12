@@ -1,0 +1,42 @@
+# ManuFoundry Backend Dependencies
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# ORM + DB drivers
+sqlalchemy==2.0.36
+alembic==1.14.0
+asyncpg==0.30.0
+aiosqlite==0.20.0
+psycopg2-binary==2.9.10
+
+# Graph + cache
+neo4j==5.26.0
+redis==5.2.1
+
+# Validation / settings
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.20
+
+# HTTP
+httpx==0.28.1
+
+# Analytics
+pandas==2.2.3
+numpy==2.2.1
+scipy==1.14.1
+scikit-learn==1.6.1
+
+# Misc
+python-dotenv==1.0.1
+
+# ── Optional / future use (uncomment when wired up) ──────
+# prophet==1.1.6           # forecasting — currently unused
+# celery==5.4.0            # task queue — currently unused
+# langchain==0.3.14        # AI orchestration — currently unused
+# langchain-openai==0.3.0

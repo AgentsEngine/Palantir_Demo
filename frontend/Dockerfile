@@ -1,0 +1,16 @@
+# ── Production: build static dist and serve via nginx ────
+FROM node:20-alpine AS build
+WORKDIR /app
+
+# Cache deps layer separately
+COPY package.json package-lock.json* ./
+RUN npm install --no-audit --no-fund
+
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine AS prod
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 3000
+CMD ["nginx", "-g", "daemon off;"]

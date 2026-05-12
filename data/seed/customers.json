@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "name": "三一重工",
+    "industry": "工程机械",
+    "region": "湖南长沙"
+  },
+  {
+    "id": 2,
+    "name": "中车时代",
+    "industry": "轨道交通",
+    "region": "湖南株洲"
+  },
+  {
+    "id": 3,
+    "name": "汇川技术",
+    "industry": "自动化",
+    "region": "广东深圳"
+  },
+  {
+    "id": 4,
+    "name": "大族激光",
+    "industry": "激光设备",
+    "region": "广东深圳"
+  },
+  {
+    "id": 5,
+    "name": "埃斯顿",
+    "industry": "工业机器人",
+    "region": "江苏南京"
+  },
+  {
+    "id": 6,
+    "name": "绿的谐波",
+    "industry": "精密传动",
+    "region": "江苏苏州"
+  }
+]

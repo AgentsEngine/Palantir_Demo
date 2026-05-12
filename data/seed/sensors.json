@@ -1,0 +1,1562 @@
+[
+  {
+    "id": 1,
+    "name": "温度传感器-001",
+    "equipment_id": 1,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 2,
+    "name": "转速传感器-002",
+    "equipment_id": 1,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 3,
+    "name": "压力传感器-003",
+    "equipment_id": 1,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 4,
+    "name": "转速传感器-004",
+    "equipment_id": 2,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 5,
+    "name": "温度传感器-005",
+    "equipment_id": 2,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 6,
+    "name": "电流传感器-006",
+    "equipment_id": 2,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 7,
+    "name": "振动传感器-007",
+    "equipment_id": 3,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 8,
+    "name": "转速传感器-008",
+    "equipment_id": 3,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 9,
+    "name": "电流传感器-009",
+    "equipment_id": 3,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 10,
+    "name": "电流传感器-010",
+    "equipment_id": 4,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 11,
+    "name": "转速传感器-011",
+    "equipment_id": 4,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 12,
+    "name": "温度传感器-012",
+    "equipment_id": 4,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 13,
+    "name": "电流传感器-013",
+    "equipment_id": 5,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 14,
+    "name": "温度传感器-014",
+    "equipment_id": 5,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 15,
+    "name": "转速传感器-015",
+    "equipment_id": 5,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 16,
+    "name": "电流传感器-016",
+    "equipment_id": 6,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 17,
+    "name": "温度传感器-017",
+    "equipment_id": 6,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 18,
+    "name": "振动传感器-018",
+    "equipment_id": 6,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 19,
+    "name": "压力传感器-019",
+    "equipment_id": 7,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 20,
+    "name": "电流传感器-020",
+    "equipment_id": 7,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 21,
+    "name": "振动传感器-021",
+    "equipment_id": 7,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 22,
+    "name": "电流传感器-022",
+    "equipment_id": 8,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 23,
+    "name": "转速传感器-023",
+    "equipment_id": 8,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 24,
+    "name": "温度传感器-024",
+    "equipment_id": 8,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 25,
+    "name": "振动传感器-025",
+    "equipment_id": 9,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 26,
+    "name": "压力传感器-026",
+    "equipment_id": 9,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 27,
+    "name": "温度传感器-027",
+    "equipment_id": 9,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 28,
+    "name": "温度传感器-028",
+    "equipment_id": 10,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 29,
+    "name": "转速传感器-029",
+    "equipment_id": 10,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 30,
+    "name": "压力传感器-030",
+    "equipment_id": 10,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 31,
+    "name": "压力传感器-031",
+    "equipment_id": 11,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 32,
+    "name": "温度传感器-032",
+    "equipment_id": 11,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 33,
+    "name": "电流传感器-033",
+    "equipment_id": 11,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 34,
+    "name": "转速传感器-034",
+    "equipment_id": 12,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 35,
+    "name": "电流传感器-035",
+    "equipment_id": 12,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 36,
+    "name": "压力传感器-036",
+    "equipment_id": 12,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 37,
+    "name": "转速传感器-037",
+    "equipment_id": 13,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 38,
+    "name": "振动传感器-038",
+    "equipment_id": 13,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 39,
+    "name": "温度传感器-039",
+    "equipment_id": 13,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 40,
+    "name": "转速传感器-040",
+    "equipment_id": 14,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 41,
+    "name": "温度传感器-041",
+    "equipment_id": 14,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 42,
+    "name": "电流传感器-042",
+    "equipment_id": 14,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 43,
+    "name": "温度传感器-043",
+    "equipment_id": 15,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 44,
+    "name": "转速传感器-044",
+    "equipment_id": 15,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 45,
+    "name": "压力传感器-045",
+    "equipment_id": 15,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 46,
+    "name": "振动传感器-046",
+    "equipment_id": 16,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 47,
+    "name": "电流传感器-047",
+    "equipment_id": 16,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 48,
+    "name": "温度传感器-048",
+    "equipment_id": 16,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 49,
+    "name": "转速传感器-049",
+    "equipment_id": 17,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 50,
+    "name": "振动传感器-050",
+    "equipment_id": 17,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 51,
+    "name": "压力传感器-051",
+    "equipment_id": 17,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 52,
+    "name": "转速传感器-052",
+    "equipment_id": 18,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 53,
+    "name": "温度传感器-053",
+    "equipment_id": 18,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 54,
+    "name": "压力传感器-054",
+    "equipment_id": 18,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 55,
+    "name": "温度传感器-055",
+    "equipment_id": 19,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 56,
+    "name": "电流传感器-056",
+    "equipment_id": 19,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 57,
+    "name": "压力传感器-057",
+    "equipment_id": 19,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 58,
+    "name": "转速传感器-058",
+    "equipment_id": 20,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 59,
+    "name": "压力传感器-059",
+    "equipment_id": 20,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 60,
+    "name": "振动传感器-060",
+    "equipment_id": 20,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 61,
+    "name": "振动传感器-061",
+    "equipment_id": 21,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 62,
+    "name": "压力传感器-062",
+    "equipment_id": 21,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 63,
+    "name": "温度传感器-063",
+    "equipment_id": 21,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 64,
+    "name": "压力传感器-064",
+    "equipment_id": 22,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 65,
+    "name": "电流传感器-065",
+    "equipment_id": 22,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 66,
+    "name": "温度传感器-066",
+    "equipment_id": 22,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 67,
+    "name": "压力传感器-067",
+    "equipment_id": 23,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 68,
+    "name": "电流传感器-068",
+    "equipment_id": 23,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 69,
+    "name": "振动传感器-069",
+    "equipment_id": 23,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 70,
+    "name": "温度传感器-070",
+    "equipment_id": 24,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 71,
+    "name": "转速传感器-071",
+    "equipment_id": 24,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 72,
+    "name": "振动传感器-072",
+    "equipment_id": 24,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 73,
+    "name": "转速传感器-073",
+    "equipment_id": 25,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 74,
+    "name": "温度传感器-074",
+    "equipment_id": 25,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 75,
+    "name": "电流传感器-075",
+    "equipment_id": 25,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 76,
+    "name": "转速传感器-076",
+    "equipment_id": 26,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 77,
+    "name": "振动传感器-077",
+    "equipment_id": 26,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 78,
+    "name": "压力传感器-078",
+    "equipment_id": 26,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 79,
+    "name": "压力传感器-079",
+    "equipment_id": 27,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 80,
+    "name": "振动传感器-080",
+    "equipment_id": 27,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 81,
+    "name": "电流传感器-081",
+    "equipment_id": 27,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 82,
+    "name": "温度传感器-082",
+    "equipment_id": 28,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 83,
+    "name": "振动传感器-083",
+    "equipment_id": 28,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 84,
+    "name": "电流传感器-084",
+    "equipment_id": 28,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 85,
+    "name": "压力传感器-085",
+    "equipment_id": 29,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 86,
+    "name": "振动传感器-086",
+    "equipment_id": 29,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 87,
+    "name": "电流传感器-087",
+    "equipment_id": 29,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 88,
+    "name": "转速传感器-088",
+    "equipment_id": 30,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 89,
+    "name": "压力传感器-089",
+    "equipment_id": 30,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 90,
+    "name": "电流传感器-090",
+    "equipment_id": 30,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 91,
+    "name": "转速传感器-091",
+    "equipment_id": 31,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 92,
+    "name": "温度传感器-092",
+    "equipment_id": 31,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 93,
+    "name": "压力传感器-093",
+    "equipment_id": 31,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 94,
+    "name": "转速传感器-094",
+    "equipment_id": 32,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 95,
+    "name": "压力传感器-095",
+    "equipment_id": 32,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 96,
+    "name": "电流传感器-096",
+    "equipment_id": 32,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 97,
+    "name": "温度传感器-097",
+    "equipment_id": 33,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 98,
+    "name": "振动传感器-098",
+    "equipment_id": 33,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 99,
+    "name": "电流传感器-099",
+    "equipment_id": 33,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 100,
+    "name": "温度传感器-100",
+    "equipment_id": 34,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 101,
+    "name": "转速传感器-101",
+    "equipment_id": 34,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 102,
+    "name": "压力传感器-102",
+    "equipment_id": 34,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 103,
+    "name": "转速传感器-103",
+    "equipment_id": 35,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 104,
+    "name": "振动传感器-104",
+    "equipment_id": 35,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 105,
+    "name": "电流传感器-105",
+    "equipment_id": 35,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 106,
+    "name": "压力传感器-106",
+    "equipment_id": 36,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 107,
+    "name": "振动传感器-107",
+    "equipment_id": 36,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 108,
+    "name": "转速传感器-108",
+    "equipment_id": 36,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 109,
+    "name": "压力传感器-109",
+    "equipment_id": 37,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 110,
+    "name": "振动传感器-110",
+    "equipment_id": 37,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 111,
+    "name": "转速传感器-111",
+    "equipment_id": 37,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 112,
+    "name": "压力传感器-112",
+    "equipment_id": 38,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 113,
+    "name": "电流传感器-113",
+    "equipment_id": 38,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 114,
+    "name": "振动传感器-114",
+    "equipment_id": 38,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 115,
+    "name": "温度传感器-115",
+    "equipment_id": 39,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 116,
+    "name": "转速传感器-116",
+    "equipment_id": 39,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 117,
+    "name": "压力传感器-117",
+    "equipment_id": 39,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 118,
+    "name": "电流传感器-118",
+    "equipment_id": 40,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 119,
+    "name": "压力传感器-119",
+    "equipment_id": 40,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 120,
+    "name": "温度传感器-120",
+    "equipment_id": 40,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 121,
+    "name": "温度传感器-121",
+    "equipment_id": 41,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 122,
+    "name": "压力传感器-122",
+    "equipment_id": 41,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 123,
+    "name": "转速传感器-123",
+    "equipment_id": 41,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 124,
+    "name": "压力传感器-124",
+    "equipment_id": 42,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 125,
+    "name": "振动传感器-125",
+    "equipment_id": 42,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 126,
+    "name": "转速传感器-126",
+    "equipment_id": 42,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 127,
+    "name": "电流传感器-127",
+    "equipment_id": 43,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 128,
+    "name": "转速传感器-128",
+    "equipment_id": 43,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 129,
+    "name": "压力传感器-129",
+    "equipment_id": 43,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 130,
+    "name": "温度传感器-130",
+    "equipment_id": 44,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 131,
+    "name": "转速传感器-131",
+    "equipment_id": 44,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 132,
+    "name": "电流传感器-132",
+    "equipment_id": 44,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 133,
+    "name": "振动传感器-133",
+    "equipment_id": 45,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 134,
+    "name": "温度传感器-134",
+    "equipment_id": 45,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 135,
+    "name": "转速传感器-135",
+    "equipment_id": 45,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 136,
+    "name": "转速传感器-136",
+    "equipment_id": 46,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 137,
+    "name": "振动传感器-137",
+    "equipment_id": 46,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 138,
+    "name": "电流传感器-138",
+    "equipment_id": 46,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 139,
+    "name": "振动传感器-139",
+    "equipment_id": 47,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 140,
+    "name": "温度传感器-140",
+    "equipment_id": 47,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 141,
+    "name": "转速传感器-141",
+    "equipment_id": 47,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 142,
+    "name": "压力传感器-142",
+    "equipment_id": 48,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 143,
+    "name": "温度传感器-143",
+    "equipment_id": 48,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 144,
+    "name": "振动传感器-144",
+    "equipment_id": 48,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 145,
+    "name": "振动传感器-145",
+    "equipment_id": 49,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 146,
+    "name": "转速传感器-146",
+    "equipment_id": 49,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 147,
+    "name": "压力传感器-147",
+    "equipment_id": 49,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 148,
+    "name": "温度传感器-148",
+    "equipment_id": 50,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 149,
+    "name": "压力传感器-149",
+    "equipment_id": 50,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 150,
+    "name": "电流传感器-150",
+    "equipment_id": 50,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 151,
+    "name": "电流传感器-151",
+    "equipment_id": 51,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 152,
+    "name": "振动传感器-152",
+    "equipment_id": 51,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 153,
+    "name": "温度传感器-153",
+    "equipment_id": 51,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 154,
+    "name": "振动传感器-154",
+    "equipment_id": 52,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 155,
+    "name": "转速传感器-155",
+    "equipment_id": 52,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 156,
+    "name": "电流传感器-156",
+    "equipment_id": 52,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 157,
+    "name": "温度传感器-157",
+    "equipment_id": 53,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 158,
+    "name": "振动传感器-158",
+    "equipment_id": 53,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 159,
+    "name": "压力传感器-159",
+    "equipment_id": 53,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 160,
+    "name": "压力传感器-160",
+    "equipment_id": 54,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 161,
+    "name": "电流传感器-161",
+    "equipment_id": 54,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 162,
+    "name": "转速传感器-162",
+    "equipment_id": 54,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 163,
+    "name": "振动传感器-163",
+    "equipment_id": 55,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 164,
+    "name": "压力传感器-164",
+    "equipment_id": 55,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 165,
+    "name": "温度传感器-165",
+    "equipment_id": 55,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 166,
+    "name": "温度传感器-166",
+    "equipment_id": 56,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 167,
+    "name": "电流传感器-167",
+    "equipment_id": 56,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 168,
+    "name": "转速传感器-168",
+    "equipment_id": 56,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 169,
+    "name": "电流传感器-169",
+    "equipment_id": 57,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 170,
+    "name": "振动传感器-170",
+    "equipment_id": 57,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 171,
+    "name": "温度传感器-171",
+    "equipment_id": 57,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 172,
+    "name": "电流传感器-172",
+    "equipment_id": 58,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 173,
+    "name": "压力传感器-173",
+    "equipment_id": 58,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 174,
+    "name": "振动传感器-174",
+    "equipment_id": 58,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 175,
+    "name": "振动传感器-175",
+    "equipment_id": 59,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 176,
+    "name": "转速传感器-176",
+    "equipment_id": 59,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 177,
+    "name": "温度传感器-177",
+    "equipment_id": 59,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 178,
+    "name": "振动传感器-178",
+    "equipment_id": 60,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 179,
+    "name": "电流传感器-179",
+    "equipment_id": 60,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 180,
+    "name": "转速传感器-180",
+    "equipment_id": 60,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 181,
+    "name": "压力传感器-181",
+    "equipment_id": 61,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 182,
+    "name": "温度传感器-182",
+    "equipment_id": 61,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 183,
+    "name": "振动传感器-183",
+    "equipment_id": 61,
+    "sensor_type": "振动传感器",
+    "unit": "mm/s",
+    "sampling_rate": 5
+  },
+  {
+    "id": 184,
+    "name": "压力传感器-184",
+    "equipment_id": 62,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 185,
+    "name": "电流传感器-185",
+    "equipment_id": 62,
+    "sensor_type": "电流传感器",
+    "unit": "A",
+    "sampling_rate": 5
+  },
+  {
+    "id": 186,
+    "name": "转速传感器-186",
+    "equipment_id": 62,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 187,
+    "name": "转速传感器-187",
+    "equipment_id": 63,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 188,
+    "name": "压力传感器-188",
+    "equipment_id": 63,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 189,
+    "name": "温度传感器-189",
+    "equipment_id": 63,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 190,
+    "name": "温度传感器-190",
+    "equipment_id": 64,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  },
+  {
+    "id": 191,
+    "name": "压力传感器-191",
+    "equipment_id": 64,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 192,
+    "name": "转速传感器-192",
+    "equipment_id": 64,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 193,
+    "name": "转速传感器-193",
+    "equipment_id": 65,
+    "sensor_type": "转速传感器",
+    "unit": "RPM",
+    "sampling_rate": 60
+  },
+  {
+    "id": 194,
+    "name": "压力传感器-194",
+    "equipment_id": 65,
+    "sensor_type": "压力传感器",
+    "unit": "MPa",
+    "sampling_rate": 5
+  },
+  {
+    "id": 195,
+    "name": "温度传感器-195",
+    "equipment_id": 65,
+    "sensor_type": "温度传感器",
+    "unit": "°C",
+    "sampling_rate": 10
+  }
+]

@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "name": "高精度轴承组件",
+    "sku": "SKU-1001",
+    "category": "机械部件",
+    "specs": "内径φ50mm，精度P4",
+    "unit": "个"
+  },
+  {
+    "id": 2,
+    "name": "伺服电机壳体",
+    "sku": "SKU-1002",
+    "category": "铸件",
+    "specs": "铝合金ADC12，壁厚3mm",
+    "unit": "个"
+  },
+  {
+    "id": 3,
+    "name": "工业控制器PCBA",
+    "sku": "SKU-1003",
+    "category": "电子组件",
+    "specs": "4层板，BGA+QFP",
+    "unit": "个"
+  },
+  {
+    "id": 4,
+    "name": "液压阀块总成",
+    "sku": "SKU-1004",
+    "category": "液压部件",
+    "specs": "通径DN10，压力31.5MPa",
+    "unit": "个"
+  },
+  {
+    "id": 5,
+    "name": "精密齿轮箱",
+    "sku": "SKU-1005",
+    "category": "传动部件",
+    "specs": "减速比1:50，输出扭矩500Nm",
+    "unit": "个"
+  },
+  {
+    "id": 6,
+    "name": "传感器模组",
+    "sku": "SKU-1006",
+    "category": "电子模块",
+    "specs": "含温度+压力双传感器",
+    "unit": "个"
+  },
+  {
+    "id": 7,
+    "name": "工业连接器",
+    "sku": "SKU-1007",
+    "category": "连接器",
+    "specs": "M12，8芯，IP67",
+    "unit": "个"
+  },
+  {
+    "id": 8,
+    "name": "定制密封件",
+    "sku": "SKU-1008",
+    "category": "密封件",
+    "specs": "氟橡胶，耐温200°C",
+    "unit": "个"
+  }
+]

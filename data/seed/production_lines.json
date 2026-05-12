@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "name": "CNC加工车间-A线",
+    "workshop_id": 1,
+    "capacity": 728,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 2,
+    "name": "CNC加工车间-B线",
+    "workshop_id": 1,
+    "capacity": 1001,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 3,
+    "name": "CNC加工车间-C线",
+    "workshop_id": 1,
+    "capacity": 1885,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 4,
+    "name": "焊接车间-A线",
+    "workshop_id": 2,
+    "capacity": 1709,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 5,
+    "name": "装配车间-A线",
+    "workshop_id": 3,
+    "capacity": 947,
+    "oee_target": 0.84,
+    "status": "maintenance"
+  },
+  {
+    "id": 6,
+    "name": "质检中心-A线",
+    "workshop_id": 4,
+    "capacity": 1649,
+    "oee_target": 0.84,
+    "status": "maintenance"
+  },
+  {
+    "id": 7,
+    "name": "精密铸造车间-A线",
+    "workshop_id": 5,
+    "capacity": 951,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 8,
+    "name": "精密铸造车间-B线",
+    "workshop_id": 5,
+    "capacity": 513,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 9,
+    "name": "表面处理车间-A线",
+    "workshop_id": 6,
+    "capacity": 1365,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 10,
+    "name": "表面处理车间-B线",
+    "workshop_id": 6,
+    "capacity": 940,
+    "oee_target": 0.92,
+    "status": "running"
+  },
+  {
+    "id": 11,
+    "name": "表面处理车间-C线",
+    "workshop_id": 6,
+    "capacity": 709,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 12,
+    "name": "SMT贴片车间-A线",
+    "workshop_id": 7,
+    "capacity": 1204,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 13,
+    "name": "SMT贴片车间-B线",
+    "workshop_id": 7,
+    "capacity": 1994,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 14,
+    "name": "测试老化车间-A线",
+    "workshop_id": 8,
+    "capacity": 661,
+    "oee_target": 0.88,
+    "status": "maintenance"
+  },
+  {
+    "id": 15,
+    "name": "测试老化车间-B线",
+    "workshop_id": 8,
+    "capacity": 1240,
+    "oee_target": 0.88,
+    "status": "running"
+  }
+]

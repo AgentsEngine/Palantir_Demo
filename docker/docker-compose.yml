@@ -1,0 +1,115 @@
+# Compose v2 — `version` key is obsolete.
+# Use this file directly:  docker compose -f docker/docker-compose.yml up -d
+#
+# Default mode is DEVELOPMENT (uvicorn --reload + vite HMR + source mounts).
+# For production-style images, use docker-compose.prod.yml.
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: manufoundry-postgres
+    environment:
+      POSTGRES_USER: manufoundry
+      POSTGRES_PASSWORD: manufoundry123
+      POSTGRES_DB: manufoundry
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U manufoundry"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Neo4j ───────────────────────────────────────────
+  neo4j:
+    image: neo4j:5-community
+    container_name: manufoundry-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/manufoundry123
+      # APOC requires internet at first boot — comment out for offline CI.
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ───────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: manufoundry-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API (dev mode w/ reload) ────────────────
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.dev
+    container_name: manufoundry-backend
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_HOST=redis
+      - LOG_LEVEL=INFO
+      - DEMO_AUTH_OPTIONAL=true
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+      - ../data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ── Frontend (dev mode w/ Vite HMR) ─────────────────
+  # Note: previous version used the production nginx image but mounted
+  # ../frontend/src into /app/src, which had no effect (nginx serves
+  # /usr/share/nginx/html). Switched to Dockerfile.dev so the source
+  # mount actually drives Vite HMR.
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.dev
+    container_name: manufoundry-frontend
+    environment:
+      - VITE_API_BASE=/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  redis_data:
