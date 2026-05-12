@@ -1,4 +1,4 @@
-"""Ontology Management API — with fallback to mock data when DB unavailable."""
+"""Ontology Management API — graph-first with fallback to PG then mock."""
 
 import re
 
@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.models.graph_models import ENTITY_SCHEMAS, CYPHER_TEMPLATES, NodeLabel, RelType
+from app.services.graph_fallback import try_graph_then_db
 
 router = APIRouter()
 
@@ -171,47 +172,50 @@ async def list_entity_instances(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
-    """列出某类型的实体实例."""
-    table_map = {
-        "Factory": "factories",
-        "Workshop": "workshops",
-        "ProductionLine": "production_lines",
-        "Equipment": "equipment",
-        "Sensor": "sensors",
-        "Product": "products",
-        "Material": "materials",
-        "SalesOrder": "sales_orders",
-        "WorkOrder": "work_orders",
-        "Supplier": "suppliers",
-        "Customer": "customers",
-        "Warehouse": "warehouses",
-        "Worker": "workers",
-    }
-    if entity_type not in table_map:
+    """列出某类型的实体实例 — 图优先，PG 兜底，Mock 最终保底."""
+    if entity_type not in ENTITY_SCHEMAS:
         raise HTTPException(404, f"Entity type '{entity_type}' not found")
 
-    async def _query(db):
-        from sqlalchemy import text
-        table_name = table_map[entity_type]
-        count_result = await db.execute(text(f"SELECT count(*) FROM {table_name}"))
-        total = count_result.scalar() or 0
+    # Graph-first query
+    async def _graph_fn():
+        from app.services.graph_service import graph_service
+        return await graph_service.get_entities(entity_type, page, page_size)
 
-        offset = (page - 1) * page_size
-        result = await db.execute(
-            text(f"SELECT * FROM {table_name} ORDER BY id LIMIT :limit OFFSET :offset"),
-            {"limit": page_size, "offset": offset},
-        )
-        columns = result.keys()
-        rows = [dict(zip(columns, row)) for row in result.fetchall()]
+    # PG fallback
+    table_map = {
+        "Factory": "factories", "Workshop": "workshops", "ProductionLine": "production_lines",
+        "Equipment": "equipment", "Sensor": "sensors", "Product": "products",
+        "Material": "materials", "SalesOrder": "sales_orders", "WorkOrder": "work_orders",
+        "Supplier": "suppliers", "Customer": "customers", "Warehouse": "warehouses",
+        "Worker": "workers", "Inspection": "inspections", "Defect": "defects",
+    }
 
-        for row in rows:
-            for k, v in row.items():
-                if hasattr(v, "isoformat"):
-                    row[k] = v.isoformat()
+    async def _db_fn():
+        if entity_type not in table_map:
+            return None
+        from app.database import AsyncSessionLocal
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import text
+            table_name = table_map[entity_type]
+            count_result = await db.execute(text(f"SELECT count(*) FROM {table_name}"))
+            total = count_result.scalar() or 0
 
-        return {"data": rows, "total": total, "page": page, "page_size": page_size}
+            offset = (page - 1) * page_size
+            result = await db.execute(
+                text(f"SELECT * FROM {table_name} ORDER BY id LIMIT :limit OFFSET :offset"),
+                {"limit": page_size, "offset": offset},
+            )
+            columns = result.keys()
+            rows = [dict(zip(columns, row)) for row in result.fetchall()]
 
-    result = await _try_db(_query)
+            for row in rows:
+                for k, v in row.items():
+                    if hasattr(v, "isoformat"):
+                        row[k] = v.isoformat()
+
+            return {"data": rows, "total": total, "page": page, "page_size": page_size}
+
+    result = await try_graph_then_db(_graph_fn, _db_fn)
     if result is not None:
         return result
 
@@ -232,61 +236,55 @@ async def create_entity_instance(
     entity_type: str,
     body: EntityInstanceCreate,
 ):
-    """创建实体实例（同时写入PG和Neo4j）."""
+    """创建实体实例 — 图优先写入，PG 可选同步."""
     if entity_type not in ENTITY_SCHEMAS:
         raise HTTPException(404, f"Entity type '{entity_type}' not found")
 
-    table_map = {
-        "Factory": "factories",
-        "Workshop": "workshops",
-        "ProductionLine": "production_lines",
-        "Equipment": "equipment",
-        "Sensor": "sensors",
-        "Product": "products",
-        "Material": "materials",
-        "Supplier": "suppliers",
-        "Customer": "customers",
-        "Worker": "workers",
-    }
-    if entity_type not in table_map:
-        raise HTTPException(400, f"Cannot create instances of '{entity_type}' via this endpoint")
+    # Try graph-first creation
+    pg_id = None
+    try:
+        from app.services.graph_service import graph_service
+        # Generate ID: max pg_id + 1
+        count = await graph_service.count_by_label(entity_type)
+        pg_id = count + 1
+        await graph_service.create_entity(entity_type, pg_id, body.properties)
+    except Exception:
+        # Fall back to PG creation
+        pg_id = None
 
-    async def _query(db):
-        from sqlalchemy import text
-        allowed = _SAFE_COLUMNS.get(table_map[entity_type], set())
-        safe_keys = [k for k in body.properties.keys() if k in allowed]
-        if not safe_keys:
-            raise HTTPException(400, "No valid properties provided")
-        cols = ", ".join(safe_keys)
-        placeholders = ", ".join(f":{k}" for k in safe_keys)
-        safe_props = {k: body.properties[k] for k in safe_keys}
-        result = await db.execute(
-            text(f"INSERT INTO {table_map[entity_type]} ({cols}) VALUES ({placeholders}) RETURNING id"),
-            safe_props,
-        )
-        pg_id = result.scalar()
-        await db.commit()
-        # Neo4j insert (best-effort, skip on failure)
-        try:
-            from app.database import get_neo4j
-            neo4j_driver = None
-            from app.database import neo4j_driver as _driver
-            if _driver:
-                async with _driver.session() as neo4j_session:
-                    cypher = CYPHER_TEMPLATES["create_entity"].format(label=entity_type)
-                    await neo4j_session.run(cypher, pg_id=pg_id, props=body.properties)
-        except Exception as exc:  # noqa: BLE001 — Neo4j is best-effort here
-            import logging
-            logging.getLogger(__name__).warning(
-                "Neo4j entity sync failed for %s id=%s: %s", entity_type, pg_id, exc,
+    if pg_id is None:
+        table_map = {
+            "Factory": "factories", "Workshop": "workshops", "ProductionLine": "production_lines",
+            "Equipment": "equipment", "Sensor": "sensors", "Product": "products",
+            "Material": "materials", "Supplier": "suppliers", "Customer": "customers",
+            "Worker": "workers",
+        }
+        if entity_type not in table_map:
+            raise HTTPException(400, f"Cannot create instances of '{entity_type}' via this endpoint")
+
+        async def _query(db):
+            from sqlalchemy import text
+            allowed = _SAFE_COLUMNS.get(table_map[entity_type], set())
+            safe_keys = [k for k in body.properties.keys() if k in allowed]
+            if not safe_keys:
+                raise HTTPException(400, "No valid properties provided")
+            cols = ", ".join(safe_keys)
+            placeholders = ", ".join(f":{k}" for k in safe_keys)
+            safe_props = {k: body.properties[k] for k in safe_keys}
+            result = await db.execute(
+                text(f"INSERT INTO {table_map[entity_type]} ({cols}) VALUES ({placeholders}) RETURNING id"),
+                safe_props,
             )
-        return {"id": pg_id, "entity_type": entity_type, "status": "created"}
+            nonlocal pg_id
+            pg_id = result.scalar()
+            await db.commit()
+            return pg_id
 
-    result = await _try_db(_query)
-    if result is not None:
-        return result
-    # Mock fallback
-    return {"id": 999, "entity_type": entity_type, "status": "created"}
+        result = await _try_db(_query)
+        if result is None:
+            pg_id = 999
+
+    return {"id": pg_id, "entity_type": entity_type, "status": "created"}
 
 
 @router.get("/relations")
@@ -352,3 +350,42 @@ async def get_entity_timeline(
             {"timestamp": "2026-04-20T14:30:00", "property": "health_score", "old_value": "85.2", "new_value": "88.5"},
         ]
     return {"entity_id": entity_id, "timestamp": ts, "versions": records}
+
+
+@router.get("/entities/{entity_type}/instances/{entity_id}/relationships")
+async def get_entity_relationships(
+    entity_type: str,
+    entity_id: int,
+    rel_type: str | None = None,
+    limit: int = Query(50, ge=1, le=200),
+):
+    """获取实体的所有关系 — 图优先."""
+    if entity_type not in ENTITY_SCHEMAS:
+        raise HTTPException(404, f"Entity type '{entity_type}' not found")
+
+    try:
+        from app.services.graph_service import graph_service
+        data = await graph_service.get_relationships(entity_id, rel_type, limit)
+        return {"data": data, "entity_id": entity_id, "entity_type": entity_type}
+    except Exception:
+        pass
+
+    # Mock fallback
+    from app.api.graph import MOCK_RELATIONSHIPS, MOCK_NODES
+    results = []
+    for rel in MOCK_RELATIONSHIPS:
+        if rel["source"] == entity_id or rel["target"] == entity_id:
+            if rel_type and rel["type"] != rel_type:
+                continue
+            direction = "outgoing" if rel["source"] == entity_id else "incoming"
+            other_id = rel["target"] if direction == "outgoing" else rel["source"]
+            other_node = next((n for n in MOCK_NODES if n["id"] == other_id), None)
+            results.append({
+                "rel_type": rel["type"],
+                "direction": direction,
+                "target_id": other_id,
+                "target_label": other_node["label"] if other_node else None,
+                "target_name": other_node["name"] if other_node else None,
+                "props": rel.get("props", {}),
+            })
+    return {"data": results, "entity_id": entity_id, "entity_type": entity_type}

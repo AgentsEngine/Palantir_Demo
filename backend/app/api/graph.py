@@ -306,3 +306,153 @@ async def graph_stats():
 
     # Mock fallback
     return MOCK_STATS
+
+
+# ── New graph-first endpoints ─────────────────────────────
+
+
+@router.get("/entity/{label}/{entity_id}")
+async def get_graph_entity(label: str, entity_id: int):
+    """获取单个实体 — 图优先."""
+    from app.models.graph_models import ENTITY_SCHEMAS
+    if label not in ENTITY_SCHEMAS:
+        raise HTTPException(404, f"Label '{label}' not found")
+
+    try:
+        from app.services.graph_service import graph_service
+        node = await graph_service.get_entity(label, entity_id)
+        if node:
+            return {"data": node}
+    except Exception:
+        pass
+
+    # Mock fallback
+    mock = next((n for n in MOCK_NODES if n["id"] == entity_id), None)
+    if mock:
+        return {"data": mock}
+    raise HTTPException(404, f"Entity {label}/{entity_id} not found")
+
+
+@router.get("/entity/{label}/{entity_id}/relationships")
+async def get_graph_relationships(
+    label: str,
+    entity_id: int,
+    rel_type: str | None = None,
+    limit: int = Query(50, ge=1, le=200),
+):
+    """获取实体关系 — 图优先."""
+    from app.models.graph_models import ENTITY_SCHEMAS
+    if label not in ENTITY_SCHEMAS:
+        raise HTTPException(404, f"Label '{label}' not found")
+
+    try:
+        from app.services.graph_service import graph_service
+        data = await graph_service.get_relationships(entity_id, rel_type, limit)
+        return {"data": data}
+    except Exception:
+        pass
+
+    # Mock fallback
+    results = []
+    for rel in MOCK_RELATIONSHIPS:
+        if rel["source"] == entity_id or rel["target"] == entity_id:
+            if rel_type and rel["type"] != rel_type:
+                continue
+            direction = "outgoing" if rel["source"] == entity_id else "incoming"
+            other_id = rel["target"] if direction == "outgoing" else rel["source"]
+            other = next((n for n in MOCK_NODES if n["id"] == other_id), None)
+            results.append({
+                "rel_type": rel["type"],
+                "direction": direction,
+                "target": other,
+            })
+    return {"data": results[:limit]}
+
+
+@router.get("/impact-analysis/{entity_id}")
+async def impact_analysis(
+    entity_id: int,
+    max_hops: int = Query(5, ge=1, le=10),
+    limit: int = Query(200, ge=1, le=500),
+):
+    """多跳影响分析 — 追踪下游影响."""
+    try:
+        from app.services.graph_service import graph_service
+        data = await graph_service.impact_analysis(entity_id, max_hops, limit)
+        return {"data": data, "entity_id": entity_id}
+    except Exception:
+        pass
+
+    # Mock fallback — simple 2-hop expansion
+    affected = set()
+    frontier = {entity_id}
+    for _ in range(max_hops):
+        next_frontier = set()
+        for rel in MOCK_RELATIONSHIPS:
+            if rel["source"] in frontier and rel["target"] not in affected:
+                next_frontier.add(rel["target"])
+                affected.add(rel["target"])
+        frontier = next_frontier
+        if not frontier:
+            break
+    nodes = [n for n in MOCK_NODES if n["id"] in affected][:limit]
+    return {"data": nodes, "entity_id": entity_id, "note": "Mock fallback"}
+
+
+@router.get("/trace/{entity_id}")
+async def trace_chain(
+    entity_id: int,
+    max_hops: int = Query(5, ge=1, le=10),
+    limit: int = Query(200, ge=1, le=500),
+):
+    """全链路追溯 — 双向遍历."""
+    try:
+        from app.services.graph_service import graph_service
+        data = await graph_service.trace_chain(entity_id, max_hops, limit)
+        return {"data": data, "entity_id": entity_id}
+    except Exception:
+        pass
+
+    # Mock fallback — BFS expansion
+    visited = {entity_id}
+    frontier = [entity_id]
+    for _ in range(max_hops):
+        next_frontier = []
+        for nid in frontier:
+            for rel in MOCK_RELATIONSHIPS:
+                neighbor = None
+                if rel["source"] == nid:
+                    neighbor = rel["target"]
+                elif rel["target"] == nid:
+                    neighbor = rel["source"]
+                if neighbor is not None and neighbor not in visited:
+                    visited.add(neighbor)
+                    next_frontier.append(neighbor)
+        frontier = next_frontier
+    nodes = [n for n in MOCK_NODES if n["id"] in visited][:limit]
+    rels = [r for r in MOCK_RELATIONSHIPS if r["source"] in visited and r["target"] in visited]
+    return {"data": {"nodes": nodes, "relationships": rels}, "entity_id": entity_id, "note": "Mock fallback"}
+
+
+@router.get("/analytics/centrality")
+async def centrality_analysis(limit: int = Query(20, ge=1, le=100)):
+    """中心度分析 — 哪些实体连接最多."""
+    try:
+        from app.services.graph_service import graph_service
+        data = await graph_service.centrality(limit)
+        return {"data": data}
+    except Exception:
+        pass
+
+    # Mock fallback
+    from collections import Counter
+    degree = Counter()
+    for rel in MOCK_RELATIONSHIPS:
+        degree[rel["source"]] += 1
+        degree[rel["target"]] += 1
+    results = []
+    for node_id, deg in degree.most_common(limit):
+        node = next((n for n in MOCK_NODES if n["id"] == node_id), None)
+        if node:
+            results.append({"label": node["label"], "pg_id": node_id, "name": node["name"], "degree": deg})
+    return {"data": results, "note": "Mock fallback"}
