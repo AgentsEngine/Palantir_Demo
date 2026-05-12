@@ -120,6 +120,37 @@ async def init_db():
             await _seed_sqlite(session)
 
 
+async def _build_graph_from_seed() -> None:
+    """Build Neo4j graph from seed JSON data if graph is available."""
+    if neo4j_driver is None:
+        logger.info("Neo4j not available, skipping graph build")
+        return
+
+    import json
+    from pathlib import Path
+
+    from app.services.graph_service import graph_service
+
+    seed_dir = Path(__file__).resolve().parent.parent.parent / "data" / "seed"
+    if not seed_dir.exists():
+        logger.info("No seed data found at %s; skipping graph build", seed_dir)
+        return
+
+    seed_data: dict[str, list[dict]] = {}
+    for json_file in seed_dir.glob("*.json"):
+        key = json_file.stem
+        with open(json_file, encoding="utf-8") as f:
+            seed_data[key] = json.load(f)
+
+    logger.info("Building graph from %d seed files ...", len(seed_data))
+    try:
+        await graph_service.ensure_constraints()
+        await graph_service.build_from_seed(seed_data)
+        logger.info("Graph build from seed completed")
+    except Exception as exc:
+        logger.warning("Graph build failed: %s", exc)
+
+
 async def _seed_sqlite(session: AsyncSession) -> None:
     """Import seed JSON files into SQLite (demo bootstrap)."""
     import json
@@ -188,3 +219,6 @@ async def _seed_sqlite(session: AsyncSession) -> None:
         total_rows += len(readings)
 
     logger.info("Seeded %d rows", total_rows)
+
+    # Build Neo4j graph from seed data
+    await _build_graph_from_seed()

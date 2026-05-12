@@ -38,24 +38,46 @@ MOCK_NODES = [
     {"id": 3,  "label": "ProductionLine",  "name": "齿轮产线-A",        "props": {"status": "running", "capacity": 500}},
     {"id": 4,  "label": "Equipment",       "name": "DMG MORI NLX 2500", "props": {"status": "running", "health_score": 92.5}},
     {"id": 5,  "label": "Equipment",       "name": "焊接机器人-KUKA",   "props": {"status": "running", "health_score": 76.8}},
-    {"id": 6,  "label": "Product",         "name": "精密齿轮组件-GA01", "props": {"spec": "M2.5 Z20"}},
-    {"id": 7,  "label": "Material",        "name": "20CrMnTi合金钢",   "props": {"grade": "20CrMnTi", "stock": 12000}},
-    {"id": 8,  "label": "Supplier",        "name": "宝钢股份",         "props": {"rating": 4.8, "location": "上海市宝山区"}},
-    {"id": 9,  "label": "WorkOrder",       "name": "WO-2026-0401",     "props": {"status": "in_progress", "quantity": 200}},
-    {"id": 10, "label": "Inspection",      "name": "来料检-IQC-20260421", "props": {"result": "pass"}},
+    {"id": 6,  "label": "Sensor",          "name": "温度传感器-T01",    "props": {"sensor_type": "temperature", "unit": "℃"}},
+    {"id": 7,  "label": "Product",         "name": "精密齿轮组件-GA01", "props": {"spec": "M2.5 Z20", "sku": "GA01"}},
+    {"id": 8,  "label": "Material",        "name": "20CrMnTi合金钢",   "props": {"grade": "20CrMnTi", "stock": 12000}},
+    {"id": 9,  "label": "Supplier",        "name": "宝钢股份",         "props": {"rating": 4.8, "location": "上海市宝山区"}},
+    {"id": 10, "label": "Customer",        "name": "博世汽车",         "props": {"industry": "汽车零部件", "region": "华东"}},
+    {"id": 11, "label": "Worker",          "name": "张师傅",           "props": {"role": "维修工", "department": "设备部"}},
+    {"id": 12, "label": "SalesOrder",      "name": "SO-2026-0401",    "props": {"status": "in_progress", "quantity": 500}},
+    {"id": 13, "label": "WorkOrder",       "name": "WO-2026-0401",    "props": {"status": "in_progress", "quantity": 200}},
+    {"id": 14, "label": "Inspection",      "name": "来料检-IQC-20260421", "props": {"result": "pass", "inspection_type": "incoming"}},
+    {"id": 15, "label": "Defect",          "name": "表面划伤-001",     "props": {"defect_type": "表面划伤", "severity": "major"}},
 ]
 
 MOCK_RELATIONSHIPS = [
-    {"source": 1, "target": 2,  "type": "CONTAINS",  "props": {}},
-    {"source": 2, "target": 3,  "type": "CONTAINS",  "props": {}},
-    {"source": 3, "target": 4,  "type": "CONTAINS",  "props": {}},
-    {"source": 3, "target": 5,  "type": "CONTAINS",  "props": {}},
-    {"source": 3, "target": 6,  "type": "PRODUCES",  "props": {}},
-    {"source": 6, "target": 7,  "type": "REQUIRES",  "props": {"quantity": 2.5}},
-    {"source": 7, "target": 8,  "type": "SUPPLIES",  "props": {}},
-    {"source": 9, "target": 6,  "type": "PRODUCES",  "props": {}},
-    {"source": 9, "target": 3,  "type": "ASSIGNED_TO","props": {}},
-    {"source": 10, "target": 7, "type": "INSPECTS",  "props": {}},
+    # CONTAINS (hierarchy)
+    {"source": 1,  "target": 2,  "type": "CONTAINS",   "props": {}},
+    {"source": 2,  "target": 3,  "type": "CONTAINS",   "props": {}},
+    {"source": 3,  "target": 4,  "type": "CONTAINS",   "props": {}},
+    {"source": 3,  "target": 5,  "type": "CONTAINS",   "props": {}},
+    # FEEDS
+    {"source": 4,  "target": 6,  "type": "FEEDS",      "props": {}},
+    # PRODUCES
+    {"source": 3,  "target": 7,  "type": "PRODUCES",   "props": {}},
+    {"source": 12, "target": 7,  "type": "PRODUCES",   "props": {"quantity": 500}},
+    # REQUIRES
+    {"source": 7,  "target": 8,  "type": "REQUIRES",   "props": {"quantity": 2.5}},
+    # SUPPLIES
+    {"source": 9,  "target": 8,  "type": "SUPPLIES",   "props": {"lead_time_days": 7}},
+    # ASSIGNED_TO
+    {"source": 12, "target": 10, "type": "ASSIGNED_TO", "props": {}},
+    {"source": 13, "target": 3,  "type": "ASSIGNED_TO", "props": {}},
+    {"source": 11, "target": 13, "type": "ASSIGNED_TO", "props": {}},
+    # FULFILLS
+    {"source": 13, "target": 12, "type": "FULFILLS",   "props": {}},
+    # INSPECTS
+    {"source": 14, "target": 8,  "type": "INSPECTS",   "props": {"inspection_type": "incoming"}},
+    {"source": 11, "target": 14, "type": "INSPECTS",   "props": {"role": "inspector"}},
+    # FOUND_IN
+    {"source": 15, "target": 14, "type": "FOUND_IN",   "props": {}},
+    # MAINTAINS
+    {"source": 11, "target": 4,  "type": "MAINTAINS",  "props": {}},
 ]
 
 MOCK_STATS = {
@@ -67,19 +89,27 @@ MOCK_STATS = {
         {"label": "Material", "count": 8},
         {"label": "Product", "count": 6},
         {"label": "WorkOrder", "count": 5},
+        {"label": "SalesOrder", "count": 5},
+        {"label": "Inspection", "count": 5},
+        {"label": "Defect", "count": 4},
         {"label": "Factory", "count": 3},
         {"label": "ProductionLine", "count": 3},
         {"label": "Supplier", "count": 3},
         {"label": "Workshop", "count": 2},
+        {"label": "Worker", "count": 5},
+        {"label": "Customer", "count": 3},
     ],
     "rels_by_type": [
         {"rel_type": "CONTAINS", "count": 45},
         {"rel_type": "FEEDS", "count": 30},
         {"rel_type": "PRODUCES", "count": 18},
-        {"rel_type": "REQUIRES", "count": 15},
+        {"rel_type": "INSPECTS", "count": 15},
+        {"rel_type": "ASSIGNED_TO", "count": 12},
+        {"rel_type": "FULFILLS", "count": 10},
         {"rel_type": "SUPPLIES", "count": 10},
-        {"rel_type": "INSPECTS", "count": 6},
-        {"rel_type": "MAINTAINS", "count": 4},
+        {"rel_type": "FOUND_IN", "count": 8},
+        {"rel_type": "MAINTAINS", "count": 6},
+        {"rel_type": "REQUIRES", "count": 5},
     ],
 }
 
