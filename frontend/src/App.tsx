@@ -92,13 +92,19 @@ interface ApplicationInfo {
   is_pinned?: boolean;
 }
 
-const businessMenuItems: MenuProps['items'] = [
+const businessMenuItems: NonNullable<MenuProps['items']> = [
   { key: '/', icon: <HomeOutlined />, label: '我的工作台' },
   { key: '/dashboard', icon: <DashboardOutlined />, label: '生产态势' },
   { key: '/maintenance', icon: <ToolOutlined />, label: '设备维护' },
   { key: '/quality', icon: <SafetyCertificateOutlined />, label: '质量分析' },
   { key: '/supply-chain', icon: <ShopOutlined />, label: '供应链风险' },
 ];
+
+const workspaceMenuItem: NonNullable<MenuProps['items']>[number] = {
+  key: '/',
+  icon: <HomeOutlined />,
+  label: '我的工作台',
+};
 
 const fallbackApplications: ApplicationInfo[] = [
   { id: 1, name: '生产态势', code: 'production-dashboard', description: '生产效率、OEE、产线告警和班次趋势。', icon: 'DashboardOutlined', default_route: '/dashboard', status: 'published', is_pinned: true },
@@ -145,6 +151,57 @@ const richFallbackMenusByApplication: Record<number, DynamicMenu[]> = {
       { id: 1402, parent_id: 1400, title: '供应商风险', icon: 'ShopOutlined', route_path: '/supply-chain?view=suppliers', is_visible: true },
       { id: 1403, parent_id: 1400, title: '物料影响', icon: 'AppstoreOutlined', route_path: '/supply-chain?view=materials', is_visible: true },
       { id: 1404, parent_id: 1400, title: '风险复核', icon: 'SafetyCertificateOutlined', route_path: '/supply-chain?view=review', is_visible: true },
+    ] },
+  ],
+};
+
+const groupedFallbackMenusByApplication: Record<number, DynamicMenu[]> = {
+  1: [
+    { id: 1100, parent_id: null, title: '生产态势', icon: 'DashboardOutlined', route_path: '/dashboard', is_visible: true, children: [
+      { id: 1110, parent_id: 1100, title: '生产监控', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
+        { id: 1111, parent_id: 1110, title: '生产总览', icon: 'DashboardOutlined', route_path: '/dashboard?view=overview', is_visible: true },
+        { id: 1112, parent_id: 1110, title: '产线状态', icon: 'DashboardOutlined', route_path: '/dashboard?view=lines', is_visible: true },
+        { id: 1113, parent_id: 1110, title: '设备运行', icon: 'ToolOutlined', route_path: '/dashboard?view=equipment', is_visible: true },
+      ] },
+      { id: 1120, parent_id: 1100, title: '异常处理', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
+        { id: 1121, parent_id: 1120, title: '活动告警', icon: 'SafetyCertificateOutlined', route_path: '/dashboard?view=alerts', is_visible: true },
+      ] },
+    ] },
+  ],
+  2: [
+    { id: 1200, parent_id: null, title: '预测性维护', icon: 'ToolOutlined', route_path: '/maintenance', is_visible: true, children: [
+      { id: 1210, parent_id: 1200, title: '健康与预测', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
+        { id: 1211, parent_id: 1210, title: '设备健康', icon: 'ToolOutlined', route_path: '/maintenance?view=health', is_visible: true },
+        { id: 1212, parent_id: 1210, title: '故障预测', icon: 'ToolOutlined', route_path: '/maintenance?view=prediction', is_visible: true },
+      ] },
+      { id: 1220, parent_id: 1200, title: '维护执行', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
+        { id: 1221, parent_id: 1220, title: '维修工单', icon: 'AppstoreOutlined', route_path: '/maintenance?view=work-orders', is_visible: true },
+        { id: 1222, parent_id: 1220, title: '告警中心', icon: 'SafetyCertificateOutlined', route_path: '/maintenance?view=alerts', is_visible: true },
+      ] },
+    ] },
+  ],
+  3: [
+    { id: 1300, parent_id: null, title: '质量分析', icon: 'SafetyCertificateOutlined', route_path: '/quality', is_visible: true, children: [
+      { id: 1310, parent_id: 1300, title: '质量监控', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
+        { id: 1311, parent_id: 1310, title: '质量总览', icon: 'SafetyCertificateOutlined', route_path: '/quality?view=overview', is_visible: true },
+        { id: 1312, parent_id: 1310, title: '检验批次', icon: 'SafetyCertificateOutlined', route_path: '/quality?view=inspections', is_visible: true },
+      ] },
+      { id: 1320, parent_id: 1300, title: '问题改进', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
+        { id: 1321, parent_id: 1320, title: '缺陷分析', icon: 'SafetyCertificateOutlined', route_path: '/quality?view=defects', is_visible: true },
+        { id: 1322, parent_id: 1320, title: 'CAPA 跟踪', icon: 'AppstoreOutlined', route_path: '/quality?view=capa', is_visible: true },
+      ] },
+    ] },
+  ],
+  4: [
+    { id: 1400, parent_id: null, title: '供应链风险', icon: 'ShopOutlined', route_path: '/supply-chain', is_visible: true, children: [
+      { id: 1410, parent_id: 1400, title: '风险监控', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
+        { id: 1411, parent_id: 1410, title: '风险总览', icon: 'ShopOutlined', route_path: '/supply-chain?view=overview', is_visible: true },
+        { id: 1412, parent_id: 1410, title: '供应商风险', icon: 'ShopOutlined', route_path: '/supply-chain?view=suppliers', is_visible: true },
+      ] },
+      { id: 1420, parent_id: 1400, title: '影响与复核', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
+        { id: 1421, parent_id: 1420, title: '物料影响', icon: 'AppstoreOutlined', route_path: '/supply-chain?view=materials', is_visible: true },
+        { id: 1422, parent_id: 1420, title: '风险复核', icon: 'SafetyCertificateOutlined', route_path: '/supply-chain?view=review', is_visible: true },
+      ] },
     ] },
   ],
 };
@@ -245,6 +302,16 @@ function buildDynamicMenuTree(items: DynamicMenu[]): MenuProps['items'] {
   return roots.map((node) => (node.children?.length ? node : { ...node, children: undefined }));
 }
 
+function unwrapApplicationMenuRoot(items: MenuProps['items']): MenuProps['items'] {
+  if (items?.length === 1) {
+    const [first] = items;
+    if (first && 'children' in first && first.children?.length) {
+      return first.children as MenuProps['items'];
+    }
+  }
+  return items;
+}
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -299,12 +366,12 @@ function AppContent() {
     listApplicationMenus(currentApplication.id)
       .then((res) => {
         const apiItems = res.data?.data || [];
-        const localItems = richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || [];
+        const localItems = groupedFallbackMenusByApplication[currentApplication.id] || richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || [];
         const items = (apiItems.length > 1 || apiItems.some((item: DynamicMenu) => item.children?.length) ? apiItems : localItems)
           .filter((m: DynamicMenu) => m.is_visible !== false);
         setDynamicMenus(buildDynamicMenuTree(items));
       })
-      .catch(() => setDynamicMenus(buildDynamicMenuTree(richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || [])));
+      .catch(() => setDynamicMenus(buildDynamicMenuTree(groupedFallbackMenusByApplication[currentApplication.id] || richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || [])));
   }, [currentApplication]);
 
   const loadNotifications = useCallback(() => {
@@ -325,7 +392,8 @@ function AppContent() {
   }, [loadNotifications]);
 
   const allMenuItems = useMemo<MenuProps['items']>(() => {
-    return dynamicMenus?.length ? dynamicMenus : businessMenuItems;
+    const appItems = dynamicMenus?.length ? unwrapApplicationMenuRoot(dynamicMenus) : businessMenuItems.slice(1);
+    return [workspaceMenuItem, { type: 'divider' }, ...(appItems || [])];
   }, [dynamicMenus]);
   const openMenuKeys = useMemo(() => {
     return (allMenuItems || [])

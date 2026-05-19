@@ -1270,15 +1270,15 @@ button {
 }
 
 .application-icon {
-  width: 38px;
-  height: 38px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
   background: #dfecef;
   color: var(--mf-primary);
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .application-star {
@@ -1347,21 +1347,22 @@ button {
 }
 
 .admin-app-list-item {
-  padding: 10px !important;
   display: grid !important;
-  grid-template-columns: 38px 1fr auto;
-  gap: 10px;
+  grid-template-columns: 32px 1fr;
+  gap: 8px;
   align-items: center !important;
-  border: 1px solid var(--mf-border);
-  border-radius: 6px;
-  background: var(--mf-panel-soft);
+  min-height: 38px;
+  padding: 7px 8px !important;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
   cursor: pointer;
 }
 
 .admin-app-list-item:hover,
 .admin-app-list-item.active {
-  border-color: var(--mf-primary);
   background: #eef6f8;
+  outline: 1px solid #c5dde6;
 }
 
 .admin-app-list-item strong,
@@ -1370,6 +1371,7 @@ button {
 }
 
 .admin-app-list-item small {
+  display: none;
   margin-top: 2px;
   color: var(--mf-muted);
   font-size: 12px;
@@ -1493,6 +1495,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: calc(100vh - 292px);
 }
 
 .assembly-help {
@@ -1513,8 +1516,38 @@ button {
 .assembly-column-card,
 .assembly-menu-card,
 .assembly-property-card {
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  height: max(540px, calc(100vh - 418px));
+  min-height: 540px;
+  border: 1px solid var(--mf-border);
   border-radius: 6px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.assembly-column-card .ant-card-head,
+.assembly-menu-card .ant-card-head,
+.assembly-property-card .ant-card-head {
+  min-height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--mf-border);
+  background: #fff;
+}
+
+.assembly-column-card .ant-card-head-title,
+.assembly-menu-card .ant-card-head-title,
+.assembly-property-card .ant-card-head-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.assembly-column-card .ant-card-body,
+.assembly-menu-card .ant-card-body,
+.assembly-property-card .ant-card-body {
+  flex: 1;
+  padding: 12px;
+  overflow: auto;
 }
 
 .assembly-grid > .ant-col {
@@ -1529,7 +1562,7 @@ button {
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 6px 2px 4px;
+  padding: 8px 6px 6px;
   color: var(--mf-text-secondary);
   background: #fff;
   font-size: 12px;
@@ -1540,24 +1573,38 @@ button {
 .assembly-form-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 640px;
+  gap: 4px;
+  max-height: none;
   overflow: auto;
 }
 
 .assembly-form-card {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--mf-border);
-  border-radius: 6px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 5px;
   background: #fff;
+  cursor: grab;
 }
 
 .assembly-form-card.bound {
-  border-color: var(--mf-accent);
-  background: #f3f8fa;
+  background: #eef6f9;
+  outline: 1px solid #c5dde6;
+}
+
+.assembly-row-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: #e5f0f3;
+  color: var(--mf-primary);
 }
 
 .assembly-form-card > div:first-child {
@@ -1565,11 +1612,22 @@ button {
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .assembly-form-card .ant-typography {
   margin: 0;
+}
+
+.assembly-form-card .ant-typography-secondary,
+.assembly-form-card .assembly-config-line,
+.assembly-form-card .ant-tag,
+.assembly-form-card > .ant-space {
+  display: none;
+}
+
+.assembly-form-card .ant-tag {
+  margin-inline-end: 0;
 }
 
 .assembly-config-line {
@@ -1589,10 +1647,11 @@ button {
 
 .assembly-menu-card .ant-tree {
   overflow-x: auto;
-  padding: 6px;
-  border: 1px solid var(--mf-border);
-  border-radius: 6px;
-  background: #fbfcfd;
+  min-height: 100%;
+  padding: 4px;
+  border: 0;
+  border-radius: 5px;
+  background: #fff;
 }
 
 .assembly-menu-card .ant-tree-node-content-wrapper {
@@ -1608,10 +1667,14 @@ button {
 
 .assembly-menu-label {
   display: inline-block;
-  max-width: 96px;
+  max-width: 118px;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: bottom;
+}
+
+.assembly-folder-icon {
+  color: var(--mf-accent);
 }
 
 .assembly-menu-card .ant-tree-node-selected {

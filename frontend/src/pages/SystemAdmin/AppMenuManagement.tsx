@@ -6,6 +6,7 @@ import {
   BranchesOutlined,
   DashboardOutlined,
   DragOutlined,
+  FolderOutlined,
   FormOutlined,
   MenuOutlined,
   NodeIndexOutlined,
@@ -259,6 +260,49 @@ const richMenusByApp: Record<number, MenuNode[]> = {
   ],
 };
 
+const enhancedMenusByApp: Record<number, MenuNode[]> = {
+  1: [
+    menuNode('prod-monitoring', '生产监控', undefined, [
+      menuNode('prod-overview', '生产总览', 'production-overview', undefined, true),
+      menuNode('prod-lines', '产线状态', 'line-status'),
+      menuNode('prod-device', '设备运行', 'device-health'),
+    ], true),
+    menuNode('prod-exceptions', '异常处理', undefined, [
+      menuNode('prod-alerts', '活动告警', 'alert-center'),
+    ]),
+  ],
+  2: [
+    menuNode('pm-health-group', '健康与预测', undefined, [
+      menuNode('pm-health', '设备健康', 'device-health', undefined, true),
+      menuNode('pm-predict', '故障预测', 'fault-prediction'),
+    ], true),
+    menuNode('pm-execution-group', '维护执行', undefined, [
+      menuNode('pm-orders', '维修工单', 'maintenance-order'),
+      menuNode('pm-alerts', '告警中心', 'alert-center'),
+    ]),
+  ],
+  3: [
+    menuNode('quality-control-group', '质量监控', undefined, [
+      menuNode('quality-overview', '质量总览', 'quality-overview', undefined, true),
+      menuNode('quality-inspection', '检验批次', 'inspection-batch'),
+    ], true),
+    menuNode('quality-improve-group', '问题改进', undefined, [
+      menuNode('quality-defect', '缺陷分析', 'defect-analysis'),
+      menuNode('quality-capa', 'CAPA 跟踪', 'quality-event'),
+    ]),
+  ],
+  4: [
+    menuNode('supply-risk-group', '风险监控', undefined, [
+      menuNode('supply-overview', '风险总览', 'supply-overview', undefined, true),
+      menuNode('supply-risk', '供应商风险', 'supplier-risk'),
+    ], true),
+    menuNode('supply-impact-group', '影响与复核', undefined, [
+      menuNode('supply-material', '物料影响', 'material-impact'),
+      menuNode('supply-review', '风险复核', 'risk-review'),
+    ]),
+  ],
+};
+
 function menuNode(
   key: string,
   label: string,
@@ -288,7 +332,7 @@ export default function AppMenuManagement() {
   const [roles, setRoles] = useState<RoleRecord[]>(fallbackRoles);
   const [forms, setForms] = useState<FormRecord[]>([...fallbackForms, ...supplementalForms]);
   const [configs, setConfigs] = useState<AppFormConfig[]>([...initialConfigs, ...supplementalConfigs]);
-  const [menusByApp, setMenusByApp] = useState<Record<number, MenuNode[]>>(richMenusByApp);
+  const [menusByApp, setMenusByApp] = useState<Record<number, MenuNode[]>>(enhancedMenusByApp);
   const [selectedAppId, setSelectedAppId] = useState(2);
   const [selectedFormId, setSelectedFormId] = useState('device-health');
   const [selectedMenuKey, setSelectedMenuKey] = useState('pm-health');
@@ -411,6 +455,15 @@ export default function AppMenuManagement() {
     if (!boundFormIds.has(form.id)) toggleBinding(form.id);
   };
 
+  const addMenuGroup = () => {
+    const nextNode = menuNode(`${selectedApp.id}-group-${Date.now()}`, '新建分组');
+    setMenusByApp((prev) => ({
+      ...prev,
+      [selectedApp.id]: [...(prev[selectedApp.id] ?? []), nextNode],
+    }));
+    setSelectedMenuKey(nextNode.key);
+  };
+
   const saveMenuNode = async () => {
     const values = await menuForm.validateFields();
     setMenusByApp((prev) => ({
@@ -480,6 +533,7 @@ export default function AppMenuManagement() {
                 }}
                 onToggleBinding={toggleBinding}
                 onAddFormToMenu={addFormToMenu}
+                onAddMenuGroup={addMenuGroup}
                 onSelectMenu={setSelectedMenuKey}
                 onDropMenu={onDropMenu}
                 menuForm={menuForm}
@@ -655,6 +709,7 @@ function AssemblyWorkspace({
   onOpenFormConfig,
   onToggleBinding,
   onAddFormToMenu,
+  onAddMenuGroup,
   onSelectMenu,
   onDropMenu,
   menuForm,
@@ -673,6 +728,7 @@ function AssemblyWorkspace({
   onOpenFormConfig: (id: string) => void;
   onToggleBinding: (id: string) => void;
   onAddFormToMenu: (form: FormRecord) => void;
+  onAddMenuGroup: () => void;
   onSelectMenu: (key: string) => void;
   onDropMenu: (info: any) => void;
   menuForm: ReturnType<typeof Form.useForm>[0];
@@ -686,28 +742,22 @@ function AssemblyWorkspace({
     const config = configs.find((item) => item.formId === form.id);
     const bound = boundFormIds.has(form.id);
     return (
-      <div className={`assembly-form-card ${bound ? 'bound' : ''}`} key={form.id}>
-        <div>
-          <Space wrap>
-            <Typography.Text strong>{config?.alias ?? form.name}</Typography.Text>
-            <Tag>{form.entity}</Tag>
-            <Tag color={bound ? 'success' : 'default'}>{bound ? '已绑定' : '未绑定'}</Tag>
-          </Space>
-          <Typography.Text type="secondary">{form.description}</Typography.Text>
-          {config && (
-            <div className="assembly-config-line">
-              <span>{config.defaultView}</span>
-              <span>{config.dataScope}</span>
-            </div>
-          )}
-        </div>
-        <Space>
-          <Button size="small" onClick={() => onToggleBinding(form.id)}>{bound ? '解绑' : '绑定'}</Button>
-          <Button size="small" onClick={() => onAddFormToMenu(form)}>加入菜单</Button>
-          <Button size="small" onClick={() => onOpenFormConfig(form.id)}>配置</Button>
-        </Space>
+      <div
+        className={`assembly-form-card ${bound ? 'bound' : ''}`}
+        draggable
+        key={form.id}
+        onDragStart={(event) => event.dataTransfer.setData('application/x-form-id', form.id)}
+      >
+        <FormOutlined className="assembly-row-icon" />
+        <Typography.Text strong ellipsis>{config?.alias ?? form.name}</Typography.Text>
       </div>
     );
+  };
+  const dropFormIntoMenu = (event: React.DragEvent) => {
+    event.preventDefault();
+    const formId = event.dataTransfer.getData('application/x-form-id');
+    const form = forms.find((item) => item.id === formId);
+    if (form) onAddFormToMenu(form);
   };
 
   return (
@@ -738,7 +788,6 @@ function AssemblyWorkspace({
                   <span className="application-icon">{renderIcon(app.icon)}</span>
                   <div>
                     <strong>{app.name}</strong>
-                    <small>{app.code}</small>
                   </div>
                 </List.Item>
               )}
@@ -788,7 +837,9 @@ function AssemblyWorkspace({
               <Card
                 title={<Space><MenuOutlined />菜单结构</Space>}
                 className="assembly-menu-card"
-                extra={<Tag icon={<DragOutlined />}>拖拽排序/层级</Tag>}
+                extra={<Button size="small" icon={<AppstoreAddOutlined />} onClick={onAddMenuGroup}>添加分组</Button>}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={dropFormIntoMenu}
               >
                 {menus.length ? (
                   <Tree
@@ -944,8 +995,10 @@ function MenuTitle({ label, formId, defaultEntry }: { label: string; formId?: st
   return (
     <Space size={8} className="assembly-menu-title">
       <DragOutlined className="drag-handle" />
+      {!formId && <FolderOutlined className="assembly-folder-icon" />}
       <span className="assembly-menu-label">{label}</span>
       {formId && <Tag>{formId}</Tag>}
+      {!formId && <Tag>分组</Tag>}
       {defaultEntry && <Tag color="processing">默认</Tag>}
     </Space>
   );
