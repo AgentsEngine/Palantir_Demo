@@ -279,11 +279,12 @@ button {
 
 .identity-shell {
   min-height: 100vh;
-  padding: 64px;
+  padding: 56px 64px;
   display: grid;
-  grid-template-columns: minmax(360px, 1fr) 420px;
+  grid-template-columns: minmax(420px, 0.92fr) 420px;
   align-items: center;
-  gap: 72px;
+  justify-content: center;
+  gap: 92px;
   position: relative;
   overflow: hidden;
   background: #f4f6f8;
@@ -307,9 +308,9 @@ button {
 }
 
 .identity-intro h1 {
-  margin: 14px 0 10px !important;
+  margin: 0 0 10px !important;
   color: #101820 !important;
-  font-size: 56px !important;
+  font-size: 54px !important;
   line-height: 1 !important;
 }
 
@@ -319,8 +320,30 @@ button {
   font-size: 16px;
 }
 
+.identity-flow {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 680px;
+}
+
+.identity-flow span {
+  padding: 8px 10px;
+  border: 1px solid var(--mf-border);
+  border-radius: 5px;
+  background: rgba(255,255,255,0.72);
+  color: var(--mf-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.identity-flow span + span::before {
+  content: '';
+}
+
 .identity-status {
-  margin-top: 34px;
+  margin-top: 22px;
   display: grid;
   grid-template-columns: repeat(3, minmax(130px, 1fr));
   gap: 12px;
@@ -356,15 +379,17 @@ button {
 .identity-card {
   border: 1px solid var(--mf-border) !important;
   box-shadow: var(--mf-shadow);
+  border-radius: 7px !important;
 }
 
 .identity-card-head {
   width: 100%;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
 .identity-card-head h3 {
   margin: 8px 0 0 !important;
+  color: var(--mf-text) !important;
 }
 
 .identity-submit {
