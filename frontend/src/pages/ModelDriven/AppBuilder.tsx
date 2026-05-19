@@ -3,18 +3,19 @@ import type { ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ApartmentOutlined,
+  BarChartOutlined,
   CheckCircleOutlined,
+  DashboardOutlined,
   DatabaseOutlined,
-  EditOutlined,
   EyeOutlined,
   FileDoneOutlined,
   FormOutlined,
+  LineChartOutlined,
   LockOutlined,
-  NodeIndexOutlined,
-  PartitionOutlined,
   SaveOutlined,
   SendOutlined,
   SettingOutlined,
+  TableOutlined,
   TeamOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
@@ -36,17 +37,19 @@ import {
   message,
 } from 'antd';
 
-type FieldType = 'text' | 'number' | 'select' | 'date' | 'upload' | 'subtable';
+type ConfigKind = 'metric' | 'chart' | 'table' | 'form' | 'panel' | 'action';
 
-interface FormField {
+interface PageComponent {
   id: string;
   label: string;
-  type: FieldType;
+  kind: ConfigKind;
   binding: string;
+  group: string;
   required: boolean;
   visible: boolean;
   readonly: boolean;
-  group: string;
+  width: 'quarter' | 'half' | 'full';
+  description: string;
 }
 
 interface FlowNode {
@@ -67,124 +70,174 @@ interface PermissionRow {
   scope: string;
 }
 
-const targetNameMap: Record<string, string> = {
-  '/dashboard': '生产态势 Dashboard',
-  '/maintenance': '设备维护表单',
-  '/quality': '质量检验表单',
-  '/supply-chain': '供应链风险表单',
-  '/reports': '报表中心页面',
-  '/ontology': '数据模型页面',
-  '/data-sources': '数据源管理页面',
-  '/pipeline': '数据管道页面',
-  '/graph': '图谱探索页面',
-  '/rules': '规则引擎页面',
-};
+interface PageSchema {
+  title: string;
+  description: string;
+  layout: string;
+  components: PageComponent[];
+  flows: FlowNode[];
+  permissions: PermissionRow[];
+}
 
-const fieldTypes: { label: string; value: FieldType }[] = [
-  { label: '文本', value: 'text' },
-  { label: '数字', value: 'number' },
-  { label: '下拉选择', value: 'select' },
-  { label: '日期', value: 'date' },
-  { label: '附件上传', value: 'upload' },
-  { label: '子表', value: 'subtable' },
+const componentTypes: { label: string; value: ConfigKind }[] = [
+  { label: '指标卡', value: 'metric' },
+  { label: '图表', value: 'chart' },
+  { label: '数据表格', value: 'table' },
+  { label: '业务表单', value: 'form' },
+  { label: '信息面板', value: 'panel' },
+  { label: '操作按钮', value: 'action' },
 ];
 
-const initialFields: FormField[] = [
-  {
-    id: 'inspection-code',
-    label: '点检编号',
-    type: 'text',
-    binding: 'inspection.code',
-    required: true,
-    visible: true,
-    readonly: true,
-    group: '基础信息',
-  },
-  {
-    id: 'equipment',
-    label: '设备',
-    type: 'select',
-    binding: 'equipment.name',
-    required: true,
-    visible: true,
-    readonly: false,
-    group: '基础信息',
-  },
-  {
-    id: 'inspection-date',
-    label: '点检日期',
-    type: 'date',
-    binding: 'inspection.date',
-    required: true,
-    visible: true,
-    readonly: false,
-    group: '基础信息',
-  },
-  {
-    id: 'health-score',
-    label: '健康评分',
-    type: 'number',
-    binding: 'inspection.health_score',
-    required: false,
-    visible: true,
-    readonly: false,
-    group: '点检结果',
-  },
-  {
-    id: 'attachments',
-    label: '现场附件',
-    type: 'upload',
-    binding: 'inspection.attachments',
-    required: false,
-    visible: true,
-    readonly: false,
-    group: '点检结果',
-  },
-];
-
-const flowNodes: FlowNode[] = [
-  { id: 'draft', title: '填写草稿', role: '点检员', status: 'done', trigger: '新建表单' },
-  { id: 'review', title: '班组长审核', role: '班组长', status: 'active', trigger: '提交后自动进入' },
-  { id: 'repair', title: '异常维修任务', role: '维修工程师', status: 'draft', trigger: '健康评分低于 80' },
-  { id: 'archive', title: '归档关闭', role: '系统', status: 'draft', trigger: '审核通过后自动归档' },
-];
-
-const permissions: PermissionRow[] = [
+const defaultPermissions: PermissionRow[] = [
   { role: '平台管理员', view: true, create: true, edit: true, delete: true, export: true, scope: '全部工厂' },
   { role: '生产经理', view: true, create: true, edit: true, delete: false, export: true, scope: '所属工厂' },
   { role: '班组长', view: true, create: true, edit: true, delete: false, export: false, scope: '所属产线' },
-  { role: '点检员', view: true, create: true, edit: false, delete: false, export: false, scope: '本人数据' },
+  { role: '操作员', view: true, create: true, edit: false, delete: false, export: false, scope: '本人数据' },
 ];
+
+const pageSchemas: Record<string, PageSchema> = {
+  '/maintenance': {
+    title: '预测性维护',
+    description: '对应设备维护页面：四个健康指标卡、设备健康总览、健康分析、故障预测和工单管理。',
+    layout: '指标区 + 双栏分析区 + 两个全宽表格',
+    components: [
+      component('total-equipment', '设备总数', 'metric', 'summary.total', '预测性维护指标', '展示设备资产总量', 'quarter'),
+      component('healthy-equipment', '健康设备', 'metric', 'summary.healthy', '预测性维护指标', '展示健康状态设备数量', 'quarter'),
+      component('warning-equipment', '预警设备', 'metric', 'summary.warning', '预测性维护指标', '展示进入预警状态的设备数量', 'quarter'),
+      component('critical-equipment', '严重风险', 'metric', 'summary.critical', '预测性维护指标', '展示高风险或严重异常设备数量', 'quarter'),
+      component('equipment-health-overview', '设备健康总览', 'table', 'equipment_health.equipment', '设备健康总览', '设备列表、状态、健康评分和风险等级', 'half'),
+      component('equipment-health-analysis', '设备健康分析', 'chart', 'equipment_health.breakdown', '健康分析', '展示振动、温度、压力、电气、磨损雷达图', 'half'),
+      component('fault-prediction', '故障预测', 'table', 'fault_predictions.data', '故障预测', '展示故障概率、预测故障和预计天数', 'full'),
+      component('work-order-management', '工单管理', 'table', 'work_orders.data', '工单管理', '展示维修工单、优先级、状态和负责人', 'full'),
+    ],
+    flows: [
+      flow('monitor', '设备状态采集', '系统', 'done', '周期同步设备健康数据'),
+      flow('predict', '故障预测', 'AI 模型', 'active', '健康评分或传感器异常时触发'),
+      flow('dispatch', '生成维修工单', '维修主管', 'draft', '高风险预测自动生成工单'),
+      flow('close', '维修关闭', '维修工程师', 'draft', '工单完成后回写设备状态'),
+    ],
+    permissions: defaultPermissions,
+  },
+  '/dashboard': {
+    title: '生产态势',
+    description: '对应生产态势 Dashboard：核心 KPI、OEE 总览、生产趋势和告警列表。',
+    layout: '六个 KPI 指标 + 两个图表 + 告警表格',
+    components: [
+      component('factory-count', '工厂数量', 'metric', 'overview.factories.count', '生产 KPI', '展示纳入统计的工厂数量', 'quarter'),
+      component('equipment-total', '设备总数', 'metric', 'overview.equipment.total', '生产 KPI', '展示设备资产总数', 'quarter'),
+      component('running-lines', '运行产线', 'metric', 'overview.production_lines.running', '生产 KPI', '展示当前运行产线数量', 'quarter'),
+      component('work-orders', '工单总数', 'metric', 'overview.work_orders.total', '生产 KPI', '展示生产工单总量', 'quarter'),
+      component('oee-overview', '产线 OEE 总览', 'chart', 'oee.lines', 'OEE 分析', '展示可用率、性能、质量的堆叠柱图', 'full'),
+      component('production-trend', '近 7 日生产趋势', 'chart', 'production_stats.daily', '生产趋势', '展示计划产量、实际产量和良率趋势', 'full'),
+      component('active-alerts', '实时告警列表', 'table', 'alerts.data', '告警管理', '展示告警等级、类型、标题和消息', 'full'),
+    ],
+    flows: [
+      flow('sync', '同步生产数据', '系统', 'done', '定时同步 overview / OEE / production stats'),
+      flow('alert', '告警识别', '规则引擎', 'active', '指标超过阈值时生成告警'),
+      flow('assign', '告警分派', '生产经理', 'draft', '高等级告警进入处理流程'),
+    ],
+    permissions: defaultPermissions,
+  },
+  '/quality': {
+    title: '质量分析',
+    description: '对应质量页面：检验批次、缺陷趋势、SPC 控制图和异常复核。',
+    layout: '质量指标 + SPC 图表 + 缺陷明细表',
+    components: [
+      component('inspection-batches', '检验批次', 'metric', 'quality.batches', '质量指标', '展示当前检验批次数量', 'quarter'),
+      component('defect-count', '缺陷数量', 'metric', 'quality.defect_count', '质量指标', '展示缺陷记录数量', 'quarter'),
+      component('yield-rate', '良率', 'metric', 'quality.yield_rate', '质量指标', '展示质量良率', 'quarter'),
+      component('spc-chart', 'SPC 控制图', 'chart', 'quality.spc_points', 'SPC 分析', '展示控制上下限和采样点', 'full'),
+      component('defect-table', '缺陷明细', 'table', 'quality.defects', '缺陷管理', '展示缺陷类型、等级和处理状态', 'full'),
+    ],
+    flows: [
+      flow('inspect', '质量检验', '质检员', 'active', '创建检验记录'),
+      flow('review', '异常复核', '质量工程师', 'draft', '缺陷超过阈值时触发'),
+      flow('correct', '纠正措施', '生产经理', 'draft', '复核通过后生成整改任务'),
+    ],
+    permissions: defaultPermissions,
+  },
+  '/supply-chain': {
+    title: '供应链风险',
+    description: '对应供应链页面：供应商风险、交付趋势、物料异常和处置任务。',
+    layout: '风险指标 + 风险图表 + 供应商表格',
+    components: [
+      component('supplier-count', '供应商数量', 'metric', 'supply.suppliers', '供应链指标', '展示供应商总数', 'quarter'),
+      component('risk-suppliers', '高风险供应商', 'metric', 'supply.high_risk', '供应链指标', '展示高风险供应商数量', 'quarter'),
+      component('delivery-rate', '准时交付率', 'metric', 'supply.delivery_rate', '供应链指标', '展示准时交付表现', 'quarter'),
+      component('risk-radar', '供应风险雷达', 'chart', 'supply.risk_scores', '风险分析', '展示质量、交付、价格和合规风险', 'full'),
+      component('supplier-table', '供应商风险明细', 'table', 'supply.supplier_risks', '供应商管理', '展示供应商风险等级和处置建议', 'full'),
+    ],
+    flows: [
+      flow('score', '风险评分', '系统', 'active', '供应商数据更新后重新评分'),
+      flow('review', '风险复核', '采购经理', 'draft', '高风险供应商进入复核'),
+      flow('mitigate', '处置跟踪', '供应链负责人', 'draft', '复核后生成处置任务'),
+    ],
+    permissions: defaultPermissions,
+  },
+};
+
+const fallbackSchema: PageSchema = {
+  title: '业务页面',
+  description: '当前页面尚未建立专属 schema，先使用通用页面配置组件。',
+  layout: '标题栏 + 内容区',
+  components: [
+    component('page-title', '页面标题', 'panel', 'page.title', '基础结构', '配置页面名称和说明', 'full'),
+    component('main-table', '主数据表格', 'table', 'page.records', '主要内容', '配置列表字段、筛选和操作列', 'full'),
+  ],
+  flows: [flow('submit', '提交', '业务用户', 'active', '用户提交业务记录')],
+  permissions: defaultPermissions,
+};
+
+function component(
+  id: string,
+  label: string,
+  kind: ConfigKind,
+  binding: string,
+  group: string,
+  description: string,
+  width: PageComponent['width'],
+): PageComponent {
+  return {
+    id,
+    label,
+    kind,
+    binding,
+    group,
+    description,
+    width,
+    required: false,
+    visible: true,
+    readonly: false,
+  };
+}
+
+function flow(id: string, title: string, role: string, status: FlowNode['status'], trigger: string): FlowNode {
+  return { id, title, role, status, trigger };
+}
 
 export default function AppBuilder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const targetPage = searchParams.get('target') || '/maintenance';
-  const targetName = targetNameMap[targetPage] || '当前业务页面';
-  const [fields, setFields] = useState<FormField[]>(initialFields);
-  const [selectedId, setSelectedId] = useState(initialFields[0].id);
+  const schema = pageSchemas[targetPage] || fallbackSchema;
+  const [components, setComponents] = useState<PageComponent[]>(schema.components);
+  const [selectedId, setSelectedId] = useState(schema.components[0]?.id ?? '');
 
-  const selected = fields.find((field) => field.id === selectedId) ?? fields[0];
+  const selected = components.find((item) => item.id === selectedId) ?? components[0];
 
   const studioSchema = useMemo(() => ({
     page: targetPage,
-    title: targetName,
-    form: fields,
-    workflow: flowNodes,
-    permissions,
+    title: schema.title,
+    layout: schema.layout,
+    components,
+    workflow: schema.flows,
+    permissions: schema.permissions,
     version: 'draft',
-  }), [fields, targetName, targetPage]);
+  }), [components, schema, targetPage]);
 
-  const updateSelected = (patch: Partial<FormField>) => {
-    setFields((prev) => prev.map((field) => (field.id === selected.id ? { ...field, ...patch } : field)));
-  };
-
-  const handleDraft = () => {
-    message.success('已保存为草稿');
-  };
-
-  const handlePublish = () => {
-    message.success('已发布配置');
+  const updateSelected = (patch: Partial<PageComponent>) => {
+    if (!selected) return;
+    setComponents((prev) => prev.map((item) => (item.id === selected.id ? { ...item, ...patch } : item)));
   };
 
   const tabs = [
@@ -192,10 +245,11 @@ export default function AppBuilder() {
       key: 'form',
       label: '表单设置',
       children: (
-        <FormSettings
-          fields={fields}
+        <ComponentSettings
+          components={components}
           selected={selected}
           selectedId={selectedId}
+          layout={schema.layout}
           onSelect={setSelectedId}
           onUpdate={updateSelected}
         />
@@ -204,12 +258,12 @@ export default function AppBuilder() {
     {
       key: 'workflow',
       label: '流程设置',
-      children: <WorkflowSettings />,
+      children: <WorkflowSettings flowNodes={schema.flows} />,
     },
     {
       key: 'permission',
       label: '权限设置',
-      children: <PermissionSettings />,
+      children: <PermissionSettings permissions={schema.permissions} />,
     },
   ];
 
@@ -218,19 +272,19 @@ export default function AppBuilder() {
       <section className="builder-header form-studio-header">
         <div>
           <Tag className="system-tag">Form Studio</Tag>
-          <Typography.Title level={3}>{targetName}配置</Typography.Title>
+          <Typography.Title level={3}>{schema.title}配置</Typography.Title>
           <Typography.Paragraph>
-            正在配置：{targetPage}。这里统一管理该页面的表单、流程和权限，发布后影响业务运行态。
+            正在配置：{targetPage}。{schema.description}
           </Typography.Paragraph>
         </div>
         <Space wrap>
           <Button icon={<EyeOutlined />} onClick={() => navigate(targetPage)}>
             返回业务页
           </Button>
-          <Button icon={<SaveOutlined />} onClick={handleDraft}>
+          <Button icon={<SaveOutlined />} onClick={() => message.success('已保存为草稿')}>
             保存草稿
           </Button>
-          <Button type="primary" icon={<SendOutlined />} onClick={handlePublish}>
+          <Button type="primary" icon={<SendOutlined />} onClick={() => message.success('已发布配置')}>
             发布配置
           </Button>
         </Space>
@@ -247,33 +301,35 @@ export default function AppBuilder() {
   );
 }
 
-function FormSettings({
-  fields,
+function ComponentSettings({
+  components,
   selected,
   selectedId,
+  layout,
   onSelect,
   onUpdate,
 }: {
-  fields: FormField[];
-  selected: FormField;
+  components: PageComponent[];
+  selected?: PageComponent;
   selectedId: string;
+  layout: string;
   onSelect: (id: string) => void;
-  onUpdate: (patch: Partial<FormField>) => void;
+  onUpdate: (patch: Partial<PageComponent>) => void;
 }) {
   return (
     <div className="builder-shell form-settings-shell">
       <aside className="builder-sidebar">
-        <PanelTitle icon={<FormOutlined />} title="字段与组件" />
+        <PanelTitle icon={<FormOutlined />} title="页面组件" />
         <div className="builder-palette">
-          {fields.map((field) => (
+          {components.map((item) => (
             <button
-              key={field.id}
-              className={selectedId === field.id ? 'active' : ''}
-              onClick={() => onSelect(field.id)}
+              key={item.id}
+              className={selectedId === item.id ? 'active' : ''}
+              onClick={() => onSelect(item.id)}
             >
-              <span><FieldIcon type={field.type} /></span>
-              <strong>{field.label}</strong>
-              <small>{field.binding}</small>
+              <span><ComponentIcon type={item.kind} /></span>
+              <strong>{item.label}</strong>
+              <small>{item.binding}</small>
             </button>
           ))}
         </div>
@@ -281,29 +337,30 @@ function FormSettings({
 
       <main className="builder-canvas form-canvas">
         <div className="canvas-topbar">
-          <span>业务表单画布</span>
+          <span>运行页面画布</span>
           <Space size={6}>
-            <Tag>双列布局</Tag>
-            <Tag>{fields.length} fields</Tag>
+            <Tag>{layout}</Tag>
+            <Tag>{components.length} components</Tag>
             <Tag color="processing">Draft</Tag>
           </Space>
         </div>
         <Row gutter={[12, 12]}>
-          {fields.map((field) => (
-            <Col xs={24} md={field.type === 'upload' || field.type === 'subtable' ? 24 : 12} key={field.id}>
+          {components.map((item) => (
+            <Col xs={24} md={spanForWidth(item.width)} key={item.id}>
               <button
-                className={`form-field-preview ${selectedId === field.id ? 'selected' : ''}`}
-                onClick={() => onSelect(field.id)}
+                className={`form-field-preview ${selectedId === item.id ? 'selected' : ''}`}
+                onClick={() => onSelect(item.id)}
               >
                 <label>
-                  {field.label}
-                  {field.required && <Tag color="red">必填</Tag>}
-                  {field.readonly && <Tag>只读</Tag>}
+                  {item.label}
+                  {item.required && <Tag color="red">必配</Tag>}
+                  {!item.visible && <Tag>隐藏</Tag>}
                 </label>
-                <div className={`field-control field-${field.type}`}>
-                  <span>{fieldTypes.find((type) => type.value === field.type)?.label}</span>
+                <div className={`field-control field-${item.kind}`}>
+                  <ComponentIcon type={item.kind} />
+                  <span>{componentTypes.find((type) => type.value === item.kind)?.label}</span>
                 </div>
-                <small>{field.group} · {field.binding}</small>
+                <small>{item.group} · {item.description}</small>
               </button>
             </Col>
           ))}
@@ -311,39 +368,50 @@ function FormSettings({
       </main>
 
       <aside className="builder-properties">
-        <PanelTitle icon={<SettingOutlined />} title="字段属性" />
-        <Form layout="vertical" size="small">
-          <Form.Item label="字段名称">
-            <Input value={selected.label} onChange={(event) => onUpdate({ label: event.target.value })} />
-          </Form.Item>
-          <Form.Item label="控件类型">
-            <Select value={selected.type} options={fieldTypes} onChange={(type) => onUpdate({ type })} />
-          </Form.Item>
-          <Form.Item label="数据绑定">
-            <Input value={selected.binding} onChange={(event) => onUpdate({ binding: event.target.value })} />
-          </Form.Item>
-          <Form.Item label="所属分组">
-            <Select
-              value={selected.group}
-              options={['基础信息', '点检结果', '异常处理', '附件信息'].map((group) => ({ label: group, value: group }))}
-              onChange={(group) => onUpdate({ group })}
-            />
-          </Form.Item>
-          <div className="property-switches">
-            <Switch checked={selected.required} onChange={(required) => onUpdate({ required })} />
-            <span>必填</span>
-            <Switch checked={selected.visible} onChange={(visible) => onUpdate({ visible })} />
-            <span>可见</span>
-            <Switch checked={selected.readonly} onChange={(readonly) => onUpdate({ readonly })} />
-            <span>只读</span>
-          </div>
-        </Form>
+        <PanelTitle icon={<SettingOutlined />} title="组件属性" />
+        {selected ? (
+          <Form layout="vertical" size="small">
+            <Form.Item label="组件名称">
+              <Input value={selected.label} onChange={(event) => onUpdate({ label: event.target.value })} />
+            </Form.Item>
+            <Form.Item label="组件类型">
+              <Select value={selected.kind} options={componentTypes} onChange={(kind) => onUpdate({ kind })} />
+            </Form.Item>
+            <Form.Item label="数据绑定">
+              <Input value={selected.binding} onChange={(event) => onUpdate({ binding: event.target.value })} />
+            </Form.Item>
+            <Form.Item label="所属区域">
+              <Input value={selected.group} onChange={(event) => onUpdate({ group: event.target.value })} />
+            </Form.Item>
+            <Form.Item label="宽度">
+              <Select
+                value={selected.width}
+                options={[
+                  { label: '1/4', value: 'quarter' },
+                  { label: '1/2', value: 'half' },
+                  { label: '整行', value: 'full' },
+                ]}
+                onChange={(width) => onUpdate({ width })}
+              />
+            </Form.Item>
+            <div className="property-switches">
+              <Switch checked={selected.required} onChange={(required) => onUpdate({ required })} />
+              <span>必配</span>
+              <Switch checked={selected.visible} onChange={(visible) => onUpdate({ visible })} />
+              <span>可见</span>
+              <Switch checked={selected.readonly} onChange={(readonly) => onUpdate({ readonly })} />
+              <span>只读</span>
+            </div>
+          </Form>
+        ) : (
+          <Typography.Text type="secondary">请选择一个组件进行配置</Typography.Text>
+        )}
       </aside>
     </div>
   );
 }
 
-function WorkflowSettings() {
+function WorkflowSettings({ flowNodes }: { flowNodes: FlowNode[] }) {
   return (
     <div className="studio-two-column">
       <Card className="studio-panel" title="流程节点">
@@ -364,17 +432,17 @@ function WorkflowSettings() {
       </Card>
       <Card className="studio-panel" title="节点属性">
         <Form layout="vertical" size="small">
-          <Form.Item label="默认审批角色">
-            <Select value="班组长" options={['班组长', '生产经理', '质量工程师', '平台管理员'].map((role) => ({ label: role, value: role }))} />
+          <Form.Item label="默认处理角色">
+            <Select value={flowNodes[0]?.role} options={flowNodes.map((node) => ({ label: node.role, value: node.role }))} />
           </Form.Item>
           <Form.Item label="触发条件">
-            <Input value="提交表单后自动进入审批" readOnly />
+            <Input value={flowNodes[0]?.trigger} readOnly />
           </Form.Item>
-          <Form.Item label="异常分支">
-            <Checkbox.Group value={['repair', 'notify']} options={[
-              { label: '生成维修任务', value: 'repair' },
-              { label: '通知生产经理', value: 'notify' },
-              { label: '锁定记录', value: 'lock' },
+          <Form.Item label="自动动作">
+            <Checkbox.Group value={['notify']} options={[
+              { label: '发送通知', value: 'notify' },
+              { label: '生成任务', value: 'task' },
+              { label: '调用接口', value: 'api' },
             ]} />
           </Form.Item>
           <Form.Item label="超时策略">
@@ -389,7 +457,7 @@ function WorkflowSettings() {
   );
 }
 
-function PermissionSettings() {
+function PermissionSettings({ permissions }: { permissions: PermissionRow[] }) {
   const columns = [
     { title: '角色', dataIndex: 'role', key: 'role' },
     { title: '查看', dataIndex: 'view', key: 'view', render: renderSwitch },
@@ -407,26 +475,32 @@ function PermissionSettings() {
       </Card>
       <Row gutter={[12, 12]}>
         <Col xs={24} lg={12}>
-          <Card className="studio-panel" title="字段级权限">
+          <Card className="studio-panel" title="组件级权限">
             <div className="permission-list">
-              <PermissionItem title="健康评分" detail="班组长可编辑，点检员只读" icon={<LockOutlined />} />
-              <PermissionItem title="现场附件" detail="点检员可上传，生产经理可查看" icon={<FileDoneOutlined />} />
-              <PermissionItem title="异常原因" detail="维修工程师可编辑" icon={<ThunderboltOutlined />} />
+              <PermissionItem title="指标区" detail="生产经理可见，操作员只读" icon={<LockOutlined />} />
+              <PermissionItem title="表格导出" detail="仅管理员和生产经理可导出" icon={<FileDoneOutlined />} />
+              <PermissionItem title="异常处置" detail="按流程节点角色控制编辑权" icon={<ThunderboltOutlined />} />
             </div>
           </Card>
         </Col>
         <Col xs={24} lg={12}>
           <Card className="studio-panel" title="发布范围">
             <div className="permission-list">
-              <PermissionItem title="组织范围" detail="华东工厂 / A 产线 / 维修班组" icon={<ApartmentOutlined />} />
+              <PermissionItem title="组织范围" detail="按工厂、产线、班组发布" icon={<ApartmentOutlined />} />
               <PermissionItem title="数据范围" detail="按所属工厂、所属产线和本人数据过滤" icon={<DatabaseOutlined />} />
-              <PermissionItem title="审计策略" detail="记录字段变更、审批动作和发布版本" icon={<TeamOutlined />} />
+              <PermissionItem title="审计策略" detail="记录组件变更、流程动作和发布版本" icon={<TeamOutlined />} />
             </div>
           </Card>
         </Col>
       </Row>
     </div>
   );
+}
+
+function spanForWidth(width: PageComponent['width']) {
+  if (width === 'quarter') return 6;
+  if (width === 'half') return 12;
+  return 24;
 }
 
 function PanelTitle({ icon, title }: { icon: ReactNode; title: string }) {
@@ -438,12 +512,12 @@ function PanelTitle({ icon, title }: { icon: ReactNode; title: string }) {
   );
 }
 
-function FieldIcon({ type }: { type: FieldType }) {
-  if (type === 'select') return <NodeIndexOutlined />;
-  if (type === 'date') return <CheckCircleOutlined />;
-  if (type === 'upload') return <FileDoneOutlined />;
-  if (type === 'subtable') return <PartitionOutlined />;
-  if (type === 'number') return <EditOutlined />;
+function ComponentIcon({ type }: { type: ConfigKind }) {
+  if (type === 'metric') return <DashboardOutlined />;
+  if (type === 'chart') return <LineChartOutlined />;
+  if (type === 'table') return <TableOutlined />;
+  if (type === 'panel') return <BarChartOutlined />;
+  if (type === 'action') return <ThunderboltOutlined />;
   return <FormOutlined />;
 }
 
