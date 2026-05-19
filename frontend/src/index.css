@@ -1483,3 +1483,167 @@ button {
 .permission-item-card .ant-typography {
   margin: 0;
 }
+
+/* Application, form, and menu assembly */
+.app-admin-workspace .ant-tabs-nav {
+  margin-bottom: 16px;
+}
+
+.app-assembly-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.assembly-help {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--mf-border);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.assembly-help .ant-typography {
+  margin: 0;
+}
+
+.assembly-column-card,
+.assembly-menu-card,
+.assembly-property-card {
+  height: 100%;
+  border-radius: 6px;
+}
+
+.assembly-form-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 640px;
+  overflow: auto;
+}
+
+.assembly-form-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--mf-border);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.assembly-form-card.bound {
+  border-color: var(--mf-accent);
+  background: #f3f8fa;
+}
+
+.assembly-form-card > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.assembly-form-card .ant-typography {
+  margin: 0;
+}
+
+.assembly-config-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--mf-text-secondary);
+  font-size: 12px;
+}
+
+.assembly-config-line span {
+  padding: 2px 6px;
+  border: 1px solid var(--mf-border);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.assembly-menu-card .ant-tree {
+  overflow-x: auto;
+  padding: 6px;
+  border: 1px solid var(--mf-border);
+  border-radius: 6px;
+  background: #fbfcfd;
+}
+
+.assembly-menu-card .ant-tree-node-content-wrapper {
+  min-height: 34px;
+  padding: 5px 8px;
+  border-radius: 5px;
+}
+
+.assembly-menu-title {
+  min-width: 220px;
+  white-space: nowrap;
+}
+
+.assembly-menu-label {
+  display: inline-block;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+.assembly-menu-card .ant-tree-node-selected {
+  background: #e5f1f5 !important;
+  outline: 1px solid var(--mf-accent);
+}
+
+.drag-handle {
+  color: var(--mf-text-secondary);
+}
+
+.admin-form-list-item {
+  display: grid !important;
+  grid-template-columns: 34px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px !important;
+  border: 1px solid var(--mf-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.admin-form-list-item + .admin-form-list-item {
+  margin-top: 8px;
+}
+
+.admin-form-list-item:hover,
+.admin-form-list-item.active {
+  border-color: var(--mf-primary);
+  background: #eef6f9;
+}
+
+.admin-form-list-item strong,
+.admin-form-list-item small {
+  display: block;
+}
+
+.admin-form-list-item small {
+  margin-top: 2px;
+  color: var(--mf-text-secondary);
+  font-size: 12px;
+}
+
+.admin-info-block {
+  display: flex;
+  min-height: 70px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--mf-border);
+  border-radius: 6px;
+  background: #fbfcfd;
+}
