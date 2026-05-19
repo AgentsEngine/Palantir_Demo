@@ -1174,6 +1174,140 @@ button {
   font-size: 12px;
 }
 
+.application-switch-page,
+.app-menu-admin-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--density-gap);
+}
+
+.application-summary-card .ant-card-body,
+.admin-relation-card .ant-card-body {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.application-summary-icon,
+.admin-relation-card .ant-card-body > span {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #dfecef;
+  color: var(--mf-primary);
+  font-size: 20px;
+}
+
+.application-summary-card strong,
+.admin-relation-card strong {
+  display: block;
+  color: var(--mf-text);
+  font-size: 26px;
+  line-height: 30px;
+}
+
+.admin-relation-card small {
+  display: block;
+  margin-top: 2px;
+  color: var(--mf-muted);
+  font-size: 12px;
+}
+
+.application-directory-card .ant-card-head,
+.admin-section-card .ant-card-head {
+  background: #fbfcfd;
+}
+
+.application-card {
+  height: 100%;
+  border: 1px solid var(--mf-border) !important;
+  background: var(--mf-panel-soft) !important;
+}
+
+.application-card .ant-card-body {
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+
+.application-card-head,
+.application-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.application-icon {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #dfecef;
+  color: var(--mf-primary);
+  font-size: 20px;
+}
+
+.application-star {
+  color: #a66f1f;
+}
+
+.application-card h5 {
+  margin: 14px 0 2px !important;
+  color: var(--mf-text) !important;
+}
+
+.application-description {
+  min-height: 60px;
+  margin: 10px 0 12px !important;
+  color: var(--mf-muted);
+  font-size: 13px;
+}
+
+.application-meta-block {
+  margin-bottom: 10px;
+}
+
+.application-meta-block > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--mf-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.application-card-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--mf-border);
+}
+
+.admin-section-card {
+  border: 1px solid var(--mf-border);
+}
+
+.admin-rule-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-rule-strip span {
+  padding: 8px 10px;
+  border: 1px solid var(--mf-border);
+  border-radius: 5px;
+  background: var(--mf-panel-soft);
+  color: var(--mf-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 @media (max-width: 1180px) {
   .identity-shell {
     grid-template-columns: 1fr;
