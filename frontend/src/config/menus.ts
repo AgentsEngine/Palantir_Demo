@@ -1,7 +1,8 @@
 /**
  * Centralized menu / breadcrumb / role-mapping config.
- * The sidebar keeps business entry points only. Low-code configuration is
- * reached from each page's runtime toolbar or from the user menu.
+ * The sidebar keeps business entry points only. System, template, and
+ * configuration entries live in the user menu; AI is exposed as a floating
+ * assistant entry.
  */
 
 export interface BusinessMenuMeta {
@@ -18,14 +19,9 @@ export const BUSINESS_MENUS: BusinessMenuMeta[] = [
   { key: '/supply-chain', icon: 'ShopOutlined', label: '供应链风险' },
 ];
 
-export const TOOL_MENUS: BusinessMenuMeta[] = [
-  { key: '/ai-assistant', icon: 'RobotOutlined', label: 'AI Assistant' },
-  { key: '/templates', icon: 'AppstoreOutlined', label: '模板市场' },
-];
-
 export const ROLE_MENU_MAP: Record<string, string[] | null> = {
-  production_manager: ['/', '/dashboard', '/maintenance', '/quality', '/reports', '/ai-assistant'],
-  quality_inspector: ['/', '/dashboard', '/quality', '/supply-chain', '/ai-assistant'],
+  production_manager: ['/', '/dashboard', '/maintenance', '/quality'],
+  quality_inspector: ['/', '/dashboard', '/quality', '/supply-chain'],
   admin: null,
 };
 

@@ -1,4 +1,5 @@
 import {
+  AppstoreOutlined,
   BarChartOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -6,7 +7,6 @@ import {
   EditOutlined,
   ExperimentOutlined,
   FileDoneOutlined,
-  FileSearchOutlined,
   FormOutlined,
   LayoutOutlined,
   NodeIndexOutlined,
@@ -18,11 +18,11 @@ import {
 import { Button, Card, Col, Progress, Row, Space, Tag, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-const workspaceStats = [
-  { label: '可配置表单', value: '18', detail: '字段、布局、权限可配置', icon: <FormOutlined /> },
-  { label: '草稿应用', value: '7', detail: '2 个待发布', icon: <FileSearchOutlined /> },
-  { label: '数据资产', value: '46', detail: '18 个已映射', icon: <DatabaseOutlined /> },
-  { label: '流程任务', value: '9', detail: '4 个待审批', icon: <CheckCircleOutlined /> },
+const workspaceCards = [
+  { label: '流程中心', value: '9', detail: '4 个待审批', icon: <CheckCircleOutlined />, path: '/workflow' },
+  { label: '我的应用', value: '12', detail: '3 个本周更新', icon: <AppstoreOutlined />, path: '/my-applications' },
+  { label: '模板市场', value: '28', detail: '可复用页面模板', icon: <FileDoneOutlined />, path: '/templates' },
+  { label: '配置中心', value: '18', detail: '页面、流程、权限配置', icon: <SettingOutlined />, path: '/model-driven?target=/' },
 ];
 
 const formConfigs = [
@@ -108,14 +108,14 @@ export default function WorkspacePage() {
   return (
     <div className="workspace-page">
       <Row gutter={[16, 16]}>
-        {workspaceStats.map((stat) => (
-          <Col xs={24} sm={12} lg={6} key={stat.label}>
-            <Card className="metric-card" variant="borderless">
-              <span className="metric-icon">{stat.icon}</span>
+        {workspaceCards.map((card) => (
+          <Col xs={24} sm={12} lg={6} key={card.label}>
+            <Card className="metric-card workspace-action-card" variant="borderless" onClick={() => navigate(card.path)}>
+              <span className="metric-icon">{card.icon}</span>
               <div>
-                <span className="metric-label">{stat.label}</span>
-                <strong>{stat.value}</strong>
-                <small>{stat.detail}</small>
+                <span className="metric-label">{card.label}</span>
+                <strong>{card.value}</strong>
+                <small>{card.detail}</small>
               </div>
             </Card>
           </Col>

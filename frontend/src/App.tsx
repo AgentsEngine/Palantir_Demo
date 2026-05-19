@@ -85,16 +85,6 @@ const businessMenuItems: MenuProps['items'] = [
   { key: '/supply-chain', icon: <ShopOutlined />, label: '供应链风险' },
 ];
 
-const toolMenuItems: MenuProps['items'] = [
-  { key: '/ai-assistant', icon: <RobotOutlined />, label: 'AI Assistant' },
-  { key: '/templates', icon: <AppstoreOutlined />, label: '模板市场' },
-];
-
-const adminMenuItems: MenuProps['items'] = [
-  { key: '/workflow', icon: <CheckOutlined />, label: '流程中心' },
-  { key: '/system-admin', icon: <SettingOutlined />, label: '系统管理' },
-];
-
 const pageTitleMap: Record<string, string> = {
   '/': '我的工作台',
   '/dashboard': '生产态势',
@@ -223,17 +213,12 @@ function AppContent() {
   const allMenuItems = useMemo<MenuProps['items']>(() => {
     const items: MenuProps['items'] = [
       ...(businessMenuItems || []),
-      { type: 'divider' },
-      ...(toolMenuItems || []),
     ];
-    if (user?.is_admin) {
-      items.push({ type: 'divider' }, ...(adminMenuItems || []));
-    }
     if (dynamicMenus?.length) {
       items.push({ type: 'divider' }, ...dynamicMenus);
     }
     return items;
-  }, [dynamicMenus, user?.is_admin]);
+  }, [dynamicMenus]);
 
   const studioTarget = location.pathname === '/model-driven'
     ? decodeURIComponent(new URLSearchParams(location.search).get('target') || '')
@@ -347,8 +332,8 @@ function AppContent() {
   const userMenu: MenuProps = {
     items: [
       { key: 'my-apps', label: '我的应用', icon: <AppstoreOutlined />, onClick: () => navigate('/my-applications') },
+      { key: 'templates', label: '模板市场', icon: <AppstoreOutlined />, onClick: () => navigate('/templates') },
       { key: 'form-studio', label: '表单配置中心', icon: <SettingOutlined />, onClick: () => navigate('/model-driven') },
-      { key: 'workflow', label: '流程中心', icon: <CheckOutlined />, onClick: () => navigate('/workflow') },
       { type: 'divider' },
       ...(user?.is_admin
         ? [{ key: 'admin', label: '系统管理', icon: <SettingOutlined />, onClick: () => navigate('/system-admin') }]
@@ -475,6 +460,15 @@ function AppContent() {
           </div>
         </Content>
       </Layout>
+
+      <Button
+        className="ai-floating-button"
+        type="primary"
+        shape="circle"
+        icon={<RobotOutlined />}
+        onClick={() => navigate('/ai-assistant')}
+        aria-label="AI Assistant"
+      />
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </Layout>
