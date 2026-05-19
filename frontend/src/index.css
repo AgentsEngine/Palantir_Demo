@@ -1377,6 +1377,11 @@ button {
   font-size: 12px;
 }
 
+.admin-app-list-item .ant-space,
+.admin-app-list-item .ant-tag {
+  display: none;
+}
+
 @media (max-width: 1180px) {
   .identity-shell {
     grid-template-columns: 1fr;
@@ -1487,12 +1492,16 @@ button {
 }
 
 /* Application, form, and menu assembly */
+.app-admin-workspace {
+  --admin-panel-height: max(540px, calc(100vh - 330px));
+}
+
 .app-admin-workspace .ant-tabs-nav {
   margin-bottom: 16px;
 }
 
 .config-management-grid {
-  min-height: calc(100vh - 294px);
+  min-height: var(--admin-panel-height);
 }
 
 .config-management-grid > .ant-col {
@@ -1512,12 +1521,34 @@ button {
 }
 
 .config-list-card {
-  height: max(560px, calc(100vh - 360px));
+  display: flex;
+  flex-direction: column;
+  height: var(--admin-panel-height);
+  min-height: 540px;
 }
 
 .config-list-card .ant-card-body {
-  max-height: calc(100vh - 430px);
+  flex: 1;
+  padding: 12px;
   overflow: auto;
+}
+
+.config-list-card .ant-card-head {
+  min-height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--mf-border);
+  background: #fff;
+}
+
+.config-list-card .ant-card-head-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.config-list-card .ant-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .admin-config-list-item {
@@ -1561,6 +1592,70 @@ button {
 
 .config-editor-card .ant-card-head {
   background: #fbfcfd;
+}
+
+.config-editor-stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: var(--admin-panel-height);
+  min-height: 540px;
+}
+
+.config-editor-stack > .ant-space-item {
+  min-width: 0;
+}
+
+.config-editor-stack > .ant-space-item:last-child {
+  flex: 1;
+  min-height: 0;
+}
+
+.config-editor-stack > .ant-space-item:last-child > .config-editor-card {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.config-editor-stack > .ant-space-item:last-child > .config-editor-card > .ant-card-body {
+  flex: 1;
+  overflow: auto;
+}
+
+.config-editor-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.config-editor-title span {
+  overflow: hidden;
+  color: var(--mf-text);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-editor-title small {
+  overflow: hidden;
+  color: var(--mf-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-editor-card .config-preview-strip {
+  display: none;
+}
+
+.app-config-form .ant-form-item,
+.form-config-form .ant-form-item {
+  margin-bottom: 12px;
 }
 
 .config-preview-strip {
@@ -1607,11 +1702,20 @@ button {
   font-size: 12px;
 }
 
+.structure-lock-note {
+  padding: 10px 12px;
+  border: 1px solid #d7e4e9;
+  border-radius: 6px;
+  background: #f7fafb;
+  color: var(--mf-muted);
+  font-size: 12px;
+}
+
 .app-assembly-workspace {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  min-height: calc(100vh - 292px);
+  min-height: var(--admin-panel-height);
 }
 
 .assembly-help {
@@ -1634,7 +1738,7 @@ button {
 .assembly-property-card {
   display: flex;
   flex-direction: column;
-  height: max(540px, calc(100vh - 418px));
+  height: var(--admin-panel-height);
   min-height: 540px;
   border: 1px solid var(--mf-border);
   border-radius: 6px;

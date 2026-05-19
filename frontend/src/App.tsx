@@ -48,6 +48,12 @@ import {
   wfMarkAllRead,
   wfMarkNotificationRead,
 } from './services/api';
+import {
+  APP_ASSEMBLY_MENU_EVENT,
+  APP_ASSEMBLY_MENUS_STORAGE_KEY,
+  loadAssemblyMenus,
+  savedAssemblyMenusToDynamicMenus,
+} from './config/appAssemblyMenus';
 
 const WorkspacePage = lazy(() => import('./pages/Workspace'));
 const DashboardPage = lazy(() => import('./pages/Dashboard'));
@@ -363,6 +369,30 @@ function AppContent() {
 
   useEffect(() => {
     if (!currentApplication) return;
+    const loadLocalAssemblyMenus = () => {
+      const localMenus = loadAssemblyMenus()[currentApplication.id];
+      if (!localMenus?.length) return false;
+      setDynamicMenus(buildDynamicMenuTree(savedAssemblyMenusToDynamicMenus(currentApplication.id, localMenus)));
+      return true;
+    };
+
+    if (loadLocalAssemblyMenus()) {
+      const handleAssemblyMenuUpdate = () => {
+        loadLocalAssemblyMenus();
+      };
+      const handleStorage = (event: StorageEvent) => {
+        if (event.key === APP_ASSEMBLY_MENUS_STORAGE_KEY) {
+          loadLocalAssemblyMenus();
+        }
+      };
+      window.addEventListener(APP_ASSEMBLY_MENU_EVENT, handleAssemblyMenuUpdate);
+      window.addEventListener('storage', handleStorage);
+      return () => {
+        window.removeEventListener(APP_ASSEMBLY_MENU_EVENT, handleAssemblyMenuUpdate);
+        window.removeEventListener('storage', handleStorage);
+      };
+    }
+
     listApplicationMenus(currentApplication.id)
       .then((res) => {
         const apiItems = res.data?.data || [];
@@ -406,7 +436,7 @@ function AppContent() {
     : '';
   const selectedKey = studioTarget || location.pathname;
   const isStudioPage = location.pathname === '/model-driven';
-  const showRuntimePageBar = !isStudioPage;
+  const showRuntimePageBar = !isStudioPage && location.pathname !== '/system-admin';
   const runtimeTitle = location.pathname.startsWith('/dynamic/')
     ? '动态业务表单'
     : pageTitleMap[location.pathname] || '业务页面';

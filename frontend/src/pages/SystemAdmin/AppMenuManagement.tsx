@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import {
   AppstoreAddOutlined,
   AppstoreOutlined,
+  BarChartOutlined,
   BranchesOutlined,
   CheckCircleOutlined,
   DashboardOutlined,
@@ -50,6 +51,11 @@ import {
   adminUpdateApplicationBindings,
   listSemanticOntologyObjects,
 } from '@/services/api';
+import {
+  loadAssemblyMenus,
+  saveAssemblyMenus,
+  type SavedAssemblyMenuNode,
+} from '@/config/appAssemblyMenus';
 
 type AppRecord = {
   id: number;
@@ -74,6 +80,9 @@ type FormRecord = {
   id: string;
   name: string;
   code: string;
+  category?: 'interaction' | 'analytics';
+  mode?: string;
+  structureLocked?: boolean;
   entity: string;
   source: string;
   status: 'draft' | 'published' | 'disabled';
@@ -96,6 +105,18 @@ type FieldRecord = {
   list: boolean;
   form: boolean;
   search: boolean;
+};
+
+type MetricRecord = {
+  id: string;
+  name: string;
+  role: string;
+  sourceField: string;
+  aggregation: string;
+  granularity: string;
+  defaultFilter: string;
+  chartRole: string;
+  drilldown: string;
 };
 
 type AppFormConfig = {
@@ -133,6 +154,20 @@ const iconOptions = [
   { value: 'SafetyCertificateOutlined', label: 'Quality' },
   { value: 'ShopOutlined', label: 'Supply Chain' },
   { value: 'AppstoreOutlined', label: 'Application' },
+];
+
+const interactionModeOptions = [
+  { label: '录入表单', value: 'entry_form' },
+  { label: '流程表单', value: 'workflow_form' },
+  { label: '配置表单', value: 'settings_form' },
+  { label: '详情编辑页', value: 'detail_editor' },
+];
+
+const analyticsModeOptions = [
+  { label: '列表分析', value: 'list_analysis' },
+  { label: 'BI 报表', value: 'bi_report' },
+  { label: '指标看板', value: 'metric_dashboard' },
+  { label: '驾驶舱', value: 'cockpit' },
 ];
 
 const fallbackRoles: RoleRecord[] = [
@@ -193,25 +228,25 @@ const fallbackApplications: AppRecord[] = [
 ];
 
 const fallbackForms: FormRecord[] = [
-  { id: 'device-health', name: '设备健康表单', code: 'device-health', entity: 'Device', source: 'equipment', status: 'published', owner: '设备团队', description: '设备状态、健康分、传感器摘要和维护动作。', fields: 8 },
-  { id: 'fault-prediction', name: '故障预测表单', code: 'fault-prediction', entity: 'Device', source: 'equipment_health', status: 'published', owner: '算法团队', description: '故障概率、风险等级、预测原因和处置建议。', fields: 10 },
-  { id: 'maintenance-order', name: '维修工单表单', code: 'maintenance-order', entity: 'WorkOrder', source: 'work_orders', status: 'published', owner: '维护团队', description: '维修工单的创建、派发、审批和关闭。', fields: 12 },
-  { id: 'alert-center', name: '告警表单', code: 'alert-center', entity: 'Alert', source: 'alerts', status: 'published', owner: '平台团队', description: '设备、质量、供应链告警统一处理。', fields: 7 },
-  { id: 'supplier-risk', name: '供应商风险表单', code: 'supplier-risk', entity: 'Supplier', source: 'suppliers', status: 'published', owner: '供应链团队', description: '供应商评分、交付风险和复核流程。', fields: 9 },
-  { id: 'quality-event', name: '质量事件表单', code: 'quality-event', entity: 'QualityEvent', source: 'defects', status: 'draft', owner: '质量团队', description: '缺陷、SPC、CAPA 和质量复核。', fields: 11 },
+  { id: "device-health", name: "\u4e1a\u52a1\u8868\u5355 1", code: "device-health", category: "interaction", mode: "detail_editor", structureLocked: true, entity: "Device", source: "equipment", status: "published", owner: "\u8bbe\u5907\u56e2\u961f", description: "\u7528\u4e8e\u4e1a\u52a1\u5f55\u5165\u548c\u8be6\u60c5\u7ef4\u62a4\u3002", fields: 8 },
+  { id: "fault-prediction", name: "\u5206\u6790\u62a5\u8868 1", code: "fault-prediction", category: "analytics", mode: "bi_report", structureLocked: true, entity: "Device", source: "equipment_health", status: "published", owner: "\u7b97\u6cd5\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u3001\u8d8b\u52bf\u548c\u62a5\u8868\u5206\u6790\u3002", fields: 10 },
+  { id: "maintenance-order", name: "\u6d41\u7a0b\u8868\u5355 1", code: "maintenance-order", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "WorkOrder", source: "work_orders", status: "published", owner: "\u7ef4\u62a4\u56e2\u961f", description: "\u7528\u4e8e\u5de5\u5355\u6d41\u8f6c\u548c\u4e1a\u52a1\u5904\u7406\u3002", fields: 12 },
+  { id: "alert-center", name: "\u4e1a\u52a1\u8868\u5355 2", code: "alert-center", category: "interaction", mode: "entry_form", structureLocked: true, entity: "Alert", source: "alerts", status: "published", owner: "\u5e73\u53f0\u56e2\u961f", description: "\u7528\u4e8e\u4e1a\u52a1\u5f55\u5165\u548c\u5904\u7406\u3002", fields: 7 },
+  { id: "supplier-risk", name: "\u6d41\u7a0b\u8868\u5355 2", code: "supplier-risk", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "Supplier", source: "suppliers", status: "published", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u98ce\u9669\u590d\u6838\u548c\u4e1a\u52a1\u6d41\u7a0b\u3002", fields: 9 },
+  { id: "quality-event", name: "\u6d41\u7a0b\u8868\u5355 3", code: "quality-event", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "QualityEvent", source: "defects", status: "draft", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u8d28\u91cf\u590d\u6838\u548c\u95ee\u9898\u6539\u8fdb\u3002", fields: 11 },
 ];
 
 const supplementalForms: FormRecord[] = [
-  { id: 'production-overview', name: '生产总览表单', code: 'production-overview', entity: 'ProductionOverview', source: 'dashboard_summary', status: 'published', owner: '生产团队', description: '生产节拍、产量、OEE、班次和异常汇总。', fields: 10 },
-  { id: 'line-status', name: '产线状态表单', code: 'line-status', entity: 'ProductionLine', source: 'production_lines', status: 'published', owner: '生产团队', description: '产线状态、负荷、计划达成和瓶颈分析。', fields: 9 },
-  { id: 'quality-overview', name: '质量总览表单', code: 'quality-overview', entity: 'QualityOverview', source: 'quality_metrics', status: 'published', owner: '质量团队', description: '良率、缺陷率、检验覆盖和过程能力总览。', fields: 8 },
-  { id: 'inspection-batch', name: '检验批次表单', code: 'inspection-batch', entity: 'Inspection', source: 'inspections', status: 'published', owner: '质量团队', description: '来料、过程、终检批次的登记和结果追踪。', fields: 12 },
-  { id: 'defect-analysis', name: '缺陷分析表单', code: 'defect-analysis', entity: 'Defect', source: 'defects', status: 'published', owner: '质量团队', description: '缺陷类型、严重度、根因、纠正措施和复发趋势。', fields: 11 },
-  { id: 'supply-overview', name: '供应链总览表单', code: 'supply-overview', entity: 'SupplyOverview', source: 'supply_summary', status: 'published', owner: '供应链团队', description: '交付、库存、风险和替代方案的综合视图。', fields: 8 },
-  { id: 'material-impact', name: '物料影响表单', code: 'material-impact', entity: 'Material', source: 'materials', status: 'published', owner: '供应链团队', description: '物料库存、安全库存、短缺风险和影响工单。', fields: 10 },
-  { id: 'risk-review', name: '风险复核表单', code: 'risk-review', entity: 'RiskReview', source: 'risk_reviews', status: 'draft', owner: '供应链团队', description: '高风险供应商、物料短缺和交付延迟的复核流程。', fields: 9 },
-  { id: 'customer-complaint', name: '客户投诉表单', code: 'customer-complaint', entity: 'CustomerComplaint', source: 'customer_complaints', status: 'draft', owner: '质量团队', description: '客户投诉、8D、根因和关闭确认。', fields: 13 },
-  { id: 'change-request', name: '工程变更表单', code: 'change-request', entity: 'EngineeringChange', source: 'engineering_changes', status: 'draft', owner: '工程团队', description: '工艺、物料、图纸和质量标准变更申请。', fields: 14 },
+  { id: "production-overview", name: "\u6307\u6807\u770b\u677f 1", code: "production-overview", category: "analytics", mode: "metric_dashboard", structureLocked: true, entity: "ProductionOverview", source: "dashboard_summary", status: "published", owner: "\u751f\u4ea7\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u76d1\u63a7\u548c\u770b\u677f\u5c55\u793a\u3002", fields: 10 },
+  { id: "line-status", name: "\u5217\u8868\u5206\u6790 1", code: "line-status", category: "analytics", mode: "list_analysis", structureLocked: true, entity: "ProductionLine", source: "production_lines", status: "published", owner: "\u751f\u4ea7\u56e2\u961f", description: "\u7528\u4e8e\u5217\u8868\u67e5\u8be2\u548c\u7ef4\u5ea6\u5206\u6790\u3002", fields: 9 },
+  { id: "quality-overview", name: "\u6307\u6807\u770b\u677f 2", code: "quality-overview", category: "analytics", mode: "metric_dashboard", structureLocked: true, entity: "QualityOverview", source: "quality_metrics", status: "published", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u76d1\u63a7\u548c\u770b\u677f\u5c55\u793a\u3002", fields: 8 },
+  { id: "inspection-batch", name: "\u4e1a\u52a1\u8868\u5355 3", code: "inspection-batch", category: "interaction", mode: "entry_form", structureLocked: true, entity: "Inspection", source: "inspections", status: "published", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u4e1a\u52a1\u5f55\u5165\u548c\u7ed3\u679c\u8ffd\u8e2a\u3002", fields: 12 },
+  { id: "defect-analysis", name: "\u5206\u6790\u62a5\u8868 2", code: "defect-analysis", category: "analytics", mode: "bi_report", structureLocked: true, entity: "Defect", source: "defects", status: "published", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u3001\u8d8b\u52bf\u548c\u62a5\u8868\u5206\u6790\u3002", fields: 11 },
+  { id: "supply-overview", name: "\u6307\u6807\u770b\u677f 3", code: "supply-overview", category: "analytics", mode: "metric_dashboard", structureLocked: true, entity: "SupplyOverview", source: "supply_summary", status: "published", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u76d1\u63a7\u548c\u770b\u677f\u5c55\u793a\u3002", fields: 8 },
+  { id: "material-impact", name: "\u5206\u6790\u62a5\u8868 3", code: "material-impact", category: "analytics", mode: "bi_report", structureLocked: true, entity: "Material", source: "materials", status: "published", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u3001\u8d8b\u52bf\u548c\u62a5\u8868\u5206\u6790\u3002", fields: 10 },
+  { id: "risk-review", name: "\u6d41\u7a0b\u8868\u5355 4", code: "risk-review", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "RiskReview", source: "risk_reviews", status: "draft", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u98ce\u9669\u590d\u6838\u548c\u4e1a\u52a1\u6d41\u7a0b\u3002", fields: 9 },
+  { id: "customer-complaint", name: "\u6d41\u7a0b\u8868\u5355 5", code: "customer-complaint", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "CustomerComplaint", source: "customer_complaints", status: "draft", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u5ba2\u6237\u6295\u8bc9\u548c\u95ee\u9898\u6539\u8fdb\u6d41\u7a0b\u3002", fields: 13 },
+  { id: "change-request", name: "\u6d41\u7a0b\u8868\u5355 6", code: "change-request", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "EngineeringChange", source: "engineering_changes", status: "draft", owner: "\u5de5\u7a0b\u56e2\u961f", description: "\u7528\u4e8e\u53d8\u66f4\u7533\u8bf7\u548c\u5ba1\u6279\u6d41\u7a0b\u3002", fields: 14 },
 ];
 
 const initialConfigs: AppFormConfig[] = [
@@ -293,43 +328,59 @@ const richMenusByApp: Record<number, MenuNode[]> = {
 
 const enhancedMenusByApp: Record<number, MenuNode[]> = {
   1: [
-    menuNode('prod-monitoring', '生产监控', undefined, [
-      menuNode('prod-overview', '生产总览', 'production-overview', undefined, true),
-      menuNode('prod-lines', '产线状态', 'line-status'),
-      menuNode('prod-device', '设备运行', 'device-health'),
+    menuNode("prod-monitoring", "\u751f\u4ea7\u76d1\u63a7", undefined, [
+      menuNode("prod-overview", "\u751f\u4ea7\u603b\u89c8\u770b\u677f", "production-overview", undefined, true),
+      menuNode("prod-lines", "\u4ea7\u7ebf\u72b6\u6001\u62a5\u8868", "line-status"),
+      menuNode("prod-device", "\u8bbe\u5907\u8fd0\u884c", "device-health"),
     ], true),
-    menuNode('prod-exceptions', '异常处理', undefined, [
-      menuNode('prod-alerts', '活动告警', 'alert-center'),
+    menuNode("prod-reports", "\u751f\u4ea7\u62a5\u8868", undefined, [
+      menuNode("prod-oee-report", "OEE \u8d8b\u52bf\u62a5\u8868", "production-overview"),
+      menuNode("prod-line-report", "\u4ea7\u7ebf\u8d1f\u8377\u5206\u6790", "line-status"),
+    ]),
+    menuNode("prod-exceptions", "\u5f02\u5e38\u5904\u7406", undefined, [
+      menuNode("prod-alerts", "\u6d3b\u52a8\u544a\u8b66", "alert-center"),
     ]),
   ],
   2: [
-    menuNode('pm-health-group', '健康与预测', undefined, [
-      menuNode('pm-health', '设备健康', 'device-health', undefined, true),
-      menuNode('pm-predict', '故障预测', 'fault-prediction'),
+    menuNode("pm-health-group", "\u5065\u5eb7\u4e0e\u9884\u6d4b", undefined, [
+      menuNode("pm-health", "\u8bbe\u5907\u5065\u5eb7", "device-health", undefined, true),
+      menuNode("pm-predict", "\u6545\u969c\u9884\u6d4b\u62a5\u8868", "fault-prediction"),
     ], true),
-    menuNode('pm-execution-group', '维护执行', undefined, [
-      menuNode('pm-orders', '维修工单', 'maintenance-order'),
-      menuNode('pm-alerts', '告警中心', 'alert-center'),
+    menuNode("pm-report-group", "\u7ef4\u62a4\u62a5\u8868", undefined, [
+      menuNode("pm-failure-trend", "\u6545\u969c\u8d8b\u52bf\u5206\u6790", "fault-prediction"),
+      menuNode("pm-health-dashboard", "\u8bbe\u5907\u5065\u5eb7\u770b\u677f", "device-health"),
+    ]),
+    menuNode("pm-execution-group", "\u7ef4\u62a4\u6267\u884c", undefined, [
+      menuNode("pm-orders", "\u7ef4\u4fee\u5de5\u5355", "maintenance-order"),
+      menuNode("pm-alerts", "\u544a\u8b66\u4e2d\u5fc3", "alert-center"),
     ]),
   ],
   3: [
-    menuNode('quality-control-group', '质量监控', undefined, [
-      menuNode('quality-overview', '质量总览', 'quality-overview', undefined, true),
-      menuNode('quality-inspection', '检验批次', 'inspection-batch'),
+    menuNode("quality-control-group", "\u8d28\u91cf\u76d1\u63a7", undefined, [
+      menuNode("quality-overview", "\u8d28\u91cf\u603b\u89c8\u770b\u677f", "quality-overview", undefined, true),
+      menuNode("quality-inspection", "\u68c0\u9a8c\u6279\u6b21", "inspection-batch"),
     ], true),
-    menuNode('quality-improve-group', '问题改进', undefined, [
-      menuNode('quality-defect', '缺陷分析', 'defect-analysis'),
-      menuNode('quality-capa', 'CAPA 跟踪', 'quality-event'),
+    menuNode("quality-report-group", "\u8d28\u91cf\u62a5\u8868", undefined, [
+      menuNode("quality-defect-report", "\u7f3a\u9677\u5206\u6790\u62a5\u8868", "defect-analysis"),
+      menuNode("quality-capability-report", "\u8fc7\u7a0b\u80fd\u529b\u770b\u677f", "quality-overview"),
+    ]),
+    menuNode("quality-improve-group", "\u95ee\u9898\u6539\u8fdb", undefined, [
+      menuNode("quality-defect", "\u7f3a\u9677\u5206\u6790", "defect-analysis"),
+      menuNode("quality-capa", "CAPA \u8ddf\u8e2a", "quality-event"),
     ]),
   ],
   4: [
-    menuNode('supply-risk-group', '风险监控', undefined, [
-      menuNode('supply-overview', '风险总览', 'supply-overview', undefined, true),
-      menuNode('supply-risk', '供应商风险', 'supplier-risk'),
+    menuNode("supply-risk-group", "\u98ce\u9669\u76d1\u63a7", undefined, [
+      menuNode("supply-overview", "\u98ce\u9669\u603b\u89c8\u770b\u677f", "supply-overview", undefined, true),
+      menuNode("supply-risk", "\u4f9b\u5e94\u5546\u98ce\u9669", "supplier-risk"),
     ], true),
-    menuNode('supply-impact-group', '影响与复核', undefined, [
-      menuNode('supply-material', '物料影响', 'material-impact'),
-      menuNode('supply-review', '风险复核', 'risk-review'),
+    menuNode("supply-report-group", "\u4f9b\u5e94\u94fe\u62a5\u8868", undefined, [
+      menuNode("supply-material-report", "\u7269\u6599\u5f71\u54cd\u62a5\u8868", "material-impact"),
+      menuNode("supply-risk-dashboard", "\u4f9b\u5e94\u98ce\u9669\u770b\u677f", "supply-overview"),
+    ]),
+    menuNode("supply-impact-group", "\u5f71\u54cd\u4e0e\u590d\u6838", undefined, [
+      menuNode("supply-material", "\u7269\u6599\u5f71\u54cd", "material-impact"),
+      menuNode("supply-review", "\u98ce\u9669\u590d\u6838", "risk-review"),
     ]),
   ],
 };
@@ -355,6 +406,30 @@ function renderIcon(name?: string) {
   return iconMap[name || ''] || <AppstoreOutlined />;
 }
 
+function serializeMenuNodes(nodes: MenuNode[]): SavedAssemblyMenuNode[] {
+  return nodes.map((node) => ({
+    key: node.key,
+    label: getMenuLabel(node),
+    formId: node.formId,
+    visible: node.visible,
+    defaultEntry: node.defaultEntry,
+    children: node.children?.length ? serializeMenuNodes(node.children) : undefined,
+  }));
+}
+
+function restoreMenuNodes(nodes: SavedAssemblyMenuNode[]): MenuNode[] {
+  return nodes.map((node) => ({
+    ...menuNode(
+      node.key,
+      node.label,
+      node.formId,
+      node.children?.length ? restoreMenuNodes(node.children) : undefined,
+      node.defaultEntry,
+    ),
+    visible: node.visible ?? true,
+  }));
+}
+
 export default function AppMenuManagement() {
   const [appForm] = Form.useForm();
   const [formForm] = Form.useForm();
@@ -369,6 +444,24 @@ export default function AppMenuManagement() {
   const [selectedMenuKey, setSelectedMenuKey] = useState('pm-health');
   const [appDrawerOpen, setAppDrawerOpen] = useState(false);
   const [formDrawerOpen, setFormDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const stored = loadAssemblyMenus();
+    if (!Object.keys(stored).length) return;
+    setMenusByApp((prev) => {
+      const restored = Object.fromEntries(
+        Object.entries(stored).map(([appId, nodes]) => [Number(appId), restoreMenuNodes(nodes)]),
+      );
+      return { ...prev, ...restored };
+    });
+  }, []);
+
+  useEffect(() => {
+    const serializable = Object.fromEntries(
+      Object.entries(menusByApp).map(([appId, nodes]) => [Number(appId), serializeMenuNodes(nodes)]),
+    );
+    saveAssemblyMenus(serializable);
+  }, [menusByApp]);
 
   const selectedApp = applications.find((item) => item.id === selectedAppId) ?? applications[0];
   const selectedForm = forms.find((item) => item.id === selectedFormId) ?? forms[0];
@@ -408,7 +501,12 @@ export default function AppMenuManagement() {
   }, [appForm, selectedApp]);
 
   useEffect(() => {
-    formForm.setFieldsValue(selectedForm);
+    formForm.setFieldsValue({
+      category: 'interaction',
+      mode: 'entry_form',
+      structureLocked: selectedForm?.status !== 'draft',
+      ...selectedForm,
+    });
   }, [formForm, selectedForm]);
 
   useEffect(() => {
@@ -446,8 +544,9 @@ export default function AppMenuManagement() {
 
   const saveForm = async () => {
     const values = await formForm.validateFields();
-    setForms((prev) => prev.map((item) => (item.id === selectedForm.id ? { ...item, ...values } : item)));
-    message.success('表单配置已保存');
+    setForms((prev) => prev.map((item) => (item.id === selectedForm.id ? { ...item, ...values, structureLocked: true } : item)));
+    formForm.setFieldValue('structureLocked', true);
+    message.success('\u8868\u5355\u914d\u7f6e\u5df2\u4fdd\u5b58\uff0c\u7c7b\u578b\u3001\u6a21\u5f0f\u3001\u7f16\u7801\u548c\u6570\u636e\u6765\u6e90\u5df2\u9501\u5b9a');
   };
 
   const createDraftApp = () => {
@@ -520,18 +619,22 @@ export default function AppMenuManagement() {
     const nextId = `form-${Date.now()}`;
     const nextForm: FormRecord = {
       id: nextId,
-      name: '新建表单',
+      name: '\u65b0\u5efa\u4e1a\u52a1\u8868\u5355',
       code: nextId,
+      category: 'interaction',
+      mode: 'entry_form',
+      structureLocked: false,
       entity: 'NewEntity',
       source: 'generated_table',
       status: 'draft',
-      owner: '平台团队',
-      description: '待配置的表单草稿',
+      owner: '\u7cfb\u7edf\u7ba1\u7406\u5458',
+      description: '\u7528\u4e8e\u5f55\u5165\u3001\u7f16\u8f91\u3001\u5ba1\u6279\u548c\u914d\u7f6e\u4e1a\u52a1\u6570\u636e\u7684\u8349\u7a3f\u3002',
       fields: 0,
     };
     setForms((prev) => [nextForm, ...prev]);
     setSelectedFormId(nextId);
-    message.success('已创建表单草稿');
+    formForm.setFieldsValue(nextForm);
+    message.success('\u5df2\u521b\u5efa\u8868\u5355\u8349\u7a3f\uff0c\u53ef\u5728\u7c7b\u578b\u5b57\u6bb5\u4e2d\u9009\u62e9\u4e1a\u52a1\u4ea4\u4e92\u7c7b\u6216\u5206\u6790\u5c55\u793a\u7c7b');
   };
 
   const updateSelectedFormStatus = (status: FormRecord['status']) => {
@@ -541,7 +644,7 @@ export default function AppMenuManagement() {
 
   const publishSelectedForm = async () => {
     await saveForm();
-    if ((selectedForm.fields ?? 0) <= 0) {
+    if ((selectedForm.category ?? 'interaction') === 'interaction' && (selectedForm.fields ?? 0) <= 0) {
       message.warning('表单需要至少一个字段才能发布');
       return;
     }
@@ -817,7 +920,7 @@ function AppManagementPanel({
 
   return (
     <Row gutter={[16, 16]} className="config-management-grid">
-      <Col xs={24} lg={7} xl={6}>
+      <Col xs={24} lg={6} xl={5}>
         <Card
           title="应用列表"
           className="config-list-card"
@@ -827,7 +930,7 @@ function AppManagementPanel({
             dataSource={apps}
             renderItem={(app) => (
               <List.Item
-                className={`admin-config-list-item ${app.id === selectedAppId ? 'active' : ''}`}
+                className={`admin-app-list-item ${app.id === selectedAppId ? 'active' : ''}`}
                 onClick={() => onSelect(app.id)}
               >
                 <span className="application-icon">{renderIcon(app.icon)}</span>
@@ -844,11 +947,18 @@ function AppManagementPanel({
           />
         </Card>
       </Col>
-      <Col xs={24} lg={17} xl={18}>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Col xs={24} lg={18} xl={19}>
+        <Space direction="vertical" size={16} className="config-editor-stack">
           <Card
             className="config-editor-card"
-            title="应用基础信息"
+            {...{
+              title: (
+                <div className="config-editor-title">
+                  <span>{watchedName || selected?.name || '-'}</span>
+                  <small>{statusText(status)} · {watchedDescription || selected?.code || '-'}</small>
+                </div>
+              ),
+            }}
             extra={(
               <LifecycleActions
                 status={status}
@@ -921,11 +1031,17 @@ function FormManagementPanel({
 }) {
   const selected = forms.find((item) => item.id === selectedFormId) ?? forms[0];
   const status = Form.useWatch('status', form) ?? selected?.status;
+  const watchedName = Form.useWatch('name', form) ?? selected?.name;
+  const watchedEntity = Form.useWatch('entity', form) ?? selected?.entity;
+  const watchedSource = Form.useWatch('source', form) ?? selected?.source;
+  const category = Form.useWatch('category', form) ?? selected?.category ?? 'interaction';
+  const isAnalytics = category === 'analytics';
   const fields = useMemo(() => buildFieldRows(selected), [selected]);
+  const metrics = useMemo(() => buildMetricRows(selected), [selected]);
 
   return (
     <Row gutter={[16, 16]} className="config-management-grid">
-      <Col xs={24} lg={7} xl={6}>
+      <Col xs={24} lg={6} xl={5}>
         <Card
           title="表单列表"
           className="config-list-card"
@@ -935,28 +1051,28 @@ function FormManagementPanel({
             dataSource={forms}
             renderItem={(item) => (
               <List.Item
-                className={`admin-config-list-item ${item.id === selectedFormId ? 'active' : ''}`}
+                className={`admin-app-list-item ${item.id === selectedFormId ? 'active' : ''}`}
                 onClick={() => onSelect(item.id)}
               >
                 <span className="application-icon"><FormOutlined /></span>
                 <div>
                   <strong>{item.name}</strong>
-                  <small>{item.entity} / {item.source}</small>
-                  <Space size={4} wrap>
-                    <Tag>{item.fields} fields</Tag>
-                    <Tag color={statusColor(item.status)}>{statusText(item.status)}</Tag>
-                  </Space>
                 </div>
               </List.Item>
             )}
           />
         </Card>
       </Col>
-      <Col xs={24} lg={17} xl={18}>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Col xs={24} lg={18} xl={19}>
+        <Space direction="vertical" size={16} className="config-editor-stack">
           <Card
             className="config-editor-card"
-            title="表单基础信息"
+            title={(
+              <div className="config-editor-title">
+                <span>{watchedName || selected?.name || '-'}</span>
+                <small>{statusText(status)} {'\u00b7'} {isAnalytics ? '\u5206\u6790\u5c55\u793a\u7c7b' : '\u4e1a\u52a1\u4ea4\u4e92\u7c7b'} {'\u00b7'} {watchedEntity || selected?.entity || '-'} / {watchedSource || selected?.source || '-'}</small>
+              </div>
+            )}
             extra={(
               <LifecycleActions
                 status={status}
@@ -974,38 +1090,62 @@ function FormManagementPanel({
 
           <Card
             className="config-editor-card"
-            title="字段结构"
+            title={isAnalytics ? '数据集与指标' : '字段结构'}
             extra={(
               <Space>
-                <Button size="small" icon={<BranchesOutlined />}>同步字段</Button>
-                <Button size="small" icon={<PlusOutlined />}>新增字段</Button>
-                <Button size="small" icon={<FormOutlined />}>进入表单设计</Button>
+                <Button size="small" icon={<BranchesOutlined />}>{isAnalytics ? '选择数据源' : '同步字段'}</Button>
+                <Button size="small" icon={<PlusOutlined />}>{isAnalytics ? '新增指标' : '新增字段'}</Button>
+                <Button size="small" icon={isAnalytics ? <BarChartOutlined /> : <FormOutlined />}>
+                  {isAnalytics ? '进入报表设计' : '进入表单设计'}
+                </Button>
               </Space>
             )}
           >
-            <Table<FieldRecord>
-              rowKey="id"
-              size="small"
-              pagination={false}
-              dataSource={fields}
-              scroll={{ x: 980 }}
-              columns={[
-                { title: '字段名', dataIndex: 'label', fixed: 'left', width: 140 },
-                { title: '编码', dataIndex: 'code', width: 130 },
-                { title: '列名', dataIndex: 'columnName', width: 130 },
-                { title: '类型', dataIndex: 'dataType', width: 100 },
-                { title: '长度', dataIndex: 'length', width: 90 },
-                { title: '允许为空', dataIndex: 'allowNull', width: 90, render: boolTag },
-                { title: '唯一', dataIndex: 'unique', width: 70, render: boolTag },
-                { title: '索引', dataIndex: 'indexed', width: 70, render: boolTag },
-                { title: '组件', dataIndex: 'component', width: 110 },
-                { title: '列表', dataIndex: 'list', width: 70, render: boolTag },
-                { title: '表单', dataIndex: 'form', width: 70, render: boolTag },
-                { title: '搜索', dataIndex: 'search', width: 70, render: boolTag },
-              ]}
-            />
+            {isAnalytics ? (
+              <Table<MetricRecord>
+                rowKey="id"
+                size="small"
+                pagination={false}
+                dataSource={metrics}
+                scroll={{ x: 980 }}
+                columns={[
+                  { title: '名称', dataIndex: 'name', fixed: 'left', width: 140 },
+                  { title: '类型', dataIndex: 'role', width: 110 },
+                  { title: '来源字段', dataIndex: 'sourceField', width: 130 },
+                  { title: '聚合方式', dataIndex: 'aggregation', width: 100 },
+                  { title: '维度粒度', dataIndex: 'granularity', width: 100 },
+                  { title: '默认筛选', dataIndex: 'defaultFilter', width: 140 },
+                  { title: '图表角色', dataIndex: 'chartRole', width: 100 },
+                  { title: '钻取', dataIndex: 'drilldown', width: 130 },
+                ]}
+              />
+            ) : (
+              <Table<FieldRecord>
+                rowKey="id"
+                size="small"
+                pagination={false}
+                dataSource={fields}
+                scroll={{ x: 980 }}
+                columns={[
+                  { title: '字段名', dataIndex: 'label', fixed: 'left', width: 140 },
+                  { title: '编码', dataIndex: 'code', width: 130 },
+                  { title: '列名', dataIndex: 'columnName', width: 130 },
+                  { title: '类型', dataIndex: 'dataType', width: 100 },
+                  { title: '长度', dataIndex: 'length', width: 90 },
+                  { title: '允许为空', dataIndex: 'allowNull', width: 90, render: boolTag },
+                  { title: '唯一', dataIndex: 'unique', width: 70, render: boolTag },
+                  { title: '索引', dataIndex: 'indexed', width: 70, render: boolTag },
+                  { title: '组件', dataIndex: 'component', width: 110 },
+                  { title: '列表', dataIndex: 'list', width: 70, render: boolTag },
+                  { title: '表单', dataIndex: 'form', width: 70, render: boolTag },
+                  { title: '搜索', dataIndex: 'search', width: 70, render: boolTag },
+                ]}
+              />
+            )}
             <div className="database-impact-note">
-              发布表单时再确认建表、字段、索引、唯一约束和可空性变化；保存草稿只保存元数据。
+              {isAnalytics
+                ? '分析展示类保存的是数据源、维度、指标、筛选器和图表映射，不直接创建数据库字段。'
+                : '业务交互类字段结构会影响数据表、字段类型、索引和默认的录入/列表/搜索配置。'}
             </div>
           </Card>
         </Space>
@@ -1154,7 +1294,6 @@ function FormManagement({
                   <strong>{form.name}</strong>
                   <small>{form.entity} / {form.source}</small>
                 </div>
-                <Tag>{form.fields} fields</Tag>
               </List.Item>
             )}
           />
@@ -1174,9 +1313,6 @@ function FormManagement({
             </Col>
             <Col xs={24} md={12}>
               <InfoBlock label="数据来源" value={selected.source} />
-            </Col>
-            <Col xs={24} md={12}>
-              <InfoBlock label="字段数量" value={`${selected.fields}`} />
             </Col>
             <Col xs={24} md={12}>
               <InfoBlock label="负责人" value={selected.owner} />
@@ -1271,7 +1407,7 @@ function AssemblyWorkspace({
         }}
         onMouseDown={() => setMouseDraggingFormId(form.id)}
       >
-        <FormOutlined className="assembly-row-icon" />
+        {form.category === 'analytics' ? <BarChartOutlined className="assembly-row-icon" /> : <FormOutlined className="assembly-row-icon" />}
         <Typography.Text strong ellipsis>{config?.alias ?? form.name}</Typography.Text>
       </div>
     );
@@ -1447,18 +1583,19 @@ function AssemblyWorkspace({
 
 function AppConfigForm({ form, roles }: { form: ReturnType<typeof Form.useForm>[0]; roles: RoleRecord[] }) {
   return (
-    <Form form={form} layout="vertical">
-      <Form.Item name="name" label="应用名称" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-      <Form.Item name="code" label="应用编码" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-      <Form.Item name="description" label="应用描述">
-        <Input.TextArea rows={3} />
-      </Form.Item>
+    <Form form={form} layout="vertical" className="app-config-form">
       <Row gutter={12}>
-        <Col span={12}>
+        <Col xs={24} md={10}>
+          <Form.Item name="name" label="应用名称" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={8}>
+          <Form.Item name="code" label="应用编码" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={6}>
           <Form.Item name="icon" label="应用图标">
             <Select
               optionLabelProp="label"
@@ -1476,35 +1613,46 @@ function AppConfigForm({ form, roles }: { form: ReturnType<typeof Form.useForm>[
             />
           </Form.Item>
         </Col>
-        <Col span={12}>
-          <Form.Item name="status" label="应用状态">
+      </Row>
+      <Row gutter={12}>
+        <Col xs={24} md={14}>
+          <Form.Item name="description" label="应用说明">
+            <Input.TextArea rows={2} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={10}>
+          <Form.Item name="default_route" label="默认入口">
+            <Input />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Row gutter={12}>
+        <Col xs={24} md={12}>
+          <Form.Item name="role_ids" label="可见角色">
+            <Select
+              mode="multiple"
+              options={roles.map((role) => ({ label: `${role.label} / ${role.name}`, value: role.id }))}
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={8} md={5}>
+          <Form.Item name="status" label="发布状态">
             <Select
               options={[
                 { label: '已发布', value: 'published' },
                 { label: '草稿', value: 'draft' },
-                { label: '停用', value: 'disabled' },
+                { label: '已停用', value: 'disabled' },
               ]}
             />
           </Form.Item>
         </Col>
-      </Row>
-      <Form.Item name="default_route" label="默认首页">
-        <Input />
-      </Form.Item>
-      <Form.Item name="role_ids" label="谁能看这个应用">
-        <Select
-          mode="multiple"
-          options={roles.map((role) => ({ label: `${role.label} / ${role.name}`, value: role.id }))}
-        />
-      </Form.Item>
-      <Row gutter={12}>
-        <Col span={12}>
+        <Col xs={12} sm={8} md={4}>
           <Form.Item name="sort_order" label="排序">
             <Input type="number" />
           </Form.Item>
         </Col>
-        <Col span={12}>
-          <Form.Item name="is_pinned" label="是否置顶" valuePropName="checked">
+        <Col xs={12} sm={8} md={3}>
+          <Form.Item name="is_pinned" label="置顶" valuePropName="checked">
             <Switch />
           </Form.Item>
         </Col>
@@ -1514,44 +1662,84 @@ function AppConfigForm({ form, roles }: { form: ReturnType<typeof Form.useForm>[
 }
 
 function FormConfigForm({ form }: { form: ReturnType<typeof Form.useForm>[0] }) {
+  const category = Form.useWatch('category', form) ?? 'interaction';
+  const structureLocked = Boolean(Form.useWatch('structureLocked', form));
+  const modeOptions = category === 'analytics' ? analyticsModeOptions : interactionModeOptions;
+
   return (
-    <Form form={form} layout="vertical">
-      <Form.Item name="name" label="表单名称" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-      <Form.Item name="code" label="表单编码" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-      <Form.Item name="entity" label="绑定本体对象">
-        <Input prefix={<NodeIndexOutlined />} />
-      </Form.Item>
-      <Form.Item name="source" label="数据来源">
-        <Input />
-      </Form.Item>
-      <Form.Item name="description" label="表单描述">
-        <Input.TextArea rows={3} />
+    <Form form={form} layout="vertical" className="form-config-form">
+      <Form.Item name="structureLocked" hidden valuePropName="checked">
+        <Switch />
       </Form.Item>
       <Row gutter={12}>
-        <Col span={12}>
-          <Form.Item name="owner" label="负责人">
+        <Col xs={24} md={8}>
+          <Form.Item name="name" label={'\u8868\u5355\u540d\u79f0'} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
         </Col>
-        <Col span={12}>
-          <Form.Item name="status" label="表单状态">
+        <Col xs={24} md={6}>
+          <Form.Item name="code" label={'\u8868\u5355\u7f16\u7801'} rules={[{ required: true }]}>
+            <Input disabled={structureLocked} />
+          </Form.Item>
+        </Col>
+        <Col xs={12} md={5}>
+          <Form.Item name="category" label={'\u7c7b\u578b'}>
             <Select
+              disabled={structureLocked}
+              onChange={(value) => {
+                form.setFieldValue('mode', value === 'analytics' ? 'bi_report' : 'entry_form');
+                form.setFieldValue('source', value === 'analytics' ? 'existing_dataset' : 'generated_table');
+                form.setFieldValue('entity', value === 'analytics' ? 'MetricDataset' : 'NewEntity');
+              }}
               options={[
-                { label: '已发布', value: 'published' },
-                { label: '草稿', value: 'draft' },
-                { label: '停用', value: 'disabled' },
+                { label: '\u4e1a\u52a1\u4ea4\u4e92\u7c7b', value: 'interaction' },
+                { label: '\u5206\u6790\u5c55\u793a\u7c7b', value: 'analytics' },
               ]}
             />
           </Form.Item>
         </Col>
+        <Col xs={12} md={5}>
+          <Form.Item name="mode" label={'\u6a21\u5f0f'}>
+            <Select disabled={structureLocked} options={modeOptions} />
+          </Form.Item>
+        </Col>
       </Row>
-      <Form.Item name="fields" label="字段数量">
-        <Input type="number" />
+      <Row gutter={12}>
+        <Col xs={24} md={8}>
+          <Form.Item name="entity" label={category === 'analytics' ? '\u5206\u6790\u5bf9\u8c61' : '\u6570\u636e\u5b9e\u4f53'}>
+            <Input disabled={structureLocked} prefix={<NodeIndexOutlined />} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={8}>
+          <Form.Item name="source" label={category === 'analytics' ? '\u6570\u636e\u96c6\u6765\u6e90' : '\u6570\u636e\u6765\u6e90'}>
+            <Input disabled={structureLocked} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={4}>
+          <Form.Item name="status" label={'\u53d1\u5e03\u72b6\u6001'}>
+            <Select
+              options={[
+                { label: '\u5df2\u53d1\u5e03', value: 'published' },
+                { label: '\u8349\u7a3f', value: 'draft' },
+                { label: '\u5df2\u505c\u7528', value: 'disabled' },
+              ]}
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={4}>
+          <Form.Item name="owner" label={'\u8d1f\u8d23\u4eba'}>
+            <Input />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Form.Item name="description" label={category === 'analytics' ? '\u5206\u6790\u8bf4\u660e' : '\u8868\u5355\u8bf4\u660e'}>
+        <Input.TextArea rows={2} />
       </Form.Item>
+      {structureLocked && (
+        <div className="structure-lock-note">
+          {'\u7c7b\u578b\u3001\u6a21\u5f0f\u3001\u7f16\u7801\u3001\u6570\u636e\u5b9e\u4f53\u548c\u6570\u636e\u6765\u6e90\u4f1a\u5f71\u54cd\u8bbe\u8ba1\u5668\u5206\u652f\u4e0e\u5e95\u5c42\u7ed3\u6784\uff0c\u4fdd\u5b58\u540e\u53ea\u80fd\u67e5\u770b\uff0c\u907f\u514d\u540e\u7eed\u914d\u7f6e\u5931\u6548\u3002'}
+        </div>
+      )}
     </Form>
   );
 }
@@ -1615,6 +1803,20 @@ function buildFieldRows(form?: FormRecord): FieldRecord[] {
   });
 }
 
+function buildMetricRows(form?: FormRecord): MetricRecord[] {
+  if (!form) return [];
+  const base = [
+    { name: '记录数量', role: '指标', sourceField: 'id', aggregation: 'count', granularity: '-', defaultFilter: '时间范围', chartRole: 'Y 轴', drilldown: '明细列表' },
+    { name: '状态分布', role: '维度', sourceField: 'status', aggregation: 'group by', granularity: '-', defaultFilter: '状态', chartRole: '系列', drilldown: '状态详情' },
+    { name: '时间趋势', role: '维度', sourceField: 'created_at', aggregation: 'date group', granularity: '月/周/日', defaultFilter: '最近 90 天', chartRole: 'X 轴', drilldown: '时间明细' },
+    { name: '负责人分布', role: '维度', sourceField: 'owner', aggregation: 'group by', granularity: '-', defaultFilter: '负责人', chartRole: '筛选器', drilldown: '负责人详情' },
+  ];
+  return base.map((item, index) => ({
+    id: `${form.id}-metric-${index + 1}`,
+    ...item,
+  }));
+}
+
 function statusText(status: string) {
   if (status === 'published') return '已发布';
   if (status === 'draft') return '草稿';
@@ -1630,6 +1832,9 @@ function mergeOntologyForms(forms: FormRecord[], ontologyObjects: any[]) {
       id: `${item.code ?? item.id}-form`,
       name: `${item.name ?? item.label}表单`,
       code: `${item.code ?? item.id}-form`,
+      category: 'interaction',
+      mode: 'entry_form',
+      structureLocked: true,
       entity: item.code ?? item.id,
       source: item.source ?? '-',
       status: 'draft',
