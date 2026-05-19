@@ -169,12 +169,39 @@ const fallbackForms: FormRecord[] = [
   { id: 'quality-event', name: '质量事件表单', code: 'quality-event', entity: 'QualityEvent', source: 'defects', status: 'draft', owner: '质量团队', description: '缺陷、SPC、CAPA 和质量复核。', fields: 11 },
 ];
 
+const supplementalForms: FormRecord[] = [
+  { id: 'production-overview', name: '生产总览表单', code: 'production-overview', entity: 'ProductionOverview', source: 'dashboard_summary', status: 'published', owner: '生产团队', description: '生产节拍、产量、OEE、班次和异常汇总。', fields: 10 },
+  { id: 'line-status', name: '产线状态表单', code: 'line-status', entity: 'ProductionLine', source: 'production_lines', status: 'published', owner: '生产团队', description: '产线状态、负荷、计划达成和瓶颈分析。', fields: 9 },
+  { id: 'quality-overview', name: '质量总览表单', code: 'quality-overview', entity: 'QualityOverview', source: 'quality_metrics', status: 'published', owner: '质量团队', description: '良率、缺陷率、检验覆盖和过程能力总览。', fields: 8 },
+  { id: 'inspection-batch', name: '检验批次表单', code: 'inspection-batch', entity: 'Inspection', source: 'inspections', status: 'published', owner: '质量团队', description: '来料、过程、终检批次的登记和结果追踪。', fields: 12 },
+  { id: 'defect-analysis', name: '缺陷分析表单', code: 'defect-analysis', entity: 'Defect', source: 'defects', status: 'published', owner: '质量团队', description: '缺陷类型、严重度、根因、纠正措施和复发趋势。', fields: 11 },
+  { id: 'supply-overview', name: '供应链总览表单', code: 'supply-overview', entity: 'SupplyOverview', source: 'supply_summary', status: 'published', owner: '供应链团队', description: '交付、库存、风险和替代方案的综合视图。', fields: 8 },
+  { id: 'material-impact', name: '物料影响表单', code: 'material-impact', entity: 'Material', source: 'materials', status: 'published', owner: '供应链团队', description: '物料库存、安全库存、短缺风险和影响工单。', fields: 10 },
+  { id: 'risk-review', name: '风险复核表单', code: 'risk-review', entity: 'RiskReview', source: 'risk_reviews', status: 'draft', owner: '供应链团队', description: '高风险供应商、物料短缺和交付延迟的复核流程。', fields: 9 },
+  { id: 'customer-complaint', name: '客户投诉表单', code: 'customer-complaint', entity: 'CustomerComplaint', source: 'customer_complaints', status: 'draft', owner: '质量团队', description: '客户投诉、8D、根因和关闭确认。', fields: 13 },
+  { id: 'change-request', name: '工程变更表单', code: 'change-request', entity: 'EngineeringChange', source: 'engineering_changes', status: 'draft', owner: '工程团队', description: '工艺、物料、图纸和质量标准变更申请。', fields: 14 },
+];
+
 const initialConfigs: AppFormConfig[] = [
   { appId: 2, formId: 'device-health', alias: '设备健康总览', enabled: true, defaultView: '列表 + 详情', dataScope: 'health_score < 95', allowCreate: false, allowEdit: true, allowExport: true },
   { appId: 2, formId: 'fault-prediction', alias: '故障预测', enabled: true, defaultView: '风险看板', dataScope: 'risk_level >= medium', allowCreate: false, allowEdit: false, allowExport: true },
   { appId: 2, formId: 'maintenance-order', alias: '工单管理', enabled: true, defaultView: '列表', dataScope: 'current_app', allowCreate: true, allowEdit: true, allowExport: true },
   { appId: 2, formId: 'alert-center', alias: '告警中心', enabled: true, defaultView: '列表', dataScope: 'source = maintenance', allowCreate: false, allowEdit: true, allowExport: false },
   { appId: 4, formId: 'supplier-risk', alias: '供应商风险', enabled: true, defaultView: '风险看板', dataScope: 'risk_score > 60', allowCreate: true, allowEdit: true, allowExport: true },
+];
+
+const supplementalConfigs: AppFormConfig[] = [
+  { appId: 1, formId: 'production-overview', alias: '生产总览表单', enabled: true, defaultView: 'KPI 看板', dataScope: 'factory = current', allowCreate: false, allowEdit: false, allowExport: true },
+  { appId: 1, formId: 'line-status', alias: '产线状态表单', enabled: true, defaultView: '看板 + 趋势', dataScope: 'line.status != offline', allowCreate: false, allowEdit: true, allowExport: true },
+  { appId: 1, formId: 'device-health', alias: '设备运行表单', enabled: true, defaultView: '列表 + 详情', dataScope: 'current_factory', allowCreate: false, allowEdit: false, allowExport: true },
+  { appId: 1, formId: 'alert-center', alias: '活动告警表单', enabled: true, defaultView: '告警列表', dataScope: 'source = production', allowCreate: false, allowEdit: true, allowExport: false },
+  { appId: 3, formId: 'quality-overview', alias: '质量总览表单', enabled: true, defaultView: '质量看板', dataScope: 'inspection_date >= this_month', allowCreate: false, allowEdit: false, allowExport: true },
+  { appId: 3, formId: 'inspection-batch', alias: '检验批次表单', enabled: true, defaultView: '批次列表', dataScope: 'current_app', allowCreate: true, allowEdit: true, allowExport: true },
+  { appId: 3, formId: 'defect-analysis', alias: '缺陷分析表单', enabled: true, defaultView: '图表 + 明细', dataScope: 'severity >= minor', allowCreate: true, allowEdit: true, allowExport: true },
+  { appId: 3, formId: 'quality-event', alias: 'CAPA 跟踪表单', enabled: true, defaultView: '流程列表', dataScope: 'status != closed', allowCreate: true, allowEdit: true, allowExport: true },
+  { appId: 4, formId: 'supply-overview', alias: '供应链总览表单', enabled: true, defaultView: '风险看板', dataScope: 'current_app', allowCreate: false, allowEdit: false, allowExport: true },
+  { appId: 4, formId: 'material-impact', alias: '物料影响表单', enabled: true, defaultView: '图谱 + 列表', dataScope: 'shortage_risk > low', allowCreate: false, allowEdit: true, allowExport: true },
+  { appId: 4, formId: 'risk-review', alias: '风险复核表单', enabled: true, defaultView: '流程列表', dataScope: 'review_status = pending', allowCreate: true, allowEdit: true, allowExport: true },
 ];
 
 const initialMenus: Record<number, MenuNode[]> = {
@@ -200,6 +227,34 @@ const initialMenus: Record<number, MenuNode[]> = {
   4: [
     menuNode('supply-root', '供应链风险', undefined, [
       menuNode('supply-risk', '供应商风险', 'supplier-risk', undefined, true),
+    ], true),
+  ],
+};
+
+const richMenusByApp: Record<number, MenuNode[]> = {
+  ...initialMenus,
+  1: [
+    menuNode('prod-root', '生产态势', undefined, [
+      menuNode('prod-overview', '生产总览', 'production-overview', undefined, true),
+      menuNode('prod-lines', '产线状态', 'line-status'),
+      menuNode('prod-device', '设备运行', 'device-health'),
+      menuNode('prod-alerts', '活动告警', 'alert-center'),
+    ], true),
+  ],
+  3: [
+    menuNode('quality-root', '质量分析', undefined, [
+      menuNode('quality-overview', '质量总览', 'quality-overview', undefined, true),
+      menuNode('quality-inspection', '检验批次', 'inspection-batch'),
+      menuNode('quality-defect', '缺陷分析', 'defect-analysis'),
+      menuNode('quality-capa', 'CAPA 跟踪', 'quality-event'),
+    ], true),
+  ],
+  4: [
+    menuNode('supply-root', '供应链风险', undefined, [
+      menuNode('supply-overview', '风险总览', 'supply-overview', undefined, true),
+      menuNode('supply-risk', '供应商风险', 'supplier-risk'),
+      menuNode('supply-material', '物料影响', 'material-impact'),
+      menuNode('supply-review', '风险复核', 'risk-review'),
     ], true),
   ],
 };
@@ -231,9 +286,9 @@ export default function AppMenuManagement() {
   const [menuForm] = Form.useForm();
   const [applications, setApplications] = useState<AppRecord[]>(fallbackApplications);
   const [roles, setRoles] = useState<RoleRecord[]>(fallbackRoles);
-  const [forms, setForms] = useState<FormRecord[]>(fallbackForms);
-  const [configs, setConfigs] = useState<AppFormConfig[]>(initialConfigs);
-  const [menusByApp, setMenusByApp] = useState<Record<number, MenuNode[]>>(initialMenus);
+  const [forms, setForms] = useState<FormRecord[]>([...fallbackForms, ...supplementalForms]);
+  const [configs, setConfigs] = useState<AppFormConfig[]>([...initialConfigs, ...supplementalConfigs]);
+  const [menusByApp, setMenusByApp] = useState<Record<number, MenuNode[]>>(richMenusByApp);
   const [selectedAppId, setSelectedAppId] = useState(2);
   const [selectedFormId, setSelectedFormId] = useState('device-health');
   const [selectedMenuKey, setSelectedMenuKey] = useState('pm-health');
@@ -624,6 +679,36 @@ function AssemblyWorkspace({
   onSaveMenu: () => void;
 }) {
   const selectedApp = apps.find((item) => item.id === selectedAppId) ?? apps[0];
+  const currentAppForms = forms.filter((form) => boundFormIds.has(form.id));
+  const otherForms = forms.filter((form) => !boundFormIds.has(form.id));
+
+  const renderFormCard = (form: FormRecord) => {
+    const config = configs.find((item) => item.formId === form.id);
+    const bound = boundFormIds.has(form.id);
+    return (
+      <div className={`assembly-form-card ${bound ? 'bound' : ''}`} key={form.id}>
+        <div>
+          <Space wrap>
+            <Typography.Text strong>{config?.alias ?? form.name}</Typography.Text>
+            <Tag>{form.entity}</Tag>
+            <Tag color={bound ? 'success' : 'default'}>{bound ? '已绑定' : '未绑定'}</Tag>
+          </Space>
+          <Typography.Text type="secondary">{form.description}</Typography.Text>
+          {config && (
+            <div className="assembly-config-line">
+              <span>{config.defaultView}</span>
+              <span>{config.dataScope}</span>
+            </div>
+          )}
+        </div>
+        <Space>
+          <Button size="small" onClick={() => onToggleBinding(form.id)}>{bound ? '解绑' : '绑定'}</Button>
+          <Button size="small" onClick={() => onAddFormToMenu(form)}>加入菜单</Button>
+          <Button size="small" onClick={() => onOpenFormConfig(form.id)}>配置</Button>
+        </Space>
+      </div>
+    );
+  };
 
   return (
     <div className="app-assembly-workspace">
@@ -640,8 +725,8 @@ function AssemblyWorkspace({
         </Space>
       </section>
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} xl={6}>
+      <Row gutter={[16, 16]} className="assembly-grid">
+        <Col xs={24} xl={5}>
           <Card title="应用" className="assembly-column-card">
             <List
               dataSource={apps}
@@ -661,10 +746,14 @@ function AssemblyWorkspace({
           </Card>
         </Col>
 
-        <Col xs={24} xl={8}>
+        <Col xs={24} xl={7}>
           <Card title="表单" className="assembly-column-card" extra={<Tag>{configs.length} 已绑定</Tag>}>
             <div className="assembly-form-list">
-              {forms.map((form) => {
+              <div className="assembly-form-section-title">当前应用表单</div>
+              {currentAppForms.map(renderFormCard)}
+              <div className="assembly-form-section-title">其他可用表单</div>
+              {otherForms.map(renderFormCard)}
+              {false && forms.map((form) => {
                 const config = configs.find((item) => item.formId === form.id);
                 const bound = boundFormIds.has(form.id);
                 return (
@@ -695,9 +784,7 @@ function AssemblyWorkspace({
           </Card>
         </Col>
 
-        <Col xs={24} xl={10}>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} lg={14}>
+        <Col xs={24} xl={6}>
               <Card
                 title={<Space><MenuOutlined />菜单结构</Space>}
                 className="assembly-menu-card"
@@ -717,8 +804,8 @@ function AssemblyWorkspace({
                   <Empty description="把中间表单加到菜单结构里" />
                 )}
               </Card>
-            </Col>
-            <Col xs={24} lg={10}>
+        </Col>
+        <Col xs={24} xl={6}>
               <Card title="菜单节点属性" className="assembly-property-card">
                 {selectedMenu ? (
                   <Form form={menuForm} layout="vertical" size="small">
@@ -749,8 +836,6 @@ function AssemblyWorkspace({
                   <Empty description="请选择菜单节点" />
                 )}
               </Card>
-            </Col>
-          </Row>
         </Col>
       </Row>
     </div>

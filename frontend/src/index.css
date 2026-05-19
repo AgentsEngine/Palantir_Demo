@@ -1517,6 +1517,26 @@ button {
   border-radius: 6px;
 }
 
+.assembly-grid > .ant-col {
+  display: flex;
+}
+
+.assembly-grid > .ant-col > .ant-card {
+  width: 100%;
+}
+
+.assembly-form-section-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 6px 2px 4px;
+  color: var(--mf-text-secondary);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
 .assembly-form-list {
   display: flex;
   flex-direction: column;

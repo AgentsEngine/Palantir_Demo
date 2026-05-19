@@ -114,6 +114,41 @@ const fallbackMenusByApplication: Record<number, DynamicMenu[]> = {
   4: [{ id: 1004, parent_id: null, title: '供应链风险', icon: 'ShopOutlined', route_path: '/supply-chain', is_visible: true }],
 };
 
+const richFallbackMenusByApplication: Record<number, DynamicMenu[]> = {
+  1: [
+    { id: 1100, parent_id: null, title: '生产态势', icon: 'DashboardOutlined', route_path: '/dashboard', is_visible: true, children: [
+      { id: 1101, parent_id: 1100, title: '生产总览', icon: 'DashboardOutlined', route_path: '/dashboard?view=overview', is_visible: true },
+      { id: 1102, parent_id: 1100, title: '产线状态', icon: 'DashboardOutlined', route_path: '/dashboard?view=lines', is_visible: true },
+      { id: 1103, parent_id: 1100, title: '设备运行', icon: 'ToolOutlined', route_path: '/dashboard?view=equipment', is_visible: true },
+      { id: 1104, parent_id: 1100, title: '活动告警', icon: 'SafetyCertificateOutlined', route_path: '/dashboard?view=alerts', is_visible: true },
+    ] },
+  ],
+  2: [
+    { id: 1200, parent_id: null, title: '预测性维护', icon: 'ToolOutlined', route_path: '/maintenance', is_visible: true, children: [
+      { id: 1201, parent_id: 1200, title: '设备健康', icon: 'ToolOutlined', route_path: '/maintenance?view=health', is_visible: true },
+      { id: 1202, parent_id: 1200, title: '故障预测', icon: 'ToolOutlined', route_path: '/maintenance?view=prediction', is_visible: true },
+      { id: 1203, parent_id: 1200, title: '维修工单', icon: 'AppstoreOutlined', route_path: '/maintenance?view=work-orders', is_visible: true },
+      { id: 1204, parent_id: 1200, title: '告警中心', icon: 'SafetyCertificateOutlined', route_path: '/maintenance?view=alerts', is_visible: true },
+    ] },
+  ],
+  3: [
+    { id: 1300, parent_id: null, title: '质量分析', icon: 'SafetyCertificateOutlined', route_path: '/quality', is_visible: true, children: [
+      { id: 1301, parent_id: 1300, title: '质量总览', icon: 'SafetyCertificateOutlined', route_path: '/quality?view=overview', is_visible: true },
+      { id: 1302, parent_id: 1300, title: '检验批次', icon: 'SafetyCertificateOutlined', route_path: '/quality?view=inspections', is_visible: true },
+      { id: 1303, parent_id: 1300, title: '缺陷分析', icon: 'SafetyCertificateOutlined', route_path: '/quality?view=defects', is_visible: true },
+      { id: 1304, parent_id: 1300, title: 'CAPA 跟踪', icon: 'AppstoreOutlined', route_path: '/quality?view=capa', is_visible: true },
+    ] },
+  ],
+  4: [
+    { id: 1400, parent_id: null, title: '供应链风险', icon: 'ShopOutlined', route_path: '/supply-chain', is_visible: true, children: [
+      { id: 1401, parent_id: 1400, title: '风险总览', icon: 'ShopOutlined', route_path: '/supply-chain?view=overview', is_visible: true },
+      { id: 1402, parent_id: 1400, title: '供应商风险', icon: 'ShopOutlined', route_path: '/supply-chain?view=suppliers', is_visible: true },
+      { id: 1403, parent_id: 1400, title: '物料影响', icon: 'AppstoreOutlined', route_path: '/supply-chain?view=materials', is_visible: true },
+      { id: 1404, parent_id: 1400, title: '风险复核', icon: 'SafetyCertificateOutlined', route_path: '/supply-chain?view=review', is_visible: true },
+    ] },
+  ],
+};
+
 const pageTitleMap: Record<string, string> = {
   '/': '我的工作台',
   '/dashboard': '生产态势',
@@ -264,11 +299,12 @@ function AppContent() {
     listApplicationMenus(currentApplication.id)
       .then((res) => {
         const apiItems = res.data?.data || [];
-        const items = (apiItems.length ? apiItems : (fallbackMenusByApplication[currentApplication.id] || []))
+        const localItems = richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || [];
+        const items = (apiItems.length > 1 || apiItems.some((item: DynamicMenu) => item.children?.length) ? apiItems : localItems)
           .filter((m: DynamicMenu) => m.is_visible !== false);
         setDynamicMenus(buildDynamicMenuTree(items));
       })
-      .catch(() => setDynamicMenus(buildDynamicMenuTree(fallbackMenusByApplication[currentApplication.id] || [])));
+      .catch(() => setDynamicMenus(buildDynamicMenuTree(richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || [])));
   }, [currentApplication]);
 
   const loadNotifications = useCallback(() => {
@@ -291,6 +327,11 @@ function AppContent() {
   const allMenuItems = useMemo<MenuProps['items']>(() => {
     return dynamicMenus?.length ? dynamicMenus : businessMenuItems;
   }, [dynamicMenus]);
+  const openMenuKeys = useMemo(() => {
+    return (allMenuItems || [])
+      .map((item) => (item && 'key' in item ? String(item.key) : ''))
+      .filter(Boolean);
+  }, [allMenuItems]);
 
   const studioTarget = location.pathname === '/model-driven'
     ? decodeURIComponent(new URLSearchParams(location.search).get('target') || '')
@@ -466,9 +507,11 @@ function AppContent() {
           )}
         </div>
         <Menu
+          key={`menu-${currentApplication?.id || 'default'}-${openMenuKeys.join('|')}-${collapsed ? 'collapsed' : 'open'}`}
           className="app-menu"
           mode="inline"
           selectedKeys={[selectedKey]}
+          defaultOpenKeys={collapsed ? [] : openMenuKeys}
           items={allMenuItems}
           onClick={({ key }) => navigate(String(key))}
         />
