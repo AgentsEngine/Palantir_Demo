@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ApartmentOutlined,
   BarChartOutlined,
-  CheckCircleOutlined,
   DashboardOutlined,
   DatabaseOutlined,
   EyeOutlined,
@@ -96,6 +95,26 @@ const defaultPermissions: PermissionRow[] = [
 ];
 
 const pageSchemas: Record<string, PageSchema> = {
+  '/': {
+    title: '我的工作台',
+    description: '对应个人工作台：首页汇总可配置表单、数据资产、配置能力地图和平台状态。',
+    layout: '指标区 + 配置列表 + 能力地图 + 平台状态',
+    components: [
+      component('configurable-forms', '可配置表单', 'metric', 'workspace.forms', '工作台指标', '展示可配置业务表单数量', 'quarter'),
+      component('draft-apps', '草稿应用', 'metric', 'workspace.drafts', '工作台指标', '展示待发布配置数量', 'quarter'),
+      component('data-assets', '数据资产', 'metric', 'workspace.assets', '工作台指标', '展示已接入数据资产', 'quarter'),
+      component('workflow-tasks', '流程任务', 'metric', 'workspace.tasks', '工作台指标', '展示待处理流程任务', 'quarter'),
+      component('form-config-list', '表单级低代码配置', 'table', 'workspace.form_configs', '配置入口', '展示设备、质量、供应链、工单等表单配置入口', 'full'),
+      component('capability-map', '配置能力地图', 'panel', 'workspace.capabilities', '能力地图', '展示表单设计、数据模型、分析页面、流程权限', 'full'),
+      component('platform-signals', '平台状态', 'panel', 'workspace.platform_signals', '平台状态', '展示发布率、同步状态、告警和审批配置', 'half'),
+    ],
+    flows: [
+      flow('open', '打开工作台', '业务用户', 'active', '用户登录后进入首页'),
+      flow('configure', '进入配置', '管理员', 'draft', '从工作台或页面设置进入配置态'),
+      flow('publish', '发布配置', '管理员', 'draft', '配置通过后发布给对应角色'),
+    ],
+    permissions: defaultPermissions,
+  },
   '/maintenance': {
     title: '预测性维护',
     description: '对应设备维护页面：四个健康指标卡、设备健康总览、健康分析、故障预测和工单管理。',
@@ -223,17 +242,12 @@ export default function AppBuilder() {
   const [components, setComponents] = useState<PageComponent[]>(schema.components);
   const [selectedId, setSelectedId] = useState(schema.components[0]?.id ?? '');
 
-  const selected = components.find((item) => item.id === selectedId) ?? components[0];
+  useEffect(() => {
+    setComponents(schema.components);
+    setSelectedId(schema.components[0]?.id ?? '');
+  }, [schema, targetPage]);
 
-  const studioSchema = useMemo(() => ({
-    page: targetPage,
-    title: schema.title,
-    layout: schema.layout,
-    components,
-    workflow: schema.flows,
-    permissions: schema.permissions,
-    version: 'draft',
-  }), [components, schema, targetPage]);
+  const selected = components.find((item) => item.id === selectedId) ?? components[0];
 
   const updateSelected = (patch: Partial<PageComponent>) => {
     if (!selected) return;
@@ -271,7 +285,6 @@ export default function AppBuilder() {
     <div className="app-builder-page form-studio-page">
       <section className="builder-header form-studio-header">
         <div>
-          <Tag className="system-tag">Form Studio</Tag>
           <Typography.Title level={3}>{schema.title}配置</Typography.Title>
           <Typography.Paragraph>
             正在配置：{targetPage}。{schema.description}
@@ -292,10 +305,6 @@ export default function AppBuilder() {
 
       <Card className="studio-tabs-card">
         <Tabs defaultActiveKey="form" items={tabs} />
-      </Card>
-
-      <Card className="schema-card" title="配置 Schema / Runtime Contract">
-        <pre>{JSON.stringify(studioSchema, null, 2)}</pre>
       </Card>
     </div>
   );

@@ -12,7 +12,6 @@ import {
   Modal,
   Space,
   Spin,
-  Tag,
   Typography,
   message,
 } from 'antd';
@@ -241,7 +240,7 @@ function AppContent() {
     : '';
   const selectedKey = studioTarget || location.pathname;
   const isStudioPage = location.pathname === '/model-driven';
-  const showRuntimePageBar = location.pathname !== '/' && !isStudioPage;
+  const showRuntimePageBar = !isStudioPage;
   const runtimeTitle = location.pathname.startsWith('/dynamic/')
     ? '动态业务表单'
     : pageTitleMap[location.pathname] || '业务页面';
@@ -436,7 +435,6 @@ function AppContent() {
             {showRuntimePageBar && (
               <div className="runtime-page-bar">
                 <div>
-                  <Tag className="system-tag">Runtime Page</Tag>
                   <Typography.Title level={3}>{runtimeTitle}</Typography.Title>
                 </div>
                 <Space wrap>

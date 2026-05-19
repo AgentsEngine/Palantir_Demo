@@ -1,7 +1,4 @@
 import {
-  ApartmentOutlined,
-  ApiOutlined,
-  AppstoreAddOutlined,
   BarChartOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -13,7 +10,6 @@ import {
   FormOutlined,
   LayoutOutlined,
   NodeIndexOutlined,
-  PlayCircleOutlined,
   RocketOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
@@ -21,13 +17,6 @@ import {
 } from '@ant-design/icons';
 import { Button, Card, Col, Progress, Row, Space, Tag, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
-
-const commandActions = [
-  { label: '新建分析应用', icon: <AppstoreAddOutlined />, path: '/model-driven', type: 'primary' as const },
-  { label: '配置业务表单', icon: <FormOutlined />, path: '/model-driven' },
-  { label: '配置数据模型', icon: <ApartmentOutlined />, path: '/ontology' },
-  { label: '导入数据源', icon: <ApiOutlined />, path: '/data-sources' },
-];
 
 const workspaceStats = [
   { label: '可配置表单', value: '18', detail: '字段、布局、权限可配置', icon: <FormOutlined /> },
@@ -44,7 +33,7 @@ const formConfigs = [
     layout: '两栏布局',
     workflow: '点检审批',
     status: '已发布',
-    path: '/model-driven',
+    path: '/model-driven?target=/maintenance',
   },
   {
     name: '质量检验表单',
@@ -53,53 +42,53 @@ const formConfigs = [
     layout: '分组表单',
     workflow: '异常复核',
     status: '配置中',
-    path: '/model-driven',
+    path: '/model-driven?target=/quality',
   },
   {
     name: '供应商评估表单',
-    domain: '供应链',
+    domain: '供应链风险',
     fields: 18,
     layout: '评分矩阵',
     workflow: '准入审批',
     status: '草稿',
-    path: '/model-driven',
+    path: '/model-driven?target=/supply-chain',
   },
   {
-    name: '工单执行表单',
-    domain: '生产态势',
-    fields: 28,
-    layout: '主从明细',
-    workflow: '工单流转',
+    name: '生产态势页面',
+    domain: '生产管理',
+    fields: 7,
+    layout: '指标与图表',
+    workflow: '告警处置',
     status: '已发布',
-    path: '/model-driven',
+    path: '/model-driven?target=/dashboard',
   },
 ];
 
 const builderEntries = [
   {
-    title: '表单设计器',
-    subtitle: '配置字段、校验、分组、布局和显隐规则',
+    title: '表单设置',
+    subtitle: '配置字段、控件、布局、显隐规则和数据绑定',
     icon: <FormOutlined />,
-    path: '/model-driven',
+    path: '/model-driven?target=/maintenance',
     nodes: ['字段', '布局', '规则'],
   },
   {
     title: '数据模型',
-    subtitle: '为每个表单绑定实体、字段和关系',
+    subtitle: '为页面组件绑定实体、字段和关系',
     icon: <NodeIndexOutlined />,
     path: '/ontology',
     nodes: ['Entity', 'Field', 'Relation'],
   },
   {
     title: '分析页面',
-    subtitle: '把表单数据组合成指标、图表和报表',
+    subtitle: '把业务数据组合成指标、图表和报表',
     icon: <BarChartOutlined />,
     path: '/reports',
     nodes: ['KPI', 'Chart', 'Filter'],
   },
   {
     title: '流程与权限',
-    subtitle: '为表单配置审批、角色、发布范围和审计',
+    subtitle: '配置审批流、角色、发布范围和审计',
     icon: <ThunderboltOutlined />,
     path: '/rules',
     nodes: ['Workflow', 'Role', 'Audit'],
@@ -118,28 +107,6 @@ export default function WorkspacePage() {
 
   return (
     <div className="workspace-page">
-      <section className="workspace-hero">
-        <div>
-          <Tag className="system-tag">Form-first Low-code Analytics</Tag>
-          <Typography.Title level={1}>低代码分析工作台</Typography.Title>
-          <Typography.Paragraph>
-            每个业务表单都可以配置字段、布局、规则、数据绑定、权限和发布，再沉淀为分析应用。
-          </Typography.Paragraph>
-        </div>
-        <Space wrap>
-          {commandActions.map((action) => (
-            <Button
-              key={action.label}
-              type={action.type ?? 'default'}
-              icon={action.icon}
-              onClick={() => navigate(action.path)}
-            >
-              {action.label}
-            </Button>
-          ))}
-        </Space>
-      </section>
-
       <Row gutter={[16, 16]}>
         {workspaceStats.map((stat) => (
           <Col xs={24} sm={12} lg={6} key={stat.label}>
@@ -160,7 +127,7 @@ export default function WorkspacePage() {
           <Card
             className="workspace-section"
             title="表单级低代码配置"
-            extra={<Button type="link" icon={<SettingOutlined />} onClick={() => navigate('/model-driven')}>进入表单配置器</Button>}
+            extra={<Button type="link" icon={<SettingOutlined />} onClick={() => navigate('/model-driven?target=/')}>配置工作台</Button>}
           >
             <div className="form-config-grid">
               {formConfigs.map((form) => (
@@ -175,13 +142,13 @@ export default function WorkspacePage() {
                     </Tag>
                   </div>
                   <div className="form-config-meta">
-                    <em><EditOutlined /> {form.fields} 个字段</em>
+                    <em><EditOutlined /> {form.fields} 个组件</em>
                     <em><LayoutOutlined /> {form.layout}</em>
                     <em><FileDoneOutlined /> {form.workflow}</em>
                   </div>
                   <div className="form-config-actions">
-                    <span>配置字段</span>
-                    <span>配置布局</span>
+                    <span>配置组件</span>
+                    <span>配置流程</span>
                     <span>配置权限</span>
                   </div>
                 </button>
@@ -192,7 +159,7 @@ export default function WorkspacePage() {
           <Card
             className="workspace-section"
             title="配置能力地图"
-            extra={<Button type="link" onClick={() => navigate('/model-driven')}>打开 App Builder</Button>}
+            extra={<Button type="link" onClick={() => navigate('/model-driven?target=/maintenance')}>打开配置中心</Button>}
           >
             <Row gutter={[12, 12]}>
               {builderEntries.map((entry) => (
@@ -214,29 +181,29 @@ export default function WorkspacePage() {
             </Row>
           </Card>
 
-          <Card className="workspace-section canvas-preview-card" title="表单驱动的分析应用预览">
+          <Card className="workspace-section canvas-preview-card" title="页面组件配置预览">
             <div className="builder-preview">
               <aside>
-                <span>表单组件</span>
-                <em><DatabaseOutlined /> 字段表格</em>
-                <em><BarChartOutlined /> 指标图表</em>
+                <span>组件库</span>
+                <em><DatabaseOutlined /> 指标卡</em>
+                <em><BarChartOutlined /> 分析图表</em>
                 <em><ExperimentOutlined /> 规则校验</em>
               </aside>
               <main>
                 <div className="preview-toolbar">
-                  <span>设备点检分析应用</span>
+                  <span>设备维护页面</span>
                   <Tag color="processing">Draft</Tag>
                 </div>
                 <div className="preview-grid">
-                  <div className="preview-kpi">完成率<strong>92%</strong></div>
-                  <div className="preview-kpi">异常项<strong>5</strong></div>
+                  <div className="preview-kpi">健康设备<strong>128</strong></div>
+                  <div className="preview-kpi">预警设备<strong>14</strong></div>
                   <div className="preview-chart" />
                   <div className="preview-table" />
                 </div>
               </main>
               <aside>
                 <span>配置项</span>
-                <em>数据表: inspection_form</em>
+                <em>数据源: equipment_health</em>
                 <em>联动: 工厂 / 产线 / 设备</em>
                 <em>权限: 生产经理 / 维修员</em>
               </aside>
@@ -245,7 +212,7 @@ export default function WorkspacePage() {
         </Col>
 
         <Col xs={24} xl={8}>
-          <Card className="workspace-section" title="Platform Signals">
+          <Card className="workspace-section" title="平台状态">
             <div className="signal-list">
               {platformSignals.map((signal) => (
                 <div className={`signal-item signal-${signal.tone}`} key={signal.label}>
@@ -270,12 +237,12 @@ export default function WorkspacePage() {
 
           <Card className="workspace-section launch-card" variant="borderless">
             <RocketOutlined />
-            <Typography.Title level={4}>从一个业务表单开始</Typography.Title>
+            <Typography.Title level={4}>从一个业务页面开始</Typography.Title>
             <Typography.Paragraph>
-              先配置字段和布局，再绑定数据模型、审批流和分析组件，最后发布成可用的分析应用。
+              先配置页面组件，再绑定数据模型、流程和权限，最后发布成可用的业务页面。
             </Typography.Paragraph>
-            <Button block type="primary" onClick={() => navigate('/model-driven')}>
-              新建表单配置
+            <Button block type="primary" onClick={() => navigate('/model-driven?target=/maintenance')}>
+              新建页面配置
             </Button>
           </Card>
         </Col>
