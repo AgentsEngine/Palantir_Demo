@@ -593,7 +593,7 @@ function AppContent() {
         trigger={null}
         theme="light"
         className="app-sider"
-        style={{ height: '100vh', position: 'fixed', left: 0, top: 0, bottom: 0 }}
+        style={{ height: 'calc(100vh / var(--app-ui-scale))', position: 'fixed', left: 0, top: 0, bottom: 0 }}
       >
         <div className="app-brand">
           <span className="app-brand-mark">MF</span>
