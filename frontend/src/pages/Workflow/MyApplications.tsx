@@ -4,89 +4,81 @@ import {
   DashboardOutlined,
   PushpinOutlined,
   SafetyCertificateOutlined,
+  SearchOutlined,
   ShopOutlined,
   StarFilled,
   ToolOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Row, Space, Tag, Typography } from 'antd';
+import { Button, Card, Col, Empty, Input, Row, Space, Spin, Tag, Typography, message } from 'antd';
 import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { listApplications } from '@/services/api';
 
 type ApplicationEntry = {
-  key: string;
+  id: number;
   name: string;
-  route: string;
-  type: string;
-  status: 'published' | 'draft';
-  updatedAt: string;
-  description: string;
-  icon: ReactNode;
-  menus: string[];
-  roles: string[];
-  pinned?: boolean;
+  code: string;
+  description?: string;
+  icon?: string;
+  default_route: string;
+  status: string;
+  is_pinned?: boolean;
 };
 
-const applications: ApplicationEntry[] = [
-  {
-    key: 'production',
-    name: '生产态势',
-    route: '/dashboard',
-    type: 'Dashboard',
-    status: 'published',
-    updatedAt: '今天 09:20',
-    description: '生产效率、OEE、产线告警和班次趋势的统一入口。',
-    icon: <DashboardOutlined />,
-    menus: ['左侧菜单 / 生产态势', '工作台 / 最近访问'],
-    roles: ['平台管理员', '生产经理'],
-    pinned: true,
-  },
-  {
-    key: 'maintenance',
-    name: '预测性维护',
-    route: '/maintenance',
-    type: 'Analysis App',
-    status: 'published',
-    updatedAt: '昨天 18:10',
-    description: '设备健康总览、健康分析、故障预测和工单管理。',
-    icon: <ToolOutlined />,
-    menus: ['左侧菜单 / 预测性维护', '工作台 / 快捷入口'],
-    roles: ['维修工程师', '生产经理'],
-    pinned: true,
-  },
-  {
-    key: 'quality',
-    name: '质量分析',
-    route: '/quality',
-    type: 'Quality App',
-    status: 'published',
-    updatedAt: '周一 14:35',
-    description: '质量缺陷、检验批次、异常追溯和过程能力分析。',
-    icon: <SafetyCertificateOutlined />,
-    menus: ['左侧菜单 / 质量分析', '生产应用组'],
-    roles: ['质量工程师', '平台管理员'],
-  },
-  {
-    key: 'supply-chain',
-    name: '供应链风险',
-    route: '/supply-chain',
-    type: 'Risk App',
-    status: 'published',
-    updatedAt: '5 月 18 日',
-    description: '供应商交付、库存水位、风险预警和替代方案。',
-    icon: <ShopOutlined />,
-    menus: ['左侧菜单 / 供应链风险', '管理应用组'],
-    roles: ['供应链经理', '生产经理'],
-  },
+const iconMap: Record<string, ReactNode> = {
+  DashboardOutlined: <DashboardOutlined />,
+  ToolOutlined: <ToolOutlined />,
+  SafetyCertificateOutlined: <SafetyCertificateOutlined />,
+  ShopOutlined: <ShopOutlined />,
+  AppstoreOutlined: <AppstoreOutlined />,
+};
+
+const fallbackApplications: ApplicationEntry[] = [
+  { id: 1, name: '生产态势', code: 'production-dashboard', description: '生产效率、OEE、产线告警和班次趋势。', icon: 'DashboardOutlined', default_route: '/dashboard', status: 'published', is_pinned: true },
+  { id: 2, name: '预测性维护', code: 'maintenance-analysis', description: '设备健康总览、健康分析、故障预测和工单管理。', icon: 'ToolOutlined', default_route: '/maintenance', status: 'published', is_pinned: true },
+  { id: 3, name: '质量分析', code: 'quality-control', description: '质量缺陷、检验批次、异常追溯和过程能力分析。', icon: 'SafetyCertificateOutlined', default_route: '/quality', status: 'published' },
+  { id: 4, name: '供应链风险', code: 'supply-risk', description: '供应商交付、库存水位、风险预警和替代方案。', icon: 'ShopOutlined', default_route: '/supply-chain', status: 'published' },
 ];
 
-const statusText = {
-  published: '已发布',
-  draft: '草稿',
-};
+function renderIcon(name?: string) {
+  return iconMap[name || ''] || <AppstoreOutlined />;
+}
 
 export default function MyApplications() {
   const navigate = useNavigate();
-  const pinnedCount = applications.filter((item) => item.pinned).length;
+  const [applications, setApplications] = useState<ApplicationEntry[]>([]);
+  const [keyword, setKeyword] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    listApplications()
+      .then((res) => {
+        const data = res.data?.data || [];
+        setApplications(data.length ? data : fallbackApplications);
+      })
+      .catch(() => {
+        setApplications(fallbackApplications);
+        message.warning('应用目录使用本地默认配置');
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = keyword.trim().toLowerCase();
+    if (!q) return applications;
+    return applications.filter((app) => (
+      app.name.toLowerCase().includes(q)
+      || app.code.toLowerCase().includes(q)
+      || (app.description || '').toLowerCase().includes(q)
+    ));
+  }, [applications, keyword]);
+
+  const openApplication = (app: ApplicationEntry) => {
+    localStorage.setItem('mf_current_app_id', String(app.id));
+    navigate(app.default_route || '/');
+  };
 
   return (
     <div className="application-switch-page">
@@ -105,7 +97,7 @@ export default function MyApplications() {
             <span className="application-summary-icon"><PushpinOutlined /></span>
             <div>
               <Typography.Text type="secondary">固定应用</Typography.Text>
-              <strong>{pinnedCount}</strong>
+              <strong>{applications.filter((app) => app.is_pinned).length}</strong>
             </div>
           </Card>
         </Col>
@@ -113,8 +105,8 @@ export default function MyApplications() {
           <Card className="application-summary-card">
             <span className="application-summary-icon"><ClockCircleOutlined /></span>
             <div>
-              <Typography.Text type="secondary">最近同步</Typography.Text>
-              <strong>09:20</strong>
+              <Typography.Text type="secondary">切换方式</Typography.Text>
+              <strong>顶部下拉</strong>
             </div>
           </Card>
         </Col>
@@ -122,51 +114,54 @@ export default function MyApplications() {
 
       <Card
         className="application-directory-card"
-        title="我的应用"
-        extra={<Tag className="system-tag">应用和菜单可多对多绑定</Tag>}
+        title="我的可访问应用"
+        extra={(
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="搜索应用名称或编码"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            style={{ width: 260 }}
+          />
+        )}
       >
-        <Row gutter={[14, 14]}>
-          {applications.map((app) => (
-            <Col xs={24} lg={12} xl={6} key={app.key}>
-              <Card className="application-card" variant="borderless">
-                <div className="application-card-head">
-                  <span className="application-icon">{app.icon}</span>
-                  <Space size={6}>
-                    {app.pinned && <StarFilled className="application-star" />}
-                    <Tag color={app.status === 'published' ? 'success' : 'warning'}>{statusText[app.status]}</Tag>
-                  </Space>
-                </div>
-                <Typography.Title level={5}>{app.name}</Typography.Title>
-                <Typography.Text type="secondary">{app.type}</Typography.Text>
-                <Typography.Paragraph className="application-description">
-                  {app.description}
-                </Typography.Paragraph>
-
-                <div className="application-meta-block">
-                  <span>菜单入口</span>
-                  <Space size={[4, 4]} wrap>
-                    {app.menus.map((menu) => (
-                      <Tag key={menu}>{menu}</Tag>
-                    ))}
-                  </Space>
-                </div>
-                <div className="application-meta-block">
-                  <span>可见角色</span>
-                  <Space size={[4, 4]} wrap>
-                    {app.roles.map((role) => (
-                      <Tag color="processing" key={role}>{role}</Tag>
-                    ))}
-                  </Space>
-                </div>
-
-                <div className="application-card-footer">
-                  <Typography.Text type="secondary">更新：{app.updatedAt}</Typography.Text>
-                  <Button type="primary" onClick={() => navigate(app.route)}>打开应用</Button>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+        <Spin spinning={loading}>
+          {filtered.length === 0 ? (
+            <Empty description="暂无可访问应用" />
+          ) : (
+            <Row gutter={[14, 14]}>
+              {filtered.map((app) => (
+                <Col xs={24} lg={12} xl={6} key={app.id}>
+                  <Card className="application-card" variant="borderless">
+                    <div className="application-card-head">
+                      <span className="application-icon">{renderIcon(app.icon)}</span>
+                      <Space size={6}>
+                        {app.is_pinned && <StarFilled className="application-star" />}
+                        <Tag color={app.status === 'published' ? 'success' : 'warning'}>
+                          {app.status === 'published' ? '已发布' : app.status}
+                        </Tag>
+                      </Space>
+                    </div>
+                    <Typography.Title level={5}>{app.name}</Typography.Title>
+                    <Typography.Text type="secondary">{app.code}</Typography.Text>
+                    <Typography.Paragraph className="application-description">
+                      {app.description || '业务工作包'}
+                    </Typography.Paragraph>
+                    <div className="application-meta-block">
+                      <span>默认首页</span>
+                      <Tag>{app.default_route}</Tag>
+                    </div>
+                    <div className="application-card-footer">
+                      <Typography.Text type="secondary">通过顶部应用下拉快速切换</Typography.Text>
+                      <Button type="primary" onClick={() => openApplication(app)}>打开应用</Button>
+                    </div>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </Spin>
       </Card>
     </div>
   );

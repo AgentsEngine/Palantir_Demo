@@ -502,6 +502,45 @@ class MenuItem(TimestampMixin, Base):
 
 # ── 权限族 (Phase 3) ──────────────────────────────────────
 
+class Application(TimestampMixin, Base):
+    __tablename__ = "applications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(200))
+    code: Mapped[str] = mapped_column(String(100), unique=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    icon: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    default_route: Mapped[str] = mapped_column(String(200), default="/")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(50), default="published")
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    menus: Mapped[list["ApplicationMenu"]] = relationship(back_populates="application", cascade="all, delete-orphan")
+    roles: Mapped[list["ApplicationRole"]] = relationship(back_populates="application", cascade="all, delete-orphan")
+
+
+class ApplicationMenu(TimestampMixin, Base):
+    __tablename__ = "application_menus"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    application_id: Mapped[int] = mapped_column(ForeignKey("applications.id"))
+    menu_id: Mapped[int] = mapped_column(ForeignKey("menu_items.id"))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    application: Mapped["Application"] = relationship(back_populates="menus")
+
+
+class ApplicationRole(TimestampMixin, Base):
+    __tablename__ = "application_roles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    application_id: Mapped[int] = mapped_column(ForeignKey("applications.id"))
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
+
+    application: Mapped["Application"] = relationship(back_populates="roles")
+
+
 class User(TimestampMixin, Base):
     __tablename__ = "users"
 

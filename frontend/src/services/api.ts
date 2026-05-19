@@ -80,6 +80,14 @@ export const getCentrality = (limit?: number) =>
 export const getEntityRelationships = (entityType: string, entityId: number, relType?: string) =>
   api.get(`/ontology/entities/${entityType}/instances/${entityId}/relationships`, { params: { rel_type: relType } });
 
+// Semantic low-code assets
+export const listSemanticDataAssets = () => api.get('/semantic-assets/data-assets');
+export const listSemanticOntologyObjects = () => api.get('/semantic-assets/ontology-objects');
+export const listSemanticOntologyRelations = () => api.get('/semantic-assets/ontology-relations');
+export const listSemanticPageContracts = () => api.get('/semantic-assets/page-contracts');
+export const getSemanticPageContract = (route: string) =>
+  api.get('/semantic-assets/page-contracts/by-route', { params: { route } });
+
 // Pipeline
 export const listPipelines = () => api.get('/pipelines');
 export const createPipeline = (data: Record<string, unknown>) => api.post('/pipelines', data);
@@ -174,6 +182,17 @@ export const updateMenu = (id: number, data: Record<string, unknown>) => api.put
 export const deleteMenu = (id: number) => api.delete(`/model-driven/menus/${id}`);
 
 // Auth (Phase 3) — token now travels via Authorization header (interceptor above)
+// Applications
+export const listApplications = () => api.get('/applications');
+export const getApplication = (id: number) => api.get(`/applications/${id}`);
+export const listApplicationMenus = (id: number) => api.get(`/applications/${id}/menus`);
+export const adminListApplications = () => api.get('/admin/applications');
+export const adminCreateApplication = (data: Record<string, unknown>) => api.post('/admin/applications', data);
+export const adminUpdateApplication = (id: number, data: Record<string, unknown>) => api.put(`/admin/applications/${id}`, data);
+export const adminDeleteApplication = (id: number) => api.delete(`/admin/applications/${id}`);
+export const adminUpdateApplicationBindings = (id: number, data: Record<string, unknown>) =>
+  api.put(`/admin/applications/${id}/bindings`, data);
+
 export const authLogin = (username: string, password: string) =>
   api.post('/auth/login', { username, password });
 export const authLogout = () => api.post('/auth/logout');

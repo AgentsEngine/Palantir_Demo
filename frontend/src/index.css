@@ -159,6 +159,33 @@ button {
   border-color: var(--mf-border);
 }
 
+.application-switch-button {
+  min-width: 168px;
+  justify-content: space-between;
+  color: var(--mf-text);
+  background: #fff;
+  border-color: var(--mf-border);
+  font-weight: 700;
+}
+
+.application-switch-item {
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+}
+
+.application-switch-item strong {
+  color: var(--mf-text);
+  font-size: 13px;
+}
+
+.application-switch-item span {
+  margin-top: 2px;
+  color: var(--mf-muted);
+  font-size: 11px;
+  white-space: normal;
+}
+
 .ai-floating-button {
   position: fixed;
   right: 24px;
@@ -1308,6 +1335,46 @@ button {
   font-weight: 700;
 }
 
+.admin-app-list-card,
+.admin-binding-card {
+  border: 1px solid var(--mf-border);
+}
+
+.admin-app-list-card .ant-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-app-list-item {
+  padding: 10px !important;
+  display: grid !important;
+  grid-template-columns: 38px 1fr auto;
+  gap: 10px;
+  align-items: center !important;
+  border: 1px solid var(--mf-border);
+  border-radius: 6px;
+  background: var(--mf-panel-soft);
+  cursor: pointer;
+}
+
+.admin-app-list-item:hover,
+.admin-app-list-item.active {
+  border-color: var(--mf-primary);
+  background: #eef6f8;
+}
+
+.admin-app-list-item strong,
+.admin-app-list-item small {
+  display: block;
+}
+
+.admin-app-list-item small {
+  margin-top: 2px;
+  color: var(--mf-muted);
+  font-size: 12px;
+}
+
 @media (max-width: 1180px) {
   .identity-shell {
     grid-template-columns: 1fr;
@@ -1345,4 +1412,74 @@ button {
   .studio-two-column {
     grid-template-columns: 1fr;
   }
+}
+/* Semantic asset center */
+.semantic-center {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.semantic-center-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--mf-border);
+  background: #fff;
+  border-radius: 6px;
+}
+
+.semantic-center-header .ant-typography {
+  margin: 0;
+}
+
+.semantic-side-card,
+.semantic-center .ant-card,
+.semantic-page-config .ant-card {
+  border-radius: 6px;
+}
+
+.semantic-list-item {
+  padding: 10px 12px !important;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.semantic-list-item + .semantic-list-item {
+  margin-top: 8px;
+}
+
+.semantic-list-item.active,
+.semantic-list-item:hover {
+  border-color: var(--mf-accent);
+  background: #edf6fa;
+}
+
+.semantic-contract-summary {
+  margin-bottom: 16px;
+}
+
+.semantic-summary-card .ant-card-body {
+  min-height: 116px;
+}
+
+.semantic-summary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--mf-border);
+  border-radius: 6px;
+  color: var(--mf-accent);
+  background: #f6f9fb;
+}
+
+.semantic-summary-card .ant-typography,
+.permission-item-card .ant-typography {
+  margin: 0;
 }

@@ -23,6 +23,7 @@ import {
   CloseOutlined,
   DashboardOutlined,
   DownloadOutlined,
+  DownOutlined,
   HomeOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
@@ -40,7 +41,8 @@ import {
 import GlobalSearch from './components/GlobalSearch';
 import { useAuthStore } from './stores/authStore';
 import {
-  listMenus,
+  listApplicationMenus,
+  listApplications,
   wfApproveOrReject,
   wfListNotifications,
   wfMarkAllRead,
@@ -74,7 +76,20 @@ interface DynamicMenu {
   parent_id: number | null;
   title: string;
   route_path: string;
+  icon?: string;
   is_visible: boolean;
+  children?: DynamicMenu[];
+}
+
+interface ApplicationInfo {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+  icon?: string;
+  default_route: string;
+  status: string;
+  is_pinned?: boolean;
 }
 
 const businessMenuItems: MenuProps['items'] = [
@@ -84,6 +99,20 @@ const businessMenuItems: MenuProps['items'] = [
   { key: '/quality', icon: <SafetyCertificateOutlined />, label: '质量分析' },
   { key: '/supply-chain', icon: <ShopOutlined />, label: '供应链风险' },
 ];
+
+const fallbackApplications: ApplicationInfo[] = [
+  { id: 1, name: '生产态势', code: 'production-dashboard', description: '生产效率、OEE、产线告警和班次趋势。', icon: 'DashboardOutlined', default_route: '/dashboard', status: 'published', is_pinned: true },
+  { id: 2, name: '预测性维护', code: 'maintenance-analysis', description: '设备健康总览、健康分析、故障预测和工单管理。', icon: 'ToolOutlined', default_route: '/maintenance', status: 'published', is_pinned: true },
+  { id: 3, name: '质量分析', code: 'quality-control', description: '质量缺陷、检验批次、异常追溯和过程能力分析。', icon: 'SafetyCertificateOutlined', default_route: '/quality', status: 'published' },
+  { id: 4, name: '供应链风险', code: 'supply-risk', description: '供应商交付、库存水位、风险预警和替代方案。', icon: 'ShopOutlined', default_route: '/supply-chain', status: 'published' },
+];
+
+const fallbackMenusByApplication: Record<number, DynamicMenu[]> = {
+  1: [{ id: 1001, parent_id: null, title: '生产态势', icon: 'DashboardOutlined', route_path: '/dashboard', is_visible: true }],
+  2: [{ id: 1002, parent_id: null, title: '预测性维护', icon: 'ToolOutlined', route_path: '/maintenance', is_visible: true }],
+  3: [{ id: 1003, parent_id: null, title: '质量分析', icon: 'SafetyCertificateOutlined', route_path: '/quality', is_visible: true }],
+  4: [{ id: 1004, parent_id: null, title: '供应链风险', icon: 'ShopOutlined', route_path: '/supply-chain', is_visible: true }],
+};
 
 const pageTitleMap: Record<string, string> = {
   '/': '我的工作台',
@@ -104,6 +133,18 @@ const pageTitleMap: Record<string, string> = {
   '/workflow': '流程中心',
   '/my-applications': '我的应用',
 };
+
+function iconFor(name?: string) {
+  const icons: Record<string, React.ReactNode> = {
+    DashboardOutlined: <DashboardOutlined />,
+    ToolOutlined: <ToolOutlined />,
+    SafetyCertificateOutlined: <SafetyCertificateOutlined />,
+    ShopOutlined: <ShopOutlined />,
+    AppstoreOutlined: <AppstoreOutlined />,
+    HomeOutlined: <HomeOutlined />,
+  };
+  return icons[name || ''] || <AppstoreOutlined />;
+}
 
 function PageLoader() {
   return (
@@ -139,12 +180,20 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
 }
 
 function buildDynamicMenuTree(items: DynamicMenu[]): MenuProps['items'] {
+  if (items.some((item) => item.children?.length)) {
+    return items.map((item) => ({
+      key: item.route_path || `dynamic-${item.id}`,
+      icon: iconFor(item.icon),
+      label: item.title,
+      children: item.children?.length ? buildDynamicMenuTree(item.children) : undefined,
+    }));
+  }
   const map = new Map<number, any>();
   const roots: any[] = [];
   for (const item of items) {
     map.set(item.id, {
       key: item.route_path || `dynamic-${item.id}`,
-      icon: <AppstoreOutlined />,
+      icon: iconFor(item.icon),
       label: item.title,
       children: [],
     });
@@ -169,6 +218,8 @@ function AppContent() {
 
   const [collapsed, setCollapsed] = useState(false);
   const [dynamicMenus, setDynamicMenus] = useState<MenuProps['items']>([]);
+  const [applications, setApplications] = useState<ApplicationInfo[]>([]);
+  const [currentApplication, setCurrentApplication] = useState<ApplicationInfo | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unread, setUnread] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -185,13 +236,40 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    listMenus()
+    listApplications()
       .then((res) => {
-        const items = (res.data?.data || []).filter((m: DynamicMenu) => m.is_visible);
+        const apps: ApplicationInfo[] = (res.data?.data || []).length ? res.data.data : fallbackApplications;
+        setApplications(apps);
+        if (!apps.length) {
+          setCurrentApplication(null);
+          setDynamicMenus(businessMenuItems);
+          return;
+        }
+        const storedId = Number(localStorage.getItem('mf_current_app_id'));
+        const matched = apps.find((app) => app.id === storedId) || apps[0];
+        setCurrentApplication(matched);
+        localStorage.setItem('mf_current_app_id', String(matched.id));
+      })
+      .catch(() => {
+        const storedId = Number(localStorage.getItem('mf_current_app_id'));
+        const matched = fallbackApplications.find((app) => app.id === storedId) || fallbackApplications[0];
+        setApplications(fallbackApplications);
+        setCurrentApplication(matched);
+        localStorage.setItem('mf_current_app_id', String(matched.id));
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!currentApplication) return;
+    listApplicationMenus(currentApplication.id)
+      .then((res) => {
+        const apiItems = res.data?.data || [];
+        const items = (apiItems.length ? apiItems : (fallbackMenusByApplication[currentApplication.id] || []))
+          .filter((m: DynamicMenu) => m.is_visible !== false);
         setDynamicMenus(buildDynamicMenuTree(items));
       })
-      .catch(() => setDynamicMenus([]));
-  }, []);
+      .catch(() => setDynamicMenus(buildDynamicMenuTree(fallbackMenusByApplication[currentApplication.id] || [])));
+  }, [currentApplication]);
 
   const loadNotifications = useCallback(() => {
     if (!user) return;
@@ -211,13 +289,7 @@ function AppContent() {
   }, [loadNotifications]);
 
   const allMenuItems = useMemo<MenuProps['items']>(() => {
-    const items: MenuProps['items'] = [
-      ...(businessMenuItems || []),
-    ];
-    if (dynamicMenus?.length) {
-      items.push({ type: 'divider' }, ...dynamicMenus);
-    }
-    return items;
+    return dynamicMenus?.length ? dynamicMenus : businessMenuItems;
   }, [dynamicMenus]);
 
   const studioTarget = location.pathname === '/model-driven'
@@ -263,6 +335,26 @@ function AppContent() {
         }
       },
     });
+  };
+
+  const switchApplication = (app: ApplicationInfo) => {
+    setCurrentApplication(app);
+    localStorage.setItem('mf_current_app_id', String(app.id));
+    navigate(app.default_route || '/');
+  };
+
+  const applicationMenu: MenuProps = {
+    items: applications.map((app) => ({
+      key: String(app.id),
+      icon: iconFor(app.icon),
+      label: (
+        <div className="application-switch-item">
+          <strong>{app.name}</strong>
+          <span>{app.description || app.code}</span>
+        </div>
+      ),
+      onClick: () => switchApplication(app),
+    })),
   };
 
   const notificationMenu: MenuProps = {
@@ -390,6 +482,12 @@ function AppContent() {
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
             />
+            <Dropdown menu={applicationMenu} trigger={['click']} disabled={!applications.length}>
+              <Button className="application-switch-button" icon={iconFor(currentApplication?.icon)}>
+                <span>{currentApplication?.name || '选择应用'}</span>
+                <DownOutlined />
+              </Button>
+            </Dropdown>
             <Breadcrumb items={breadcrumbItems} />
           </Space>
 
