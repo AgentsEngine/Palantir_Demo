@@ -1,3 +1,35 @@
+# ManuFoundry
+
+> 当前版本：制造业低代码分析平台原型，采用浅色 Foundry 工作台 UI。  
+> 最新文档入口：[docs/README.md](docs/README.md)，当前代码框架说明：[docs/architecture/current-framework.md](docs/architecture/current-framework.md)。
+
+## 当前框架快照
+
+ManuFoundry 现在的产品结构已经从单纯分析 Demo 调整为“应用 + 表单 + 菜单 + 数据资产 + 本体”的低代码分析平台。
+
+当前核心交互：
+
+- 登录后进入“我的工作台”。
+- 顶部应用下拉用于切换业务应用。
+- 左侧菜单展示“我的工作台 + 当前应用下的菜单结构”。
+- 每个业务页面保留标题栏、操作按钮和设置入口。
+- 系统管理中维护应用、表单、菜单装配、数据资产、本体、用户和角色。
+- 右下角 AI 浮动入口代替左侧菜单中的 AI 页面入口。
+
+当前数据边界：
+
+- 应用基础信息、应用菜单、应用角色已有后端模型和 API 雏形。
+- 系统管理的“应用装配”页中，表单、应用-表单绑定、菜单树目前仍主要是前端 Demo state。
+- 下一阶段应优先实现 `forms`、`application_forms`、`application_menu_nodes` 落库，让应用装配刷新不丢。
+
+推荐先阅读：
+
+1. [当前代码框架说明](docs/architecture/current-framework.md)
+2. [低代码平台架构](docs/architecture/low-code-platform.md)
+3. [架构总览](docs/architecture/overview.md)
+
+---
+
 # ManuFoundry -- 制造业数据操作系统
 
 > 对标 Palantir Foundry 五层架构，面向制造业场景的开源数据操作系统原型
