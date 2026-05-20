@@ -239,7 +239,7 @@ const componentGroups: Array<{ category: string; items: ComponentDefinition[] }>
   },
 ];
 
-const fieldTypeComponentGroups = componentGroups.slice(0, 1);
+const fieldTypeComponentGroups = [{ ...componentGroups[0], category: '\u5b57\u6bb5\u79cd\u7c7b' }];
 const generalComponentGroups = componentGroups.slice(1);
 
 function fieldInput(field: DesignerField) {
