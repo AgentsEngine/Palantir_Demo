@@ -373,12 +373,6 @@ export default function QualityImpactWorkbench() {
               ))}
             </div>
 
-            <div className="quality-map-metrics">
-              <div>
-                <span><SendOutlined /> 影响订单</span>
-                <strong>{event.affected.orders || 0}<small>个</small></strong>
-              </div>
-            </div>
           </Card>
         </main>
 
