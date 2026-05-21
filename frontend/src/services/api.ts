@@ -121,6 +121,12 @@ export const getDefectPareto = (days?: number) => api.get('/quality/defects/pare
 export const getTraceability = (entityId: number, entityType?: string) =>
   api.get(`/quality/traceability/${entityId}`, { params: { entity_type: entityType } });
 export const listInspections = (params?: Record<string, unknown>) => api.get('/quality/inspections', { params });
+export const listQualityEvents = () => api.get('/quality/events');
+export const getQualityEventImpact = (eventId: string | number) => api.get(`/quality/events/${eventId}/impact`);
+export const getQualityEventAiSuggestion = (eventId: string | number) => api.post(`/quality/events/${eventId}/ai-suggestion`);
+export const executeQualityEventAction = (eventId: string | number, data: Record<string, unknown>) =>
+  api.post(`/quality/events/${eventId}/actions`, data);
+export const createCapa = (data: Record<string, unknown>) => api.post('/quality/capa', data);
 
 // Supply Chain
 export const listSuppliers = (params?: Record<string, unknown>) => api.get('/supply-chain/suppliers', { params });

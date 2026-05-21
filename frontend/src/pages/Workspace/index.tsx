@@ -1,121 +1,207 @@
+import { useEffect, useMemo, useState } from 'react';
 import {
+  ApiOutlined,
   AppstoreOutlined,
-  BarChartOutlined,
-  ClockCircleOutlined,
+  BranchesOutlined,
+  CheckCircleOutlined,
+  ControlOutlined,
+  DatabaseOutlined,
   FileDoneOutlined,
   FormOutlined,
+  NodeIndexOutlined,
   ReloadOutlined,
-  RocketOutlined,
+  RobotOutlined,
   SafetyCertificateOutlined,
+  ShopOutlined,
   StarOutlined,
+  ToolOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Empty, Progress, Row, Space, Tag, Typography } from 'antd';
+import { Button, Card, Col, Progress, Row, Space, Tag, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { listQualityEvents } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
 
-const approvalBuckets = [
-  { key: 'pending', title: '待审批', count: 6, tone: 'warning', path: '/workflow?tab=pending', items: ['设备维修审批 - 产线 A03', '质量异常复核 - Q-20260520', '供应商准入审批 - 星河精密'] },
-  { key: 'running', title: '审批中', count: 9, tone: 'processing', path: '/workflow?tab=running', items: ['物料采购申请 - MRO-1842', '设备点检补录 - EQ-331', '质量 CAPA 跟踪 - CAPA-072'] },
-  { key: 'done', title: '已审批', count: 24, tone: 'success', path: '/workflow?tab=done', items: ['维修工单关闭 - WO-771', '供应风险复核 - SR-096', '质量异常结案 - QA-581'] },
-  { key: 'draft', title: '草稿', count: 3, tone: 'default', path: '/workflow?tab=draft', items: ['设备巡检记录草稿', '供应商评分草稿', '质量复验申请草稿'] },
-  { key: 'returned', title: '退回待修改', count: 2, tone: 'error', path: '/workflow?tab=returned', items: ['维修申请退回 - 缺少照片', '采购申请退回 - 预算口径待补充'] },
+interface QualityEvent {
+  id: string;
+  title: string;
+  severity: string;
+  status: string;
+  source: string;
+  description: string;
+  risk_score: number;
+  affected: Record<string, number>;
+  recommended_actions: string[];
+}
+
+const roleCards = {
+  admin: [
+    { title: '业务对象配置', desc: '维护 QualityEvent、Defect、CAPA 等对象', icon: <NodeIndexOutlined />, path: '/account-center?section=data-ontology', tone: 'blue' },
+    { title: '对象关系配置', desc: '配置缺陷、批次、供应商、工单、订单关系', icon: <BranchesOutlined />, path: '/account-center?section=data-ontology', tone: 'green' },
+    { title: '业务动作配置', desc: '发布 CAPA、冻结批次、复检、通知动作', icon: <ControlOutlined />, path: '/account-center?section=app-menu', tone: 'orange' },
+    { title: 'AI 能力配置', desc: '控制 AI 可读数据、可生成草稿和审计策略', icon: <RobotOutlined />, path: '/account-center?section=ai', tone: 'purple' },
+  ],
+  quality: [
+    { title: '质量异常闭环', desc: '查看事件、影响图谱、AI 建议和 CAPA', icon: <SafetyCertificateOutlined />, path: '/program/quality-event', tone: 'red' },
+    { title: '缺陷分析', desc: '定位缺陷趋势和主要原因', icon: <WarningOutlined />, path: '/program/defect-analysis', tone: 'orange' },
+    { title: '检验批次', desc: '处理抽检、复检和放行记录', icon: <CheckCircleOutlined />, path: '/program/inspection-batch', tone: 'green' },
+    { title: '流程待办', desc: '审批 CAPA、复检、质量异常任务', icon: <FileDoneOutlined />, path: '/workflow?tab=pending', tone: 'blue' },
+  ],
+  production: [
+    { title: '生产态势', desc: '查看产线、工单和交付风险', icon: <ControlOutlined />, path: '/dashboard', tone: 'blue' },
+    { title: '受影响工单', desc: '从质量事件追踪到生产计划', icon: <AppstoreOutlined />, path: '/program/quality-event', tone: 'orange' },
+    { title: '设备复核', desc: '处理异常相关设备与维修工单', icon: <ToolOutlined />, path: '/maintenance', tone: 'green' },
+    { title: '供应风险', desc: '查看物料和供应商对排产的影响', icon: <ShopOutlined />, path: '/supply-chain', tone: 'red' },
+  ],
+  user: [
+    { title: '料号申请', desc: '发起物料、替代料和采购申请', icon: <FormOutlined />, path: '/program/risk-review', tone: 'green' },
+    { title: '我的待办', desc: '查看我发起和需要我处理的流程', icon: <FileDoneOutlined />, path: '/workflow', tone: 'blue' },
+    { title: '常用表单', desc: '进入收藏的低代码业务表单', icon: <StarOutlined />, path: '/account-center?section=preferences', tone: 'purple' },
+    { title: '风险通知', desc: '查看与我相关的质量和供应链提醒', icon: <WarningOutlined />, path: '/program/quality-event', tone: 'orange' },
+  ],
+};
+
+const adminBlueprint = [
+  { label: 'Foundry 底座', value: '数据源 / 本体 / 对象 / 关系', icon: <DatabaseOutlined /> },
+  { label: 'AIP 辅助层', value: 'AI 草稿 / 解释 / 审计 / 工具权限', icon: <RobotOutlined /> },
+  { label: 'Gotham 体验', value: '事件 / 图谱 / 计划 / 动作闭环', icon: <ApiOutlined /> },
 ];
 
-const favoriteForms = [
-  { title: '设备维修申请', type: '业务交互类', app: '设备维护分析', recent: '今天 09:18', icon: <FormOutlined />, path: '/dynamic/device-repair-request' },
-  { title: '质量异常看板', type: '分析展示类', app: '质量控制', recent: '昨天 16:40', icon: <BarChartOutlined />, path: '/quality?view=defects' },
-  { title: '供应风险复核', type: '业务交互类', app: '供应链风险', recent: '周一 11:05', icon: <SafetyCertificateOutlined />, path: '/supply-chain?view=review' },
-  { title: '生产日报', type: '报表', app: '生产驾驶舱', recent: '5 月 19 日', icon: <FileDoneOutlined />, path: '/reports' },
+const defaultEvents: QualityEvent[] = [
+  {
+    id: 'QE-20260521-001',
+    title: '电控模块焊点虚焊异常',
+    severity: 'critical',
+    status: 'open',
+    source: '制程检验 / AOI',
+    description: '缺陷率达到 6.8%，超过 2.0% 管控线。',
+    risk_score: 92,
+    affected: { work_orders: 5, orders: 3, suppliers: 1 },
+    recommended_actions: ['生成 CAPA', '冻结批次', '发起复检'],
+  },
 ];
 
-const watchedMetrics = [
-  { label: '设备健康率', value: 92, suffix: '%', tone: '#2f5f73' },
-  { label: '质量异常数', value: 7, suffix: ' 项', tone: '#c47f2c' },
-  { label: '供应风险数', value: 5, suffix: ' 项', tone: '#b54747' },
-  { label: '数据同步成功率', value: 98, suffix: '%', tone: '#3f7f5f' },
-];
+function getRoleKey(user: any): keyof typeof roleCards {
+  if (user?.is_admin) return 'admin';
+  const roleNames = new Set((user?.roles || []).map((role: any) => role.name));
+  if (roleNames.has('quality_inspector')) return 'quality';
+  if (roleNames.has('production_manager')) return 'production';
+  return 'user';
+}
 
-const recentActivities = [
-  { title: '设备维修审批已进入主管复核', time: '10 分钟前', icon: <ClockCircleOutlined />, path: '/workflow?tab=running' },
-  { title: '质量异常看板收藏入口已更新', time: '38 分钟前', icon: <StarOutlined />, path: '/quality?view=defects' },
-  { title: 'AI 已生成供应风险摘要', time: '1 小时前', icon: <RocketOutlined />, path: '/ai-assistant' },
-  { title: '采购申请被退回，等待补充预算口径', time: '2 小时前', icon: <ClockCircleOutlined />, path: '/workflow?tab=returned' },
-  { title: '生产日报已完成生成', time: '昨天 17:30', icon: <FileDoneOutlined />, path: '/reports' },
-];
+function roleTitle(roleKey: keyof typeof roleCards) {
+  const map = {
+    admin: '平台配置工作台',
+    quality: '质量经理工作台',
+    production: '生产主管工作台',
+    user: '我的业务工作台',
+  };
+  return map[roleKey];
+}
 
 export default function WorkspacePage() {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const [events, setEvents] = useState<QualityEvent[]>(defaultEvents);
+  const roleKey = getRoleKey(user);
+  const cards = roleCards[roleKey];
+
+  const loadEvents = () => {
+    listQualityEvents()
+      .then((res) => setEvents(res.data?.data?.length ? res.data.data : defaultEvents))
+      .catch(() => setEvents(defaultEvents));
+  };
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const headline = useMemo(() => {
+    if (roleKey === 'admin') return '把低代码配置变成企业运营底座';
+    if (roleKey === 'quality') return '从异常发现到 CAPA 闭环';
+    if (roleKey === 'production') return '看清质量异常对工单和交付的影响';
+    return '处理与你相关的申请、待办和风险提醒';
+  }, [roleKey]);
 
   return (
-    <div className="workspace-page personal-workspace-page">
-      <section className="workspace-hero-row">
+    <div className="workspace-page personal-workspace-page role-workspace-page">
+      <section className="workspace-hero-row role-workspace-hero">
         <div>
-          <Typography.Title level={3}>我的工作台</Typography.Title>
-          <Typography.Text type="secondary">聚合当前用户相关的审批、收藏表单、关注指标和最近状态。</Typography.Text>
+          <Typography.Text className="role-workspace-kicker">ManuFoundry Role Workbench</Typography.Text>
+          <Typography.Title level={3}>{roleTitle(roleKey)}</Typography.Title>
+          <Typography.Text type="secondary">{headline}</Typography.Text>
         </div>
-        <Space>
-          <Button icon={<ReloadOutlined />}>刷新</Button>
-          <Button type="primary" icon={<AppstoreOutlined />} onClick={() => navigate('/account-center?section=app-menu')}>管理应用入口</Button>
+        <Space wrap>
+          <Button icon={<ReloadOutlined />} onClick={loadEvents}>刷新事件</Button>
+          <Button type="primary" icon={<SafetyCertificateOutlined />} onClick={() => navigate('/program/quality-event')}>
+            进入质量异常闭环
+          </Button>
         </Space>
       </section>
 
-      <Card className="workspace-section" title="待办与审批" extra={<Button type="link" onClick={() => navigate('/workflow')}>查看流程中心</Button>}>
-        <div className="approval-bucket-grid">
-          {approvalBuckets.map((bucket) => (
-            <button className={'approval-bucket-card approval-' + bucket.key} key={bucket.key} onClick={() => navigate(bucket.path)}>
-              <span className="approval-bucket-head">
-                <strong>{bucket.title}</strong>
-                <Tag color={bucket.tone}>{bucket.count}</Tag>
-              </span>
-              <span className="approval-bucket-list">
-                {bucket.items.slice(0, 3).map((item) => <em key={item}>{item}</em>)}
-              </span>
+      <Row gutter={[14, 14]}>
+        {cards.map((card) => (
+          <Col xs={24} md={12} xl={6} key={card.title}>
+            <button className={`role-entry-card role-entry-${card.tone}`} onClick={() => navigate(card.path)}>
+              <span>{card.icon}</span>
+              <strong>{card.title}</strong>
+              <small>{card.desc}</small>
             </button>
-          ))}
-        </div>
-      </Card>
+          </Col>
+        ))}
+      </Row>
 
-      <Card className="workspace-section" title="收藏的表单" extra={<Tag icon={<StarOutlined />}>来自收藏</Tag>}>
-        {favoriteForms.length ? (
-          <div className="favorite-entry-grid">
-            {favoriteForms.map((entry) => (
-              <button className="favorite-entry-card" key={entry.title} onClick={() => navigate(entry.path)}>
-                <span className="favorite-entry-icon">{entry.icon}</span>
-                <span>
-                  <strong>{entry.title}</strong>
-                  <small>{entry.app}</small>
-                </span>
-                <Tag color={entry.type === '分析展示类' ? 'blue' : entry.type === '业务交互类' ? 'green' : 'purple'}>{entry.type}</Tag>
-                <em>最近访问：{entry.recent}</em>
-              </button>
-            ))}
-          </div>
-        ) : <Empty description="暂无收藏表单，可在业务页面或应用装配中收藏常用表单" />}
-      </Card>
-
-      <Row gutter={[16, 16]} align="stretch">
-        <Col xs={24} xl={16}>
-          <Card className="workspace-section" title="测试关注的指标">
-            <div className="watched-metric-grid">
-              {watchedMetrics.map((metric) => (
-                <div className="watched-metric-row" key={metric.label}>
-                  <span>{metric.label}</span>
-                  <strong>{metric.value}{metric.suffix}</strong>
-                  <Progress percent={Math.min(metric.value, 100)} showInfo={false} strokeColor={metric.tone} />
-                </div>
-              ))}
-            </div>
+      <Row gutter={[16, 16]} align="stretch" style={{ marginTop: 16 }}>
+        <Col xs={24} xl={roleKey === 'admin' ? 12 : 15}>
+          <Card
+            className="workspace-section"
+            title={roleKey === 'admin' ? '平台能力蓝图' : '质量异常事件'}
+            extra={<Tag color="processing">{roleKey === 'admin' ? '低代码配置中心' : '事件驱动'}</Tag>}
+          >
+            {roleKey === 'admin' ? (
+              <div className="palantir-blueprint-grid">
+                {adminBlueprint.map((item) => (
+                  <div className="palantir-blueprint-item" key={item.label}>
+                    <span>{item.icon}</span>
+                    <strong>{item.label}</strong>
+                    <small>{item.value}</small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="quality-event-list">
+                {events.map((event) => (
+                  <button className="quality-workspace-event" key={event.id} onClick={() => navigate('/program/quality-event')}>
+                    <span>
+                      <Tag color={event.severity === 'critical' ? 'red' : 'orange'}>{event.severity}</Tag>
+                      <strong>{event.title}</strong>
+                    </span>
+                    <small>{event.id} / {event.source}</small>
+                    <p>{event.description}</p>
+                    <Progress percent={event.risk_score} size="small" strokeColor={event.risk_score > 85 ? '#c83f49' : '#d48806'} />
+                  </button>
+                ))}
+              </div>
+            )}
           </Card>
         </Col>
 
-        <Col xs={24} xl={8}>
-          <Card className="workspace-section recent-status-card" title="最近状态">
-            <div className="recent-activity-list vertical">
-              {recentActivities.map((activity) => (
-                <button className="recent-activity-item" key={activity.title} onClick={() => navigate(activity.path)}>
-                  <span>{activity.icon}</span>
-                  <strong>{activity.title}</strong>
-                  <em>{activity.time}</em>
-                </button>
+        <Col xs={24} xl={roleKey === 'admin' ? 12 : 9}>
+          <Card className="workspace-section" title="闭环进度">
+            <div className="closure-step-list">
+              {[
+                ['发现事件', '规则引擎触发质量异常'],
+                ['分析影响', '图谱追踪到批次、供应商、工单、订单'],
+                ['AI 草稿', 'AI 生成建议，不直接执行'],
+                ['动作闭环', 'CAPA、复检、冻结、通知进入流程'],
+              ].map(([title, desc], index) => (
+                <div className="closure-step-row" key={title}>
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{title}</strong>
+                    <small>{desc}</small>
+                  </div>
+                </div>
               ))}
             </div>
           </Card>

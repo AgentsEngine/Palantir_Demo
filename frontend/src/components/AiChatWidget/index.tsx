@@ -31,6 +31,8 @@ interface AiChatWidgetProps {
 }
 
 const STORAGE_PREFIX = 'mf_ai_floating_chat:';
+const POSITION_STORAGE_KEY = 'mf_ai_floating_position';
+const DEFAULT_FLOATING_POSITION = { x: 24, y: 24 };
 
 const contextByRoute: Array<{
   test: (pathname: string) => boolean;
@@ -204,6 +206,8 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [floatingPosition, setFloatingPosition] = useState(DEFAULT_FLOATING_POSITION);
+  const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number; dragging: boolean } | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   const pageContext = useMemo(
@@ -212,6 +216,22 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   );
 
   const storageKey = `${STORAGE_PREFIX}${location.pathname}`;
+
+  useEffect(() => {
+    const stored = localStorage.getItem(POSITION_STORAGE_KEY);
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as { x: number; y: number };
+      if (Number.isFinite(parsed.x) && Number.isFinite(parsed.y)) {
+        setFloatingPosition({
+          x: Math.max(12, Math.min(parsed.x, window.innerWidth - 96)),
+          y: Math.max(12, Math.min(parsed.y, window.innerHeight - 72)),
+        });
+      }
+    } catch {
+      localStorage.removeItem(POSITION_STORAGE_KEY);
+    }
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem(storageKey);
@@ -256,12 +276,55 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     setInput('');
   };
 
+  const startDrag = (event: React.PointerEvent<HTMLButtonElement>) => {
+    dragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: floatingPosition.x,
+      originY: floatingPosition.y,
+      dragging: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const dragFloatingButton = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (Math.abs(deltaX) + Math.abs(deltaY) > 4) drag.dragging = true;
+    if (!drag.dragging) return;
+    setFloatingPosition({
+      x: Math.max(12, Math.min(drag.originX - deltaX, window.innerWidth - 96)),
+      y: Math.max(12, Math.min(drag.originY - deltaY, window.innerHeight - 72)),
+    });
+  };
+
+  const stopDrag = () => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(floatingPosition));
+    window.setTimeout(() => {
+      dragRef.current = null;
+    }, 0);
+  };
+
+  const toggleOpen = () => {
+    if (dragRef.current?.dragging) return;
+    setOpen((prev) => !prev);
+  };
+
   return (
     <>
       <Button
         className="ai-floating-button"
         type="primary"
-        onClick={() => setOpen((prev) => !prev)}
+        style={{ right: floatingPosition.x, bottom: floatingPosition.y }}
+        onPointerDown={startDrag}
+        onPointerMove={dragFloatingButton}
+        onPointerUp={stopDrag}
+        onPointerCancel={stopDrag}
+        onClick={toggleOpen}
         aria-label="AI Assistant"
       >
         <RobotOutlined />
@@ -269,7 +332,11 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
       </Button>
 
       {open && (
-        <section className="ai-chat-panel" aria-label="AI chat panel">
+        <section
+          className="ai-chat-panel"
+          style={{ right: floatingPosition.x, bottom: floatingPosition.y + 64 }}
+          aria-label="AI chat panel"
+        >
           <header className="ai-chat-header">
             <div>
               <Space size={8} align="center">

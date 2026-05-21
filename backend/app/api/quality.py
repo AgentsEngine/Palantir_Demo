@@ -56,6 +56,151 @@ MOCK_INSPECTIONS = [
     {"id": 15, "inspection_type": "in_process", "target_type": "WorkOrder",   "target_id": 2, "result": "pass",    "inspector_id": 3, "inspected_at": "2026-04-18T11:30:00"},
 ]
 
+QUALITY_EVENT_DEMO = {
+    "events": [
+        {
+            "id": "QE-20260521-001",
+            "title": "电控模块焊点虚焊异常",
+            "severity": "critical",
+            "status": "open",
+            "owner_role": "quality_inspector",
+            "occurred_at": "2026-05-21T09:40:00",
+            "source": "制程检验 / AOI",
+            "description": "AOI 连续发现电控模块 V2 批次焊点虚焊，缺陷率达到 6.8%，超过 2.0% 管控线。",
+            "risk_score": 92,
+            "affected": {
+                "orders": 3,
+                "work_orders": 5,
+                "material_batches": 2,
+                "suppliers": 1,
+                "customers": 2,
+            },
+            "recommended_actions": ["生成 CAPA", "冻结批次", "发起复检", "通知采购"],
+        },
+        {
+            "id": "QE-20260521-002",
+            "title": "压铸壳体尺寸漂移",
+            "severity": "major",
+            "status": "triage",
+            "owner_role": "production_manager",
+            "occurred_at": "2026-05-21T10:18:00",
+            "source": "SPC / 尺寸测量",
+            "description": "壳体孔位尺寸出现连续 7 点偏移，影响装配线 WO-260521-014。",
+            "risk_score": 74,
+            "affected": {
+                "orders": 1,
+                "work_orders": 2,
+                "material_batches": 1,
+                "suppliers": 0,
+                "customers": 1,
+            },
+            "recommended_actions": ["发起复检", "创建维修工单"],
+        },
+    ],
+    "nodes": [
+        {
+            "id": "event-qe-001",
+            "label": "质量异常",
+            "type": "QualityEvent",
+            "name": "QE-20260521-001",
+            "status": "open",
+            "risk": "critical",
+            "summary": "电控模块 V2 批次焊点虚焊缺陷率 6.8%。",
+            "actions": ["AI 分析影响", "生成 CAPA", "通知相关角色"],
+        },
+        {
+            "id": "defect-001",
+            "label": "缺陷",
+            "type": "Defect",
+            "name": "焊点虚焊",
+            "status": "confirmed",
+            "risk": "critical",
+            "summary": "AOI 与人工复核均确认虚焊，主要集中在 BGA 区域。",
+            "actions": ["查看缺陷明细", "发起复检"],
+        },
+        {
+            "id": "inspection-iqc-088",
+            "label": "检验批次",
+            "type": "InspectionBatch",
+            "name": "IPQC-260521-088",
+            "status": "failed",
+            "risk": "critical",
+            "summary": "抽检 120 件，发现 8 件虚焊。",
+            "actions": ["复检批次", "导出检验记录"],
+        },
+        {
+            "id": "material-batch-mb-7781",
+            "label": "物料批次",
+            "type": "MaterialBatch",
+            "name": "MB-7781 / 焊锡膏 S12",
+            "status": "hold",
+            "risk": "major",
+            "summary": "同批次焊锡膏用于 5 个工单，建议先冻结待判定库存。",
+            "actions": ["冻结批次", "查看库存"],
+        },
+        {
+            "id": "supplier-s-023",
+            "label": "供应商",
+            "type": "Supplier",
+            "name": "北辰电子材料",
+            "status": "watch",
+            "risk": "major",
+            "summary": "近期交付批次质量波动，过去 30 天已有 2 次异常。",
+            "actions": ["通知采购", "发起供应商复核"],
+        },
+        {
+            "id": "workorder-260521-017",
+            "label": "工单",
+            "type": "WorkOrder",
+            "name": "WO-260521-017",
+            "status": "in_progress",
+            "risk": "major",
+            "summary": "装配 A 线工单，已生产 860 件，待隔离 240 件。",
+            "actions": ["暂停工单", "调整排产"],
+        },
+        {
+            "id": "equipment-smt-03",
+            "label": "设备",
+            "type": "Equipment",
+            "name": "SMT-03 回流焊",
+            "status": "running",
+            "risk": "medium",
+            "summary": "温区 5 曲线有轻微偏移，需要设备工程师复核。",
+            "actions": ["创建维修工单", "查看传感器趋势"],
+        },
+        {
+            "id": "order-so-8821",
+            "label": "客户订单",
+            "type": "CustomerOrder",
+            "name": "SO-8821 / 华东客户",
+            "status": "at_risk",
+            "risk": "major",
+            "summary": "预计影响 5 月 23 日交付，需确认替代批次。",
+            "actions": ["通知销售", "查看交付承诺"],
+        },
+        {
+            "id": "capa-072",
+            "label": "CAPA",
+            "type": "CAPA",
+            "name": "CAPA-072",
+            "status": "draft",
+            "risk": "medium",
+            "summary": "建议由质量工程师牵头，设备、工艺、采购协同处理。",
+            "actions": ["提交审批", "补充原因分析"],
+        },
+    ],
+    "edges": [
+        {"id": "r1", "source": "event-qe-001", "target": "defect-001", "label": "发现"},
+        {"id": "r2", "source": "defect-001", "target": "inspection-iqc-088", "label": "属于"},
+        {"id": "r3", "source": "inspection-iqc-088", "target": "material-batch-mb-7781", "label": "检验"},
+        {"id": "r4", "source": "material-batch-mb-7781", "target": "supplier-s-023", "label": "来自"},
+        {"id": "r5", "source": "material-batch-mb-7781", "target": "workorder-260521-017", "label": "用于"},
+        {"id": "r6", "source": "workorder-260521-017", "target": "equipment-smt-03", "label": "经过"},
+        {"id": "r7", "source": "workorder-260521-017", "target": "order-so-8821", "label": "影响"},
+        {"id": "r8", "source": "event-qe-001", "target": "capa-072", "label": "建议生成"},
+    ],
+}
+
 
 # DB session helper — unified via core.db.safe_db_call
 from app.core.db import safe_db_call as _try_db  # noqa: E402
@@ -530,6 +675,93 @@ class CAPACreate(BaseModel):
     description: str
     due_date: datetime
     assignee_id: int | None = None
+
+
+class QualityEventAction(BaseModel):
+    action: str
+    node_id: str | None = None
+    comment: str | None = None
+
+
+@router.get("/events")
+async def list_quality_events():
+    """List quality risk events for role workbenches."""
+    return {
+        "data": QUALITY_EVENT_DEMO["events"],
+        "summary": {
+            "open": sum(1 for e in QUALITY_EVENT_DEMO["events"] if e["status"] in {"open", "triage"}),
+            "critical": sum(1 for e in QUALITY_EVENT_DEMO["events"] if e["severity"] == "critical"),
+            "avg_risk_score": round(sum(e["risk_score"] for e in QUALITY_EVENT_DEMO["events"]) / len(QUALITY_EVENT_DEMO["events"]), 1),
+        },
+    }
+
+
+@router.get("/events/{event_id}/impact")
+async def get_quality_event_impact(event_id: str):
+    """Return event-centered object graph used by the quality closure UI."""
+    event = next((e for e in QUALITY_EVENT_DEMO["events"] if e["id"] == event_id), None)
+    if not event:
+        raise HTTPException(404, "Quality event not found")
+    return {
+        "data": {
+            "event": event,
+            "nodes": QUALITY_EVENT_DEMO["nodes"],
+            "edges": QUALITY_EVENT_DEMO["edges"],
+        }
+    }
+
+
+@router.post("/events/{event_id}/ai-suggestion")
+async def get_quality_event_ai_suggestion(event_id: str):
+    """Draft AIP-style recommendation without executing any business action."""
+    event = next((e for e in QUALITY_EVENT_DEMO["events"] if e["id"] == event_id), None)
+    if not event:
+        raise HTTPException(404, "Quality event not found")
+    return {
+        "data": {
+            "event_id": event_id,
+            "mode": "draft_only",
+            "summary": "该异常已同时影响物料批次、在制工单和客户订单，建议先隔离批次，再建立 CAPA 闭环。",
+            "evidence": [
+                "缺陷率 6.8%，超过 2.0% 管控线。",
+                "物料批次 MB-7781 被 5 个工单使用。",
+                "客户订单 SO-8821 存在交付风险。",
+            ],
+            "recommended_actions": [
+                {"action": "冻结批次", "priority": "P0", "owner": "质量经理", "reason": "阻断继续流入生产。"},
+                {"action": "生成 CAPA", "priority": "P0", "owner": "质量工程师", "reason": "形成原因分析、纠正和预防闭环。"},
+                {"action": "通知采购", "priority": "P1", "owner": "采购", "reason": "要求供应商提供批次证明与8D报告。"},
+                {"action": "创建维修工单", "priority": "P1", "owner": "设备工程师", "reason": "复核回流焊温区曲线。"},
+            ],
+        }
+    }
+
+
+@router.post("/events/{event_id}/actions")
+async def execute_quality_event_action(event_id: str, body: QualityEventAction):
+    """Execute demo action for quality event closure.
+
+    High-risk actions are represented as drafts/tasks; this endpoint does not
+    mutate production data in fallback mode.
+    """
+    event = next((e for e in QUALITY_EVENT_DEMO["events"] if e["id"] == event_id), None)
+    if not event:
+        raise HTTPException(404, "Quality event not found")
+
+    action_map = {
+        "generate_capa": {"status": "draft_created", "target": "CAPA-072", "message": "CAPA 草稿已生成，等待质量主管审批。"},
+        "freeze_batch": {"status": "hold_requested", "target": "MB-7781", "message": "批次冻结请求已创建，等待仓储确认。"},
+        "reinspect": {"status": "task_created", "target": "IPQC-260521-088", "message": "复检任务已派发给质量检验组。"},
+        "maintenance_order": {"status": "task_created", "target": "SMT-03", "message": "设备复核工单已创建。"},
+        "notify_purchase": {"status": "notified", "target": "北辰电子材料", "message": "采购与供应商质量负责人已收到通知。"},
+    }
+    return {
+        "data": {
+            "event_id": event_id,
+            "action": body.action,
+            **action_map.get(body.action, {"status": "recorded", "target": body.node_id, "message": "动作已记录。"}),
+        }
+    }
 
 
 @router.post("/capa")

@@ -571,6 +571,7 @@ export default function FormSettingsPage() {
                           className="designer-component"
                           draggable
                           key={item.key}
+                          data-desc={item.desc}
                           onClick={() => addComponentToCanvas(item)}
                           onDragStart={(event) => event.dataTransfer.setData('componentKey', item.key)}
                         >
@@ -623,23 +624,6 @@ export default function FormSettingsPage() {
         </aside>
 
         <main className="form-designer-canvas">
-          <div className="canvas-topbar">
-            <Space size={8}>
-              {tabs.find((item) => item.key === activeTab)?.icon}
-              <strong>{tabs.find((item) => item.key === activeTab)?.label}</strong>
-              {activeTab === 'form' && <span className="designer-shortcuts">Ctrl+C 复制 · Ctrl+V 粘贴 · Ctrl+Z 撤回 · Delete 移出</span>}
-            </Space>
-            <Space>
-              {activeTab === 'form' && (
-                <>
-                  <Button size="small" icon={<CopyOutlined />} onClick={() => duplicateControl(selectedControl)}>复制</Button>
-                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => removeControl()}>移出画布</Button>
-                </>
-              )}
-              <Tag>{baseConfig.primaryKey}</Tag>
-            </Space>
-          </div>
-
           {activeTab === 'form' && (
             <div
               className="canvas-board create-form-canvas"
@@ -722,9 +706,21 @@ export default function FormSettingsPage() {
             <strong>属性</strong>
             <span>当前：{selectedControl ? '控件' : selectedField ? '字段' : '画布'}</span>
           </div>
+          <div className="designer-prop-summary">
+            <span className="designer-prop-summary-badge">{selectedControl ? '控件' : selectedField ? '字段' : '画布'}</span>
+            <strong>{selectedControl?.name || selectedField?.name || baseConfig.name}</strong>
+            <small>
+              {selectedControl
+                ? `${selectedControl.controlType} · ${selectedControl.width === 'full' ? '整行' : '半行'}`
+                : selectedField
+                  ? `${selectedField.type} · ${selectedField.locked ? '锁定字段' : '可配置字段'}`
+                  : `${baseConfig.dataSource} · ${baseConfig.primaryKey}`}
+            </small>
+          </div>
 
           {selectedControl ? (
             <Tabs
+              className="designer-prop-tabs"
               size="small"
               items={[
                 {
@@ -760,7 +756,7 @@ export default function FormSettingsPage() {
               ]}
             />
           ) : selectedField ? (
-            <Tabs size="small" items={[{ key: 'field', label: '字段属性', children: renderFieldProperties(selectedField) }]} />
+            <Tabs className="designer-prop-tabs" size="small" items={[{ key: 'field', label: '字段属性', children: renderFieldProperties(selectedField) }]} />
           ) : (
             <div className="designer-props">
               <section className="designer-prop-section">

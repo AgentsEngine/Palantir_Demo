@@ -2,6 +2,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.app-program-page.app-program-business {
+  min-height: 0;
 }
 
 .app-program-header {
@@ -187,11 +193,12 @@
 .app-business-page {
   display: flex;
   flex-direction: column;
-  height: auto;
+  flex: 1;
+  height: 100%;
   min-height: 0;
   margin: 0;
   background: #f4f5f6;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .app-business-tabbar {
@@ -227,11 +234,13 @@
 }
 
 .app-business-content {
-  flex: initial;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   min-height: 0;
   padding: 16px;
   background: #ffffff;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .app-business-title-row {
@@ -265,6 +274,7 @@
   grid-template-columns: repeat(4, minmax(180px, 1fr));
   gap: 12px 16px;
   align-items: end;
+  margin-bottom: 14px;
   padding: 14px 166px 14px 14px;
   border: 1px solid #dfe6ec;
   border-radius: 4px;
@@ -312,6 +322,66 @@
 .app-business-data-table .ant-table {
   border: 1px solid #e4e8ec;
   border-radius: 0;
+}
+
+.app-business-data-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 0;
+}
+
+.app-business-data-table .ant-spin-nested-loading,
+.app-business-data-table .ant-spin-container {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+}
+
+.app-business-data-table .ant-spin-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-business-data-table .ant-table {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-business-data-table .ant-table-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-business-data-table .ant-table-container {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-business-data-table .ant-table-header {
+  flex-shrink: 0;
+}
+
+.app-business-data-table .ant-table-body {
+  flex: 1;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.app-business-data-table .ant-pagination {
+  flex-shrink: 0;
+  margin: 12px 0 0;
 }
 
 .app-business-data-table .ant-table-thead > tr > th {

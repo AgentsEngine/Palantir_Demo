@@ -36,6 +36,7 @@ import AppMenuManagement from '../SystemAdmin/AppMenuManagement';
 import RoleManagement from '../SystemAdmin/RoleManagement';
 import SemanticAssetCenter from '../SystemAdmin/SemanticAssetCenter';
 import UserManagement from '../SystemAdmin/UserManagement';
+import { PalantirConfigBlueprint } from '../SystemAdmin';
 
 interface CurrentApplication {
   name?: string;
@@ -91,6 +92,12 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
         label: '数据资产与本体',
         icon: <DatabaseOutlined />,
         children: <SemanticAssetCenter />,
+      },
+      {
+        key: 'palantir-config',
+        label: '运营闭环配置',
+        icon: <ApiOutlined />,
+        children: <PalantirConfigBlueprint />,
       },
       {
         key: 'users',

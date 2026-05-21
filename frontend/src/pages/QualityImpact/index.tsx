@@ -1,0 +1,460 @@
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Drawer,
+  Empty,
+  Modal,
+  Progress,
+  Row,
+  Space,
+  Statistic,
+  Steps,
+  Table,
+  Tag,
+  Typography,
+  message,
+} from 'antd';
+import {
+  ApiOutlined,
+  BranchesOutlined,
+  CheckCircleOutlined,
+  ControlOutlined,
+  FileProtectOutlined,
+  NodeIndexOutlined,
+  PauseCircleOutlined,
+  ReloadOutlined,
+  RobotOutlined,
+  SafetyCertificateOutlined,
+  SendOutlined,
+  ShareAltOutlined,
+  ThunderboltOutlined,
+  ToolOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
+import {
+  createCapa,
+  executeQualityEventAction,
+  getQualityEventAiSuggestion,
+  getQualityEventImpact,
+  listQualityEvents,
+} from '@/services/api';
+
+type RiskLevel = 'critical' | 'major' | 'medium' | 'low' | string;
+
+interface QualityEvent {
+  id: string;
+  title: string;
+  severity: RiskLevel;
+  status: string;
+  source: string;
+  occurred_at: string;
+  description: string;
+  risk_score: number;
+  affected: Record<string, number>;
+  recommended_actions: string[];
+}
+
+interface ImpactNode {
+  id: string;
+  label: string;
+  type: string;
+  name: string;
+  status: string;
+  risk: RiskLevel;
+  summary: string;
+  actions: string[];
+}
+
+interface ImpactEdge {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+}
+
+interface AiSuggestion {
+  summary: string;
+  evidence: string[];
+  recommended_actions: Array<{ action: string; priority: string; owner: string; reason: string }>;
+}
+
+const fallbackEvent: QualityEvent = {
+  id: 'QE-20260521-001',
+  title: '电控模块焊点虚焊异常',
+  severity: 'critical',
+  status: 'open',
+  source: '制程检验 / AOI',
+  occurred_at: '2026-05-21T09:40:00',
+  description: 'AOI 连续发现电控模块 V2 批次焊点虚焊，缺陷率达到 6.8%，超过 2.0% 管控线。',
+  risk_score: 92,
+  affected: { orders: 3, work_orders: 5, material_batches: 2, suppliers: 1, customers: 2 },
+  recommended_actions: ['生成 CAPA', '冻结批次', '发起复检', '通知采购'],
+};
+
+const fallbackNodes: ImpactNode[] = [
+  { id: 'event-qe-001', label: '质量异常', type: 'QualityEvent', name: 'QE-20260521-001', status: 'open', risk: 'critical', summary: '电控模块 V2 批次焊点虚焊缺陷率 6.8%。', actions: ['AI 分析影响', '生成 CAPA', '通知相关角色'] },
+  { id: 'defect-001', label: '缺陷', type: 'Defect', name: '焊点虚焊', status: 'confirmed', risk: 'critical', summary: 'AOI 与人工复核均确认虚焊，主要集中在 BGA 区域。', actions: ['查看缺陷明细', '发起复检'] },
+  { id: 'inspection-iqc-088', label: '检验批次', type: 'InspectionBatch', name: 'IPQC-260521-088', status: 'failed', risk: 'critical', summary: '抽检 120 件，发现 8 件虚焊。', actions: ['复检批次', '导出检验记录'] },
+  { id: 'material-batch-mb-7781', label: '物料批次', type: 'MaterialBatch', name: 'MB-7781 / 焊锡膏 S12', status: 'hold', risk: 'major', summary: '同批次焊锡膏用于 5 个工单，建议先冻结待判定库存。', actions: ['冻结批次', '查看库存'] },
+  { id: 'supplier-s-023', label: '供应商', type: 'Supplier', name: '北辰电子材料', status: 'watch', risk: 'major', summary: '近期交付批次质量波动，过去 30 天已有 2 次异常。', actions: ['通知采购', '发起供应商复核'] },
+  { id: 'workorder-260521-017', label: '工单', type: 'WorkOrder', name: 'WO-260521-017', status: 'in_progress', risk: 'major', summary: '装配 A 线工单，已生产 860 件，待隔离 240 件。', actions: ['暂停工单', '调整排产'] },
+  { id: 'equipment-smt-03', label: '设备', type: 'Equipment', name: 'SMT-03 回流焊', status: 'running', risk: 'medium', summary: '温区 5 曲线有轻微偏移，需要设备工程师复核。', actions: ['创建维修工单', '查看传感器趋势'] },
+  { id: 'order-so-8821', label: '客户订单', type: 'CustomerOrder', name: 'SO-8821 / 华东客户', status: 'at_risk', risk: 'major', summary: '预计影响 5 月 23 日交付，需确认替代批次。', actions: ['通知销售', '查看交付承诺'] },
+  { id: 'capa-072', label: 'CAPA', type: 'CAPA', name: 'CAPA-072', status: 'draft', risk: 'medium', summary: '建议由质量工程师牵头，设备、工艺、采购协同处理。', actions: ['提交审批', '补充原因分析'] },
+];
+
+const fallbackEdges: ImpactEdge[] = [
+  { id: 'r1', source: 'event-qe-001', target: 'defect-001', label: '发现' },
+  { id: 'r2', source: 'defect-001', target: 'inspection-iqc-088', label: '属于' },
+  { id: 'r3', source: 'inspection-iqc-088', target: 'material-batch-mb-7781', label: '检验' },
+  { id: 'r4', source: 'material-batch-mb-7781', target: 'supplier-s-023', label: '来自' },
+  { id: 'r5', source: 'material-batch-mb-7781', target: 'workorder-260521-017', label: '用于' },
+  { id: 'r6', source: 'workorder-260521-017', target: 'equipment-smt-03', label: '经过' },
+  { id: 'r7', source: 'workorder-260521-017', target: 'order-so-8821', label: '影响' },
+  { id: 'r8', source: 'event-qe-001', target: 'capa-072', label: '建议生成' },
+];
+
+const actionConfig = [
+  { key: 'generate_capa', label: '生成 CAPA', icon: <FileProtectOutlined />, danger: false },
+  { key: 'freeze_batch', label: '冻结批次', icon: <PauseCircleOutlined />, danger: true },
+  { key: 'reinspect', label: '发起复检', icon: <CheckCircleOutlined />, danger: false },
+  { key: 'maintenance_order', label: '创建维修工单', icon: <ToolOutlined />, danger: false },
+  { key: 'notify_purchase', label: '通知采购', icon: <SendOutlined />, danger: false },
+];
+
+const riskColor: Record<string, string> = {
+  critical: 'red',
+  major: 'orange',
+  medium: 'gold',
+  low: 'green',
+};
+
+const typeIcon: Record<string, JSX.Element> = {
+  QualityEvent: <WarningOutlined />,
+  Defect: <SafetyCertificateOutlined />,
+  InspectionBatch: <CheckCircleOutlined />,
+  MaterialBatch: <ApiOutlined />,
+  Supplier: <ShareAltOutlined />,
+  WorkOrder: <ControlOutlined />,
+  Equipment: <ToolOutlined />,
+  CustomerOrder: <SendOutlined />,
+  CAPA: <FileProtectOutlined />,
+};
+
+function normalizeRisk(level: RiskLevel) {
+  return riskColor[level] || 'blue';
+}
+
+export default function QualityImpactWorkbench() {
+  const [events, setEvents] = useState<QualityEvent[]>([fallbackEvent]);
+  const [event, setEvent] = useState<QualityEvent>(fallbackEvent);
+  const [nodes, setNodes] = useState<ImpactNode[]>(fallbackNodes);
+  const [edges, setEdges] = useState<ImpactEdge[]>(fallbackEdges);
+  const [selectedNodeId, setSelectedNodeId] = useState(fallbackNodes[0].id);
+  const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+
+  const selectedNode = useMemo(
+    () => nodes.find((node) => node.id === selectedNodeId) || nodes[0],
+    [nodes, selectedNodeId],
+  );
+
+  const visibleEdges = useMemo(
+    () => edges.filter((edge) => edge.source === selectedNode?.id || edge.target === selectedNode?.id),
+    [edges, selectedNode],
+  );
+
+  const loadEvent = async (eventId = event.id) => {
+    setLoading(true);
+    try {
+      const eventsRes = await listQualityEvents();
+      const nextEvents = eventsRes.data?.data || [fallbackEvent];
+      const matched = nextEvents.find((item: QualityEvent) => item.id === eventId) || nextEvents[0];
+      const impactRes = await getQualityEventImpact(matched.id);
+      const impact = impactRes.data?.data || {};
+      setEvents(nextEvents);
+      setEvent(impact.event || matched);
+      setNodes(impact.nodes || fallbackNodes);
+      setEdges(impact.edges || fallbackEdges);
+      setSelectedNodeId((impact.nodes || fallbackNodes)[0]?.id || fallbackNodes[0].id);
+      setAiSuggestion(null);
+    } catch {
+      setEvents([fallbackEvent]);
+      setEvent(fallbackEvent);
+      setNodes(fallbackNodes);
+      setEdges(fallbackEdges);
+      setSelectedNodeId(fallbackNodes[0].id);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadEvent();
+  }, []);
+
+  const runAiAnalysis = async () => {
+    setLoading(true);
+    try {
+      const res = await getQualityEventAiSuggestion(event.id);
+      setAiSuggestion(res.data?.data || null);
+      setAiOpen(true);
+    } catch {
+      setAiSuggestion({
+        summary: '该异常已影响物料、工单和客户订单，建议先隔离批次，再生成 CAPA 闭环。',
+        evidence: ['缺陷率超过管控线。', '同批物料用于多个在制工单。', '客户订单存在交付风险。'],
+        recommended_actions: [
+          { action: '冻结批次', priority: 'P0', owner: '质量经理', reason: '阻断风险继续扩散。' },
+          { action: '生成 CAPA', priority: 'P0', owner: '质量工程师', reason: '形成纠正与预防闭环。' },
+        ],
+      });
+      setAiOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runAction = async (action: string) => {
+    if (action === 'generate_capa') {
+      try {
+        await createCapa({
+          defect_id: 1,
+          action_type: 'corrective',
+          description: `${event.title} - CAPA 纠正预防措施`,
+          due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          assignee_id: 3,
+        });
+      } catch {
+        // The demo action endpoint below still records a fallback task.
+      }
+    }
+
+    try {
+      const res = await executeQualityEventAction(event.id, {
+        action,
+        node_id: selectedNode?.id,
+        comment: selectedNode?.summary,
+      });
+      message.success(res.data?.data?.message || '动作已创建');
+    } catch {
+      message.success('演示动作已创建，已进入待办闭环');
+    }
+  };
+
+  return (
+    <div className="quality-impact-page">
+      <section className="quality-command-hero">
+        <div>
+          <Typography.Text className="quality-command-kicker">Role Workbench / Quality Closure</Typography.Text>
+          <Typography.Title level={3}>智能运营指挥台</Typography.Title>
+          <Typography.Paragraph>
+            以质量异常为中心，把低代码对象、图谱关系、AI 建议和工作流动作串成一个可处置的业务闭环。
+          </Typography.Paragraph>
+        </div>
+        <Space wrap>
+          <Button icon={<ReloadOutlined />} onClick={() => loadEvent(event.id)} loading={loading}>刷新</Button>
+          <Button icon={<RobotOutlined />} onClick={runAiAnalysis} loading={loading}>AI 分析影响</Button>
+          <Button type="primary" icon={<FileProtectOutlined />} onClick={() => runAction('generate_capa')}>生成 CAPA</Button>
+        </Space>
+      </section>
+
+      <Row gutter={[14, 14]}>
+        <Col xs={24} xl={6}>
+          <Card className="quality-side-panel" title="质量事件">
+            <Space direction="vertical" size={10} style={{ width: '100%' }}>
+              {events.map((item) => (
+                <button
+                  key={item.id}
+                  className={`quality-event-card ${item.id === event.id ? 'active' : ''}`}
+                  onClick={() => loadEvent(item.id)}
+                >
+                  <span>
+                    <Badge color={normalizeRisk(item.severity)} />
+                    <strong>{item.title}</strong>
+                  </span>
+                  <small>{item.id} / {item.source}</small>
+                  <Progress percent={item.risk_score} size="small" strokeColor={item.risk_score > 85 ? '#c83f49' : '#d48806'} />
+                </button>
+              ))}
+            </Space>
+          </Card>
+
+          <Card className="quality-side-panel" title="角色入口">
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              {[
+                ['超级管理员', '配置对象/关系/动作/权限'],
+                ['质量经理', '处置异常、生成 CAPA、复检'],
+                ['采购', '查看供应商影响、发起复核'],
+                ['生产主管', '查看工单影响、调整排产'],
+              ].map(([role, desc]) => (
+                <div className="quality-role-row" key={role}>
+                  <strong>{role}</strong>
+                  <span>{desc}</span>
+                </div>
+              ))}
+            </Space>
+          </Card>
+        </Col>
+
+        <Col xs={24} xl={12}>
+          <Card
+            className="quality-impact-graph-card"
+            title="质量异常影响图谱"
+            extra={<Tag color="processing">{nodes.length} 对象 / {edges.length} 关系</Tag>}
+          >
+            <div className="quality-event-summary">
+              <Tag color={normalizeRisk(event.severity)}>{event.severity}</Tag>
+              <strong>{event.title}</strong>
+              <span>{event.description}</span>
+            </div>
+
+            <div className="quality-graph-canvas">
+              {nodes.map((node, index) => (
+                <button
+                  key={node.id}
+                  className={`quality-graph-node node-${index} risk-${node.risk} ${node.id === selectedNode?.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedNodeId(node.id)}
+                >
+                  <span>{typeIcon[node.type] || <NodeIndexOutlined />}</span>
+                  <strong>{node.label}</strong>
+                  <small>{node.name}</small>
+                </button>
+              ))}
+              {edges.map((edge, index) => (
+                <span key={edge.id} className={`quality-graph-edge edge-${index}`}>
+                  {edge.label}
+                </span>
+              ))}
+            </div>
+          </Card>
+
+          <Row gutter={[12, 12]} style={{ marginTop: 14 }}>
+            <Col span={8}><Card><Statistic title="风险分" value={event.risk_score} suffix="/100" prefix={<WarningOutlined />} /></Card></Col>
+            <Col span={8}><Card><Statistic title="影响工单" value={event.affected.work_orders || 0} prefix={<ControlOutlined />} /></Card></Col>
+            <Col span={8}><Card><Statistic title="影响订单" value={event.affected.orders || 0} prefix={<SendOutlined />} /></Card></Col>
+          </Row>
+        </Col>
+
+        <Col xs={24} xl={6}>
+          <Card className="quality-detail-panel" title="对象详情">
+            {selectedNode ? (
+              <Space direction="vertical" size={14} style={{ width: '100%' }}>
+                <div className="quality-node-head">
+                  <span>{typeIcon[selectedNode.type] || <NodeIndexOutlined />}</span>
+                  <div>
+                    <Typography.Text strong>{selectedNode.name}</Typography.Text>
+                    <br />
+                    <Tag color={normalizeRisk(selectedNode.risk)}>{selectedNode.type}</Tag>
+                    <Tag>{selectedNode.status}</Tag>
+                  </div>
+                </div>
+                <Alert type={selectedNode.risk === 'critical' ? 'error' : 'warning'} showIcon message={selectedNode.summary} />
+                <Descriptions size="small" column={1} bordered>
+                  <Descriptions.Item label="对象类型">{selectedNode.type}</Descriptions.Item>
+                  <Descriptions.Item label="对象状态">{selectedNode.status}</Descriptions.Item>
+                  <Descriptions.Item label="关联关系">{visibleEdges.length} 条</Descriptions.Item>
+                </Descriptions>
+                <Space wrap>
+                  {selectedNode.actions.map((action) => <Tag color="blue" key={action}>{action}</Tag>)}
+                </Space>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  {actionConfig.map((action) => (
+                    <Button
+                      key={action.key}
+                      block
+                      danger={action.danger}
+                      icon={action.icon}
+                      onClick={() => runAction(action.key)}
+                    >
+                      {action.label}
+                    </Button>
+                  ))}
+                </Space>
+              </Space>
+            ) : (
+              <Empty description="请选择图谱对象" />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[14, 14]} style={{ marginTop: 14 }}>
+        <Col xs={24} lg={14}>
+          <Card title="处置闭环">
+            <Steps
+              current={1}
+              items={[
+                { title: '异常发现', description: 'AOI/SPC 触发规则' },
+                { title: '影响分析', description: '图谱追踪对象关系' },
+                { title: '动作生成', description: 'CAPA/冻结/复检' },
+                { title: '审批执行', description: '进入工作流闭环' },
+              ]}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} lg={10}>
+          <Card title="低代码配置映射">
+            <Table
+              size="small"
+              pagination={false}
+              rowKey="config"
+              dataSource={[
+                { config: '业务对象', value: 'QualityEvent / Defect / CAPA' },
+                { config: '对象关系', value: '缺陷-批次-供应商-工单-订单' },
+                { config: '业务动作', value: '冻结、复检、生成 CAPA、通知' },
+                { config: '角色工作台', value: '质量经理 / 采购 / 生产主管' },
+              ]}
+              columns={[
+                { title: '配置项', dataIndex: 'config', width: 110 },
+                { title: '当前演示绑定', dataIndex: 'value' },
+              ]}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Drawer title="AI 影响分析草稿" open={aiOpen} width={520} onClose={() => setAiOpen(false)}>
+        {aiSuggestion ? (
+          <Space direction="vertical" size={14} style={{ width: '100%' }}>
+            <Alert type="info" showIcon message={aiSuggestion.summary} />
+            <Card size="small" title="证据">
+              <Space direction="vertical">
+                {aiSuggestion.evidence.map((item) => <Typography.Text key={item}>- {item}</Typography.Text>)}
+              </Space>
+            </Card>
+            <Table
+              size="small"
+              rowKey="action"
+              pagination={false}
+              dataSource={aiSuggestion.recommended_actions}
+              columns={[
+                { title: '优先级', dataIndex: 'priority', width: 70, render: (value) => <Tag color={value === 'P0' ? 'red' : 'orange'}>{value}</Tag> },
+                { title: '动作', dataIndex: 'action', width: 100 },
+                { title: '负责人', dataIndex: 'owner', width: 100 },
+                { title: '原因', dataIndex: 'reason' },
+              ]}
+            />
+            <Button type="primary" icon={<ThunderboltOutlined />} onClick={() => {
+              setAiOpen(false);
+              Modal.confirm({
+                title: '生成 CAPA 草稿',
+                content: 'AI 只生成草稿，不直接替用户完成高风险动作。确认后将进入流程待办。',
+                onOk: () => runAction('generate_capa'),
+              });
+            }}>
+              按建议生成 CAPA 草稿
+            </Button>
+          </Space>
+        ) : (
+          <Empty description="请先运行 AI 分析" />
+        )}
+      </Drawer>
+    </div>
+  );
+}

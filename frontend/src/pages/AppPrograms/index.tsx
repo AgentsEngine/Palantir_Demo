@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import DashboardPage from '../Dashboard';
 import MaintenancePage from '../Maintenance';
 import QualityPage from '../Quality';
+import QualityImpactWorkbench from '../QualityImpact';
 import SupplyChainPage from '../SupplyChain';
 import './style.css';
 
@@ -683,6 +684,10 @@ function AppProgramPage() {
     return <QualityPage />;
   }
 
+  if (programId === 'quality-event') {
+    return <QualityImpactWorkbench />;
+  }
+
   if (programId === 'supply-overview') {
     return <SupplyChainPage />;
   }
@@ -810,7 +815,7 @@ function BusinessProgram({ program, onSettings }: { program: ProgramDefinition; 
           columns={[...program.columns, { title: '操作', key: 'action', fixed: 'right', width: 160, render: (_, record) => <Space onClick={(event) => event.stopPropagation()}><Button type="link" size="small" onClick={() => setSelectedRow(record)}>详情</Button><Button type="link" size="small">处理</Button></Space> }]}
           dataSource={program.rows}
           pagination={{ pageSize: 10, showSizeChanger: false, showTotal: (total) => `共 ${total} 条记录` }}
-          scroll={{ x: 1100 }}
+          scroll={{ x: 1100, y: '100%' }}
           onRow={(record) => ({
             onClick: () => setSelectedRow(record),
           })}

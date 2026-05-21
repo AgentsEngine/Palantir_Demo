@@ -121,6 +121,10 @@
   overflow: auto;
 }
 
+.form-designer-right {
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
 .designer-panel-head {
   display: flex;
   align-items: center;
@@ -132,6 +136,72 @@
 .designer-panel-head span {
   color: #667085;
   font-size: 12px;
+}
+
+.designer-prop-summary {
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #dbe7ec;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(47, 102, 120, 0.1), transparent 38%),
+    #ffffff;
+  box-shadow: 0 8px 22px rgba(20, 52, 65, 0.06);
+}
+
+.designer-prop-summary-badge {
+  display: inline-flex;
+  margin-bottom: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e6f2f5;
+  color: #2f6678;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.designer-prop-summary strong,
+.designer-prop-summary small {
+  display: block;
+}
+
+.designer-prop-summary strong {
+  color: #152f3a;
+  font-size: 15px;
+}
+
+.designer-prop-summary small {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.designer-prop-tabs .ant-tabs-nav {
+  margin-bottom: 10px;
+}
+
+.designer-prop-tabs .ant-tabs-nav::before {
+  display: none;
+}
+
+.designer-prop-tabs .ant-tabs-tab {
+  margin: 0 !important;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #5f7280;
+  font-weight: 700;
+}
+
+.designer-prop-tabs .ant-tabs-tab-active {
+  background: #eaf4f7;
+}
+
+.designer-prop-tabs .ant-tabs-tab + .ant-tabs-tab {
+  margin-left: 6px !important;
+}
+
+.designer-prop-tabs .ant-tabs-ink-bar {
+  display: none;
 }
 
 .designer-panel-head-gap {
@@ -174,14 +244,47 @@
 }
 
 .designer-component {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px;
+  min-height: 40px;
+  padding: 8px 10px;
   border: 1px solid #e4eaf0;
   border-radius: 8px;
   background: #f8fafc;
   cursor: grab;
+}
+
+.designer-component:hover {
+  border-color: #b9d5df;
+  background: #f3fafc;
+}
+
+.designer-component::after {
+  content: attr(data-desc);
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  z-index: 20;
+  width: 190px;
+  padding: 8px 10px;
+  border: 1px solid #d4e2e8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #52606b;
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 10px 28px rgba(18, 42, 54, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(0, -50%) scale(0.98);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.designer-component:hover::after {
+  opacity: 1;
+  transform: translate(0, -50%) scale(1);
 }
 
 .designer-component-icon {
@@ -195,14 +298,12 @@
   color: #245c6f;
 }
 
-.designer-component strong,
-.designer-component small {
+.designer-component strong {
   display: block;
 }
 
 .designer-component small {
-  margin-top: 2px;
-  color: #667085;
+  display: none;
 }
 
 .designer-field {
@@ -232,8 +333,49 @@
 }
 
 .designer-props label > span {
-  color: #667085;
+  color: #546977;
   font-size: 12px;
+  font-weight: 700;
+}
+
+.designer-prop-section {
+  padding: 12px;
+  border: 1px solid #e1e9ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(18, 42, 54, 0.03);
+}
+
+.designer-prop-section + .designer-prop-section {
+  margin-top: 4px;
+}
+
+.designer-prop-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: #172026;
+  font-size: 13px;
+}
+
+.designer-prop-section-title::before {
+  content: '';
+  width: 4px;
+  height: 14px;
+  border-radius: 999px;
+  background: #2f6678;
+}
+
+.designer-props .ant-input,
+.designer-props .ant-input-affix-wrapper,
+.designer-props .ant-select-selector {
+  border-radius: 7px !important;
+  background: #f8fbfc !important;
+}
+
+.designer-props .ant-input[readonly] {
+  color: #243b47;
 }
 
 .designer-capability-list {
@@ -269,13 +411,17 @@
 
 .create-form-canvas {
   display: flex;
-  justify-content: center;
-  padding: 28px;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
 }
 
 .create-form-modal {
-  width: min(760px, 100%);
-  align-self: flex-start;
+  width: 100%;
+  min-height: 100%;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
   border: 1px solid #dce3ea;
   border-radius: 8px;
   background: #ffffff;
@@ -299,10 +445,12 @@
 }
 
 .create-form-grid {
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   padding: 16px;
+  align-content: flex-start;
 }
 
 .create-form-grid label {

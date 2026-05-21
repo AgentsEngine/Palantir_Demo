@@ -1,321 +1,160 @@
-# ManuFoundry 低代码平台架构
+# Low-Code Platform Architecture
 
-> 更新时间：2026-05-19  
-> 状态：产品结构和前端交互已成型，核心配置落库是下一阶段重点。
+Last updated: 2026-05-21
 
-## 1. 平台定位
+This document explains the low-code layer: applications, forms, menu assembly, actions, permissions, workflow bindings, and dynamic records.
 
-ManuFoundry 的低代码能力不是单纯的拖拽大屏，也不是传统后台 CRUD 生成器，而是面向制造业数据资产、本体对象、业务表单、流程和权限的一套配置平台。
+## 1. Core Concepts
 
-目标链路：
+| Concept | Meaning |
+| --- | --- |
+| Application | A business work package, such as production overview, maintenance, quality, or supply-chain risk. |
+| Form | A reusable business object configuration. It describes fields, layouts, actions, and storage behavior. |
+| Application-form binding | Makes a form available inside an application. |
+| Menu node | Organizes how users navigate inside an application. A node may be a group or a form entry. |
+| Dynamic record | A user-created record for a low-code form, stored as JSON/JSONB. |
+| Form action | A button/action such as create, edit, delete, export, submit, or workflow trigger. |
+| Workflow binding | Connects a form action to a workflow definition. |
 
-```text
-数据源
-  -> 数据表 / 数据集 / 字段字典
-  -> 本体对象 / 对象关系
-  -> 表单配置
-  -> 菜单装配
-  -> 应用发布
-  -> 普通用户使用
-```
+## 2. Current Persistence Status
 
-## 2. 用户视角
+The basic low-code persistence layer is implemented.
 
-### 2.1 普通用户
+Implemented:
 
-普通用户主要消费应用和页面。
+- migration `0006_platform_forms.py`
+- `/api/v1/forms`
+- form metadata
+- application-form bindings
+- application menu nodes
+- form fields
+- layouts
+- actions
+- permissions
+- workflow bindings
+- dynamic records
 
-```text
-顶部选择应用
-  -> 左侧看到当前应用的菜单结构
-  -> 打开某个业务页面
-  -> 在页面标题栏使用新增、刷新、导出、设置等动作
-```
+Still evolving:
 
-普通用户不需要理解数据表、本体、菜单绑定等后台概念。
+- advanced field types and validation UX
+- richer permission inheritance
+- bulk import/export for forms
+- high-volume indexing for dynamic records
+- full parity between older model-driven pages and the forms platform
 
-### 2.2 管理员
-
-管理员负责配置平台。
-
-```text
-系统管理
-  -> 应用与菜单
-     -> 应用管理
-     -> 表单管理
-     -> 应用装配
-  -> 数据资产与本体
-  -> 用户管理
-  -> 角色权限
-```
-
-管理员需要维护：
-
-- 应用本身：名称、编码、图标、默认入口、可见角色。
-- 表单本身：名称、编码、绑定本体对象、状态、字段配置。
-- 应用和表单关系：一个应用有哪些可用表单，一个表单能被哪些应用复用。
-- 菜单结构：当前应用下如何组织这些表单入口。
-- 权限关系：哪些角色能看应用、菜单、表单、字段、按钮、流程动作。
-
-## 3. 核心对象模型
-
-### 3.1 应用 Application
-
-应用是业务工作包。
-
-```text
-Application
-  id
-  name
-  code
-  description
-  icon
-  default_route
-  status
-  is_pinned
-  sort_order
-```
-
-应用示例：
-
-- 生产态势
-- 预测性维护
-- 质量分析
-- 供应链风险
-
-### 3.2 表单 Form
-
-表单是业务对象页面的配置单元。后续表单会绑定本体对象，而不是直接绑定数据库表。
-
-```text
-Form
-  id
-  name
-  code
-  ontology_object_id
-  source
-  status
-  owner
-  description
-  field_count
-```
-
-表单示例：
-
-- 生产总览表单
-- 产线状态表单
-- 设备健康表单
-- 故障预测表单
-- 维修工单表单
-- 告警中心表单
-- 质量事件表单
-- 检验批次表单
-- 供应商风险表单
-- 物料影响表单
-
-### 3.3 应用-表单绑定 ApplicationForm
-
-应用和表单是 N:N 关系。绑定关系上可以放应用内别名、默认视图、数据范围和动作能力。
-
-```text
-ApplicationForm
-  application_id
-  form_id
-  alias
-  enabled
-  default_view
-  data_scope
-  allow_create
-  allow_edit
-  allow_export
-  sort_order
-```
-
-### 3.4 菜单节点 ApplicationMenuNode
-
-菜单节点是应用内导航结构。它可以是分组，也可以是表单入口。
-
-```text
-ApplicationMenuNode
-  id
-  application_id
-  parent_id
-  node_type        # group | form
-  title
-  icon
-  form_id
-  route_path
-  visible
-  default_entry
-  sort_order
-```
-
-当前交互规则：
-
-- 拖拽表单到菜单结构，会创建表单菜单节点。
-- 如果表单未绑定当前应用，会同步创建应用-表单绑定。
-- 删除表单菜单节点，会移除当前入口。
-- 如果这是该表单最后一个菜单入口，会同步解除应用-表单绑定。
-- 删除分组节点，不删除子节点，子节点提升到同级。
-
-## 4. 配置关系图
+## 3. Data Model
 
 ```mermaid
 erDiagram
-  APPLICATION ||--o{ APPLICATION_FORM : contains
-  FORM ||--o{ APPLICATION_FORM : reused_by
-  APPLICATION ||--o{ APPLICATION_MENU_NODE : owns
-  APPLICATION_MENU_NODE ||--o{ APPLICATION_MENU_NODE : parent_child
-  FORM ||--o{ APPLICATION_MENU_NODE : opened_by
-  ROLE ||--o{ APPLICATION_ROLE : grants
-  APPLICATION ||--o{ APPLICATION_ROLE : visible_to
-  ONTOLOGY_OBJECT ||--o{ FORM : drives
+  applications ||--o{ application_forms : contains
+  forms ||--o{ application_forms : bound_to
+  applications ||--o{ application_menu_nodes : owns
+  forms ||--o{ application_menu_nodes : appears_as
+  forms ||--o{ form_fields : defines
+  forms ||--o{ form_layouts : has
+  forms ||--o{ form_actions : has
+  forms ||--o{ form_permissions : protects
+  forms ||--o{ workflow_bindings : triggers
+  forms ||--o{ dynamic_records : stores
 ```
 
-## 5. 页面设置模型
+## 4. Storage Principle
 
-每个普通业务页面都应该有“设置”入口。点击设置后进入该页面对应表单的后台配置界面。
+Creating a form or field is metadata-only by default.
 
-设置中心分三块：
+The platform writes configuration tables:
+
+- `forms`
+- `form_fields`
+- `form_layouts`
+- `form_actions`
+- `form_permissions`
+- `workflow_bindings`
+- `application_forms`
+- `application_menu_nodes`
+
+It does not create a physical business table per form. Business data for custom forms is stored in `dynamic_records.data`.
+
+This avoids uncontrolled DDL and keeps form design fast and reversible. Physicalization can be introduced later as an explicit admin-controlled operation.
+
+## 5. Runtime Flow
 
 ```text
-表单设置
-  -> 字段
-  -> 列表
-  -> 详情
-  -> 查询条件
-  -> 按钮动作
+Admin creates application
+  -> applications
 
-流程设置
-  -> 新建流程
-  -> 审批流程
-  -> 状态流转
-  -> 动作触发
+Admin creates form
+  -> forms
+  -> optional application_forms binding
 
-权限设置
-  -> 角色可见
-  -> 字段可见
-  -> 按钮可用
-  -> 数据范围
+Admin adds fields
+  -> form_fields
+
+Admin configures page layout/actions
+  -> form_layouts
+  -> form_actions
+  -> form_permissions
+  -> workflow_bindings
+
+Admin assembles menu
+  -> application_menu_nodes
+
+User opens app
+  -> /api/v1/applications
+  -> /api/v1/applications/{id}/menus
+
+User opens dynamic form page
+  -> /api/v1/forms/{form_id}
+  -> /api/v1/forms/{form_id}/records
+
+User creates/updates record
+  -> dynamic_records.data
 ```
 
-表单设置的主对象是本体对象，而不是数据库表，也不是菜单页面。
+## 6. Current API Surface
 
-## 6. 数据资产与本体
+All endpoints are mounted under `/api/v1/forms`.
 
-### 6.1 数据资产
+| Capability | Endpoint pattern |
+| --- | --- |
+| Forms | `GET /`, `POST /`, `GET /{form_id}`, `PUT /{form_id}` |
+| Fields | `POST /{form_id}/fields`, `PUT /{form_id}/fields/{field_id}`, `DELETE /{form_id}/fields/{field_id}` |
+| Layouts | `GET /{form_id}/layouts`, `PUT /{form_id}/layouts/{layout_type}` |
+| Actions | `GET /{form_id}/actions`, `POST /{form_id}/actions`, `PUT /{form_id}/actions/{action_id}`, `DELETE /{form_id}/actions/{action_id}` |
+| Permissions | `GET /{form_id}/permissions`, `POST /{form_id}/permissions`, `PUT /{form_id}/permissions/{permission_id}`, `DELETE /{form_id}/permissions/{permission_id}` |
+| Workflow bindings | `GET /{form_id}/workflow-bindings`, `POST /{form_id}/workflow-bindings`, `PUT /{form_id}/workflow-bindings/{binding_id}`, `DELETE /{form_id}/workflow-bindings/{binding_id}` |
+| Records | `GET /{form_id}/records`, `POST /{form_id}/records`, `PUT /{form_id}/records/{record_id}`, `DELETE /{form_id}/records/{record_id}` |
+| Application forms | `GET /applications/{application_id}/forms`, `PUT /applications/{application_id}/forms`, `DELETE /applications/{application_id}/forms/{form_id}` |
+| Application menu nodes | `GET /applications/{application_id}/menu-nodes`, `POST /applications/{application_id}/menu-nodes`, `PUT /applications/{application_id}/menu-nodes/{node_id}`, `DELETE /applications/{application_id}/menu-nodes/{node_id}` |
 
-数据资产中心负责维护：
+## 7. Relationship To Model-Driven Module
 
-- 数据源
-- 数据表
-- 数据集
-- 字段字典
-- 字段质量状态
-- 字段业务标签
+The older model-driven module still exists under `/api/v1/model-driven`.
 
-### 6.2 本体对象
+Use this distinction:
 
-本体建模中心负责维护：
+- **Model-driven**: metadata-driven CRUD around predefined/safe model names.
+- **Forms platform**: application-owned low-code forms, field metadata, menu assembly, dynamic JSON records, workflow/action configuration.
 
-- 本体对象：设备、工单、产线、告警、供应商、物料、质量事件等。
-- 本体字段：对象的业务字段。
-- 对象关系：设备产生工单、设备位于产线、告警影响物料等。
+They can coexist, but new application assembly and configurable forms should prefer the forms platform.
 
-### 6.3 图数据库定位
+## 8. Palantir Mapping
 
-图数据库不替代业务数据库。推荐定位是“映射增强层”：
+| Foundry-style idea | Low-code platform equivalent |
+| --- | --- |
+| Workshop / operational apps | Applications and application menus |
+| Object types | Forms and ontology-backed business objects |
+| Object properties | Form fields and semantic metadata |
+| Object actions | Form actions, rules, workflow bindings |
+| Data-to-action loop | Records -> rules/workflows/notifications -> user action |
+| Reusable operational tooling | Templates, reports, AI builder, config import/export |
 
-```text
-关系库 / 外部系统
-  -> 保存原始业务数据和结构化配置
+## 9. Next Work
 
-Neo4j / 图服务
-  -> 保存对象关系、血缘、影响分析、路径查询
-```
+Recommended next implementation slices:
 
-图谱能力应从本体对象和对象关系自动生成，而不是孤立 Demo。
-
-## 7. 当前实现状态
-
-已实现：
-
-- Foundry 风格全局 UI。
-- 登录后个人工作台。
-- 顶部应用切换。
-- 当前应用菜单加载。
-- 系统管理入口。
-- 应用管理、表单管理、应用装配 UI。
-- 表单拖拽到菜单结构。
-- 菜单分组。
-- 菜单删除、表单解绑、分组子节点上移。
-- 数据资产与本体中心入口。
-
-部分实现：
-
-- 后端已有 `applications`、`application_menus`、`application_roles` 基础模型和 API。
-- 后端已有模型驱动、菜单、规则、数据源、本体等 API 原型。
-- 前端会优先尝试后端 API，失败时使用 mock/fallback 数据。
-
-未完成：
-
-- 表单主数据落库。
-- 应用和表单 N:N 绑定落库。
-- 应用菜单树落库。
-- 应用装配页保存到后端。
-- 表单字段、查询、按钮、权限、流程配置完整落库。
-- 表单配置和本体对象的强绑定。
-- 图谱关系从本体配置自动生成。
-
-## 8. 下一阶段实施计划
-
-### 阶段 1：应用装配落库
-
-目标：系统管理里的应用、表单、菜单结构刷新不丢。
-
-任务：
-
-1. 新增或补齐表：`forms`、`application_forms`、`application_menu_nodes`。
-2. 新增 Alembic 迁移。
-3. 初始化制造业 Demo 表单和菜单分组。
-4. 新增 API：
-   - `GET /api/v1/admin/forms`
-   - `POST /api/v1/admin/forms`
-   - `PUT /api/v1/admin/forms/{id}`
-   - `GET /api/v1/admin/applications/{id}/assembly`
-   - `PUT /api/v1/admin/applications/{id}/assembly`
-5. 前端 `AppMenuManagement.tsx` 从本地 state 改为 API 读写。
-6. App 左侧菜单使用后端返回的完整分组树。
-
-### 阶段 2：表单配置落库
-
-目标：每个业务页面都能进入自己的表单设置。
-
-任务：
-
-1. 建立表单字段配置。
-2. 建立列表/详情/查询条件配置。
-3. 建立按钮动作配置。
-4. 建立字段权限和按钮权限。
-5. 建立表单与流程动作绑定。
-
-### 阶段 3：本体和图谱接入
-
-目标：表单不再只是页面配置，而是由本体对象驱动。
-
-任务：
-
-1. 表单绑定本体对象。
-2. 表单字段从本体字段选择。
-3. 对象关系生成详情页关联图。
-4. 图谱探索从本体关系生成。
-5. 支持邻居查询、路径查询、影响分析和血缘追踪。
-
-## 9. 开发原则
-
-- 普通业务菜单不直接展示“低代码配置中心”。
-- 系统配置能力统一放在系统管理或用户菜单下。
-- 应用、表单、菜单是三个不同概念，不能混在一起。
-- 菜单只是导航入口，表单才是业务配置对象。
-- 删除操作默认保守，避免误删子表单和已配置对象。
-- 当前 UI 可以先 Demo 闭环，但文档必须明确哪些能力尚未落库。
+1. Make all application assembly UI paths prefer database-backed forms/menu nodes.
+2. Add clear UI state labels for draft/published/archived forms.
+3. Improve dynamic record indexing and filtering.
+4. Add import/export for form packages.
+5. Define when a form should remain JSON-backed and when it should be physicalized.

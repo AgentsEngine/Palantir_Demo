@@ -74,6 +74,79 @@ export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
   const currentSlide = commandSlides[activeSlide];
 
+  const renderSceneContent = () => {
+    if (activeSlide === 0) {
+      return (
+        <div className="identity-scene-content scene-lowcode">
+          <p className="identity-summary-line">{currentSlide.summary}</p>
+          <div className="identity-assembly-flow">
+            {currentSlide.features.map((feature, index) => (
+              <div className="identity-assembly-step" key={feature.label}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <strong>{feature.label}</strong>
+                <small>{feature.desc}</small>
+              </div>
+            ))}
+          </div>
+          <div className="identity-signal-strip">
+            {currentSlide.orbit.map((node) => (
+              <span key={node}>{node}</span>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (activeSlide === 1) {
+      return (
+        <div className="identity-scene-content scene-agent">
+          <div className="identity-agent-hub" aria-hidden="true">
+            <div className="identity-agent-core">{currentSlide.core}</div>
+            {currentSlide.orbit.map((node, index) => (
+              <span className={`identity-agent-node node-${index + 1}`} key={node}>
+                {node}
+              </span>
+            ))}
+          </div>
+          <div className="identity-agent-queue">
+            <p className="identity-summary-line">{currentSlide.summary}</p>
+            {currentSlide.features.map((feature) => (
+              <div className="identity-feature-item" key={feature.label}>
+                <strong>{feature.label}</strong>
+                <span>{feature.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="identity-scene-content scene-ontology">
+        <p className="identity-summary-line">{currentSlide.summary}</p>
+        <div className="identity-ontology-map" aria-hidden="true">
+          <span className="identity-ontology-node main">{currentSlide.core}</span>
+          {currentSlide.orbit.map((node, index) => (
+            <span className={`identity-ontology-node node-${index + 1}`} key={node}>
+              {node}
+            </span>
+          ))}
+          <i className="identity-ontology-link link-1" />
+          <i className="identity-ontology-link link-2" />
+          <i className="identity-ontology-link link-3" />
+        </div>
+        <div className="identity-ontology-list">
+          {currentSlide.features.map((feature) => (
+            <div key={feature.label}>
+              <strong>{feature.label}</strong>
+              <span>{feature.desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   useEffect(() => {
     const timer = window.setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % commandSlides.length);
@@ -99,6 +172,10 @@ export default function LoginPage() {
   return (
     <div className="identity-shell">
       <div className="identity-grid" />
+      <div className="identity-breath-layer" aria-hidden="true">
+        <span />
+        <span />
+      </div>
       <div className="identity-halo identity-halo-a" />
       <div className="identity-halo identity-halo-b" />
       <div className="identity-motion-layer" aria-hidden="true">
@@ -116,28 +193,18 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="identity-command-panel">
+        <div className={`identity-command-panel scene-${activeSlide}`}>
+          <div className="identity-panel-glow" aria-hidden="true" />
           <div className="identity-panel-top">
-            <div>
+            <span className="identity-panel-icon">{currentSlide.icon}</span>
+            <div className="identity-panel-heading">
               <span className="identity-panel-eyebrow">{currentSlide.eyebrow}</span>
               <strong>{currentSlide.title}</strong>
             </div>
             <span className="identity-live-dot">{currentSlide.status}</span>
           </div>
-          <div className="identity-scene-switcher" aria-label="业务态势切换">
-            {commandSlides.map((slide, index) => (
-              <button
-                key={slide.title}
-                type="button"
-                className={index === activeSlide ? 'active' : ''}
-                onClick={() => setActiveSlide(index)}
-              >
-                <span>{slide.icon}</span>
-                {slide.tab}
-              </button>
-            ))}
-          </div>
-          <div className="identity-feature-stage">
+          {renderSceneContent()}
+          <div className="identity-feature-stage legacy-scene-stage" aria-hidden="true">
             <div className="identity-orbit-visual" aria-hidden="true">
               <div className="identity-orbit-ring" />
               <div className="identity-orbit-core">
@@ -151,14 +218,19 @@ export default function LoginPage() {
               <i className="identity-orbit-line line-1" />
               <i className="identity-orbit-line line-2" />
             </div>
-            <div className="identity-feature-copy">
-              <p>{currentSlide.summary}</p>
-              <div className="identity-feature-list">
+            <div className="identity-insight-board">
+              <p className="identity-summary-line">{currentSlide.summary}</p>
+              <div className="identity-feature-list" aria-label="能力编排">
                 {currentSlide.features.map((feature) => (
                   <div className="identity-feature-item" key={feature.label}>
                     <strong>{feature.label}</strong>
                     <span>{feature.desc}</span>
                   </div>
+                ))}
+              </div>
+              <div className="identity-signal-strip">
+                {currentSlide.orbit.map((node) => (
+                  <span key={node}>{node}</span>
                 ))}
               </div>
             </div>
