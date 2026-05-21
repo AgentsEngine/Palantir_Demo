@@ -51,7 +51,7 @@
 .form-designer-title {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -61,13 +61,6 @@
 
 .form-designer-title > .ant-space {
   align-items: baseline;
-}
-
-.form-designer-title > .ant-space::after {
-  content: "v0.1";
-  color: #667085;
-  font-size: 12px;
-  line-height: 1;
 }
 
 .designer-title-meta {
@@ -88,6 +81,11 @@
 
 .form-version-select {
   min-width: 112px;
+}
+
+.form-version-title-select {
+  min-width: 104px;
+  transform: translateY(-1px);
 }
 
 .form-version-select .ant-select-selector {

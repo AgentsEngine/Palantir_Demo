@@ -190,59 +190,49 @@ const versionOptions = [
 
 const componentGroups: Array<{ category: string; items: ComponentDefinition[] }> = [
   {
-    category: '字段控件',
+    category: '字段类型',
     items: [
-      { key: 'text', category: '字段控件', name: '文本输入', desc: '单行文本、名称、标题', icon: <FormOutlined />, controlType: 'text' },
-      { key: 'textarea', category: '字段控件', name: '多行文本', desc: '备注、原因、描述', icon: <FileSearchOutlined />, controlType: 'textarea', defaultWidth: 'full' },
-      { key: 'number', category: '字段控件', name: '数字输入', desc: '数量、金额、百分比', icon: <NumberOutlined />, controlType: 'number' },
-      { key: 'datetime', category: '字段控件', name: '日期时间', desc: '日期、时间范围', icon: <CalendarOutlined />, controlType: 'datetime' },
-      { key: 'select', category: '字段控件', name: '下拉选择', desc: '枚举字段', icon: <SelectOutlined />, controlType: 'select' },
-      { key: 'multi-select', category: '字段控件', name: '多选', desc: '标签、多个对象', icon: <TagsOutlined />, controlType: 'multi-select' },
-      { key: 'user', category: '字段控件', name: '人员选择', desc: '负责人、审批人', icon: <UserOutlined />, controlType: 'user' },
-      { key: 'relation', category: '字段控件', name: '关联对象', desc: '设备、供应商、物料', icon: <LinkOutlined />, controlType: 'relation' },
-      { key: 'upload', category: '字段控件', name: '附件上传', desc: '图片、文件、凭证', icon: <PaperClipOutlined />, controlType: 'upload', defaultWidth: 'full' },
-      { key: 'switch', category: '字段控件', name: '开关', desc: '是否、启用状态', icon: <SwitcherOutlined />, controlType: 'switch' },
+      { key: 'text', category: '字段类型', name: '文本类', desc: '单行文本、多行文本、说明文本', icon: <FormOutlined />, controlType: 'text' },
+      { key: 'number', category: '字段类型', name: '数值类', desc: '数量、金额、百分比、评分', icon: <NumberOutlined />, controlType: 'number' },
+      { key: 'datetime', category: '字段类型', name: '日期类', desc: '日期、时间、时间范围', icon: <CalendarOutlined />, controlType: 'datetime' },
+      { key: 'select', category: '字段类型', name: '选择类', desc: '下拉、单选、多选、枚举标签', icon: <SelectOutlined />, controlType: 'select' },
+      { key: 'relation', category: '字段类型', name: '对象类', desc: '人员、组织、设备、供应商、物料', icon: <LinkOutlined />, controlType: 'relation' },
+      { key: 'upload', category: '字段类型', name: '附件类', desc: '图片、文件、凭证、预览', icon: <PaperClipOutlined />, controlType: 'upload', defaultWidth: 'full' },
+      { key: 'switch', category: '字段类型', name: '布尔类', desc: '是否、启用、开关状态', icon: <SwitcherOutlined />, controlType: 'switch' },
     ],
   },
   {
-    category: '布局容器',
+    category: '布局控件',
     items: [
-      { key: 'section', category: '布局容器', name: '分组面板', desc: '基础信息、业务信息分区', icon: <HolderOutlined />, controlType: 'section', defaultWidth: 'full' },
-      { key: 'two-columns', category: '布局容器', name: '两列布局', desc: '常规双列录入', icon: <HolderOutlined />, controlType: 'two-columns', defaultWidth: 'full' },
-      { key: 'three-columns', category: '布局容器', name: '三列布局', desc: '高密度字段排版', icon: <HolderOutlined />, controlType: 'three-columns', defaultWidth: 'full' },
-      { key: 'collapse', category: '布局容器', name: '折叠区域', desc: '次要信息收起', icon: <HolderOutlined />, controlType: 'collapse', defaultWidth: 'full' },
-      { key: 'tabs', category: '布局容器', name: 'Tab 区域', desc: '多组信息切换', icon: <HolderOutlined />, controlType: 'tabs', defaultWidth: 'full' },
-      { key: 'divider', category: '布局容器', name: '分割线', desc: '视觉分割', icon: <HolderOutlined />, controlType: 'divider', defaultWidth: 'full' },
-      { key: 'hint', category: '布局容器', name: '提示文本', desc: '说明、风险提示', icon: <FileSearchOutlined />, controlType: 'hint', defaultWidth: 'full' },
+      { key: 'section', category: '布局控件', name: '信息分区', desc: '分组面板、标题区、基础信息区', icon: <HolderOutlined />, controlType: 'section', defaultWidth: 'full' },
+      { key: 'two-columns', category: '布局控件', name: '多列布局', desc: '两列、三列、高密度字段排版', icon: <HolderOutlined />, controlType: 'two-columns', defaultWidth: 'full' },
+      { key: 'tabs', category: '布局控件', name: '切换容器', desc: '折叠区域、Tab 区域、次要信息收起', icon: <HolderOutlined />, controlType: 'tabs', defaultWidth: 'full' },
+      { key: 'hint', category: '布局控件', name: '辅助分隔', desc: '分割线、提示文本、说明块', icon: <FileSearchOutlined />, controlType: 'hint', defaultWidth: 'full' },
     ],
   },
   {
-    category: '明细组件',
+    category: '数据控件',
     items: [
-      { key: 'editable-table', category: '明细组件', name: '可编辑子表', desc: '一张单据下多行明细', icon: <TableOutlined />, controlType: 'editable-table', defaultWidth: 'full' },
-      { key: 'readonly-table', category: '明细组件', name: '只读关联表', desc: '展示设备历史、风险记录', icon: <TableOutlined />, controlType: 'readonly-table', defaultWidth: 'full' },
-      { key: 'detail-cards', category: '明细组件', name: '明细卡片列表', desc: '移动端友好的明细展示', icon: <TableOutlined />, controlType: 'detail-cards', defaultWidth: 'full' },
+      { key: 'editable-table', category: '数据控件', name: '明细表格', desc: '可编辑子表、明细行、行校验', icon: <TableOutlined />, controlType: 'editable-table', defaultWidth: 'full' },
+      { key: 'readonly-table', category: '数据控件', name: '关联列表', desc: '只读关联表、历史记录、分页详情', icon: <TableOutlined />, controlType: 'readonly-table', defaultWidth: 'full' },
+      { key: 'summary-card', category: '数据控件', name: '数据摘要', desc: '摘要卡、统计值、关联对象概览', icon: <DatabaseOutlined />, controlType: 'summary-card', defaultWidth: 'full' },
     ],
   },
   {
-    category: '展示组件',
+    category: '展示控件',
     items: [
-      { key: 'readonly-text', category: '展示组件', name: '只读文本', desc: '展示计算或引用值', icon: <FileSearchOutlined />, controlType: 'readonly-text' },
-      { key: 'status-tag', category: '展示组件', name: '状态标签', desc: '状态、等级、结果', icon: <TagsOutlined />, controlType: 'status-tag' },
-      { key: 'file-preview', category: '展示组件', name: '图片/附件预览', desc: '查看附件内容', icon: <FileImageOutlined />, controlType: 'file-preview', defaultWidth: 'full' },
-      { key: 'description', category: '展示组件', name: '说明块', desc: '固定说明文案', icon: <FileSearchOutlined />, controlType: 'description', defaultWidth: 'full' },
-      { key: 'summary-card', category: '展示组件', name: '数据摘要卡', desc: '关联数据摘要', icon: <DatabaseOutlined />, controlType: 'summary-card', defaultWidth: 'full' },
+      { key: 'readonly-text', category: '展示控件', name: '只读展示', desc: '只读文本、计算值、引用值', icon: <FileSearchOutlined />, controlType: 'readonly-text' },
+      { key: 'status-tag', category: '展示控件', name: '状态展示', desc: '状态标签、等级、结果标识', icon: <TagsOutlined />, controlType: 'status-tag' },
+      { key: 'file-preview', category: '展示控件', name: '媒体预览', desc: '图片、附件、凭证预览', icon: <FileImageOutlined />, controlType: 'file-preview', defaultWidth: 'full' },
     ],
   },
   {
-    category: '业务增强组件',
+    category: '业务控件',
     items: [
-      { key: 'approval-comment', category: '业务增强组件', name: '审批意见区', desc: '流程处理意见', icon: <UserSwitchOutlined />, controlType: 'approval-comment', defaultWidth: 'full' },
-      { key: 'operation-log', category: '业务增强组件', name: '操作日志', desc: '历史操作记录', icon: <FileSearchOutlined />, controlType: 'operation-log', defaultWidth: 'full' },
-      { key: 'status-flow', category: '业务增强组件', name: '状态流转条', desc: '草稿、处理中、已关闭', icon: <UserSwitchOutlined />, controlType: 'status-flow', defaultWidth: 'full' },
-      { key: 'relation-summary', category: '业务增强组件', name: '关联对象摘要', desc: '设备、供应商摘要', icon: <LinkOutlined />, controlType: 'relation-summary', defaultWidth: 'full' },
-      { key: 'risk-level', category: '业务增强组件', name: '风险等级选择器', desc: '带颜色和校验规则', icon: <TagsOutlined />, controlType: 'risk-level' },
-      { key: 'validation-panel', category: '业务增强组件', name: '校验提示区', desc: '集中展示错误提示', icon: <FileSearchOutlined />, controlType: 'validation-panel', defaultWidth: 'full' },
+      { key: 'approval-comment', category: '业务控件', name: '审批处理', desc: '审批意见、处理说明、签批记录', icon: <UserSwitchOutlined />, controlType: 'approval-comment', defaultWidth: 'full' },
+      { key: 'operation-log', category: '业务控件', name: '操作记录', desc: '操作日志、变更记录、审计轨迹', icon: <FileSearchOutlined />, controlType: 'operation-log', defaultWidth: 'full' },
+      { key: 'status-flow', category: '业务控件', name: '状态流转', desc: '流程状态、节点进度、关闭归档', icon: <UserSwitchOutlined />, controlType: 'status-flow', defaultWidth: 'full' },
+      { key: 'risk-level', category: '业务控件', name: '风险校验', desc: '风险等级、校验提示、异常规则', icon: <TagsOutlined />, controlType: 'risk-level' },
     ],
   },
 ];
@@ -590,7 +580,8 @@ export default function FormSettingsPage() {
       <header className="form-designer-toolbar">
         <div className="form-designer-title">
           <Typography.Title level={4}>{baseConfig.name}配置</Typography.Title>
-          <span className="designer-title-meta">{baseConfig.status} · {version}</span>
+          <span className="designer-title-meta">{baseConfig.status}</span>
+          <Select className="form-version-select form-version-title-select" value={version} onChange={setVersion} options={versionOptions} />
         </div>
         <Tabs
           className="form-designer-tabs"
@@ -602,7 +593,6 @@ export default function FormSettingsPage() {
           items={tabs.map((item) => ({ key: item.key, label: <span>{item.icon}{item.label}</span> }))}
         />
         <Space wrap>
-          <Select className="form-version-select" value={version} onChange={setVersion} options={versionOptions} />
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/program/${baseConfig.id}`)}>返回表单</Button>
           <Button icon={<SaveOutlined />}>保存草稿</Button>
           <Button type="primary" icon={<CheckCircleOutlined />}>保存配置</Button>
@@ -612,8 +602,8 @@ export default function FormSettingsPage() {
       <section className="form-designer-shell">
         <aside className="form-designer-left">
           <div className="designer-panel-head">
-            <strong>组件</strong>
-            <span>{activeTab === 'form' ? '完整组件库' : tabs.find((item) => item.key === activeTab)?.label}</span>
+            <strong>控件</strong>
+            <span>{activeTab === 'form' ? '控件库' : tabs.find((item) => item.key === activeTab)?.label}</span>
           </div>
 
           {activeTab === 'form' ? (
@@ -624,8 +614,8 @@ export default function FormSettingsPage() {
                 value={componentPanel}
                 onChange={(value) => setComponentPanel(value as ComponentPanel)}
                 options={[
-                  { label: '各种组件', value: 'components' },
-                  { label: '字段种类', value: 'fieldTypes' },
+                  { label: '控件类型', value: 'components' },
+                  { label: '字段类型', value: 'fieldTypes' },
                 ]}
               />
               <div className="designer-component-library">

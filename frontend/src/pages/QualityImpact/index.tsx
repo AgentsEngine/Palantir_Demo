@@ -12,7 +12,6 @@ import {
   Space,
   Table,
   Tag,
-  Timeline,
   Typography,
   message,
 } from 'antd';
@@ -152,6 +151,8 @@ const taskFilters = ['全部', 'P0 高风险', '待分析', '待处置', '审批
 const closureTimeline = [
   {
     time: '09:40',
+    offset: 8,
+    width: 18,
     title: '异常发现',
     actor: 'AOI / SPC 规则',
     status: '已完成',
@@ -160,6 +161,8 @@ const closureTimeline = [
   },
   {
     time: '09:43',
+    offset: 30,
+    width: 24,
     title: '影响分析',
     actor: '质量经理',
     status: '进行中',
@@ -168,6 +171,8 @@ const closureTimeline = [
   },
   {
     time: '09:47',
+    offset: 58,
+    width: 22,
     title: 'AI 建议生成',
     actor: 'AIP 辅助层',
     status: '待确认',
@@ -176,6 +181,8 @@ const closureTimeline = [
   },
   {
     time: '待办',
+    offset: 83,
+    width: 12,
     title: 'CAPA / 复检执行',
     actor: '质量工程师',
     status: '未开始',
@@ -436,27 +443,40 @@ export default function QualityImpactWorkbench() {
       </div>
 
       <div className="quality-progress-row">
-        <Card title="任务进度：处置时间线" className="quality-progress-card">
-          <Timeline
-            mode="left"
-            items={closureTimeline.map((item) => ({
-              color: item.color,
-              label: <span className="quality-timeline-time">{item.time}</span>,
-              children: (
-                <div className="quality-timeline-item">
-                  <div>
-                    <strong>{item.title}</strong>
-                    <Tag color={item.status === '进行中' ? 'processing' : item.status === '已完成' ? 'success' : 'default'}>{item.status}</Tag>
-                  </div>
-                  <p>{item.desc}</p>
-                  <span>{item.actor}</span>
-                </div>
-              ),
-            }))}
-          />
-          <div className="quality-config-link">
-            <BranchesOutlined />
-            <span>对象、关系、动作和角色配置由后台低代码配置中心维护，此处只展示业务处置结果。</span>
+        <Card className="quality-progress-card">
+          <div className="quality-timeline-board">
+            <div className="quality-time-ruler">
+              {['09:40', '09:43', '09:47', '09:50', '09:55', '10:00'].map((tick) => (
+                <span key={tick}>{tick}</span>
+              ))}
+            </div>
+            <div className="quality-timeline-track">
+              <span className="quality-now-line" />
+              {closureTimeline.map((item) => (
+                <button
+                  key={item.title}
+                  className={`quality-timeline-segment segment-${item.color}`}
+                  style={{ left: `${item.offset}%`, width: `${item.width}%` }}
+                  title={item.desc}
+                >
+                  <span>{item.time}</span>
+                  <strong>{item.title}</strong>
+                  <em>{item.actor}</em>
+                  <Tag color={item.status === '进行中' ? 'processing' : item.status === '已完成' ? 'success' : 'default'}>
+                    {item.status}
+                  </Tag>
+                </button>
+              ))}
+            </div>
+            <div className="quality-timeline-foot">
+              <span>任务处置轴</span>
+              <strong>当前停在：影响分析</strong>
+              <span>后续动作：确认 AI 建议 → 生成 CAPA → 进入审批</span>
+            </div>
+            <div className="quality-config-link">
+              <BranchesOutlined />
+              <span>对象、关系、动作和角色配置由后台低代码配置中心维护，此处只展示业务处置结果。</span>
+            </div>
           </div>
         </Card>
       </div>
