@@ -69,6 +69,55 @@ _MOCK_ROLES = [
      ]},
 ]
 
+_EXTRA_MOCK_ROLES = [
+    {"id": 4, "name": "quality_engineer", "label": "\u8d28\u91cf\u5de5\u7a0b\u5e08", "description": "\u8d28\u91cf\u603b\u89c8\u3001\u68c0\u9a8c\u6279\u6b21\u3001\u7f3a\u9677\u5206\u6790\u548c CAPA \u8ddf\u8e2a\u3002", "permissions": [
+        {"resource_type": "menu", "resource_key": "quality-analytics", "action": "view"},
+        {"resource_type": "form", "resource_key": "quality-event", "action": "edit"},
+    ]},
+    {"id": 5, "name": "maintenance_manager", "label": "\u8bbe\u5907\u7ef4\u62a4\u7ecf\u7406", "description": "\u8bbe\u5907\u5065\u5eb7\u3001\u6545\u969c\u9884\u6d4b\u3001\u7ef4\u4fee\u5de5\u5355\u548c\u7ef4\u62a4\u62a5\u8868\u3002", "permissions": [
+        {"resource_type": "menu", "resource_key": "predictive-maintenance", "action": "view"},
+        {"resource_type": "form", "resource_key": "maintenance-order", "action": "approve"},
+    ]},
+    {"id": 6, "name": "maintenance_engineer", "label": "\u7ef4\u4fee\u5de5\u7a0b\u5e08", "description": "\u7ef4\u4fee\u5de5\u5355\u6267\u884c\u3001\u8bbe\u5907\u70b9\u68c0\u548c\u544a\u8b66\u786e\u8ba4\u3002", "permissions": [
+        {"resource_type": "form", "resource_key": "maintenance-order", "action": "edit"},
+    ]},
+    {"id": 7, "name": "process_engineer", "label": "\u5de5\u827a\u5de5\u7a0b\u5e08", "description": "\u8fc7\u7a0b\u80fd\u529b\u3001\u5de5\u827a\u53c2\u6570\u548c\u5f02\u5e38\u5206\u6790\u3002", "permissions": [
+        {"resource_type": "report", "resource_key": "process-capability-dashboard", "action": "view"},
+    ]},
+    {"id": 8, "name": "supply_chain_manager", "label": "\u4f9b\u5e94\u94fe\u7ecf\u7406", "description": "\u4f9b\u5e94\u94fe\u98ce\u9669\u3001\u7269\u6599\u5f71\u54cd\u548c\u98ce\u9669\u590d\u6838\u3002", "permissions": [
+        {"resource_type": "menu", "resource_key": "supply-chain-risk", "action": "view"},
+        {"resource_type": "form", "resource_key": "risk-review", "action": "approve"},
+    ]},
+    {"id": 9, "name": "warehouse_operator", "label": "\u4ed3\u50a8\u64cd\u4f5c\u5458", "description": "\u7269\u6599\u51fa\u5165\u5e93\u3001\u5e93\u5b58\u6838\u5bf9\u548c\u5f71\u54cd\u8303\u56f4\u786e\u8ba4\u3002", "permissions": [
+        {"resource_type": "form", "resource_key": "material-impact", "action": "edit"},
+    ]},
+    {"id": 10, "name": "data_steward", "label": "\u6570\u636e\u4e13\u5458", "description": "\u4e3b\u6570\u636e\u7ef4\u62a4\u3001\u6570\u636e\u8d28\u91cf\u68c0\u67e5\u548c\u6570\u636e\u53d8\u66f4\u5ba1\u6279\u3002", "permissions": [
+        {"resource_type": "data", "resource_key": "master-data", "action": "edit"},
+    ]},
+    {"id": 11, "name": "approval_lead", "label": "\u5ba1\u6279\u8d1f\u8d23\u4eba", "description": "\u8de8\u6a21\u5757\u5ba1\u6279\u3001\u98ce\u9669\u653e\u884c\u548c\u4e1a\u52a1\u6d41\u7a0b\u7ec8\u5ba1\u3002", "permissions": [
+        {"resource_type": "workflow", "resource_key": "*", "action": "approve"},
+    ]},
+    {"id": 12, "name": "viewer", "label": "\u53ea\u8bfb\u89c2\u5bdf\u5458", "description": "\u53ea\u8bfb\u67e5\u770b\u5de5\u4f5c\u53f0\u3001\u770b\u677f\u548c\u57fa\u7840\u62a5\u8868\u3002", "permissions": [
+        {"resource_type": "menu", "resource_key": "*", "action": "view"},
+        {"resource_type": "report", "resource_key": "*", "action": "view"},
+    ]},
+]
+
+_EXTRA_MOCK_USERS_ADMIN = [
+    {"id": 4, "username": "pm_li", "display_name": "\u674e\u660e \u00b7 \u751f\u4ea7\u7ecf\u7406", "email": "pm.li@manufoundry.local", "is_active": True, "is_admin": False, "roles": [{"id": 2, "name": "production_manager", "label": "\u751f\u4ea7\u7ecf\u7406"}, {"id": 11, "name": "approval_lead", "label": "\u5ba1\u6279\u8d1f\u8d23\u4eba"}]},
+    {"id": 5, "username": "qe_wang", "display_name": "\u738b\u654f \u00b7 \u8d28\u91cf\u5de5\u7a0b\u5e08", "email": "qe.wang@manufoundry.local", "is_active": True, "is_admin": False, "roles": [{"id": 4, "name": "quality_engineer", "label": "\u8d28\u91cf\u5de5\u7a0b\u5e08"}]},
+    {"id": 6, "username": "mm_zhou", "display_name": "\u5468\u5f3a \u00b7 \u8bbe\u5907\u7ef4\u62a4\u7ecf\u7406", "email": "mm.zhou@manufoundry.local", "is_active": True, "is_admin": False, "roles": [{"id": 5, "name": "maintenance_manager", "label": "\u8bbe\u5907\u7ef4\u62a4\u7ecf\u7406"}]},
+    {"id": 7, "username": "me_sun", "display_name": "\u5b59\u6d69 \u00b7 \u7ef4\u4fee\u5de5\u7a0b\u5e08", "email": "me.sun@manufoundry.local", "is_active": True, "is_admin": False, "roles": [{"id": 6, "name": "maintenance_engineer", "label": "\u7ef4\u4fee\u5de5\u7a0b\u5e08"}]},
+    {"id": 8, "username": "pe_huang", "display_name": "\u9ec4\u5a77 \u00b7 \u5de5\u827a\u5de5\u7a0b\u5e08", "email": "pe.huang@manufoundry.local", "is_active": True, "is_admin": False, "roles": [{"id": 7, "name": "process_engineer", "label": "\u5de5\u827a\u5de5\u7a0b\u5e08"}]},
+    {"id": 9, "username": "scm_liu", "display_name": "\u5218\u6d0b \u00b7 \u4f9b\u5e94\u94fe\u7ecf\u7406", "email": "scm.liu@manufoundry.local", "is_active": True, "is_admin": False, "roles": [{"id": 8, "name": "supply_chain_manager", "label": "\u4f9b\u5e94\u94fe\u7ecf\u7406"}]},
+    {"id": 10, "username": "wh_feng", "display_name": "\u51af\u5b87 \u00b7 \u4ed3\u50a8\u64cd\u4f5c\u5458", "email": "wh.feng@manufoundry.local", "is_active": True, "is_admin": False, "roles": [{"id": 9, "name": "warehouse_operator", "label": "\u4ed3\u50a8\u64cd\u4f5c\u5458"}]},
+    {"id": 11, "username": "ds_he", "display_name": "\u4f55\u9759 \u00b7 \u6570\u636e\u4e13\u5458", "email": "ds.he@manufoundry.local", "is_active": True, "is_admin": False, "roles": [{"id": 10, "name": "data_steward", "label": "\u6570\u636e\u4e13\u5458"}]},
+    {"id": 12, "username": "auditor_gu", "display_name": "\u987e\u5b89 \u00b7 \u5ba1\u8ba1\u89c2\u5bdf\u5458", "email": "auditor.gu@manufoundry.local", "is_active": True, "is_admin": False, "roles": [{"id": 12, "name": "viewer", "label": "\u53ea\u8bfb\u89c2\u5bdf\u5458"}]},
+]
+
+_MOCK_ROLES = _MOCK_ROLES + _EXTRA_MOCK_ROLES
+_MOCK_USERS_ADMIN = _MOCK_USERS_ADMIN + _EXTRA_MOCK_USERS_ADMIN
+
 
 def _hash_password(password: str) -> str:
     """Delegate to core.security so admin & auth share the same algorithm."""

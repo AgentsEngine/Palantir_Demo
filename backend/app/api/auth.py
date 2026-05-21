@@ -44,6 +44,65 @@ _MOCK_USERS_RAW = [
     },
 ]
 
+_EXTRA_MOCK_USERS_RAW = [
+    {
+        "id": 4, "username": "pm_li", "display_name": "\u674e\u660e \u00b7 \u751f\u4ea7\u7ecf\u7406",
+        "email": "pm.li@manufoundry.local", "is_active": True, "is_admin": False,
+        "plain_password": "123456",
+        "roles": [{"id": 2, "name": "production_manager", "label": "\u751f\u4ea7\u7ecf\u7406"}, {"id": 11, "name": "approval_lead", "label": "\u5ba1\u6279\u8d1f\u8d23\u4eba"}],
+    },
+    {
+        "id": 5, "username": "qe_wang", "display_name": "\u738b\u654f \u00b7 \u8d28\u91cf\u5de5\u7a0b\u5e08",
+        "email": "qe.wang@manufoundry.local", "is_active": True, "is_admin": False,
+        "plain_password": "123456",
+        "roles": [{"id": 4, "name": "quality_engineer", "label": "\u8d28\u91cf\u5de5\u7a0b\u5e08"}],
+    },
+    {
+        "id": 6, "username": "mm_zhou", "display_name": "\u5468\u5f3a \u00b7 \u8bbe\u5907\u7ef4\u62a4\u7ecf\u7406",
+        "email": "mm.zhou@manufoundry.local", "is_active": True, "is_admin": False,
+        "plain_password": "123456",
+        "roles": [{"id": 5, "name": "maintenance_manager", "label": "\u8bbe\u5907\u7ef4\u62a4\u7ecf\u7406"}],
+    },
+    {
+        "id": 7, "username": "me_sun", "display_name": "\u5b59\u6d69 \u00b7 \u7ef4\u4fee\u5de5\u7a0b\u5e08",
+        "email": "me.sun@manufoundry.local", "is_active": True, "is_admin": False,
+        "plain_password": "123456",
+        "roles": [{"id": 6, "name": "maintenance_engineer", "label": "\u7ef4\u4fee\u5de5\u7a0b\u5e08"}],
+    },
+    {
+        "id": 8, "username": "pe_huang", "display_name": "\u9ec4\u5a77 \u00b7 \u5de5\u827a\u5de5\u7a0b\u5e08",
+        "email": "pe.huang@manufoundry.local", "is_active": True, "is_admin": False,
+        "plain_password": "123456",
+        "roles": [{"id": 7, "name": "process_engineer", "label": "\u5de5\u827a\u5de5\u7a0b\u5e08"}],
+    },
+    {
+        "id": 9, "username": "scm_liu", "display_name": "\u5218\u6d0b \u00b7 \u4f9b\u5e94\u94fe\u7ecf\u7406",
+        "email": "scm.liu@manufoundry.local", "is_active": True, "is_admin": False,
+        "plain_password": "123456",
+        "roles": [{"id": 8, "name": "supply_chain_manager", "label": "\u4f9b\u5e94\u94fe\u7ecf\u7406"}],
+    },
+    {
+        "id": 10, "username": "wh_feng", "display_name": "\u51af\u5b87 \u00b7 \u4ed3\u50a8\u64cd\u4f5c\u5458",
+        "email": "wh.feng@manufoundry.local", "is_active": True, "is_admin": False,
+        "plain_password": "123456",
+        "roles": [{"id": 9, "name": "warehouse_operator", "label": "\u4ed3\u50a8\u64cd\u4f5c\u5458"}],
+    },
+    {
+        "id": 11, "username": "ds_he", "display_name": "\u4f55\u9759 \u00b7 \u6570\u636e\u4e13\u5458",
+        "email": "ds.he@manufoundry.local", "is_active": True, "is_admin": False,
+        "plain_password": "123456",
+        "roles": [{"id": 10, "name": "data_steward", "label": "\u6570\u636e\u4e13\u5458"}],
+    },
+    {
+        "id": 12, "username": "auditor_gu", "display_name": "\u987e\u5b89 \u00b7 \u5ba1\u8ba1\u89c2\u5bdf\u5458",
+        "email": "auditor.gu@manufoundry.local", "is_active": True, "is_admin": False,
+        "plain_password": "123456",
+        "roles": [{"id": 12, "name": "viewer", "label": "\u53ea\u8bfb\u89c2\u5bdf\u5458"}],
+    },
+]
+
+_MOCK_USERS_RAW = _MOCK_USERS_RAW + _EXTRA_MOCK_USERS_RAW
+
 _MOCK_USERS = [
     {**u, "hashed_password": hash_password(u.pop("plain_password"))}
     for u in [dict(u) for u in _MOCK_USERS_RAW]

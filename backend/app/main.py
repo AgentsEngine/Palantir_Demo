@@ -90,6 +90,7 @@ from app.api import (  # noqa: E402
     data_sources,
     forms,
     graph,
+    knowledge,
     maintenance,
     model_driven,
     notifications,
@@ -122,6 +123,7 @@ app.include_router(graph.router, prefix="/api/v1/graph", tags=["图谱查询"])
 app.include_router(pipeline.router, prefix="/api/v1/pipelines", tags=["数据管线"])
 
 app.include_router(semantic_assets.router, prefix="/api/v1/semantic-assets", tags=["semantic-assets"])
+app.include_router(knowledge.router, prefix="/api/v1/knowledge", tags=["knowledge-base"])
 
 # Business modules
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["数据分析"])

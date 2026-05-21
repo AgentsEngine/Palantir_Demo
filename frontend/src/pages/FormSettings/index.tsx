@@ -32,7 +32,7 @@ import './style.css';
 type DesignerTab = 'form' | 'filter' | 'flow' | 'permission';
 type ComponentPanel = 'components' | 'fieldTypes';
 type ControlSource = 'field' | 'component';
-type ControlWidth = 'half' | 'full';
+type ControlWidth = 'quarter' | 'half' | 'threeQuarter' | 'full';
 
 interface DesignerField {
   key: string;
@@ -92,6 +92,25 @@ interface FlowNode {
   role: string;
   x: number;
   y: number;
+}
+
+const controlWidthOptions = [
+  { value: 'quarter', label: '25%' },
+  { value: 'half', label: '50%' },
+  { value: 'threeQuarter', label: '75%' },
+  { value: 'full', label: '100%' },
+];
+
+const FLOW_NODE_WIDTH = 220;
+const FLOW_NODE_HEIGHT = 72;
+
+function controlWidthLabel(width: ControlWidth) {
+  const option = controlWidthOptions.find((item) => item.value === width);
+  return option?.label || '50%';
+}
+
+function controlWidthClass(width: ControlWidth) {
+  return `control-width-${width}`;
 }
 
 const configs: Record<string, DesignerConfig> = {
@@ -289,15 +308,14 @@ function isEditableTarget(target: EventTarget | null) {
 function ruleToggle(defaultEnabled: boolean, title: string) {
   return (
     <div className="designer-rule-toggle">
-      <Segmented
-        size="small"
-        defaultValue={defaultEnabled ? 'yes' : 'no'}
-        options={[
-          { label: '是', value: 'yes' },
-          { label: '否', value: 'no' },
-        ]}
-      />
       <Button size="small" icon={<SettingOutlined />} title={`${title}条件配置`} />
+      <Button
+        className="designer-rule-check"
+        size="small"
+        type={defaultEnabled ? 'primary' : 'default'}
+        icon={<CheckCircleOutlined />}
+        title={defaultEnabled ? `${title}已启用` : `${title}未启用`}
+      />
     </div>
   );
 }
@@ -307,8 +325,8 @@ function makeFlowNodes(steps: string[]): FlowNode[] {
     id: `flow-${index}`,
     label: step,
     role: index === 0 ? 'start' : index === steps.length - 1 ? 'end' : 'task',
-    x: 56 + index * 172,
-    y: index % 2 === 0 ? 118 : 240,
+    x: 300,
+    y: 112 + index * 126,
   }));
 }
 
@@ -322,6 +340,7 @@ export default function FormSettingsPage() {
   const [layoutControls, setLayoutControls] = useState<LayoutControl[]>(baseConfig.fields.map(makeFieldControl));
   const [selectedControlId, setSelectedControlId] = useState<string>('');
   const [selectedAssetKey, setSelectedAssetKey] = useState<string>(baseConfig.fields[0]?.key || '');
+  const [propertyTab, setPropertyTab] = useState<'control' | 'field'>('control');
   const [copiedControl, setCopiedControl] = useState<LayoutControl | null>(null);
   const [history, setHistory] = useState<LayoutControl[][]>([]);
   const [flowNodes, setFlowNodes] = useState<FlowNode[]>(() => makeFlowNodes(baseConfig.flowSteps));
@@ -346,6 +365,14 @@ export default function FormSettingsPage() {
     setHistory([]);
     setFlowNodes(makeFlowNodes(baseConfig.flowSteps));
   }, [baseConfig.id, baseConfig.version, baseConfig.fields, baseConfig.flowSteps]);
+
+  useEffect(() => {
+    if (selectedControlId) {
+      setPropertyTab('control');
+      return;
+    }
+    if (selectedAssetKey) setPropertyTab('field');
+  }, [selectedAssetKey, selectedControlId]);
 
   const selectedControl = useMemo(
     () => layoutControls.find((control) => control.id === selectedControlId),
@@ -380,8 +407,8 @@ export default function FormSettingsPage() {
     if (!dragState || !canvas) return;
     const nextX = dragState.originX + (event.clientX - dragState.startX) / dragState.scaleX;
     const nextY = dragState.originY + (event.clientY - dragState.startY) / dragState.scaleY;
-    const maxX = Math.max(40, canvas.offsetWidth - 196);
-    const maxY = Math.max(60, canvas.offsetHeight - 112);
+    const maxX = Math.max(40, canvas.offsetWidth - FLOW_NODE_WIDTH - 24);
+    const maxY = Math.max(60, canvas.offsetHeight - FLOW_NODE_HEIGHT - 24);
     setFlowNodes((current) => current.map((node) => (
       node.id === dragState.id
         ? { ...node, x: Math.min(Math.max(28, nextX), maxX), y: Math.min(Math.max(72, nextY), maxY) }
@@ -423,6 +450,29 @@ export default function FormSettingsPage() {
     const control = makeComponentControl(component);
     commitLayoutChange((current) => [...current, control]);
     setSelectedControlId(control.id);
+  };
+
+  const updateSelectedControl = (patch: Partial<LayoutControl>) => {
+    if (!selectedControlId) return;
+    commitLayoutChange((current) => current.map((control) => (
+      control.id === selectedControlId ? { ...control, ...patch } : control
+    )));
+  };
+
+  const moveLayoutControl = (sourceId: string, targetId: string) => {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    commitLayoutChange((current) => {
+      const sourceIndex = current.findIndex((control) => control.id === sourceId);
+      const targetIndex = current.findIndex((control) => control.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return current;
+      const next = [...current];
+      const [source] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, source);
+      return next;
+    });
+    setSelectedControlId(sourceId);
+    const source = layoutControls.find((control) => control.id === sourceId);
+    if (source?.fieldKey) setSelectedAssetKey(source.fieldKey);
   };
 
   const duplicateControl = (control?: LayoutControl | null) => {
@@ -494,12 +544,32 @@ export default function FormSettingsPage() {
     </span>
   );
 
+  const getCanvasControlDragProps = (control: LayoutControl) => ({
+    draggable: true,
+    onDragStart: (event: React.DragEvent<HTMLDivElement>) => {
+      event.dataTransfer.setData('layoutControlId', control.id);
+      event.dataTransfer.effectAllowed = 'move';
+      setSelectedControlId(control.id);
+      if (control.fieldKey) setSelectedAssetKey(control.fieldKey);
+    },
+    onDragOver: (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    },
+    onDrop: (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      moveLayoutControl(event.dataTransfer.getData('layoutControlId'), control.id);
+    },
+  });
+
   const renderCanvasControl = (control: LayoutControl) => {
     const field = baseConfig.fields.find((item) => item.key === control.fieldKey);
     if (control.source === 'field' && field) {
       return (
         <div
-          className={`designer-field-control ${control.width === 'full' ? 'create-form-wide' : ''} ${selectedControlId === control.id ? 'canvas-field-active' : ''}`}
+          {...getCanvasControlDragProps(control)}
+          className={`designer-field-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''}`}
           key={control.id}
           onClick={() => {
             setSelectedControlId(control.id);
@@ -518,7 +588,8 @@ export default function FormSettingsPage() {
     if (control.controlType === 'editable-table' || control.controlType === 'readonly-table') {
       return (
         <div
-          className={`designer-table-control ${selectedControlId === control.id ? 'canvas-field-active' : ''}`}
+          {...getCanvasControlDragProps(control)}
+          className={`designer-table-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''}`}
           key={control.id}
           onClick={() => setSelectedControlId(control.id)}
         >
@@ -535,7 +606,8 @@ export default function FormSettingsPage() {
 
     return (
       <div
-        className={`designer-placeholder-control ${control.width === 'full' ? 'create-form-wide' : ''} ${selectedControlId === control.id ? 'canvas-field-active' : ''}`}
+        {...getCanvasControlDragProps(control)}
+        className={`designer-placeholder-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''}`}
         key={control.id}
         onClick={() => setSelectedControlId(control.id)}
       >
@@ -569,10 +641,10 @@ export default function FormSettingsPage() {
       <div className="designer-props">
         <section className="designer-prop-section">
           <strong className="designer-prop-section-title">字段资产</strong>
-          <label><span>字段编码</span><Input value={field.key} readOnly /></label>
+          <label className="designer-prop-locked"><span>字段编码</span><Input value={field.key} disabled suffix="锁定" /></label>
           <label><span>字段名称</span><Input value={field.name} readOnly /></label>
-          <label><span>字段类型</span><Input value={field.type} readOnly /></label>
-          <label><span>字段状态</span><Input value={field.locked ? '锁定字段' : '可配置字段'} readOnly /></label>
+          <label className="designer-prop-locked"><span>字段类型</span><Input value={field.type} disabled suffix="锁定" /></label>
+          <label className={field.locked ? 'designer-prop-locked' : undefined}><span>字段状态</span><Input value={field.locked ? '锁定字段' : '可配置字段'} disabled={field.locked} readOnly suffix={field.locked ? '锁定' : undefined} /></label>
         </section>
         <section className="designer-prop-section">
           <strong className="designer-prop-section-title">数据与校验</strong>
@@ -615,7 +687,8 @@ export default function FormSettingsPage() {
         </Space>
       </header>
 
-      <section className="form-designer-shell">
+      <section className={`form-designer-shell ${activeTab === 'permission' ? 'form-designer-shell-no-left' : ''}`}>
+        {activeTab !== 'permission' && (
         <aside className="form-designer-left">
           <div className="designer-panel-head">
             <strong>控件</strong>
@@ -631,34 +704,61 @@ export default function FormSettingsPage() {
                 onChange={(value) => setComponentPanel(value as ComponentPanel)}
                 options={[
                   { label: '控件类型', value: 'components' },
-                  { label: '字段类型', value: 'fieldTypes' },
+                  { label: '字段库', value: 'fieldTypes' },
                 ]}
               />
-              <div className="designer-component-library">
-                {(componentPanel === 'components' ? generalComponentGroups : fieldTypeComponentGroups).map((group) => (
-                  <section className="designer-component-group" key={group.category}>
-                    <div className="designer-group-title">{group.category}</div>
-                    <div className="designer-component-list">
-                      {group.items.map((item) => (
-                        <div
-                          className="designer-component"
-                          draggable
-                          key={item.key}
-                          data-desc={item.desc}
-                          onClick={() => addComponentToCanvas(item)}
-                          onDragStart={(event) => event.dataTransfer.setData('componentKey', item.key)}
-                        >
-                          <span className="designer-component-icon">{item.icon}</span>
-                          <div>
-                            <strong>{item.name}</strong>
-                            <small>{item.desc}</small>
+              {componentPanel === 'components' ? (
+                <div className="designer-component-library">
+                  {generalComponentGroups.map((group) => (
+                    <section className="designer-component-group" key={group.category}>
+                      <div className="designer-group-title">{group.category}</div>
+                      <div className="designer-component-list">
+                        {group.items.map((item) => (
+                          <div
+                            className="designer-component"
+                            draggable
+                            key={item.key}
+                            data-desc={item.desc}
+                            onClick={() => addComponentToCanvas(item)}
+                            onDragStart={(event) => event.dataTransfer.setData('componentKey', item.key)}
+                          >
+                            <span className="designer-component-icon">{item.icon}</span>
+                            <div>
+                              <strong>{item.name}</strong>
+                              <small>{item.desc}</small>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="designer-panel-head designer-panel-head-gap">
+                    <strong>字段库</strong>
+                    <span>{baseConfig.fields.length} 个</span>
+                  </div>
+                  <div className="designer-field-list">
+                    {baseConfig.fields.map((field) => (
+                      <div
+                        className={`designer-field ${selectedAssetKey === field.key ? 'designer-field-active' : ''}`}
+                        draggable
+                        key={field.key}
+                        onClick={() => {
+                          setSelectedAssetKey(field.key);
+                          setSelectedControlId('');
+                        }}
+                        onDragStart={(event) => event.dataTransfer.setData('fieldKey', field.key)}
+                      >
+                        <DragOutlined />
+                        <span>{field.name}</span>
+                        {field.locked && <Tag color="orange">锁定</Tag>}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <div className="designer-component-list">
@@ -672,29 +772,32 @@ export default function FormSettingsPage() {
             </div>
           )}
 
-          <div className="designer-panel-head designer-panel-head-gap">
-            <strong>{activeTab === 'filter' ? '筛选字段' : '字段库'}</strong>
-            <span>{(activeTab === 'filter' ? baseConfig.filters : baseConfig.fields).length} 个</span>
-          </div>
-          <div className="designer-field-list">
-            {(activeTab === 'filter' ? baseConfig.filters : baseConfig.fields).map((field) => (
-              <div
-                className={`designer-field ${selectedAssetKey === field.key ? 'designer-field-active' : ''}`}
-                draggable={activeTab === 'form'}
-                key={field.key}
-                onClick={() => {
-                  setSelectedAssetKey(field.key);
-                  setSelectedControlId('');
-                }}
-                onDragStart={(event) => event.dataTransfer.setData('fieldKey', field.key)}
-              >
-                <DragOutlined />
-                <span>{field.name}</span>
-                {field.locked && <Tag color="orange">锁定</Tag>}
+          {activeTab !== 'form' && (
+            <>
+              <div className="designer-panel-head designer-panel-head-gap">
+                <strong>{activeTab === 'filter' ? '筛选字段' : '字段库'}</strong>
+                <span>{(activeTab === 'filter' ? baseConfig.filters : baseConfig.fields).length} 个</span>
               </div>
-            ))}
-          </div>
+              <div className="designer-field-list">
+                {(activeTab === 'filter' ? baseConfig.filters : baseConfig.fields).map((field) => (
+                  <div
+                    className={`designer-field ${selectedAssetKey === field.key ? 'designer-field-active' : ''}`}
+                    key={field.key}
+                    onClick={() => {
+                      setSelectedAssetKey(field.key);
+                      setSelectedControlId('');
+                    }}
+                  >
+                    <DragOutlined />
+                    <span>{field.name}</span>
+                    {field.locked && <Tag color="orange">锁定</Tag>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </aside>
+        )}
 
         <main className="form-designer-canvas">
           {activeTab === 'form' && (
@@ -704,6 +807,7 @@ export default function FormSettingsPage() {
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => {
                 event.preventDefault();
+                if (event.dataTransfer.getData('layoutControlId')) return;
                 const fieldKey = event.dataTransfer.getData('fieldKey');
                 const componentKey = event.dataTransfer.getData('componentKey');
                 const field = baseConfig.fields.find((item) => item.key === fieldKey);
@@ -759,7 +863,7 @@ export default function FormSettingsPage() {
             >
               <div className="flow-canvas-guide">
                 <strong>流程节点画布</strong>
-                <span>拖拽节点调整位置，节点之间的连线会自动跟随。</span>
+                <span>从开始节点向下流转，拖拽节点可调整位置。</span>
               </div>
               <svg className="flow-connector-layer" aria-hidden="true">
                 <defs>
@@ -769,14 +873,14 @@ export default function FormSettingsPage() {
                 </defs>
                 {flowNodes.slice(0, -1).map((node, index) => {
                   const next = flowNodes[index + 1];
-                  const startX = node.x + 172;
-                  const startY = node.y + 40;
-                  const endX = next.x;
-                  const endY = next.y + 40;
-                  const bend = Math.max(56, Math.abs(endX - startX) / 2);
+                  const startX = node.x + FLOW_NODE_WIDTH / 2;
+                  const startY = node.y + FLOW_NODE_HEIGHT;
+                  const endX = next.x + FLOW_NODE_WIDTH / 2;
+                  const endY = next.y;
+                  const bend = Math.max(40, Math.abs(endY - startY) / 2);
                   return (
                     <path
-                      d={`M ${startX} ${startY} C ${startX + bend} ${startY}, ${endX - bend} ${endY}, ${endX} ${endY}`}
+                      d={`M ${startX} ${startY} C ${startX} ${startY + bend}, ${endX} ${endY - bend}, ${endX} ${endY}`}
                       key={`${node.id}-${next.id}`}
                     />
                   );
@@ -803,18 +907,81 @@ export default function FormSettingsPage() {
 
           {activeTab === 'permission' && (
             <div className="canvas-board permission-canvas">
-              {baseConfig.roles.map((role) => (
-                <div className="permission-row" key={role}>
-                  <strong>{role}</strong>
-                  <Space wrap>
-                    {['查看', '新增', '编辑', '导入', '导出', '设置'].map((item) => <Tag color="blue" key={item}>{item}</Tag>)}
-                  </Space>
+              <div className="permission-overview">
+                <div>
+                  <strong>权限设计</strong>
+                  <span>按角色配置动作权限、数据范围和字段级控制。</span>
                 </div>
-              ))}
+                <Tag color="blue">{baseConfig.name}</Tag>
+              </div>
+              <div className="permission-workbench">
+                <aside className="permission-role-rail">
+                  <div className="permission-section-title">角色</div>
+                  {baseConfig.roles.map((role, index) => (
+                    <button className={`permission-role-card ${index === 0 ? 'permission-role-active' : ''}`} key={role} type="button">
+                      <span className="permission-role-icon"><UserSwitchOutlined /></span>
+                      <span>
+                        <strong>{role}</strong>
+                        <small>{index === 0 ? '当前选中' : '可切换配置'}</small>
+                      </span>
+                    </button>
+                  ))}
+                </aside>
+                <div className="permission-main">
+                  <section className="permission-card">
+                    <div className="permission-section-title">动作权限</div>
+                    <div className="permission-action-grid">
+                      {[
+                        ['查看', true, '基础访问'],
+                        ['新增', true, '创建记录'],
+                        ['编辑', true, '修改记录'],
+                        ['删除', false, '高风险动作'],
+                        ['导入', true, '批量写入'],
+                        ['导出', true, '数据外发'],
+                        ['设置', false, '配置入口'],
+                        ['审批', true, '流程处理'],
+                      ].map(([name, enabled, desc]) => (
+                        <div className={`permission-action ${enabled ? 'permission-action-on' : 'permission-action-off'}`} key={name as string}>
+                          <span>{name}</span>
+                          <small>{desc}</small>
+                          <CheckCircleOutlined />
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="permission-card permission-scope-card">
+                    <div className="permission-section-title">数据范围</div>
+                    <div className="permission-scope-grid">
+                      <div><span>范围模式</span><strong>本部门 + 个人创建</strong></div>
+                      <div><span>数据条件</span><strong>所属设备组 / 处理人</strong></div>
+                      <div><span>敏感数据</span><strong>脱敏显示</strong></div>
+                    </div>
+                  </section>
+
+                  <section className="permission-card">
+                    <div className="permission-section-title">字段权限</div>
+                    <div className="permission-field-matrix">
+                      <div className="permission-field-head">
+                        <span>字段</span><span>可见</span><span>可编辑</span><span>必填</span>
+                      </div>
+                      {baseConfig.fields.map((field, index) => (
+                        <div className="permission-field-row" key={field.key}>
+                          <span>{field.name}</span>
+                          <Tag color="green">可见</Tag>
+                          <Tag color={field.locked ? 'default' : 'blue'}>{field.locked ? '锁定' : index < 2 ? '可编辑' : '只读'}</Tag>
+                          <Tag color={field.required ? 'orange' : 'default'}>{field.required ? '必填' : '可选'}</Tag>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              </div>
             </div>
           )}
         </main>
 
+        {activeTab !== 'permission' && (
         <aside className="form-designer-right">
           <div className="designer-panel-head">
             <strong>属性</strong>
@@ -825,7 +992,7 @@ export default function FormSettingsPage() {
             <strong>{selectedControl?.name || selectedField?.name || baseConfig.name}</strong>
             <small>
               {selectedControl
-                ? `${selectedControl.controlType} · ${selectedControl.width === 'full' ? '整行' : '半行'}`
+                ? `${selectedControl.controlType} · ${controlWidthLabel(selectedControl.width)}`
                 : selectedField
                   ? `${selectedField.type} · ${selectedField.locked ? '锁定字段' : '可配置字段'}`
                   : `${baseConfig.dataSource} · ${baseConfig.primaryKey}`}
@@ -836,6 +1003,8 @@ export default function FormSettingsPage() {
             <Tabs
               className="designer-prop-tabs"
               size="small"
+              activeKey={propertyTab}
+              onChange={(key) => setPropertyTab(key as 'control' | 'field')}
               items={[
                 {
                   key: 'control',
@@ -845,18 +1014,62 @@ export default function FormSettingsPage() {
                       <section className="designer-prop-section">
                         <strong className="designer-prop-section-title">基础显示</strong>
                         <label><span>控件名称</span><Input value={selectedControl.name} readOnly /></label>
-                        <label><span>控件类型</span><Input value={selectedControl.controlType} readOnly /></label>
-                        <label><span>展示标签</span>{ruleToggle(true, '显示标签')}</label>
+                        <label className="designer-prop-locked"><span>控件类型</span><Input value={selectedControl.controlType} disabled suffix="锁定" /></label>
                         <label><span>占位提示</span><Input value={selectedField?.placeholder || selectedControl.desc || '未配置'} readOnly /></label>
-                        <label><span>宽度</span><Select value={selectedControl.width} options={[{ value: 'half', label: '半行' }, { value: 'full', label: '整行' }]} /></label>
+                        <label><span>帮助说明</span><Input value="可在此补充录入说明" readOnly /></label>
+                      </section>
+                      <section className="designer-prop-section">
+                        <strong className="designer-prop-section-title">布局尺寸</strong>
+                        <label className="designer-prop-row-wide">
+                          <span>控件宽度</span>
+                          <div className="designer-width-picker">
+                            {controlWidthOptions.map((option, index) => (
+                              <button
+                                className={`designer-width-option ${selectedControl.width === option.value ? 'designer-width-option-active' : ''}`}
+                                key={option.value}
+                                onClick={() => updateSelectedControl({ width: option.value as ControlWidth })}
+                                type="button"
+                              >
+                                <i style={{ width: `${(index + 1) * 25}%` }} />
+                                <span>{option.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </label>
+                        <div className="designer-layout-settings">
+                          <div className="designer-layout-setting">
+                            <span>标签位置</span>
+                            <Segmented size="small" value="top" options={[{ value: 'top', label: '顶' }, { value: 'left', label: '左' }, { value: 'hidden', label: '隐' }]} />
+                          </div>
+                          <div className="designer-layout-setting">
+                            <span>内容对齐</span>
+                            <Segmented size="small" value="left" options={[{ value: 'left', label: '左' }, { value: 'center', label: '中' }, { value: 'right', label: '右' }]} />
+                          </div>
+                          <div className="designer-layout-setting">
+                            <span>控件高度</span>
+                            <Segmented size="small" value="standard" options={[{ value: 'compact', label: '紧' }, { value: 'standard', label: '标' }, { value: 'large', label: '高' }]} />
+                          </div>
+                          <div className="designer-layout-setting">
+                            <span>栅格间距</span>
+                            <Segmented size="small" value="normal" options={[{ value: 'tight', label: '窄' }, { value: 'normal', label: '常' }, { value: 'loose', label: '宽' }]} />
+                          </div>
+                        </div>
                       </section>
                       <section className="designer-prop-section">
                         <strong className="designer-prop-section-title">交互规则</strong>
-                        <label><span>绑定字段</span><Select value={selectedControl.fieldKey || undefined} placeholder="请选择绑定字段" options={baseConfig.fields.map((field) => ({ value: field.key, label: field.name }))} /></label>
+                        <label><span>展示标签</span>{ruleToggle(true, '显示标签')}</label>
                         <label><span>只读</span>{ruleToggle(false, '只读')}</label>
                         <label><span>必填</span>{ruleToggle(Boolean(selectedField?.required), '必填')}</label>
                         <label><span>显示条件</span><Input value="默认始终显示" readOnly /></label>
-                        <label><span>帮助说明</span><Input value="可在此补充录入说明" readOnly /></label>
+                        <label><span>默认聚焦</span>{ruleToggle(false, '默认聚焦')}</label>
+                        <label><span>允许清空</span>{ruleToggle(true, '允许清空')}</label>
+                      </section>
+                      <section className="designer-prop-section">
+                        <strong className="designer-prop-section-title">提示与联动</strong>
+                        <label><span>变更触发</span>{ruleToggle(false, '变更触发')}</label>
+                        <label><span>联动刷新</span><Input value="未绑定联动规则" readOnly /></label>
+                        <label><span>异常提示</span><Input value="使用字段校验提示" readOnly /></label>
+                        <label><span>权限覆盖</span><Input value="跟随表单权限" readOnly /></label>
                       </section>
                       {renderTableProperties()}
                     </div>
@@ -886,6 +1099,7 @@ export default function FormSettingsPage() {
             </div>
           )}
         </aside>
+        )}
       </section>
     </div>
   );

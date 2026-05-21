@@ -36,6 +36,7 @@ import {
   executeQualityEventAction,
   getQualityEventAiSuggestion,
   getQualityEventImpact,
+  getRelatedKnowledge,
   listQualityEvents,
 } from '@/services/api';
 
@@ -76,6 +77,17 @@ interface AiSuggestion {
   summary: string;
   evidence: string[];
   recommended_actions: Array<{ action: string; priority: string; owner: string; reason: string }>;
+}
+
+interface KnowledgeEvidence {
+  id: string;
+  title: string;
+  doc_type: string;
+  source_name: string;
+  source_ref: string;
+  chunk_text: string;
+  score: number;
+  linked_objects: Array<{ type: string; id: string; name: string }>;
 }
 
 const fallbackEvent: QualityEvent = {
@@ -199,6 +211,7 @@ export default function QualityImpactWorkbench() {
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
   const [loading, setLoading] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [knowledgeEvidence, setKnowledgeEvidence] = useState<KnowledgeEvidence[]>([]);
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) || nodes[0],
@@ -238,6 +251,20 @@ export default function QualityImpactWorkbench() {
   useEffect(() => {
     loadEvent();
   }, []);
+
+  useEffect(() => {
+    if (!selectedNode) {
+      setKnowledgeEvidence([]);
+      return;
+    }
+    getRelatedKnowledge({
+      object_type: selectedNode.type,
+      object_id: selectedNode.id,
+      limit: 3,
+    })
+      .then((res) => setKnowledgeEvidence(res.data?.data ?? []))
+      .catch(() => setKnowledgeEvidence([]));
+  }, [selectedNode?.id, selectedNode?.type]);
 
   const runAiAnalysis = async () => {
     setLoading(true);
@@ -398,6 +425,26 @@ export default function QualityImpactWorkbench() {
                 <Space wrap>
                   {selectedNode.actions.map((action) => <Tag color="blue" key={action}>{action}</Tag>)}
                 </Space>
+                <div className="quality-knowledge-panel">
+                  <Typography.Text strong>相关知识 / 证据</Typography.Text>
+                  {knowledgeEvidence.length ? (
+                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                      {knowledgeEvidence.map((item) => (
+                        <div className="quality-knowledge-card" key={item.id}>
+                          <Space size={6} wrap>
+                            <Tag color="processing">{item.doc_type}</Tag>
+                            <Tag>{Math.round((item.score ?? 0) * 100)}%</Tag>
+                          </Space>
+                          <Typography.Text strong>{item.title}</Typography.Text>
+                          <Typography.Paragraph>{item.chunk_text}</Typography.Paragraph>
+                          <Typography.Text type="secondary">{item.source_name} / {item.source_ref}</Typography.Text>
+                        </div>
+                      ))}
+                    </Space>
+                  ) : (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无关联证据" />
+                  )}
+                </div>
                 <div className="quality-action-stack">
                   {actionConfig.map((action) => (
                     <Button

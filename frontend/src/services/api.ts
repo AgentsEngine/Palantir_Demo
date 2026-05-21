@@ -90,6 +90,21 @@ export const listSemanticPageContracts = () => api.get('/semantic-assets/page-co
 export const getSemanticPageContract = (route: string) =>
   api.get('/semantic-assets/page-contracts/by-route', { params: { route } });
 
+// Knowledge base / local RAG MVP
+export const listKnowledgeSources = () => api.get('/knowledge/sources');
+export const listKnowledgeDocuments = (sourceId?: string) =>
+  api.get('/knowledge/documents', { params: { source_id: sourceId } });
+export const listKnowledgeChunks = (documentId: string) =>
+  api.get(`/knowledge/documents/${documentId}/chunks`);
+export const getRelatedKnowledge = (params?: { object_type?: string; object_id?: string; limit?: number }) =>
+  api.get('/knowledge/related', { params });
+export const searchKnowledge = (data: {
+  query: string;
+  limit?: number;
+  object_type?: string;
+  object_id?: string;
+}) => api.post('/knowledge/search', data);
+
 // Pipeline
 export const listPipelines = () => api.get('/pipelines');
 export const createPipeline = (data: Record<string, unknown>) => api.post('/pipelines', data);

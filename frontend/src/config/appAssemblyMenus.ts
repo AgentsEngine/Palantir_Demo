@@ -2,8 +2,20 @@ export type SavedAssemblyMenuNode = {
   key: string;
   label: string;
   formId?: string;
+  routePath?: string;
   visible?: boolean;
   defaultEntry?: boolean;
+  permissionMode?: 'inherit' | 'custom';
+  roleIds?: number[];
+  permissionActions?: string[];
+  permissionRules?: Array<{
+    subjectType: 'app_roles' | 'roles' | 'users';
+    roleIds?: number[];
+    userKeys?: string[];
+    actions: string[];
+    effect: 'allow' | 'deny';
+  }>;
+  dataScope?: string;
   children?: SavedAssemblyMenuNode[];
 };
 
@@ -59,6 +71,7 @@ const menuKeyRouteMap: Record<string, { route: string; icon: string }> = {
 };
 
 function routeInfoForNode(node: SavedAssemblyMenuNode): { route: string; icon: string } | undefined {
+  if (node.routePath) return { route: node.routePath, icon: 'AppstoreOutlined' };
   return menuKeyRouteMap[node.key] || (node.formId ? formRouteMap[node.formId] : undefined);
 }
 

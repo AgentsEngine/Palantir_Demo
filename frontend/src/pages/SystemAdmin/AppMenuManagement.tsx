@@ -83,6 +83,14 @@ type RoleRecord = {
   label: string;
 };
 
+type PermissionRule = {
+  subjectType: 'app_roles' | 'roles' | 'users';
+  roleIds?: number[];
+  userKeys?: string[];
+  actions: string[];
+  effect: 'allow' | 'deny';
+};
+
 type FormRecord = {
   id: string;
   name: string;
@@ -147,7 +155,13 @@ type MenuNode = DataNode & {
   routePath?: string;
   visible?: boolean;
   defaultEntry?: boolean;
+  permissionMode?: 'inherit' | 'custom';
+  roleIds?: number[];
+  permissionActions?: string[];
+  permissionRules?: PermissionRule[];
+  dataScope?: string;
   sortOrder?: number;
+  config?: Record<string, unknown> | null;
   children?: MenuNode[];
 };
 
@@ -413,6 +427,11 @@ function menuNode(
   formId?: string,
   children?: MenuNode[],
   defaultEntry = false,
+  permissionMode: 'inherit' | 'custom' = 'inherit',
+  roleIds: number[] = [],
+  permissionActions: string[] = ['view'],
+  permissionRules: PermissionRule[] = defaultPermissionRules(),
+  dataScope = 'current_app',
 ): MenuNode {
   return {
     key,
@@ -420,6 +439,11 @@ function menuNode(
     formId,
     visible: true,
     defaultEntry,
+    permissionMode,
+    roleIds,
+    permissionActions,
+    permissionRules,
+    dataScope,
     children,
   };
 }
@@ -428,13 +452,48 @@ function renderIcon(name?: string) {
   return iconMap[name || ''] || <AppstoreOutlined />;
 }
 
+function defaultPermissionRules(): PermissionRule[] {
+  return [{ subjectType: 'app_roles', actions: ['view'], effect: 'allow' }];
+}
+
+function normalizePermissionRules(raw: unknown): PermissionRule[] {
+  if (!Array.isArray(raw)) return defaultPermissionRules();
+  const rules = raw
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const source = item as Record<string, unknown>;
+      const subjectType = ['app_roles', 'roles', 'users'].includes(String(source.subjectType))
+        ? (source.subjectType as PermissionRule['subjectType'])
+        : 'app_roles';
+      const effect = source.effect === 'deny' ? 'deny' : 'allow';
+      const roleIds = Array.isArray(source.roleIds)
+        ? source.roleIds.map((roleId) => Number(roleId)).filter(Number.isFinite)
+        : [];
+      const userKeys = Array.isArray(source.userKeys)
+        ? source.userKeys.map((userKey) => String(userKey)).filter(Boolean)
+        : [];
+      const actions = Array.isArray(source.actions) && source.actions.length
+        ? source.actions.map((action) => String(action)).filter(Boolean)
+        : ['view'];
+      return { subjectType, roleIds, userKeys, actions, effect };
+    })
+    .filter(Boolean) as PermissionRule[];
+  return rules.length ? rules : defaultPermissionRules();
+}
+
 function serializeMenuNodes(nodes: MenuNode[]): SavedAssemblyMenuNode[] {
   return nodes.map((node) => ({
     key: node.key,
     label: getMenuLabel(node),
     formId: node.formId,
+    routePath: node.routePath,
     visible: node.visible,
     defaultEntry: node.defaultEntry,
+    permissionMode: node.permissionMode,
+    roleIds: node.roleIds,
+    permissionActions: node.permissionActions,
+    permissionRules: node.permissionRules,
+    dataScope: node.dataScope,
     children: node.children?.length ? serializeMenuNodes(node.children) : undefined,
   }));
 }
@@ -447,8 +506,19 @@ function restoreMenuNodes(nodes: SavedAssemblyMenuNode[]): MenuNode[] {
       node.formId,
       node.children?.length ? restoreMenuNodes(node.children) : undefined,
       node.defaultEntry,
+      node.permissionMode,
+      node.roleIds ?? [],
+      node.permissionActions ?? ['view'],
+      normalizePermissionRules(node.permissionRules),
+      node.dataScope ?? 'current_app',
     ),
     visible: node.visible ?? true,
+    routePath: node.routePath,
+    permissionMode: node.permissionMode ?? 'inherit',
+    roleIds: node.roleIds ?? [],
+    permissionActions: node.permissionActions ?? ['view'],
+    permissionRules: normalizePermissionRules(node.permissionRules),
+    dataScope: node.dataScope ?? 'current_app',
   }));
 }
 
@@ -497,21 +567,50 @@ function mapPlatformMenuNodesToTree(nodes: PlatformMenuNode[]): MenuNode[] {
   byParent.forEach((items) => items.sort((left, right) => left.sort_order - right.sort_order || left.id - right.id));
 
   const build = (parentId: number | null): MenuNode[] => (
-    (byParent.get(parentId) ?? []).map((node) => ({
-      ...menuNode(
-        `db-${node.id}`,
-        node.title,
-        node.form_id ? String(node.form_id) : undefined,
-        build(node.id),
-        node.default_entry,
-      ),
-      dbId: node.id,
-      parentDbId: node.parent_id ?? null,
-      routePath: node.route_path ?? undefined,
-      visible: node.visible,
-      defaultEntry: node.default_entry,
-      sortOrder: node.sort_order,
-    }))
+    (byParent.get(parentId) ?? []).map((node) => {
+      const permissionMode = node.config?.permission_mode === 'custom' ? 'custom' : 'inherit';
+      const roleIds = Array.isArray(node.config?.role_ids)
+        ? node.config.role_ids.map((roleId) => Number(roleId)).filter(Number.isFinite)
+        : [];
+      const permissionActions = Array.isArray(node.config?.permission_actions)
+        ? node.config.permission_actions.map((action) => String(action))
+        : ['view'];
+      const permissionRules = normalizePermissionRules(
+        node.config?.permission_rules ?? (
+          permissionMode === 'custom'
+            ? [{ subjectType: 'roles', roleIds, actions: permissionActions, effect: 'allow' }]
+            : [{ subjectType: 'app_roles', actions: permissionActions, effect: 'allow' }]
+        ),
+      );
+      const dataScope = typeof node.config?.data_scope === 'string' ? node.config.data_scope : 'current_app';
+
+      return {
+        ...menuNode(
+          `db-${node.id}`,
+          node.title,
+          node.form_id ? String(node.form_id) : undefined,
+          build(node.id),
+          node.default_entry,
+          permissionMode,
+          roleIds,
+          permissionActions,
+          permissionRules,
+          dataScope,
+        ),
+        dbId: node.id,
+        parentDbId: node.parent_id ?? null,
+        routePath: node.route_path ?? undefined,
+        visible: node.visible,
+        defaultEntry: node.default_entry,
+        permissionMode,
+        roleIds,
+        permissionActions,
+        permissionRules,
+        dataScope,
+        sortOrder: node.sort_order,
+        config: node.config,
+      };
+    })
   );
 
   return build(null);
@@ -667,8 +766,14 @@ export default function AppMenuManagement() {
       title: getMenuLabel(selectedMenu),
       formId: selectedMenu?.formId,
       formName: form?.name,
+      routePath: selectedMenu?.routePath,
       visible: selectedMenu?.visible ?? true,
       defaultEntry: selectedMenu?.defaultEntry ?? false,
+      permissionMode: selectedMenu?.permissionMode ?? 'inherit',
+      roleIds: selectedMenu?.roleIds ?? [],
+      permissionActions: selectedMenu?.permissionActions ?? ['view'],
+      permissionRules: selectedMenu?.permissionRules ?? defaultPermissionRules(),
+      dataScope: selectedMenu?.dataScope ?? 'current_app',
     });
   }, [forms, menuForm, selectedMenu]);
 
@@ -1021,9 +1126,18 @@ export default function AppMenuManagement() {
         await updatePlatformMenuNode(selectedApp.id, selectedMenu.dbId, {
           title: values.title,
           form_id: numericFormId,
+          route_path: values.routePath,
           node_type: numericFormId ? 'form' : 'group',
           visible: values.visible,
           default_entry: values.defaultEntry,
+          config: {
+            ...(selectedMenu.config ?? {}),
+            permission_mode: values.permissionMode ?? 'inherit',
+            role_ids: values.permissionMode === 'custom' ? values.roleIds ?? [] : [],
+            permission_actions: values.permissionActions ?? ['view'],
+            permission_rules: normalizePermissionRules(values.permissionRules),
+            data_scope: values.dataScope ?? 'current_app',
+          },
         });
       } catch {
         message.error('Failed to update menu node in database.');
@@ -1115,6 +1229,7 @@ export default function AppMenuManagement() {
             children: (
               <AssemblyWorkspace
                 apps={applications}
+                roles={roles}
                 forms={forms}
                 configs={appConfigs}
                 menus={currentMenus}
@@ -1123,7 +1238,6 @@ export default function AppMenuManagement() {
                 selectedMenu={selectedMenu}
                 boundFormIds={boundFormIds}
                 onSelectApp={setSelectedAppId}
-                onOpenAppConfig={() => setSelectedAppId(selectedApp.id)}
                 onOpenFormConfig={(formId) => {
                   setSelectedFormId(formId);
                 }}
@@ -1610,6 +1724,7 @@ function FormManagement({
 
 function AssemblyWorkspace({
   apps,
+  roles,
   forms,
   configs,
   menus,
@@ -1618,7 +1733,6 @@ function AssemblyWorkspace({
   selectedMenu,
   boundFormIds,
   onSelectApp,
-  onOpenAppConfig,
   onOpenFormConfig,
   onToggleBinding,
   onAddFormToMenu,
@@ -1630,6 +1744,7 @@ function AssemblyWorkspace({
   onDeleteMenu,
 }: {
   apps: AppRecord[];
+  roles: RoleRecord[];
   forms: FormRecord[];
   configs: AppFormConfig[];
   menus: MenuNode[];
@@ -1638,7 +1753,6 @@ function AssemblyWorkspace({
   selectedMenu?: MenuNode;
   boundFormIds: Set<string>;
   onSelectApp: (id: number) => void;
-  onOpenAppConfig: () => void;
   onOpenFormConfig: (id: string) => void;
   onToggleBinding: (id: string) => void;
   onAddFormToMenu: (form: FormRecord) => void;
@@ -1707,15 +1821,14 @@ function AssemblyWorkspace({
     <div className="app-assembly-workspace">
       <section className="assembly-help">
         <div>
-          <Typography.Title level={5}>应用装配</Typography.Title>
+          <Typography.Title level={5}>
+            应用装配
+            <Typography.Text className="assembly-current-app">：{selectedApp.name}</Typography.Text>
+          </Typography.Title>
           <Typography.Text type="secondary">
             左侧选择应用，中间维护这个应用可用的表单，右侧通过拖拽菜单树把表单组织成导航。
           </Typography.Text>
         </div>
-        <Space>
-          <Button icon={<AppstoreOutlined />} onClick={onOpenAppConfig}>应用配置</Button>
-          <Tag color="processing">{selectedApp.name}</Tag>
-        </Space>
       </section>
 
       <Row gutter={[16, 16]} className="assembly-grid">
@@ -1738,7 +1851,7 @@ function AssemblyWorkspace({
           </Card>
         </Col>
 
-        <Col xs={24} xl={7}>
+        <Col xs={24} xl={5}>
           <Card title="表单" className="assembly-column-card" extra={<Tag>{configs.length} 已绑定</Tag>}>
             <div className="assembly-form-list">
               <div className="assembly-form-section-title">当前应用表单</div>
@@ -1776,7 +1889,7 @@ function AssemblyWorkspace({
           </Card>
         </Col>
 
-        <Col xs={24} xl={6}>
+        <Col xs={24} xl={7}>
               <Card
                 title={<Space><MenuOutlined />菜单结构</Space>}
                 className="assembly-menu-card"
@@ -1807,25 +1920,160 @@ function AssemblyWorkspace({
                 )}
               </Card>
         </Col>
-        <Col xs={24} xl={6}>
+        <Col xs={24} xl={7}>
               <Card title="菜单节点属性" className="assembly-property-card">
                 {selectedMenu ? (
-                  <Form form={menuForm} layout="vertical" size="small">
-                    <Form.Item name="title" label="菜单名称">
-                      <Input />
-                    </Form.Item>
-                    <Form.Item name="formId" label="绑定表单">
-                      <Select
-                        allowClear
-                        options={forms.map((form) => ({ label: form.name, value: form.id }))}
-                      />
-                    </Form.Item>
-                    <Form.Item name="visible" label="是否显示" valuePropName="checked">
-                      <Switch />
-                    </Form.Item>
-                    <Form.Item name="defaultEntry" label="默认入口" valuePropName="checked">
-                      <Switch />
-                    </Form.Item>
+                  <Form form={menuForm} layout="vertical" size="small" className="assembly-node-editor">
+                    <div className="node-editor-hero">
+                      <div>
+                        <Typography.Text type="secondary">当前节点</Typography.Text>
+                        <Form.Item name="title" noStyle>
+                          <Input className="node-title-input" placeholder="菜单名称" />
+                        </Form.Item>
+                      </div>
+                      <div className="node-state-switches">
+                        <Form.Item name="visible" valuePropName="checked" noStyle>
+                          <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+                        </Form.Item>
+                        <Form.Item name="defaultEntry" valuePropName="checked" noStyle>
+                          <Switch checkedChildren="入口" unCheckedChildren="入口" />
+                        </Form.Item>
+                      </div>
+                    </div>
+                    <div className="node-editor-grid">
+                      <div className="node-config-card wide">
+                        <div>
+                          <Typography.Text strong>导航绑定</Typography.Text>
+                          <Typography.Text type="secondary">绑定表单与可选路由，决定菜单点击后的目标。</Typography.Text>
+                        </div>
+                        <Form.Item name="formId" noStyle>
+                          <Select
+                            allowClear
+                            placeholder="绑定表单"
+                            options={forms.map((form) => ({ label: form.name, value: form.id }))}
+                          />
+                        </Form.Item>
+                        <Form.Item name="routePath" noStyle>
+                          <Input placeholder="自定义路由，如 /program/device-health" />
+                        </Form.Item>
+                      </div>
+                      <div className="node-config-card">
+                        <Typography.Text strong>数据范围</Typography.Text>
+                        <Typography.Text type="secondary">进入页面后的默认数据边界。</Typography.Text>
+                        <Form.Item name="dataScope" noStyle>
+                          <Select
+                            options={[
+                              { label: '当前应用', value: 'current_app' },
+                              { label: '所在组织', value: 'organization' },
+                              { label: '所属团队', value: 'team' },
+                              { label: '仅本人', value: 'self' },
+                            ]}
+                          />
+                        </Form.Item>
+                      </div>
+                      <div className="node-config-card wide permission-rule-panel">
+                        <div className="permission-rule-head">
+                          <div>
+                            <Typography.Text strong>访问权限规则</Typography.Text>
+                            <Typography.Text type="secondary">
+                              每条规则定义一批角色或用户可以执行的操作，可叠加多条规则形成通配授权。
+                            </Typography.Text>
+                          </div>
+                          <Form.List name="permissionRules">
+                            {(fields, { add, remove }) => (
+                              <>
+                                <Button
+                                  size="small"
+                                  icon={<PlusOutlined />}
+                                  onClick={() => add({ subjectType: 'roles', roleIds: [], userKeys: [], actions: ['view'], effect: 'allow' })}
+                                >
+                                  新增规则
+                                </Button>
+                                <div className="permission-rule-list">
+                                  {fields.map((field, index) => (
+                                    <div className="permission-rule-row" key={field.key}>
+                                      <div className="permission-rule-row-head">
+                                        <span className="permission-rule-index">规则 {index + 1}</span>
+                                        <Space size={6}>
+                                          <Form.Item name={[field.name, 'effect']} noStyle>
+                                            <Select
+                                              className="permission-rule-effect"
+                                              options={[
+                                                { label: '允许', value: 'allow' },
+                                                { label: '拒绝', value: 'deny' },
+                                              ]}
+                                            />
+                                          </Form.Item>
+                                          <Button danger size="small" icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
+                                        </Space>
+                                      </div>
+                                      <div className="permission-rule-fields">
+                                        <label>
+                                          <span>授权对象</span>
+                                          <Form.Item name={[field.name, 'subjectType']} noStyle>
+                                            <Select
+                                              options={[
+                                                { label: '应用默认角色', value: 'app_roles' },
+                                                { label: '指定角色', value: 'roles' },
+                                                { label: '指定用户', value: 'users' },
+                                              ]}
+                                            />
+                                          </Form.Item>
+                                        </label>
+                                        <label className="wide">
+                                          <span>对象范围</span>
+                                          <Form.Item noStyle shouldUpdate>
+                                            {({ getFieldValue }) => {
+                                              const subjectType = getFieldValue(['permissionRules', field.name, 'subjectType']);
+                                              if (subjectType === 'users') {
+                                                return (
+                                                  <Form.Item name={[field.name, 'userKeys']} noStyle>
+                                                    <Select mode="tags" placeholder="输入用户账号或邮箱" />
+                                                  </Form.Item>
+                                                );
+                                              }
+                                              if (subjectType === 'roles') {
+                                                return (
+                                                  <Form.Item name={[field.name, 'roleIds']} noStyle>
+                                                    <Select
+                                                      mode="multiple"
+                                                      placeholder="选择角色"
+                                                      options={roles.map((role) => ({ label: `${role.label} / ${role.name}`, value: role.id }))}
+                                                    />
+                                                  </Form.Item>
+                                                );
+                                              }
+                                              return <div className="permission-rule-inherit">跟随当前应用可见角色</div>;
+                                            }}
+                                          </Form.Item>
+                                        </label>
+                                        <label className="wide">
+                                          <span>可执行操作</span>
+                                          <Form.Item name={[field.name, 'actions']} noStyle>
+                                            <Select
+                                              mode="multiple"
+                                              placeholder="操作权限"
+                                              options={[
+                                                { label: '查看', value: 'view' },
+                                                { label: '新增', value: 'create' },
+                                                { label: '编辑', value: 'edit' },
+                                                { label: '导出', value: 'export' },
+                                                { label: '审批', value: 'approve' },
+                                                { label: '删除', value: 'delete' },
+                                              ]}
+                                            />
+                                          </Form.Item>
+                                        </label>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </Form.List>
+                        </div>
+                      </div>
+                    </div>
                     <Space.Compact block>
                       <Button type="primary" icon={<SaveOutlined />} onClick={onSaveMenu}>
                         保存节点
@@ -2173,8 +2421,22 @@ function updateMenuNode(nodes: MenuNode[], key: string, values: any): MenuNode[]
         ...node,
         title: <MenuTitle label={values.title} formId={values.formId} defaultEntry={values.defaultEntry} />,
         formId: values.formId,
+        routePath: values.routePath,
         visible: values.visible,
         defaultEntry: values.defaultEntry,
+        permissionMode: values.permissionMode,
+        roleIds: values.roleIds,
+        permissionActions: values.permissionActions,
+        permissionRules: normalizePermissionRules(values.permissionRules),
+        dataScope: values.dataScope,
+        config: {
+          ...(node.config ?? {}),
+          permission_mode: values.permissionMode ?? 'inherit',
+          role_ids: values.permissionMode === 'custom' ? values.roleIds ?? [] : [],
+          permission_actions: values.permissionActions ?? ['view'],
+          permission_rules: normalizePermissionRules(values.permissionRules),
+          data_scope: values.dataScope ?? 'current_app',
+        },
       };
     }
     return { ...node, children: updateMenuNode(node.children ?? [], key, values) };
