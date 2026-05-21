@@ -306,7 +306,7 @@ export default function QualityImpactWorkbench() {
 
       <div className="quality-command-grid">
         <aside className="quality-left-rail">
-          <Card className="quality-side-panel quality-task-panel" title="任务区" extra={<Tag color="red">P0</Tag>}>
+          <Card className="quality-side-panel quality-task-panel">
             <div className="quality-task-filter">
               {taskFilters.map((filter, index) => (
                 <button key={filter} className={index === 0 ? 'active' : ''}>{filter}</button>
@@ -351,11 +351,7 @@ export default function QualityImpactWorkbench() {
         </aside>
 
         <main className="quality-center-stage">
-          <Card
-            className="quality-impact-graph-card"
-            title="任务展示：影响图谱"
-            extra={<Tag color="processing">{nodes.length} 对象 / {edges.length} 关系</Tag>}
-          >
+          <Card className="quality-impact-graph-card">
             <div className="quality-event-summary">
               <Tag color={normalizeRisk(event.severity)}>{event.severity}</Tag>
               <strong>{event.title}</strong>

@@ -2,13 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ApiOutlined,
   AppstoreOutlined,
-  BranchesOutlined,
   CheckCircleOutlined,
   ControlOutlined,
   DatabaseOutlined,
   FileDoneOutlined,
   FormOutlined,
-  NodeIndexOutlined,
   ReloadOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,

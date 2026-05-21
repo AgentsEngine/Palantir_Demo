@@ -4965,6 +4965,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-top: 12px !important;
 }
 
 .quality-task-filter {
@@ -5000,6 +5001,10 @@ button {
   flex: 1 1 auto;
   min-height: 0;
   grid-template-rows: auto minmax(360px, 1fr) auto;
+}
+
+.quality-impact-graph-card > .ant-card-body {
+  border-radius: 10px;
 }
 
 .quality-graph-canvas {
