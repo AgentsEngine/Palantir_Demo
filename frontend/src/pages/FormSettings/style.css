@@ -894,6 +894,37 @@
   height: 26px;
 }
 
+.designer-rule-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px;
+  gap: 6px;
+  align-items: center;
+}
+
+.designer-rule-toggle .ant-segmented {
+  width: 100%;
+  padding: 2px;
+  background: #f2f6f8;
+}
+
+.designer-rule-toggle .ant-segmented-item {
+  flex: 1;
+  min-height: 20px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.designer-rule-toggle .ant-segmented-group {
+  display: flex;
+}
+
+.designer-rule-toggle .ant-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #2f6678;
+}
+
 .permission-canvas {
   display: flex;
   flex-direction: column;

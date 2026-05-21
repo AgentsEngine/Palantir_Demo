@@ -846,15 +846,15 @@ export default function FormSettingsPage() {
                         <strong className="designer-prop-section-title">基础显示</strong>
                         <label><span>控件名称</span><Input value={selectedControl.name} readOnly /></label>
                         <label><span>控件类型</span><Input value={selectedControl.controlType} readOnly /></label>
-                        <label><span>展示标签</span><Select value="show" options={[{ value: 'show', label: '显示' }, { value: 'hide', label: '隐藏' }]} /></label>
+                        <label><span>展示标签</span>{ruleToggle(true, '显示标签')}</label>
                         <label><span>占位提示</span><Input value={selectedField?.placeholder || selectedControl.desc || '未配置'} readOnly /></label>
                         <label><span>宽度</span><Select value={selectedControl.width} options={[{ value: 'half', label: '半行' }, { value: 'full', label: '整行' }]} /></label>
                       </section>
                       <section className="designer-prop-section">
                         <strong className="designer-prop-section-title">交互规则</strong>
                         <label><span>绑定字段</span><Select value={selectedControl.fieldKey || undefined} placeholder="请选择绑定字段" options={baseConfig.fields.map((field) => ({ value: field.key, label: field.name }))} /></label>
-                        <label><span>只读</span><Select value="no" options={[{ value: 'yes', label: '是' }, { value: 'no', label: '否' }]} /></label>
-                        <label><span>必填</span><Select value={selectedField?.required ? 'yes' : 'no'} options={[{ value: 'yes', label: '是' }, { value: 'no', label: '否' }]} /></label>
+                        <label><span>只读</span>{ruleToggle(false, '只读')}</label>
+                        <label><span>必填</span>{ruleToggle(Boolean(selectedField?.required), '必填')}</label>
                         <label><span>显示条件</span><Input value="默认始终显示" readOnly /></label>
                         <label><span>帮助说明</span><Input value="可在此补充录入说明" readOnly /></label>
                       </section>

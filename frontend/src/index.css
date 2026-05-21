@@ -5493,3 +5493,22 @@ button {
   border-color: rgba(45, 120, 145, 0.22);
   background: rgba(242, 250, 252, 0.72);
 }
+
+.quality-graph-node.node-0 { left: 50%; top: 22%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-1 { left: 34%; top: 37%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-2 { left: 50%; top: 46%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-3 { left: 66%; top: 37%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-4 { left: 78%; top: 55%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-5 { left: 50%; top: 65%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-6 { left: 34%; top: 65%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-7 { left: 66%; top: 78%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-8 { left: 22%; top: 52%; right: auto; transform: translate(-50%, -50%); }
+
+.quality-graph-edge.edge-0 { left: 42%; top: 30%; right: auto; }
+.quality-graph-edge.edge-1 { left: 44%; top: 42%; right: auto; }
+.quality-graph-edge.edge-2 { left: 58%; top: 41%; right: auto; }
+.quality-graph-edge.edge-3 { left: 71%; top: 46%; right: auto; }
+.quality-graph-edge.edge-4 { left: 58%; top: 56%; right: auto; }
+.quality-graph-edge.edge-5 { left: 40%; top: 65%; right: auto; }
+.quality-graph-edge.edge-6 { left: 58%; top: 71%; right: auto; }
+.quality-graph-edge.edge-7 { left: 30%; top: 50%; right: auto; }
