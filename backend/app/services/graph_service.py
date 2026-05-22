@@ -25,6 +25,18 @@ SAFE_RELS = [
     "STORED_IN", "SHIPS_TO", "FULFILLS", "FOUND_IN",
 ]
 
+BUSINESS_GRAPH_LABELS = [
+    "QualityEvent", "Defect", "InspectionBatch", "MaterialBatch",
+    "Supplier", "WorkOrder", "Equipment", "CustomerOrder", "CAPA",
+    "KnowledgeCard",
+]
+
+BUSINESS_GRAPH_RELS = [
+    "HAS_DEFECT", "FOUND_IN", "INSPECTS", "SUPPLIED_BY",
+    "USES_BATCH", "USES_EQUIPMENT", "AFFECTS_ORDER", "TRIGGERS",
+    "EVIDENCE_FOR",
+]
+
 
 class GraphService:
     """Service for managing the manufacturing knowledge graph in Neo4j."""
@@ -42,6 +54,128 @@ class GraphService:
                     await session.run(constraint_cypher)
                 except Exception as exc:
                     logger.debug("Constraint creation skipped: %s", exc)
+
+    async def ensure_business_constraints(self):
+        """Create unique constraints for business-object graph ids."""
+        self._check_driver()
+        async with neo4j_driver.session() as session:
+            for label in BUSINESS_GRAPH_LABELS:
+                try:
+                    await session.run(
+                        f"CREATE CONSTRAINT IF NOT EXISTS FOR (n:{label}) REQUIRE n.id IS UNIQUE"
+                    )
+                except Exception as exc:
+                    logger.debug("Business constraint creation skipped for %s: %s", label, exc)
+
+    # ── Business graph operations ────────────────────────
+
+    async def upsert_business_node(self, label: str, object_id: str, props: dict) -> dict:
+        if label not in BUSINESS_GRAPH_LABELS:
+            raise ValueError(f"Invalid business label: {label}")
+        self._check_driver()
+        payload = {
+            **props,
+            "id": object_id,
+            "object_id": object_id,
+            "type": label,
+        }
+        async with neo4j_driver.session() as session:
+            result = await session.run(
+                f"MERGE (n:{label} {{id: $id}}) "
+                "SET n += $props "
+                "RETURN n {.*, labels: labels(n)} AS node",
+                id=object_id,
+                props=payload,
+            )
+            records = await result.data()
+            return records[0]["node"] if records else {}
+
+    async def upsert_business_edge(
+        self,
+        src_id: str,
+        tgt_id: str,
+        rel_type: str,
+        props: dict | None = None,
+    ) -> dict:
+        if rel_type not in BUSINESS_GRAPH_RELS:
+            raise ValueError(f"Invalid business relation: {rel_type}")
+        self._check_driver()
+        payload = {
+            **(props or {}),
+            "relation_type": rel_type,
+        }
+        async with neo4j_driver.session() as session:
+            result = await session.run(
+                "MATCH (a {id: $src_id}) "
+                "MATCH (b {id: $tgt_id}) "
+                f"MERGE (a)-[r:{rel_type}]->(b) "
+                "SET r += $props "
+                "RETURN r {.*, type: type(r), source: a.id, target: b.id} AS edge",
+                src_id=src_id,
+                tgt_id=tgt_id,
+                props=payload,
+            )
+            records = await result.data()
+            return records[0]["edge"] if records else {}
+
+    async def impact_analysis_by_object(
+        self,
+        object_type: str,
+        object_id: str,
+        max_hops: int = 5,
+        limit: int = 200,
+    ) -> dict[str, Any] | None:
+        if object_type not in BUSINESS_GRAPH_LABELS:
+            raise ValueError(f"Invalid business label: {object_type}")
+        self._check_driver()
+        max_hops = max(1, min(max_hops, 8))
+        limit = max(1, min(limit, 500))
+        async with neo4j_driver.session() as session:
+            result = await session.run(
+                f"""
+                MATCH (root:{object_type})
+                WHERE root.id = $object_id
+                   OR root.source_id = $object_id
+                   OR root.name = $object_id
+                CALL {{
+                  WITH root
+                  OPTIONAL MATCH p = (root)-[*1..{max_hops}]-(related)
+                  WITH p WHERE p IS NOT NULL
+                  UNWIND nodes(p) AS n
+                  RETURN collect(DISTINCT n) AS pathNodes
+                }}
+                CALL {{
+                  WITH root
+                  OPTIONAL MATCH p = (root)-[*1..{max_hops}]-(related)
+                  WITH p WHERE p IS NOT NULL
+                  UNWIND relationships(p) AS r
+                  RETURN collect(DISTINCT r) AS pathRels
+                }}
+                WITH root, [root] + pathNodes AS nodes, pathRels AS rels
+                RETURN
+                  root {{.*, labels: labels(root)}} AS root,
+                  [n IN nodes | n {{.*, labels: labels(n)}}][0..$limit] AS nodes,
+                  [r IN rels | r {{.*, type: type(r), source: startNode(r).id, target: endNode(r).id}}][0..$limit] AS edges
+                """,
+                object_id=object_id,
+                limit=limit,
+            )
+            records = await result.data()
+            if not records:
+                return None
+            record = records[0]
+            nodes = record.get("nodes") or []
+            edges = record.get("edges") or []
+            return {
+                "root": record.get("root"),
+                "nodes": nodes,
+                "edges": edges,
+                "summary": {
+                    "node_count": len(nodes),
+                    "edge_count": len(edges),
+                    "max_hops": max_hops,
+                },
+            }
 
     # ── Entity CRUD ──────────────────────────────────────
 

@@ -1,6 +1,6 @@
 # ManuFoundry Documentation
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 This directory is split into three kinds of documents:
 
@@ -17,6 +17,7 @@ Read these first when you want the current system truth:
 3. [Deployment](operations/deployment.md)
 4. [Testing](operations/testing.md)
 5. [Platform Database Landing Plan](architecture/platform-database.md)
+6. [Knowledge Base](architecture/knowledge-base.md)
 
 ## Current Implementation Docs
 
@@ -25,6 +26,7 @@ Read these first when you want the current system truth:
 | [Architecture Overview](architecture/overview.md) | Current full-system architecture, Palantir mapping, module layout, data flow, deployment shape. |
 | [API Reference](development/api-reference.md) | Current FastAPI route map and example requests. |
 | [Platform Database Landing Plan](architecture/platform-database.md) | Current low-code forms/application/menu persistence design and rollout notes. |
+| [Knowledge Base](architecture/knowledge-base.md) | Current local knowledge/RAG MVP and future persistence boundary. |
 | [Deployment](operations/deployment.md) | Current Docker Compose deployment flow and server update convention. |
 | [Testing](operations/testing.md) | Current backend/frontend verification strategy and test coverage map. |
 
@@ -34,7 +36,7 @@ Read these first when you want the current system truth:
 | --- | --- |
 | [Frontend Development](development/frontend.md) | React/Vite shell, API client, routes, menus, UI conventions. |
 | [Backend Development](development/backend.md) | FastAPI, config, database sessions, security, route/model conventions. |
-| [Data Model](architecture/data-model.md) | Manufacturing data model and ontology concepts. Treat as design-heavy; verify against ORM/migrations before implementation. |
+| [Data Model](architecture/data-model.md) | Current relational model groups, platform forms storage, Neo4j notes, and ontology direction boundaries. |
 | [Integration](business/integration.md) | Data-source integration surface and connector status. |
 | [User Guide](business/user-guide.md) | Product walkthrough and demo-oriented usage notes. |
 
@@ -71,6 +73,8 @@ These documents explain the product direction inspired by Palantir Foundry, AIP,
 | Production frontend port | inherited development port | host `80` to container `80` |
 | AI stack | Prophet/LangChain active | currently optional/future; active AI APIs are implemented directly |
 | Forms platform | "next phase persistence" | `/api/v1/forms` and migration `0006_platform_forms.py` exist |
+| Knowledge base | frontend-only concept | `/api/v1/knowledge` exists as a local TF-IDF RAG MVP |
+| Time-series storage | TimescaleDB active | `sensor_readings` is currently a normal relational table |
 
 ## Verification Commands
 

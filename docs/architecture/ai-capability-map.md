@@ -157,6 +157,8 @@ Existing routers should remain thin:
 - `ai_builder.py` handles model/page generation endpoints.
 - Business execution should go through existing services and APIs instead of raw SQL inside prompts.
 
+For the detailed Skill/Tool contract, risk policy, confirmation payload, phased Agent roadmap, and migration path from demo mock skills to real backend skills, see [AI Agent Skill/Tool Contract](ai-agent-skill-contract.md).
+
 ## 6. Guardrails
 
 | Guardrail | Applies to | Requirement |

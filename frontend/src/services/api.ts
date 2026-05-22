@@ -79,6 +79,13 @@ export const getTraceChain = (entityId: number, maxHops?: number) =>
   api.get(`/graph/trace/${entityId}`, { params: { max_hops: maxHops } });
 export const getCentrality = (limit?: number) =>
   api.get('/graph/analytics/centrality', { params: { limit } });
+export const syncQualityDemoGraph = () => api.post('/graph/sync/quality-demo');
+export const getBusinessImpactAnalysis = (params: {
+  object_type: string;
+  object_id: string;
+  max_hops?: number;
+  limit?: number;
+}) => api.get('/graph/impact-analysis-by-object', { params });
 export const getEntityRelationships = (entityType: string, entityId: number, relType?: string) =>
   api.get(`/ontology/entities/${entityType}/instances/${entityId}/relationships`, { params: { rel_type: relType } });
 
@@ -91,13 +98,21 @@ export const getSemanticPageContract = (route: string) =>
   api.get('/semantic-assets/page-contracts/by-route', { params: { route } });
 
 // Knowledge base / local RAG MVP
+export const listKnowledgeSpaces = () => api.get('/knowledge/spaces');
 export const listKnowledgeSources = () => api.get('/knowledge/sources');
 export const listKnowledgeDocuments = (sourceId?: string) =>
   api.get('/knowledge/documents', { params: { source_id: sourceId } });
 export const listKnowledgeChunks = (documentId: string) =>
   api.get(`/knowledge/documents/${documentId}/chunks`);
+export const listKnowledgeCards = (params?: { space_id?: string; status?: string }) =>
+  api.get('/knowledge/cards', { params });
+export const getRelatedKnowledgeCards = (params?: { object_type?: string; object_id?: string; limit?: number }) =>
+  api.get('/knowledge/related-cards', { params });
 export const getRelatedKnowledge = (params?: { object_type?: string; object_id?: string; limit?: number }) =>
   api.get('/knowledge/related', { params });
+export const suggestKnowledgeBindings = (data: { text: string; limit?: number }) =>
+  api.post('/knowledge/binding-candidates', data);
+export const getKnowledgeOcrPipeline = () => api.get('/knowledge/ocr-pipeline');
 export const searchKnowledge = (data: {
   query: string;
   limit?: number;

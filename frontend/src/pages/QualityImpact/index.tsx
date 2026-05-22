@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
   Alert,
   Badge,
@@ -36,7 +36,7 @@ import {
   executeQualityEventAction,
   getQualityEventAiSuggestion,
   getQualityEventImpact,
-  getRelatedKnowledge,
+  getRelatedKnowledgeCards,
   listQualityEvents,
 } from '@/services/api';
 
@@ -64,6 +64,8 @@ interface ImpactNode {
   risk: RiskLevel;
   summary: string;
   actions: string[];
+  source_id?: string;
+  source_system?: string;
 }
 
 interface ImpactEdge {
@@ -82,11 +84,11 @@ interface AiSuggestion {
 interface KnowledgeEvidence {
   id: string;
   title: string;
-  doc_type: string;
-  source_name: string;
-  source_ref: string;
-  chunk_text: string;
-  score: number;
+  status: string;
+  space_name?: string;
+  scenario: string;
+  guidance: string[];
+  evidence_refs: Array<{ source_ref: string; document_title?: string; source_name?: string }>;
   linked_objects: Array<{ type: string; id: string; name: string }>;
 }
 
@@ -126,6 +128,40 @@ const fallbackEdges: ImpactEdge[] = [
   { id: 'r8', source: 'event-qe-001', target: 'capa-072', label: '建议生成' },
 ];
 
+const fallbackKnowledgeCards: KnowledgeEvidence[] = [
+  {
+    id: 'card-solder-void',
+    title: '焊点虚焊处理策略',
+    status: 'published',
+    space_name: '质量部门知识库',
+    scenario: 'AOI 连续发现 BGA 区域焊点虚焊，缺陷率超过管控线。',
+    guidance: ['冻结同批次物料和在制品', '发起 BGA 区域复检', '检查回流炉温区曲线'],
+    evidence_refs: [
+      { source_ref: 'SOP-QA-014 / 3.2-4.1', document_title: '焊点虚焊复检与冻结流程' },
+      { source_ref: 'CAPA-072 / Root Cause', document_title: '电控模块 V2 虚焊历史处置' },
+    ],
+    linked_objects: [
+      { type: 'Defect', id: 'defect-001', name: '焊点虚焊' },
+      { type: 'MaterialBatch', id: 'material-batch-mb-7781', name: 'MB-7781 / 焊锡膏 S12' },
+    ],
+  },
+  {
+    id: 'card-supplier-risk',
+    title: '供应商批次风险判断',
+    status: 'published',
+    space_name: '质量部门知识库',
+    scenario: '供应商报告、来料记录或批次追溯显示温控、运输或仓储证据缺口。',
+    guidance: ['隔离同批次风险物料', '通知采购和 SQE 补充 8D', '提高后续来料抽检比例'],
+    evidence_refs: [
+      { source_ref: '北辰电子材料 5 月来料整改报告', document_title: '供应商整改报告' },
+    ],
+    linked_objects: [
+      { type: 'Supplier', id: 'supplier-s-023', name: '北辰电子材料' },
+      { type: 'MaterialBatch', id: 'material-batch-mb-7781', name: 'MB-7781 / 焊锡膏 S12' },
+    ],
+  },
+];
+
 const actionConfig = [
   { key: 'generate_capa', label: '生成 CAPA', icon: <FileProtectOutlined />, danger: false },
   { key: 'freeze_batch', label: '冻结批次', icon: <PauseCircleOutlined />, danger: true },
@@ -151,7 +187,19 @@ const typeIcon: Record<string, JSX.Element> = {
   Equipment: <ToolOutlined />,
   CustomerOrder: <SendOutlined />,
   CAPA: <FileProtectOutlined />,
+  KnowledgeCard: <FileProtectOutlined />,
 };
+
+function overflowNodeStyle(index: number): CSSProperties | undefined {
+  if (index < 9) return undefined;
+  const col = (index - 9) % 4;
+  const row = Math.floor((index - 9) / 4);
+  return {
+    left: `${18 + col * 20}%`,
+    top: `${86 + row * 8}%`,
+    transform: 'translate(-50%, -50%)',
+  };
+}
 
 function normalizeRisk(level: RiskLevel) {
   return riskColor[level] || 'blue';
@@ -257,13 +305,16 @@ export default function QualityImpactWorkbench() {
       setKnowledgeEvidence([]);
       return;
     }
-    getRelatedKnowledge({
+    getRelatedKnowledgeCards({
       object_type: selectedNode.type,
-      object_id: selectedNode.id,
+      object_id: selectedNode.source_id || selectedNode.name,
       limit: 3,
     })
-      .then((res) => setKnowledgeEvidence(res.data?.data ?? []))
-      .catch(() => setKnowledgeEvidence([]));
+      .then((res) => {
+        const nextCards = res.data?.data ?? [];
+        setKnowledgeEvidence(nextCards.length ? nextCards : fallbackKnowledgeCards);
+      })
+      .catch(() => setKnowledgeEvidence(fallbackKnowledgeCards));
   }, [selectedNode?.id, selectedNode?.type]);
 
   const runAiAnalysis = async () => {
@@ -386,6 +437,7 @@ export default function QualityImpactWorkbench() {
                 <button
                   key={node.id}
                   className={`quality-graph-node node-${index} risk-${node.risk} ${node.id === selectedNode?.id ? 'selected' : ''}`}
+                  style={overflowNodeStyle(index)}
                   onClick={() => setSelectedNodeId(node.id)}
                 >
                   <span>{typeIcon[node.type] || <NodeIndexOutlined />}</span>
@@ -432,12 +484,17 @@ export default function QualityImpactWorkbench() {
                       {knowledgeEvidence.map((item) => (
                         <div className="quality-knowledge-card" key={item.id}>
                           <Space size={6} wrap>
-                            <Tag color="processing">{item.doc_type}</Tag>
-                            <Tag>{Math.round((item.score ?? 0) * 100)}%</Tag>
+                            <Tag color="processing">{item.space_name ?? '知识条目'}</Tag>
+                            <Tag>{item.status}</Tag>
                           </Space>
                           <Typography.Text strong>{item.title}</Typography.Text>
-                          <Typography.Paragraph>{item.chunk_text}</Typography.Paragraph>
-                          <Typography.Text type="secondary">{item.source_name} / {item.source_ref}</Typography.Text>
+                          <Typography.Paragraph>{item.scenario}</Typography.Paragraph>
+                          <Space wrap size={4}>
+                            {item.guidance.slice(0, 3).map((action) => <Tag key={action}>{action}</Tag>)}
+                          </Space>
+                          <Typography.Text type="secondary">
+                            证据：{item.evidence_refs.map((ref) => ref.source_ref).join(' / ')}
+                          </Typography.Text>
                         </div>
                       ))}
                     </Space>

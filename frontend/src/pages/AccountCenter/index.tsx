@@ -6,6 +6,7 @@ import {
   AuditOutlined,
   BellOutlined,
   DatabaseOutlined,
+  FileSearchOutlined,
   KeyOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
@@ -34,7 +35,7 @@ import {
 import { useAuthStore } from '../../stores/authStore';
 import AppMenuManagement from '../SystemAdmin/AppMenuManagement';
 import RoleManagement from '../SystemAdmin/RoleManagement';
-import SemanticAssetCenter from '../SystemAdmin/SemanticAssetCenter';
+import SemanticAssetCenter, { KnowledgeCenter } from '../SystemAdmin/SemanticAssetCenter';
 import UserManagement from '../SystemAdmin/UserManagement';
 import { PalantirConfigBlueprint } from '../SystemAdmin';
 
@@ -92,6 +93,12 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
         label: '数据资产与本体',
         icon: <DatabaseOutlined />,
         children: <SemanticAssetCenter />,
+      },
+      {
+        key: 'knowledge',
+        label: '知识库中心',
+        icon: <FileSearchOutlined />,
+        children: <KnowledgeCenter />,
       },
       {
         key: 'palantir-config',

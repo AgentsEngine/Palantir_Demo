@@ -1,6 +1,6 @@
 # Integration Guide
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 This document explains the current integration surface for manufacturing data sources and pipelines. It separates implemented capabilities from planned connector ideas.
 
@@ -12,18 +12,20 @@ Implemented now:
 - Pipeline API under `/api/v1/pipelines`.
 - Scheduler API under `/api/v1/scheduler`.
 - Seed-data based manufacturing demo data under `data/seed`.
-- MES simulator code at `backend/app/services/data_integration/connectors/mes_simulator.py`.
+- Simulator generators at `backend/app/services/data_integration/connectors/mes_simulator.py` for MES, ERP, IoT sensor, and PLC-style demo payloads.
 
 Planned/reference only:
 
-- ERP simulator.
-- IoT simulator.
-- PLC simulator.
+- Separate production-grade ERP connector.
+- Separate production-grade IoT connector.
+- Separate production-grade PLC connector.
 - SCADA/LIMS connectors.
 - Kafka/MQTT streaming connectors.
 - OPC-UA/Modbus connectors.
 
-Older documents may describe those planned connectors as if they already exist. Treat that wording as stale unless the corresponding file exists in `backend/app/services/data_integration/connectors/`.
+Older documents may describe production connectors as if they already exist.
+Treat that wording as stale unless the corresponding connector has a concrete
+module, credentials/config model, execution path, tests, and deployment notes.
 
 ## 2. Data Source API
 
@@ -106,15 +108,22 @@ flowchart LR
   GraphAPI --> Frontend
 ```
 
-## 6. MES Simulator
+## 6. Current Simulator Generators
 
-Current implemented connector-like simulator:
+Current implemented connector-like simulator module:
 
 ```text
 backend/app/services/data_integration/connectors/mes_simulator.py
 ```
 
-Use it as the reference shape for future connector modules.
+Despite the filename, this module currently contains demo generators for:
+
+- `generate_mes_data`
+- `generate_erp_data`
+- `generate_iot_data`
+- `generate_plc_data`
+
+Use these as demo data generators, not as production connectors.
 
 Recommended connector responsibilities:
 
@@ -128,10 +137,10 @@ Recommended connector responsibilities:
 
 | Connector category | Status | Notes |
 | --- | --- | --- |
-| MES simulator | Implemented | `mes_simulator.py` exists. |
-| ERP simulator | Planned | Document as future until code exists. |
-| IoT simulator | Planned | Should be separate from seed `sensor_readings.json`. |
-| PLC simulator | Planned | Should define equipment state/control parameter schema. |
+| MES simulator generator | Implemented | `generate_mes_data` in `mes_simulator.py`. |
+| ERP simulator generator | Implemented as demo function | `generate_erp_data`; not a production ERP connector. |
+| IoT simulator generator | Implemented as demo function | `generate_iot_data`; not a streaming ingestion connector. |
+| PLC simulator generator | Implemented as demo function | `generate_plc_data`; not OPC-UA/Modbus integration. |
 | OPC-UA / Modbus | Planned | Requires real protocol libraries and security model. |
 | MQTT / Kafka | Planned | Requires streaming ingestion and worker design. |
 | File import | Planned | Should define CSV/XLSX schema validation and import history. |

@@ -1,6 +1,6 @@
 # Configuration Lifecycle Design Notes
 
-> Updated: 2026-05-19
+> Updated: 2026-05-22
 > Scope: Application Management, Form Management, Application Assembly
 
 ## 1. Positioning
@@ -57,7 +57,7 @@ Click New
 -> publish when ready
 ```
 
-For forms, creating a draft should not immediately create a physical business table. The database structure should be committed on publish or through an explicit migration step.
+For forms, creating a draft should not create a physical business table. The current implementation stores form definitions as metadata and runtime data in `dynamic_records.data`.
 
 ## 4. Save
 
@@ -85,7 +85,7 @@ Low-risk examples:
 High-risk examples:
 
 - form field code
-- database column name
+- storage key / future database column name
 - field type
 - allow null
 - unique
@@ -115,12 +115,12 @@ Form publish checks:
 - form code is present and unique
 - at least one field exists
 - field codes are unique
-- database column names are valid and unique
+- storage keys are valid and unique
 - field types are supported
-- generated table name or target table binding is valid
-- database-impacting settings are confirmed
+- layout/action/permission metadata is valid
+- existing dynamic-record impact is understood when changing published forms
 
-For forms, publish is the moment where database structure should be created, confirmed, or migrated.
+For forms, publish currently makes metadata available to runtime pages. Physical table creation or migration is a future separate, reviewed workflow.
 
 ## 6. Disable
 
@@ -163,7 +163,7 @@ Form delete rules:
 ```text
 draft with no physical table and no app binding -> can delete
 published -> cannot hard delete directly
-has physical table or data -> cannot hard delete
+has dynamic records or future physical table -> cannot hard delete
 used by application assembly -> cannot delete until unbound, or archive instead
 ```
 
@@ -203,29 +203,30 @@ Restore, optional
 View audit/history
 ```
 
-## 9. Form Database Impact
+## 9. Form Storage Impact
 
-Form Management has stronger lifecycle rules than Application Management because it can create or change database structure.
+Form Management has stronger lifecycle rules than Application Management because it can affect runtime data capture and existing dynamic records.
 
-Recommended rule:
+Current rule:
 
 ```text
 Save draft = save metadata only
-Publish = create or migrate database structure
+Publish = make metadata available to runtime pages
 ```
 
-Before publishing a form, the UI should summarize database impact:
+Before publishing a form, the UI should summarize storage/metadata impact:
 
 ```text
-Table to create/update
 Fields to add
 Fields to modify
-Indexes to create
-Unique constraints to create
-Nullable changes
+Fields to remove or hide
+Validation changes
+Potential effect on existing dynamic records
 ```
 
-The user should explicitly confirm these changes.
+If a future physicalization feature is added, it must introduce a separate
+database-impact review that lists tables, columns, indexes, constraints,
+migrations, rollback, and data-retention behavior.
 
 ## 10. Button Model
 

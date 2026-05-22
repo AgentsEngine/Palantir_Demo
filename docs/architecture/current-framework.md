@@ -1,6 +1,6 @@
 # Current Code Framework
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 This document describes the current code framework at a practical level. For the broader system architecture, read [overview.md](overview.md).
 
@@ -71,6 +71,7 @@ backend/app/
     graph.py
     pipeline.py
     semantic_assets.py
+    knowledge.py
     analytics.py
     maintenance.py
     quality.py
@@ -122,6 +123,7 @@ Still mixed/fallback:
 | Forms platform metadata | Database migration and `/api/v1/forms` API exist. |
 | Dynamic form records | Stored in JSON/JSONB through `dynamic_records`. |
 | Graph data | Neo4j driver exists; graph features degrade when Neo4j is unavailable. |
+| Knowledge base | `/api/v1/knowledge` exists as a static-document TF-IDF RAG MVP. |
 | AI | Current assistant API is implemented directly; external LLM orchestration is future/optional. |
 
 ## Current Risks And Cleanup Needs
@@ -130,6 +132,7 @@ Still mixed/fallback:
 - Some frontend text or historical docs may still contain encoding artifacts.
 - Some Palantir-inspired docs are reference design and should not be interpreted as completed implementation.
 - The codebase still has both model-driven and forms-platform concepts; documentation should be explicit about which surface is being discussed.
+- The knowledge base is API-backed but not yet persistent or connected to an external vector store.
 
 ## Where To Update Docs After Code Changes
 

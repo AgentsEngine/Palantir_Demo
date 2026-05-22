@@ -1,19 +1,24 @@
 # Form Management Design Notes
 
-> Updated: 2026-05-19
+> Updated: 2026-05-22
 > Scope: System Admin / Form Management
 
 ## 1. Positioning
 
-Form Management is not only a visual form list. In this product it is the structural management entry for business data objects.
+Form Management is not only a visual form list. In this product it is the structural management entry for configurable business data objects.
 
 The working definition is:
 
 ```text
-Business form = data table structure + generated CRUD entry + later form designer surface
+Business form = form metadata + generated CRUD entry + dynamic record storage
 ```
 
 Form Management owns the data structure and field metadata. Form Designer owns layout, interaction, validation, linkage, and detailed user experience.
+
+Current implementation note: forms and fields are persisted as metadata under
+`/api/v1/forms`. Records are stored in `dynamic_records.data` as JSON/JSONB.
+Creating or publishing a form does not currently create or alter a physical
+business table.
 
 ## 2. Boundary
 
@@ -23,19 +28,19 @@ Form Management owns the data structure and field metadata. Form Designer owns l
   - form name
   - form code
   - bound business object / ontology object
-  - target data source or generated database table
+  - target data source or future physicalization target, if supported
   - status
   - owner
   - description
 - Field structure:
   - display name
   - field code
-  - database column name
+  - storage key / future database column name
   - data type
   - length / precision
   - allow null
   - unique
-  - indexed
+  - indexed intent, when future physicalization supports it
   - default value
   - relation target, when the field is a relation
   - base component type
@@ -62,11 +67,13 @@ Form Management owns the data structure and field metadata. Form Designer owns l
 Important distinction:
 
 ```text
-allow null = database structure rule
+allow null = storage/schema intent
 required = UI validation rule
 ```
 
-Form Management may configure `allow null`, because it affects table design. It should not configure `required`, because that belongs to the later form design experience.
+Form Management may configure structural intent such as field code, data type,
+and whether a value may be empty. The current runtime validation is enforced by
+the forms API before writing JSON records.
 
 ## 3. Recommended Two-Column Layout
 
@@ -112,14 +119,14 @@ The top section is the current form's identity and binding. The bottom section i
 
 ## 4. Field Table
 
-The field table should prioritize database design and generated CRUD behavior.
+The field table should prioritize metadata design and generated CRUD behavior.
 
 Suggested columns:
 
 ```text
 Field label
 Field code
-Column name
+Storage key
 Data type
 Length / precision
 Allow null
@@ -134,27 +141,27 @@ Search
 Example:
 
 ```text
-Field label   Field code    Type      Length   Allow null   Unique   Indexed   Component   List   Form   Search
-Device name   name          string    100      No           No       Yes       Text        Yes    Yes    Yes
-Device code   code          string    64       No           Yes      Yes       Text        Yes    Yes    Yes
-Health score  health_score  decimal   5,2      Yes          No       No        Number      Yes    Yes    No
-Status        status        enum      -        No           No       Yes       Select      Yes    Yes    Yes
+Field label   Field code    Type      Length   Allow empty   Unique intent   Indexed intent   Component   List   Form   Search
+Device name   name          string    100      No            No              Yes              Text        Yes    Yes    Yes
+Device code   code          string    64       No            Yes             Yes              Text        Yes    Yes    Yes
+Health score  health_score  decimal   5,2      Yes           No              No               Number      Yes    Yes    No
+Status        status        enum      -        No            No              Yes              Select      Yes    Yes    Yes
 ```
 
 ## 5. Actions
 
 Recommended actions for Form Management:
 
-- Sync fields: import or refresh field definitions from an existing data source, ontology object, or database table.
-- Add field: create a new database-backed field.
+- Sync fields: import or refresh field definitions from an existing data source, ontology object, or future physical table binding.
+- Add field: create a new metadata-backed field.
 - Enter form designer: open the later design surface for layout, validation, linkage, and richer interaction rules.
 - Save configuration: persist form basic information and field structure.
 
 The action meanings:
 
 ```text
-Sync fields        -> structural import / refresh
-Add field          -> database field creation
+Sync fields        -> structural metadata import / refresh
+Add field          -> field metadata creation
 Enter form designer -> UI layout and interaction design
 Save configuration -> persist structure metadata
 ```
@@ -175,7 +182,7 @@ Form Designer      -> configures form layout and interaction details
 This keeps the mental model clean:
 
 ```text
-Form Management = define data objects
+Form Management = define configurable business objects
 Form Designer = design how users work with those objects
 Application Assembly = place those objects into applications
 ```
@@ -184,7 +191,7 @@ Application Assembly = place those objects into applications
 
 See also: `docs/architecture/configuration-lifecycle.md`.
 
-Form Management should use the shared configuration lifecycle, but with stricter database-impact rules:
+Form Management should use the shared configuration lifecycle. Database-impact rules apply only when a future physicalization workflow exists:
 
 ```text
 draft -> published -> disabled -> archived
@@ -222,16 +229,19 @@ Form delete should be stricter than application delete:
 ```text
 draft with no physical table and no app binding -> can delete
 published -> cannot hard delete directly
-has physical table or data -> cannot hard delete
+has dynamic records or future physical table -> cannot hard delete
 used by application assembly -> cannot delete until unbound, or archive instead
 ```
 
-For forms, the recommended database rule is:
+For the current implementation, the rule is:
 
 ```text
 Save draft = save metadata only
-Publish = create or migrate database structure
+Publish = make metadata available to runtime pages
 ```
+
+Future physical table generation should be a separate reviewed action, not an
+implicit side effect of saving or publishing a form.
 
 Publishing a form should validate:
 
@@ -241,16 +251,15 @@ Publishing a form should validate:
 - unique field codes
 - valid and unique database column names
 - supported field types
-- valid generated table name or target table binding
-- confirmed database-impacting settings
+- valid form code and storage keys
+- confirmed impact on existing dynamic records, when applicable
 
-Before publishing a form, the UI should summarize database impact:
+Before publishing a form, the UI should summarize metadata impact:
 
 ```text
-Table to create/update
 Fields to add
 Fields to modify
-Indexes to create
-Unique constraints to create
-Nullable changes
+Fields to remove or hide
+Required/empty-value behavior
+Potential effect on existing dynamic records
 ```

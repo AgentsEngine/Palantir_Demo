@@ -25,7 +25,7 @@ import {
   UserOutlined,
   UserSwitchOutlined,
 } from '@ant-design/icons';
-import { Button, Input, Segmented, Select, Space, Tabs, Tag, Typography, message } from 'antd';
+import { Button, Input, Modal, Segmented, Select, Space, Tabs, Tag, Typography, message } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import './style.css';
 
@@ -33,6 +33,23 @@ type DesignerTab = 'form' | 'filter' | 'flow' | 'permission';
 type ComponentPanel = 'components' | 'fieldTypes';
 type ControlSource = 'field' | 'component';
 type ControlWidth = 'quarter' | 'half' | 'threeQuarter' | 'full';
+type FlowPortSide = 'top' | 'right' | 'bottom' | 'left';
+type DropPosition = 'before' | 'after';
+type ControlRuleKey = 'visible' | 'readonly' | 'required';
+
+interface ControlRuleCondition {
+  sourceField?: string;
+  operator?: string;
+  value?: string;
+  note?: string;
+}
+
+interface ControlRule {
+  enabled: boolean;
+  conditions?: ControlRuleCondition;
+}
+
+type ControlRules = Record<ControlRuleKey, ControlRule>;
 
 interface DesignerField {
   key: string;
@@ -83,7 +100,10 @@ interface LayoutControl {
   name: string;
   desc?: string;
   fieldKey?: string;
+  placeholder?: string;
+  helpText?: string;
   width: ControlWidth;
+  rules: ControlRules;
 }
 
 interface FlowNode {
@@ -94,11 +114,40 @@ interface FlowNode {
   y: number;
 }
 
+interface FlowConnection {
+  id: string;
+  fromId: string;
+  fromSide: FlowPortSide;
+  toId: string;
+  toSide: FlowPortSide;
+}
+
+interface FlowNodeDefinition {
+  key: string;
+  name: string;
+  desc: string;
+  role: string;
+  icon: React.ReactNode;
+}
+
 const controlWidthOptions = [
   { value: 'quarter', label: '25%' },
   { value: 'half', label: '50%' },
   { value: 'threeQuarter', label: '75%' },
   { value: 'full', label: '100%' },
+];
+
+const ruleLabels: Record<ControlRuleKey, string> = {
+  visible: '显示',
+  readonly: '只读',
+  required: '必输',
+};
+
+const ruleOperatorOptions = [
+  { value: 'equals', label: '等于' },
+  { value: 'notEquals', label: '不等于' },
+  { value: 'contains', label: '包含' },
+  { value: 'notEmpty', label: '不为空' },
 ];
 
 const FLOW_NODE_WIDTH = 220;
@@ -112,6 +161,25 @@ function controlWidthLabel(width: ControlWidth) {
 function controlWidthClass(width: ControlWidth) {
   return `control-width-${width}`;
 }
+
+function makeControlRules(required = false): ControlRules {
+  return {
+    visible: { enabled: true },
+    readonly: { enabled: false },
+    required: { enabled: required },
+  };
+}
+
+const flowNodePalette: FlowNodeDefinition[] = [
+  { key: 'start', name: '开始节点', desc: '流程入口，仅保留一个', role: 'start', icon: <CheckCircleOutlined /> },
+  { key: 'approve', name: '审批节点', desc: '人工审核、同意或驳回', role: 'task', icon: <UserSwitchOutlined /> },
+  { key: 'handle', name: '处理节点', desc: '业务办理、补充资料', role: 'task', icon: <SettingOutlined /> },
+  { key: 'dispatch', name: '分发节点', desc: '按规则分派责任人', role: 'task', icon: <LinkOutlined /> },
+  { key: 'condition', name: '条件分支', desc: '按字段或规则走不同路径', role: 'task', icon: <TagsOutlined /> },
+  { key: 'cc', name: '抄送节点', desc: '通知相关角色或人员', role: 'task', icon: <UserOutlined /> },
+  { key: 'automation', name: '自动任务', desc: '调用接口、写入数据、触发消息', role: 'task', icon: <DatabaseOutlined /> },
+  { key: 'end', name: '结束节点', desc: '流程归档出口', role: 'end', icon: <LockOutlined /> },
+];
 
 const configs: Record<string, DesignerConfig> = {
   'risk-review': {
@@ -209,64 +277,73 @@ const versionOptions = [
 
 const componentGroups: Array<{ category: string; items: ComponentDefinition[] }> = [
   {
-    category: '字段类型',
+    category: '文本类',
     items: [
-      { key: 'text', category: '字段类型', name: '文本类', desc: '单行文本、多行文本、说明文本', icon: <FormOutlined />, controlType: 'text' },
-      { key: 'number', category: '字段类型', name: '数值类', desc: '数量、金额、百分比、评分', icon: <NumberOutlined />, controlType: 'number' },
-      { key: 'datetime', category: '字段类型', name: '日期类', desc: '日期、时间、时间范围', icon: <CalendarOutlined />, controlType: 'datetime' },
-      { key: 'select', category: '字段类型', name: '选择类', desc: '下拉、单选、多选、枚举标签', icon: <SelectOutlined />, controlType: 'select' },
-      { key: 'relation', category: '字段类型', name: '对象类', desc: '人员、组织、设备、供应商、物料', icon: <LinkOutlined />, controlType: 'relation' },
-      { key: 'upload', category: '字段类型', name: '附件类', desc: '图片、文件、凭证、预览', icon: <PaperClipOutlined />, controlType: 'upload', defaultWidth: 'full' },
-      { key: 'switch', category: '字段类型', name: '布尔类', desc: '是否、启用、开关状态', icon: <SwitcherOutlined />, controlType: 'switch' },
+      { key: 'text', category: '文本类', name: '文本控件', desc: '单行文本输入', icon: <FormOutlined />, controlType: 'text' },
+      { key: 'textarea', category: '文本类', name: '多行文本', desc: '长文本、备注、说明录入', icon: <FormOutlined />, controlType: 'textarea', defaultWidth: 'full' },
+      { key: 'readonly-text', category: '文本类', name: '只读文本', desc: '展示计算值、引用值', icon: <FileSearchOutlined />, controlType: 'readonly-text' },
     ],
   },
   {
-    category: '布局控件',
+    category: '选择类',
     items: [
-      { key: 'section', category: '布局控件', name: '信息分区', desc: '分组面板、标题区、基础信息区', icon: <HolderOutlined />, controlType: 'section', defaultWidth: 'full' },
-      { key: 'two-columns', category: '布局控件', name: '多列布局', desc: '两列、三列、高密度字段排版', icon: <HolderOutlined />, controlType: 'two-columns', defaultWidth: 'full' },
-      { key: 'tabs', category: '布局控件', name: '切换容器', desc: '折叠区域、Tab 区域、次要信息收起', icon: <HolderOutlined />, controlType: 'tabs', defaultWidth: 'full' },
-      { key: 'hint', category: '布局控件', name: '辅助分隔', desc: '分割线、提示文本、说明块', icon: <FileSearchOutlined />, controlType: 'hint', defaultWidth: 'full' },
+      { key: 'number', category: '选择类', name: '数值控件', desc: '数量、金额、百分比', icon: <NumberOutlined />, controlType: 'number' },
+      { key: 'select', category: '选择类', name: '选择控件', desc: '下拉、单选、多选', icon: <SelectOutlined />, controlType: 'select' },
+      { key: 'datetime', category: '选择类', name: '日期控件', desc: '日期、时间、时间范围', icon: <CalendarOutlined />, controlType: 'datetime' },
+      { key: 'relation', category: '选择类', name: '对象选择', desc: '人员、设备、供应商、物料', icon: <LinkOutlined />, controlType: 'relation' },
+      { key: 'switch', category: '选择类', name: '开关控件', desc: '是否、启用、状态切换', icon: <SwitcherOutlined />, controlType: 'switch' },
+      { key: 'upload', category: '选择类', name: '附件控件', desc: '图片、文件、凭证上传', icon: <PaperClipOutlined />, controlType: 'upload', defaultWidth: 'full' },
     ],
   },
   {
-    category: '数据控件',
+    category: '布局类',
     items: [
-      { key: 'editable-table', category: '数据控件', name: '明细表格', desc: '可编辑子表、明细行、行校验', icon: <TableOutlined />, controlType: 'editable-table', defaultWidth: 'full' },
-      { key: 'readonly-table', category: '数据控件', name: '关联列表', desc: '只读关联表、历史记录、分页详情', icon: <TableOutlined />, controlType: 'readonly-table', defaultWidth: 'full' },
-      { key: 'summary-card', category: '数据控件', name: '数据摘要', desc: '摘要卡、统计值、关联对象概览', icon: <DatabaseOutlined />, controlType: 'summary-card', defaultWidth: 'full' },
+      { key: 'container', category: '布局类', name: '容器', desc: '分组面板、基础信息区', icon: <HolderOutlined />, controlType: 'container', defaultWidth: 'full' },
+      { key: 'two-columns', category: '布局类', name: '多列布局', desc: '两列、三列、高密度字段排版', icon: <HolderOutlined />, controlType: 'two-columns', defaultWidth: 'full' },
+      { key: 'tabs', category: '布局类', name: 'Tab 页', desc: '切换页签、次要信息收起', icon: <HolderOutlined />, controlType: 'tabs', defaultWidth: 'full' },
+      { key: 'divider', category: '布局类', name: '分割符', desc: '分割线、区块说明', icon: <FileSearchOutlined />, controlType: 'divider', defaultWidth: 'full' },
     ],
   },
   {
-    category: '展示控件',
+    category: '数据类',
     items: [
-      { key: 'readonly-text', category: '展示控件', name: '只读展示', desc: '只读文本、计算值、引用值', icon: <FileSearchOutlined />, controlType: 'readonly-text' },
-      { key: 'status-tag', category: '展示控件', name: '状态展示', desc: '状态标签、等级、结果标识', icon: <TagsOutlined />, controlType: 'status-tag' },
-      { key: 'file-preview', category: '展示控件', name: '媒体预览', desc: '图片、附件、凭证预览', icon: <FileImageOutlined />, controlType: 'file-preview', defaultWidth: 'full' },
+      { key: 'editable-table', category: '数据类', name: '表格', desc: '可编辑子表、明细行', icon: <TableOutlined />, controlType: 'editable-table', defaultWidth: 'full' },
+      { key: 'readonly-table', category: '数据类', name: '关联表格', desc: '只读关联表、分页详情', icon: <TableOutlined />, controlType: 'readonly-table', defaultWidth: 'full' },
+      { key: 'summary-card', category: '数据类', name: '数据摘要', desc: '摘要卡、统计值、关联对象概览', icon: <DatabaseOutlined />, controlType: 'summary-card', defaultWidth: 'full' },
     ],
   },
   {
-    category: '业务控件',
+    category: '展示类',
     items: [
-      { key: 'approval-comment', category: '业务控件', name: '审批处理', desc: '审批意见、处理说明、签批记录', icon: <UserSwitchOutlined />, controlType: 'approval-comment', defaultWidth: 'full' },
-      { key: 'operation-log', category: '业务控件', name: '操作记录', desc: '操作日志、变更记录、审计轨迹', icon: <FileSearchOutlined />, controlType: 'operation-log', defaultWidth: 'full' },
-      { key: 'status-flow', category: '业务控件', name: '状态流转', desc: '流程状态、节点进度、关闭归档', icon: <UserSwitchOutlined />, controlType: 'status-flow', defaultWidth: 'full' },
-      { key: 'risk-level', category: '业务控件', name: '风险校验', desc: '风险等级、校验提示、异常规则', icon: <TagsOutlined />, controlType: 'risk-level' },
+      { key: 'status-tag', category: '展示类', name: '状态标签', desc: '状态、等级、结果标识', icon: <TagsOutlined />, controlType: 'status-tag' },
+      { key: 'file-preview', category: '展示类', name: '媒体预览', desc: '图片、附件、凭证预览', icon: <FileImageOutlined />, controlType: 'file-preview', defaultWidth: 'full' },
+    ],
+  },
+  {
+    category: '业务类',
+    items: [
+      { key: 'approval-comment', category: '业务类', name: '审批处理', desc: '审批意见、处理说明、签批记录', icon: <UserSwitchOutlined />, controlType: 'approval-comment', defaultWidth: 'full' },
+      { key: 'operation-log', category: '业务类', name: '操作记录', desc: '操作日志、变更记录、审计轨迹', icon: <FileSearchOutlined />, controlType: 'operation-log', defaultWidth: 'full' },
+      { key: 'status-flow', category: '业务类', name: '状态流转', desc: '流程状态、节点进度、关闭归档', icon: <UserSwitchOutlined />, controlType: 'status-flow', defaultWidth: 'full' },
+      { key: 'risk-level', category: '业务类', name: '风险校验', desc: '风险等级、校验提示、异常规则', icon: <TagsOutlined />, controlType: 'risk-level' },
     ],
   },
 ];
 
-const fieldTypeComponentGroups = [{ ...componentGroups[0], category: '\u5b57\u6bb5\u79cd\u7c7b' }];
-const generalComponentGroups = componentGroups.slice(1);
+const commonControlKeys = ['text', 'number', 'select', 'datetime', 'upload', 'container', 'editable-table', 'tabs', 'divider'];
+const commonControls = commonControlKeys
+  .map((key) => componentGroups.flatMap((group) => group.items).find((item) => item.key === key))
+  .filter((item): item is ComponentDefinition => Boolean(item));
 
-function fieldInput(field: DesignerField) {
+function fieldInput(field: DesignerField, placeholderOverride?: string, disabled = false) {
+  const placeholder = placeholderOverride || field.placeholder;
   if (field.type.includes('下拉') || field.type.includes('人员') || field.type.includes('关联')) {
-    return <Select placeholder={field.placeholder} options={[{ value: 'demo', label: field.placeholder }]} />;
+    return <Select disabled={disabled} placeholder={placeholder} options={[{ value: 'demo', label: placeholder }]} />;
   }
   if (field.type.includes('多行')) {
-    return <Input.TextArea placeholder={field.placeholder} autoSize={{ minRows: 2, maxRows: 4 }} />;
+    return <Input.TextArea disabled={disabled} placeholder={placeholder} autoSize={{ minRows: 2, maxRows: 4 }} />;
   }
-  return <Input placeholder={field.placeholder} />;
+  return <Input disabled={disabled} placeholder={placeholder} />;
 }
 
 function makeFieldControl(field: DesignerField): LayoutControl {
@@ -276,7 +353,10 @@ function makeFieldControl(field: DesignerField): LayoutControl {
     controlType: 'field',
     name: field.name,
     fieldKey: field.key,
+    placeholder: field.placeholder,
+    helpText: '',
     width: field.type.includes('多行') ? 'full' : 'half',
+    rules: makeControlRules(Boolean(field.required)),
   };
 }
 
@@ -287,7 +367,10 @@ function makeComponentControl(component: ComponentDefinition): LayoutControl {
     controlType: component.controlType,
     name: component.name,
     desc: component.desc,
+    placeholder: component.desc,
+    helpText: '',
     width: component.defaultWidth || 'half',
+    rules: makeControlRules(),
   };
 }
 
@@ -296,6 +379,11 @@ function cloneControl(control: LayoutControl): LayoutControl {
     ...control,
     id: `${control.id}-copy-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name: control.name,
+    rules: {
+      visible: { ...control.rules.visible, conditions: control.rules.visible.conditions ? { ...control.rules.visible.conditions } : undefined },
+      readonly: { ...control.rules.readonly, conditions: control.rules.readonly.conditions ? { ...control.rules.readonly.conditions } : undefined },
+      required: { ...control.rules.required, conditions: control.rules.required.conditions ? { ...control.rules.required.conditions } : undefined },
+    },
   };
 }
 
@@ -305,16 +393,50 @@ function isEditableTarget(target: EventTarget | null) {
   return ['input', 'textarea', 'select'].includes(tagName) || target.isContentEditable || Boolean(target.closest('.ant-select'));
 }
 
-function ruleToggle(defaultEnabled: boolean, title: string) {
+function RuleToggleControl({
+  enabled,
+  onConfig,
+  onToggle,
+  title,
+}: {
+  enabled: boolean;
+  onConfig: () => void;
+  onToggle: () => void;
+  title: string;
+}) {
+  const runButtonAction = (event: React.MouseEvent<HTMLElement>, action: () => void) => {
+    event.preventDefault();
+    event.stopPropagation();
+    action();
+  };
+
   return (
-    <div className="designer-rule-toggle">
-      <Button size="small" icon={<SettingOutlined />} title={`${title}条件配置`} />
+    <div className="designer-rule-toggle" data-rule-title={title} onClick={(event) => event.stopPropagation()}>
       <Button
+        data-rule-action="config"
+        size="small"
+        icon={<SettingOutlined />}
+        onMouseDownCapture={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => runButtonAction(event, onConfig)}
+        title={`${title}条件配置`}
+      />
+      <Button
+        data-rule-action="toggle"
         className="designer-rule-check"
         size="small"
-        type={defaultEnabled ? 'primary' : 'default'}
+        type={enabled ? 'primary' : 'default'}
         icon={<CheckCircleOutlined />}
-        title={defaultEnabled ? `${title}已启用` : `${title}未启用`}
+        onMouseDownCapture={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => runButtonAction(event, onToggle)}
+        title={enabled ? `${title}已启用` : `${title}未启用`}
       />
     </div>
   );
@@ -330,6 +452,93 @@ function makeFlowNodes(steps: string[]): FlowNode[] {
   }));
 }
 
+function makeFlowConnections(nodes: FlowNode[]): FlowConnection[] {
+  return nodes.slice(0, -1).map((node, index) => ({
+    id: `${node.id}-${nodes[index + 1].id}`,
+    fromId: node.id,
+    fromSide: 'bottom',
+    toId: nodes[index + 1].id,
+    toSide: 'top',
+  }));
+}
+
+function getFlowNodePorts(node: FlowNode): FlowPortSide[] {
+  if (node.role === 'start') return ['right', 'bottom', 'left'];
+  if (node.role === 'end') return ['top', 'right', 'left'];
+  return ['top', 'right', 'bottom', 'left'];
+}
+
+function getFlowPortPoint(node: FlowNode, side: FlowPortSide) {
+  const points: Record<FlowPortSide, { x: number; y: number }> = {
+    top: { x: node.x + FLOW_NODE_WIDTH / 2, y: node.y },
+    right: { x: node.x + FLOW_NODE_WIDTH, y: node.y + FLOW_NODE_HEIGHT / 2 },
+    bottom: { x: node.x + FLOW_NODE_WIDTH / 2, y: node.y + FLOW_NODE_HEIGHT },
+    left: { x: node.x, y: node.y + FLOW_NODE_HEIGHT / 2 },
+  };
+  return points[side];
+}
+
+function getFlowPortVector(side: FlowPortSide) {
+  const vectors: Record<FlowPortSide, { x: number; y: number }> = {
+    top: { x: 0, y: -1 },
+    right: { x: 1, y: 0 },
+    bottom: { x: 0, y: 1 },
+    left: { x: -1, y: 0 },
+  };
+  return vectors[side];
+}
+
+function roundedOrthogonalPath(points: Array<{ x: number; y: number }>, radius = 14) {
+  const compactPoints = points.filter((point, index) => {
+    const previous = points[index - 1];
+    return !previous || previous.x !== point.x || previous.y !== point.y;
+  });
+  if (compactPoints.length < 2) return '';
+  const commands = [`M ${compactPoints[0].x} ${compactPoints[0].y}`];
+  for (let index = 1; index < compactPoints.length - 1; index += 1) {
+    const previous = compactPoints[index - 1];
+    const current = compactPoints[index];
+    const next = compactPoints[index + 1];
+    const prevLength = Math.abs(current.x - previous.x) + Math.abs(current.y - previous.y);
+    const nextLength = Math.abs(next.x - current.x) + Math.abs(next.y - current.y);
+    const cornerRadius = Math.min(radius, prevLength / 2, nextLength / 2);
+    const before = {
+      x: current.x + Math.sign(previous.x - current.x) * cornerRadius,
+      y: current.y + Math.sign(previous.y - current.y) * cornerRadius,
+    };
+    const after = {
+      x: current.x + Math.sign(next.x - current.x) * cornerRadius,
+      y: current.y + Math.sign(next.y - current.y) * cornerRadius,
+    };
+    commands.push(`L ${before.x} ${before.y}`);
+    commands.push(`Q ${current.x} ${current.y} ${after.x} ${after.y}`);
+  }
+  const end = compactPoints[compactPoints.length - 1];
+  commands.push(`L ${end.x} ${end.y}`);
+  return commands.join(' ');
+}
+
+function getFlowConnectorPath(from: FlowNode, fromSide: FlowPortSide, to: FlowNode, toSide: FlowPortSide) {
+  const start = getFlowPortPoint(from, fromSide);
+  const end = getFlowPortPoint(to, toSide);
+  const offset = 32;
+  const fromVector = getFlowPortVector(fromSide);
+  const toVector = getFlowPortVector(toSide);
+  const startLead = { x: start.x + fromVector.x * offset, y: start.y + fromVector.y * offset };
+  const endLead = { x: end.x + toVector.x * offset, y: end.y + toVector.y * offset };
+  const fromIsVertical = fromSide === 'top' || fromSide === 'bottom';
+  const bridge = fromIsVertical
+    ? [
+        { x: startLead.x, y: (startLead.y + endLead.y) / 2 },
+        { x: endLead.x, y: (startLead.y + endLead.y) / 2 },
+      ]
+    : [
+        { x: (startLead.x + endLead.x) / 2, y: startLead.y },
+        { x: (startLead.x + endLead.x) / 2, y: endLead.y },
+      ];
+  return roundedOrthogonalPath([start, startLead, ...bridge, endLead, end]);
+}
+
 export default function FormSettingsPage() {
   const { formId } = useParams();
   const navigate = useNavigate();
@@ -343,7 +552,14 @@ export default function FormSettingsPage() {
   const [propertyTab, setPropertyTab] = useState<'control' | 'field'>('control');
   const [copiedControl, setCopiedControl] = useState<LayoutControl | null>(null);
   const [history, setHistory] = useState<LayoutControl[][]>([]);
+  const [draggedControlId, setDraggedControlId] = useState('');
+  const [dropHint, setDropHint] = useState<{ controlId: string; position: DropPosition } | null>(null);
+  const [isCanvasDragActive, setCanvasDragActive] = useState(false);
+  const [ruleOverrides, setRuleOverrides] = useState<Record<string, boolean>>({});
+  const [ruleModal, setRuleModal] = useState<{ controlId: string; ruleKey: ControlRuleKey } | null>(null);
   const [flowNodes, setFlowNodes] = useState<FlowNode[]>(() => makeFlowNodes(baseConfig.flowSteps));
+  const [flowConnections, setFlowConnections] = useState<FlowConnection[]>(() => makeFlowConnections(makeFlowNodes(baseConfig.flowSteps)));
+  const [pendingFlowPort, setPendingFlowPort] = useState<{ nodeId: string; side: FlowPortSide } | null>(null);
   const flowCanvasRef = useRef<HTMLDivElement | null>(null);
   const draggingFlowNodeRef = useRef<{
     id: string;
@@ -363,7 +579,15 @@ export default function FormSettingsPage() {
     setVersion(baseConfig.version);
     setCopiedControl(null);
     setHistory([]);
-    setFlowNodes(makeFlowNodes(baseConfig.flowSteps));
+    setDraggedControlId('');
+    setDropHint(null);
+    setCanvasDragActive(false);
+    setRuleOverrides({});
+    setRuleModal(null);
+    const nextFlowNodes = makeFlowNodes(baseConfig.flowSteps);
+    setFlowNodes(nextFlowNodes);
+    setFlowConnections(makeFlowConnections(nextFlowNodes));
+    setPendingFlowPort(null);
   }, [baseConfig.id, baseConfig.version, baseConfig.fields, baseConfig.flowSteps]);
 
   useEffect(() => {
@@ -383,7 +607,70 @@ export default function FormSettingsPage() {
     [baseConfig.fields, selectedAssetKey, selectedControl],
   );
 
+  const updateSelectedControlRule = (ruleKey: ControlRuleKey, patch: Partial<ControlRule>) => {
+    if (!selectedControl) return;
+    const currentRule = selectedControl.rules[ruleKey];
+    updateSelectedControl({
+      rules: {
+        ...selectedControl.rules,
+        [ruleKey]: {
+          ...currentRule,
+          ...patch,
+          conditions: patch.conditions === undefined ? currentRule.conditions : patch.conditions,
+        },
+      },
+    });
+  };
+
+  const updateSelectedRuleCondition = (ruleKey: ControlRuleKey, patch: Partial<ControlRuleCondition>) => {
+    if (!selectedControl) return;
+    updateSelectedControlRule(ruleKey, {
+      conditions: {
+        ...(selectedControl.rules[ruleKey].conditions || {}),
+        ...patch,
+      },
+    });
+  };
+
+  const genericRuleToggle = (defaultEnabled: boolean, title: string, key = title) => {
+    const scope = selectedControl?.id || selectedField?.key || baseConfig.id;
+    const ruleKey = `${activeTab}:${scope}:${key}`;
+    const enabled = ruleOverrides[ruleKey] ?? defaultEnabled;
+    return (
+      <RuleToggleControl
+        enabled={enabled}
+        onConfig={() => {
+          setRuleOverrides((current) => ({ ...current, [ruleKey]: current[ruleKey] ?? defaultEnabled }));
+          message.info(`已进入「${title}」条件配置，可按字段、角色或流程状态设置规则`);
+        }}
+        onToggle={() => {
+          setRuleOverrides((current) => {
+            const nextEnabled = !(current[ruleKey] ?? defaultEnabled);
+            message.success(`${title}已${nextEnabled ? '启用' : '关闭'}`);
+            return { ...current, [ruleKey]: nextEnabled };
+          });
+        }}
+        title={title}
+      />
+    );
+  };
+
+  const controlRuleToggle = (ruleKey: ControlRuleKey) => {
+    if (!selectedControl) return null;
+    const rule = selectedControl.rules[ruleKey];
+    const title = ruleLabels[ruleKey];
+    return (
+      <RuleToggleControl
+        enabled={rule.enabled}
+        onConfig={() => setRuleModal({ controlId: selectedControl.id, ruleKey })}
+        onToggle={() => updateSelectedControlRule(ruleKey, { enabled: !rule.enabled })}
+        title={title}
+      />
+    );
+  };
+
   const startFlowNodeDrag = (event: React.PointerEvent<HTMLDivElement>, node: FlowNode) => {
+    if ((event.target as HTMLElement).closest('.flow-port')) return;
     const canvas = flowCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -418,6 +705,46 @@ export default function FormSettingsPage() {
 
   const stopFlowNodeDrag = () => {
     draggingFlowNodeRef.current = null;
+  };
+
+  const addFlowNode = (definition: FlowNodeDefinition) => {
+    setFlowNodes((current) => {
+      const node: FlowNode = {
+        id: `flow-${definition.key}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        label: definition.name,
+        role: definition.role,
+        x: 300,
+        y: 112,
+      };
+      const endIndex = current.findIndex((item) => item.role === 'end');
+      const next = definition.role === 'end' || endIndex < 0
+        ? [...current, node]
+        : [...current.slice(0, endIndex), node, ...current.slice(endIndex)];
+      const arranged = next.map((item, index) => ({ ...item, x: item.x || 300, y: 112 + index * 126 }));
+      setFlowConnections(makeFlowConnections(arranged));
+      setPendingFlowPort(null);
+      return arranged;
+    });
+  };
+
+  const handleFlowPortClick = (event: React.MouseEvent<HTMLElement>, node: FlowNode, side: FlowPortSide) => {
+    event.stopPropagation();
+    setPendingFlowPort((current) => {
+      if (!current) return { nodeId: node.id, side };
+      if (current.nodeId === node.id && current.side === side) return null;
+      const nextConnection: FlowConnection = {
+        id: `${current.nodeId}-${current.side}-${node.id}-${side}-${Date.now()}`,
+        fromId: current.nodeId,
+        fromSide: current.side,
+        toId: node.id,
+        toSide: side,
+      };
+      setFlowConnections((connections) => [
+        ...connections.filter((connection) => !(connection.fromId === current.nodeId && connection.fromSide === current.side && connection.toId === node.id && connection.toSide === side)),
+        nextConnection,
+      ]);
+      return null;
+    });
   };
 
   const commitLayoutChange = (updater: (current: LayoutControl[]) => LayoutControl[]) => {
@@ -459,7 +786,7 @@ export default function FormSettingsPage() {
     )));
   };
 
-  const moveLayoutControl = (sourceId: string, targetId: string) => {
+  const moveLayoutControl = (sourceId: string, targetId: string, position: DropPosition = 'before') => {
     if (!sourceId || !targetId || sourceId === targetId) return;
     commitLayoutChange((current) => {
       const sourceIndex = current.findIndex((control) => control.id === sourceId);
@@ -467,7 +794,24 @@ export default function FormSettingsPage() {
       if (sourceIndex < 0 || targetIndex < 0) return current;
       const next = [...current];
       const [source] = next.splice(sourceIndex, 1);
-      next.splice(targetIndex, 0, source);
+      const nextTargetIndex = next.findIndex((control) => control.id === targetId);
+      const insertIndex = position === 'after' ? nextTargetIndex + 1 : nextTargetIndex;
+      next.splice(Math.max(0, insertIndex), 0, source);
+      return next;
+    });
+    setSelectedControlId(sourceId);
+    const source = layoutControls.find((control) => control.id === sourceId);
+    if (source?.fieldKey) setSelectedAssetKey(source.fieldKey);
+  };
+
+  const moveLayoutControlToEnd = (sourceId: string) => {
+    if (!sourceId) return;
+    commitLayoutChange((current) => {
+      const sourceIndex = current.findIndex((control) => control.id === sourceId);
+      if (sourceIndex < 0 || sourceIndex === current.length - 1) return current;
+      const next = [...current];
+      const [source] = next.splice(sourceIndex, 1);
+      next.push(source);
       return next;
     });
     setSelectedControlId(sourceId);
@@ -549,27 +893,80 @@ export default function FormSettingsPage() {
     onDragStart: (event: React.DragEvent<HTMLDivElement>) => {
       event.dataTransfer.setData('layoutControlId', control.id);
       event.dataTransfer.effectAllowed = 'move';
+      setDraggedControlId(control.id);
+      setCanvasDragActive(true);
       setSelectedControlId(control.id);
       if (control.fieldKey) setSelectedAssetKey(control.fieldKey);
     },
+    onDragEnd: () => {
+      setDraggedControlId('');
+      setDropHint(null);
+      setCanvasDragActive(false);
+    },
     onDragOver: (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
+      event.stopPropagation();
       event.dataTransfer.dropEffect = 'move';
+      const rect = event.currentTarget.getBoundingClientRect();
+      const position: DropPosition = event.clientY > rect.top + rect.height / 2 ? 'after' : 'before';
+      setDropHint({ controlId: control.id, position });
+    },
+    onDragLeave: (event: React.DragEvent<HTMLDivElement>) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+        setDropHint((current) => (current?.controlId === control.id ? null : current));
+      }
     },
     onDrop: (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       event.stopPropagation();
-      moveLayoutControl(event.dataTransfer.getData('layoutControlId'), control.id);
+      const sourceId = event.dataTransfer.getData('layoutControlId');
+      moveLayoutControl(sourceId, control.id, dropHint?.controlId === control.id ? dropHint.position : 'before');
+      setDraggedControlId('');
+      setDropHint(null);
+      setCanvasDragActive(false);
     },
   });
 
+  const renderControlLabel = (control: LayoutControl) => (
+    <span className={control.rules.required.enabled ? 'designer-required-label' : undefined}>{control.name}</span>
+  );
+
+  const renderComponentInput = (control: LayoutControl) => {
+    const disabled = control.rules.readonly.enabled;
+    const placeholder = control.placeholder || control.desc || `请输入${control.name}`;
+    if (control.controlType === 'textarea') {
+      return <Input.TextArea disabled={disabled} placeholder={placeholder} autoSize={{ minRows: 2, maxRows: 4 }} />;
+    }
+    if (control.controlType === 'number') {
+      return <Input disabled={disabled} placeholder={placeholder} suffix="#" />;
+    }
+    if (['select', 'relation'].includes(control.controlType)) {
+      return <Select disabled={disabled} placeholder={placeholder} options={[{ value: 'demo', label: placeholder }]} />;
+    }
+    if (control.controlType === 'datetime') {
+      return <Input disabled={disabled} placeholder={placeholder} prefix={<CalendarOutlined />} />;
+    }
+    if (control.controlType === 'upload') {
+      return <Button disabled={disabled} icon={<PaperClipOutlined />}>选择文件</Button>;
+    }
+    if (control.controlType === 'switch') {
+      return <Segmented disabled={disabled} options={['否', '是']} value="否" />;
+    }
+    if (control.controlType === 'readonly-text') {
+      return <Input disabled value="系统计算或引用值" />;
+    }
+    return <Input disabled={disabled} placeholder={placeholder} />;
+  };
+
   const renderCanvasControl = (control: LayoutControl) => {
     const field = baseConfig.fields.find((item) => item.key === control.fieldKey);
+    const dragClass = `${draggedControlId === control.id ? 'canvas-control-dragging' : ''} ${dropHint?.controlId === control.id ? `canvas-drop-${dropHint.position}` : ''}`;
+    const ruleClass = `${!control.rules.visible.enabled ? 'canvas-control-hidden-preview' : ''} ${control.rules.readonly.enabled ? 'canvas-control-readonly-preview' : ''}`;
     if (control.source === 'field' && field) {
       return (
         <div
           {...getCanvasControlDragProps(control)}
-          className={`designer-field-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''}`}
+          className={`designer-field-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''} ${dragClass} ${ruleClass}`}
           key={control.id}
           onClick={() => {
             setSelectedControlId(control.id);
@@ -578,8 +975,27 @@ export default function FormSettingsPage() {
         >
           {renderControlActions(control)}
           <label>
-            <span>{field.name}</span>
-            {fieldInput(field)}
+            {renderControlLabel(control)}
+            {fieldInput(field, control.placeholder, control.rules.readonly.enabled)}
+            {control.helpText && <small className="designer-control-help">{control.helpText}</small>}
+          </label>
+        </div>
+      );
+    }
+
+    if (['text', 'textarea', 'number', 'select', 'relation', 'datetime', 'upload', 'switch', 'readonly-text'].includes(control.controlType)) {
+      return (
+        <div
+          {...getCanvasControlDragProps(control)}
+          className={`designer-field-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''} ${dragClass} ${ruleClass}`}
+          key={control.id}
+          onClick={() => setSelectedControlId(control.id)}
+        >
+          {renderControlActions(control)}
+          <label>
+            {renderControlLabel(control)}
+            {renderComponentInput(control)}
+            {control.helpText && <small className="designer-control-help">{control.helpText}</small>}
           </label>
         </div>
       );
@@ -589,12 +1005,12 @@ export default function FormSettingsPage() {
       return (
         <div
           {...getCanvasControlDragProps(control)}
-          className={`designer-table-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''}`}
+          className={`designer-table-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''} ${dragClass} ${ruleClass}`}
           key={control.id}
           onClick={() => setSelectedControlId(control.id)}
         >
           {renderControlActions(control)}
-          <strong>{control.name}</strong>
+          <strong className={control.rules.required.enabled ? 'designer-required-label' : undefined}>{control.name}</strong>
           <div className="designer-mini-table">
             <span>列配置</span>
             <span>数据来源</span>
@@ -604,15 +1020,48 @@ export default function FormSettingsPage() {
       );
     }
 
+    if (control.controlType === 'divider') {
+      return (
+        <div
+          {...getCanvasControlDragProps(control)}
+          className={`designer-divider-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''} ${dragClass} ${ruleClass}`}
+          key={control.id}
+          onClick={() => setSelectedControlId(control.id)}
+        >
+          {renderControlActions(control)}
+          <span>{control.name}</span>
+        </div>
+      );
+    }
+
+    if (control.controlType === 'tabs') {
+      return (
+        <div
+          {...getCanvasControlDragProps(control)}
+          className={`designer-tabs-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''} ${dragClass} ${ruleClass}`}
+          key={control.id}
+          onClick={() => setSelectedControlId(control.id)}
+        >
+          {renderControlActions(control)}
+          <div className="designer-tabs-preview">
+            <span className="designer-tab-active">基础信息</span>
+            <span>扩展信息</span>
+            <span>操作记录</span>
+          </div>
+          <small>{control.desc}</small>
+        </div>
+      );
+    }
+
     return (
       <div
         {...getCanvasControlDragProps(control)}
-        className={`designer-placeholder-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''}`}
+        className={`designer-placeholder-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''} ${dragClass} ${ruleClass}`}
         key={control.id}
         onClick={() => setSelectedControlId(control.id)}
       >
         {renderControlActions(control)}
-        <strong>{control.name}</strong>
+        <strong className={control.rules.required.enabled ? 'designer-required-label' : undefined}>{control.name}</strong>
         <span>{control.desc || '纯 UI 控件，可在右侧绑定字段或配置展示方式。'}</span>
       </div>
     );
@@ -626,8 +1075,8 @@ export default function FormSettingsPage() {
         <strong className="designer-prop-section-title">{editable ? '子表属性' : '关联表属性'}</strong>
         <label><span>数据来源</span><Input value={editable ? `${baseConfig.dataSource}_items` : 'related_records'} readOnly /></label>
         <label><span>{editable ? '列配置' : '展示列'}</span><Input value={editable ? '物料、数量、单位、备注' : '编号、名称、状态、时间'} readOnly /></label>
-        <label><span>{editable ? '允许新增行' : '分页显示'}</span>{ruleToggle(true, editable ? '新增行' : '分页')}</label>
-        <label><span>{editable ? '允许删除行' : '点击查看详情'}</span>{ruleToggle(true, editable ? '删除行' : '详情')}</label>
+        <label><span>{editable ? '允许新增行' : '分页显示'}</span>{genericRuleToggle(true, editable ? '新增行' : '分页')}</label>
+        <label><span>{editable ? '允许删除行' : '点击查看详情'}</span>{genericRuleToggle(true, editable ? '删除行' : '详情')}</label>
         <label><span>{editable ? '行校验规则' : '排序规则'}</span><Input value={editable ? '明细行不能为空，数量必须大于 0' : '按时间倒序'} readOnly /></label>
       </section>
     );
@@ -648,20 +1097,26 @@ export default function FormSettingsPage() {
         </section>
         <section className="designer-prop-section">
           <strong className="designer-prop-section-title">数据与校验</strong>
-          <label><span>是否必填</span>{ruleToggle(Boolean(field.required), '必填')}</label>
+          <label><span>是否必填</span>{genericRuleToggle(Boolean(field.required), '必填')}</label>
           <label><span>默认值</span><Input value={field.defaultValue || '无'} readOnly /></label>
           <label><span>校验规则</span><Input value={field.validation || '未配置'} readOnly /></label>
           <label><span>枚举/关联来源</span><Input value={field.optionSource || '无'} readOnly /></label>
         </section>
         <section className="designer-prop-section">
           <strong className="designer-prop-section-title">列表与检索</strong>
-          <label><span>列表展示</span>{ruleToggle(Boolean(field.listVisible), '列表展示')}</label>
-          <label><span>允许搜索</span>{ruleToggle(Boolean(field.searchable), '搜索')}</label>
-          <label><span>允许排序</span>{ruleToggle(Boolean(field.sortable), '排序')}</label>
+          <label><span>列表展示</span>{genericRuleToggle(Boolean(field.listVisible), '列表展示')}</label>
+          <label><span>允许搜索</span>{genericRuleToggle(Boolean(field.searchable), '搜索')}</label>
+          <label><span>允许排序</span>{genericRuleToggle(Boolean(field.sortable), '排序')}</label>
         </section>
       </div>
     );
   };
+
+  const activeRule = ruleModal && selectedControl?.id === ruleModal.controlId
+    ? selectedControl.rules[ruleModal.ruleKey]
+    : null;
+  const activeRuleLabel = ruleModal ? ruleLabels[ruleModal.ruleKey] : '';
+  const conditionFieldOptions = baseConfig.fields.map((field) => ({ value: field.key, label: field.name }));
 
   return (
     <div className="form-designer-page">
@@ -689,11 +1144,13 @@ export default function FormSettingsPage() {
 
       <section className={`form-designer-shell ${activeTab === 'permission' ? 'form-designer-shell-no-left' : ''}`}>
         {activeTab !== 'permission' && (
-        <aside className="form-designer-left">
-          <div className="designer-panel-head">
-            <strong>控件</strong>
-            <span>{activeTab === 'form' ? '控件库' : tabs.find((item) => item.key === activeTab)?.label}</span>
-          </div>
+          <aside className="form-designer-left">
+            <div className="designer-panel-head">
+              <strong>{activeTab === 'flow' ? '节点' : '控件'}</strong>
+              {activeTab !== 'form' && (
+                <span>{activeTab === 'flow' ? '流程节点库' : tabs.find((item) => item.key === activeTab)?.label}</span>
+              )}
+            </div>
 
           {activeTab === 'form' ? (
             <>
@@ -703,15 +1160,39 @@ export default function FormSettingsPage() {
                 value={componentPanel}
                 onChange={(value) => setComponentPanel(value as ComponentPanel)}
                 options={[
-                  { label: '控件类型', value: 'components' },
+                  { label: '控件库', value: 'components' },
                   { label: '字段库', value: 'fieldTypes' },
                 ]}
               />
               {componentPanel === 'components' ? (
                 <div className="designer-component-library">
-                  {generalComponentGroups.map((group) => (
-                    <section className="designer-component-group" key={group.category}>
-                      <div className="designer-group-title">{group.category}</div>
+                  <section className="designer-component-group">
+                    <div className="designer-group-title">常用控件</div>
+                    <div className="designer-component-list">
+                      {commonControls.map((item) => (
+                        <div
+                          className="designer-component"
+                          draggable
+                          key={item.key}
+                          data-desc={item.desc}
+                          onClick={() => addComponentToCanvas(item)}
+                          onDragStart={(event) => event.dataTransfer.setData('componentKey', item.key)}
+                        >
+                          <span className="designer-component-icon">{item.icon}</span>
+                          <div>
+                            <strong>{item.name}</strong>
+                            <small>{item.desc}</small>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                  {componentGroups.map((group) => (
+                    <details className="designer-component-group designer-component-collapse" key={group.category}>
+                      <summary className="designer-group-title">
+                        <span>{group.category}</span>
+                        <small>{group.items.length} 个</small>
+                      </summary>
                       <div className="designer-component-list">
                         {group.items.map((item) => (
                           <div
@@ -730,7 +1211,7 @@ export default function FormSettingsPage() {
                           </div>
                         ))}
                       </div>
-                    </section>
+                    </details>
                   ))}
                 </div>
               ) : (
@@ -760,6 +1241,24 @@ export default function FormSettingsPage() {
                 </>
               )}
             </>
+          ) : activeTab === 'flow' ? (
+            <div className="flow-node-library">
+              <div className="designer-panel-head designer-panel-head-gap">
+                <strong>流程节点</strong>
+                <span>{flowNodePalette.length} 类</span>
+              </div>
+              <div className="flow-node-palette">
+                {flowNodePalette.map((item) => (
+                  <button className="flow-node-card" key={item.key} onClick={() => addFlowNode(item)} type="button">
+                    <span className="flow-node-card-icon">{item.icon}</span>
+                    <span>
+                      <strong>{item.name}</strong>
+                      <small>{item.desc}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="designer-component-list">
               <div className="designer-component">
@@ -772,7 +1271,7 @@ export default function FormSettingsPage() {
             </div>
           )}
 
-          {activeTab !== 'form' && (
+          {activeTab !== 'form' && activeTab !== 'flow' && (
             <>
               <div className="designer-panel-head designer-panel-head-gap">
                 <strong>{activeTab === 'filter' ? '筛选字段' : '字段库'}</strong>
@@ -804,24 +1303,41 @@ export default function FormSettingsPage() {
             <div
               className="canvas-board create-form-canvas"
               onClick={() => setSelectedControlId('')}
-              onDragOver={(event) => event.preventDefault()}
+              onDragEnter={() => setCanvasDragActive(true)}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  setCanvasDragActive(false);
+                  setDropHint(null);
+                }
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setCanvasDragActive(true);
+              }}
               onDrop={(event) => {
                 event.preventDefault();
-                if (event.dataTransfer.getData('layoutControlId')) return;
+                const layoutControlId = event.dataTransfer.getData('layoutControlId');
+                if (layoutControlId) {
+                  moveLayoutControlToEnd(layoutControlId);
+                  setDraggedControlId('');
+                  setDropHint(null);
+                  setCanvasDragActive(false);
+                  return;
+                }
                 const fieldKey = event.dataTransfer.getData('fieldKey');
                 const componentKey = event.dataTransfer.getData('componentKey');
                 const field = baseConfig.fields.find((item) => item.key === fieldKey);
                 const component = componentGroups.flatMap((group) => group.items).find((item) => item.key === componentKey);
                 if (field) addFieldToCanvas(field);
                 if (component) addComponentToCanvas(component);
+                setCanvasDragActive(false);
               }}
             >
               <div className="create-form-modal" onClick={(event) => event.stopPropagation()}>
-                <div className="create-form-modal-head">
-                  <strong>{baseConfig.createTitle}</strong>
-                  <span>{baseConfig.description}</span>
+                <div className={`create-form-grid ${isCanvasDragActive ? 'canvas-drag-active' : ''}`}>
+                  {layoutControls.map(renderCanvasControl)}
+                  {isCanvasDragActive && draggedControlId && !dropHint && <div className="canvas-drop-end-indicator">拖到这里放在末尾</div>}
                 </div>
-                <div className="create-form-grid">{layoutControls.map(renderCanvasControl)}</div>
                 <div className="create-form-actions">
                   <Button>取消</Button>
                   <Button type="primary">提交</Button>
@@ -871,17 +1387,14 @@ export default function FormSettingsPage() {
                     <path d="M 0 0 L 8 4 L 0 8 z" />
                   </marker>
                 </defs>
-                {flowNodes.slice(0, -1).map((node, index) => {
-                  const next = flowNodes[index + 1];
-                  const startX = node.x + FLOW_NODE_WIDTH / 2;
-                  const startY = node.y + FLOW_NODE_HEIGHT;
-                  const endX = next.x + FLOW_NODE_WIDTH / 2;
-                  const endY = next.y;
-                  const bend = Math.max(40, Math.abs(endY - startY) / 2);
+                {flowConnections.map((connection) => {
+                  const from = flowNodes.find((node) => node.id === connection.fromId);
+                  const to = flowNodes.find((node) => node.id === connection.toId);
+                  if (!from || !to) return null;
                   return (
                     <path
-                      d={`M ${startX} ${startY} C ${startX} ${startY + bend}, ${endX} ${endY - bend}, ${endX} ${endY}`}
-                      key={`${node.id}-${next.id}`}
+                      d={getFlowConnectorPath(from, connection.fromSide, to, connection.toSide)}
+                      key={connection.id}
                     />
                   );
                 })}
@@ -898,8 +1411,16 @@ export default function FormSettingsPage() {
                     <strong>{node.label}</strong>
                     <small>{node.role === 'start' ? '开始节点' : node.role === 'end' ? '结束归档' : '处理节点'}</small>
                   </div>
-                  <i className="flow-port flow-port-in" />
-                  <i className="flow-port flow-port-out" />
+                  {getFlowNodePorts(node).map((side) => (
+                    <button
+                      aria-label={`${node.label}-${side}-port`}
+                      className={`flow-port flow-port-${side} ${pendingFlowPort?.nodeId === node.id && pendingFlowPort.side === side ? 'flow-port-active' : ''}`}
+                      key={side}
+                      onClick={(event) => handleFlowPortClick(event, node, side)}
+                      title={`${node.label} ${side} 连接点`}
+                      type="button"
+                    />
+                  ))}
                 </div>
               ))}
             </div>
@@ -1010,65 +1531,69 @@ export default function FormSettingsPage() {
                   key: 'control',
                   label: '控件属性',
                   children: (
-                    <div className="designer-props">
-                      <section className="designer-prop-section">
-                        <strong className="designer-prop-section-title">基础显示</strong>
-                        <label><span>控件名称</span><Input value={selectedControl.name} readOnly /></label>
-                        <label className="designer-prop-locked"><span>控件类型</span><Input value={selectedControl.controlType} disabled suffix="锁定" /></label>
-                        <label><span>占位提示</span><Input value={selectedField?.placeholder || selectedControl.desc || '未配置'} readOnly /></label>
-                        <label><span>帮助说明</span><Input value="可在此补充录入说明" readOnly /></label>
-                      </section>
-                      <section className="designer-prop-section">
-                        <strong className="designer-prop-section-title">布局尺寸</strong>
-                        <label className="designer-prop-row-wide">
-                          <span>控件宽度</span>
-                          <div className="designer-width-picker">
-                            {controlWidthOptions.map((option, index) => (
+                      <div className="designer-props">
+                        <section className="designer-prop-section">
+                          <strong className="designer-prop-section-title">控件身份</strong>
+                          <label>
+                            <span>控件名称</span>
+                            <Input
+                              value={selectedControl.name}
+                              onChange={(event) => updateSelectedControl({ name: event.target.value })}
+                            />
+                          </label>
+                          <label className="designer-prop-locked"><span>控件类型</span><Input value={selectedControl.controlType} disabled /></label>
+                          <label className="designer-prop-locked">
+                            <span>字段来源</span>
+                            <Input value={selectedField ? selectedField.name : '未绑定字段'} disabled />
+                          </label>
+                        </section>
+                        <section className="designer-prop-section">
+                          <strong className="designer-prop-section-title">布局</strong>
+                          <label className="designer-prop-row-wide">
+                            <span>控件宽度</span>
+                            <div className="designer-width-picker">
+                            {controlWidthOptions.map((option) => (
                               <button
                                 className={`designer-width-option ${selectedControl.width === option.value ? 'designer-width-option-active' : ''}`}
                                 key={option.value}
                                 onClick={() => updateSelectedControl({ width: option.value as ControlWidth })}
                                 type="button"
                               >
-                                <i style={{ width: `${(index + 1) * 25}%` }} />
                                 <span>{option.label}</span>
                               </button>
                             ))}
                           </div>
                         </label>
-                        <div className="designer-layout-settings">
-                          <div className="designer-layout-setting">
-                            <span>标签位置</span>
-                            <Segmented size="small" value="top" options={[{ value: 'top', label: '顶' }, { value: 'left', label: '左' }, { value: 'hidden', label: '隐' }]} />
-                          </div>
-                          <div className="designer-layout-setting">
-                            <span>内容对齐</span>
-                            <Segmented size="small" value="left" options={[{ value: 'left', label: '左' }, { value: 'center', label: '中' }, { value: 'right', label: '右' }]} />
-                          </div>
-                          <div className="designer-layout-setting">
-                            <span>控件高度</span>
-                            <Segmented size="small" value="standard" options={[{ value: 'compact', label: '紧' }, { value: 'standard', label: '标' }, { value: 'large', label: '高' }]} />
-                          </div>
-                          <div className="designer-layout-setting">
-                            <span>栅格间距</span>
-                            <Segmented size="small" value="normal" options={[{ value: 'tight', label: '窄' }, { value: 'normal', label: '常' }, { value: 'loose', label: '宽' }]} />
-                          </div>
-                        </div>
                       </section>
-                      <section className="designer-prop-section">
-                        <strong className="designer-prop-section-title">交互规则</strong>
-                        <label><span>展示标签</span>{ruleToggle(true, '显示标签')}</label>
-                        <label><span>只读</span>{ruleToggle(false, '只读')}</label>
-                        <label><span>必填</span>{ruleToggle(Boolean(selectedField?.required), '必填')}</label>
-                        <label><span>显示条件</span><Input value="默认始终显示" readOnly /></label>
-                        <label><span>默认聚焦</span>{ruleToggle(false, '默认聚焦')}</label>
-                        <label><span>允许清空</span>{ruleToggle(true, '允许清空')}</label>
-                      </section>
-                      <section className="designer-prop-section">
-                        <strong className="designer-prop-section-title">提示与联动</strong>
-                        <label><span>变更触发</span>{ruleToggle(false, '变更触发')}</label>
-                        <label><span>联动刷新</span><Input value="未绑定联动规则" readOnly /></label>
-                        <label><span>异常提示</span><Input value="使用字段校验提示" readOnly /></label>
+                        <section className="designer-prop-section">
+                          <strong className="designer-prop-section-title">交互规则</strong>
+                          <label><span>显示</span>{controlRuleToggle('visible')}</label>
+                          <label><span>只读</span>{controlRuleToggle('readonly')}</label>
+                          <label><span>必输</span>{controlRuleToggle('required')}</label>
+                        </section>
+                        <section className="designer-prop-section">
+                          <strong className="designer-prop-section-title">提示与联动</strong>
+                          <label>
+                            <span>占位提示</span>
+                            <Input
+                              allowClear
+                              placeholder={selectedField?.placeholder || selectedControl.desc || '请输入占位提示'}
+                              value={selectedControl.placeholder || ''}
+                              onChange={(event) => updateSelectedControl({ placeholder: event.target.value })}
+                            />
+                          </label>
+                          <label>
+                            <span>帮助说明</span>
+                            <Input
+                              allowClear
+                              placeholder="可在此补充录入说明"
+                              value={selectedControl.helpText || ''}
+                              onChange={(event) => updateSelectedControl({ helpText: event.target.value })}
+                            />
+                          </label>
+                          <label><span>变更触发</span>{genericRuleToggle(false, '变更触发')}</label>
+                          <label><span>联动刷新</span><Input value="未绑定联动规则" readOnly /></label>
+                          <label><span>异常提示</span><Input value="使用字段校验提示" readOnly /></label>
                         <label><span>权限覆盖</span><Input value="跟随表单权限" readOnly /></label>
                       </section>
                       {renderTableProperties()}
@@ -1101,6 +1626,72 @@ export default function FormSettingsPage() {
         </aside>
         )}
       </section>
+
+      <Modal
+        centered
+        className="designer-rule-modal"
+        destroyOnClose
+        okText="保存规则"
+        onCancel={() => setRuleModal(null)}
+        onOk={() => {
+          message.success(`${activeRuleLabel}规则已保存`);
+          setRuleModal(null);
+        }}
+        open={Boolean(activeRule)}
+        title={`${activeRuleLabel}规则`}
+      >
+        {ruleModal && activeRule && (
+          <div className="designer-rule-form">
+            <label>
+              <span>规则启用</span>
+              <Segmented
+                block
+                value={activeRule.enabled ? 'enabled' : 'disabled'}
+                onChange={(value) => updateSelectedControlRule(ruleModal.ruleKey, { enabled: value === 'enabled' })}
+                options={[
+                  { value: 'enabled', label: '启用' },
+                  { value: 'disabled', label: '关闭' },
+                ]}
+              />
+            </label>
+            <label>
+              <span>条件来源字段</span>
+              <Select
+                allowClear
+                placeholder="不选则始终生效"
+                value={activeRule.conditions?.sourceField}
+                onChange={(value) => updateSelectedRuleCondition(ruleModal.ruleKey, { sourceField: value })}
+                options={conditionFieldOptions}
+              />
+            </label>
+            <label>
+              <span>判断方式</span>
+              <Select
+                value={activeRule.conditions?.operator || 'equals'}
+                onChange={(value) => updateSelectedRuleCondition(ruleModal.ruleKey, { operator: value })}
+                options={ruleOperatorOptions}
+              />
+            </label>
+            <label>
+              <span>条件值</span>
+              <Input
+                placeholder="例如：严重、已提交、当前用户"
+                value={activeRule.conditions?.value || ''}
+                onChange={(event) => updateSelectedRuleCondition(ruleModal.ruleKey, { value: event.target.value })}
+              />
+            </label>
+            <label>
+              <span>说明文本</span>
+              <Input.TextArea
+                autoSize={{ minRows: 2, maxRows: 4 }}
+                placeholder="说明这条规则什么时候生效"
+                value={activeRule.conditions?.note || ''}
+                onChange={(event) => updateSelectedRuleCondition(ruleModal.ruleKey, { note: event.target.value })}
+              />
+            </label>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

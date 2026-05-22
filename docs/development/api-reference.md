@@ -1,6 +1,6 @@
 # API Reference
 
-Last updated: 2026-05-20
+Last updated: 2026-05-22
 
 Source of truth: `backend/app/main.py` and `backend/app/api/*`.
 
@@ -49,6 +49,7 @@ Default token expiration is controlled by `ACCESS_TOKEN_EXPIRE_MINUTES`; the cur
 | Graph | `/graph` | `/query`, `/neighbors/{entity_id}`, `/path`, `/subgraph/{entity_id}`, `/stats`, `/impact-analysis/{entity_id}`, `/trace/{entity_id}` |
 | Pipelines | `/pipelines` | `/`, `/{pipeline_id}`, `/{pipeline_id}/run`, `/{pipeline_id}/runs` |
 | Semantic assets | `/semantic-assets` | `/data-assets`, `/ontology-objects`, `/ontology-relations`, `/page-contracts` |
+| Knowledge base | `/knowledge` | `/sources`, `/documents`, `/documents/{document_id}/chunks`, `/related`, `/search` |
 | Analytics | `/analytics` | `/overview`, `/aggregate`, `/timeseries`, `/distribution` |
 | Maintenance | `/maintenance` | `/equipment-health`, `/equipment/{equipment_id}/health`, `/predictions`, `/work-orders` |
 | Quality | `/quality` | `/spc/{parameter}`, `/defects`, `/defects/pareto`, `/traceability/{entity_id}`, `/inspections`, `/capa` |
@@ -139,6 +140,19 @@ List dynamic records with pagination and text search:
 curl "http://localhost:8000/api/v1/forms/1/records?page=1&page_size=20&search=Acme" \
   -H "Authorization: Bearer <token>"
 ```
+
+Search local knowledge base:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/knowledge/search \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d "{\"query\":\"焊点虚焊如何处置\",\"limit\":3}"
+```
+
+Knowledge API note: the current backend uses static demo sources/documents and
+local TF-IDF retrieval. It is a runnable RAG-shaped MVP, not a persistent vector
+database integration.
 
 ## Frontend API Client
 

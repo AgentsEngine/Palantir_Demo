@@ -1,6 +1,6 @@
 # Testing
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 This document describes the current verification strategy and known test coverage.
 
@@ -77,6 +77,7 @@ High-risk areas currently covered:
 | Full DB integration tests | Many tests are function/router-level; production PostgreSQL + Neo4j integration coverage is limited. |
 | Docker smoke tests | Compose config is validated manually, but no automated container smoke pipeline is documented. |
 | Performance tests | No benchmark for graph queries, dynamic record filtering, or report rendering. |
+| Knowledge API tests | `/api/v1/knowledge` currently has no focused tests for source listing, chunk lookup, related evidence, or search. |
 
 ## 5. Recommended Test Additions
 
@@ -84,9 +85,10 @@ Priority order:
 
 1. Add a smoke test that imports `app.main:app` and verifies `/health`.
 2. Add API tests for `/api/v1/forms` happy paths with an isolated test database.
-3. Add frontend type-level route/menu smoke coverage if a test runner is introduced.
-4. Add Playwright E2E for login -> workspace -> app switch -> dynamic form open.
-5. Add Docker Compose smoke verification for production overlay.
+3. Add API tests for `/api/v1/knowledge` search and related-evidence contracts.
+4. Add frontend type-level route/menu smoke coverage if a test runner is introduced.
+5. Add Playwright E2E for login -> workspace -> app switch -> dynamic form open.
+6. Add Docker Compose smoke verification for production overlay.
 
 ## 6. Test Writing Rules
 

@@ -11,14 +11,19 @@ import {
 } from '@ant-design/icons';
 import { Alert, Button, Card, Col, Empty, Input, List, Row, Select, Space, Table, Tabs, Tag, Typography, message } from 'antd';
 import {
+  getKnowledgeOcrPipeline,
+  getRelatedKnowledgeCards,
   listKnowledgeChunks,
+  listKnowledgeCards,
   listKnowledgeDocuments,
+  listKnowledgeSpaces,
   listKnowledgeSources,
   listSemanticDataAssets,
   listSemanticOntologyObjects,
   listSemanticOntologyRelations,
   listSemanticPageContracts,
   searchKnowledge,
+  suggestKnowledgeBindings,
 } from '@/services/api';
 
 type DataField = {
@@ -123,6 +128,57 @@ type KnowledgeChunk = {
   chunk_text: string;
   score?: number;
   linked_objects?: LinkedObject[];
+};
+
+type KnowledgeSpace = {
+  id: string;
+  name: string;
+  scope: string;
+  owner_role: string;
+  review_required: boolean;
+  description: string;
+};
+
+type EvidenceRef = {
+  document_id: string;
+  source_ref: string;
+  document_title?: string;
+  document_type?: string;
+  source_name?: string;
+};
+
+type KnowledgeCard = {
+  id: string;
+  space_id: string;
+  space_name?: string;
+  title: string;
+  status: string;
+  owner: string;
+  reviewer: string;
+  updated_at: string;
+  scenario: string;
+  guidance: string[];
+  risk_notes: string[];
+  evidence_refs: EvidenceRef[];
+  linked_objects: LinkedObject[];
+  backlinks: string[];
+};
+
+type BindingCandidate = {
+  text: string;
+  object_type: string;
+  object_id: string;
+  object_name: string;
+  confidence: number;
+  match_type: string;
+  alias: string[];
+};
+
+type OcrPipelineStep = {
+  key: string;
+  title: string;
+  owner: string;
+  description: string;
 };
 
 const fallbackKnowledgeSources: KnowledgeSource[] = [
@@ -265,6 +321,95 @@ const fallbackKnowledgeChunks: KnowledgeChunk[] = [
     score: 0.78,
     linked_objects: fallbackKnowledgeDocuments[3].linked_objects,
   },
+];
+
+const fallbackKnowledgeSpaces: KnowledgeSpace[] = [
+  { id: 'personal', name: '个人知识库', scope: 'private', owner_role: '当前用户', review_required: false, description: '个人笔记和临时资料，默认不进入工作台引用。' },
+  { id: 'team-quality', name: '质量团队知识库', scope: 'team', owner_role: '质量工程师', review_required: true, description: '团队复用的异常经验和项目资料。' },
+  { id: 'dept-quality', name: '质量部门知识库', scope: 'department', owner_role: '质量经理', review_required: true, description: '审核后的 SOP、CAPA 和处置策略。' },
+  { id: 'enterprise', name: '企业知识库', scope: 'enterprise', owner_role: '平台管理员 / 业务专家', review_required: true, description: '跨部门可复用的正式知识。' },
+];
+
+const fallbackKnowledgeCards: KnowledgeCard[] = [
+  {
+    id: 'card-solder-void',
+    space_id: 'dept-quality',
+    space_name: '质量部门知识库',
+    title: '焊点虚焊处理策略',
+    status: 'published',
+    owner: '质量经理',
+    reviewer: '质量体系负责人',
+    updated_at: '2026-05-21 10:20',
+    scenario: 'AOI 连续发现 BGA 区域焊点虚焊，缺陷率超过管控线。',
+    guidance: ['冻结同批次物料和在制品', '发起 BGA 区域复检', '检查回流炉温区曲线和焊锡膏储运记录', '重复出现时生成 CAPA'],
+    risk_notes: ['供应商温控证明未补齐前，不建议释放同仓储批次。'],
+    evidence_refs: [
+      { document_id: 'doc-sop-rework', source_ref: 'SOP-QA-014 / 3.2-4.1', document_title: 'SOP-QA-014 焊点虚焊复检与冻结流程' },
+      { document_id: 'doc-capa-072', source_ref: 'CAPA-072 / Root Cause', document_title: 'CAPA-072 电控模块 V2 虚焊历史处置' },
+    ],
+    linked_objects: [
+      { type: 'Defect', id: 'D-SOLDER-VOID', name: '焊点虚焊' },
+      { type: 'MaterialBatch', id: 'MB-7781', name: '焊锡膏 S12' },
+      { type: 'Equipment', id: 'SMT-03', name: 'SMT-03 回流炉' },
+    ],
+    backlinks: ['card-supplier-risk', 'card-reflow-check'],
+  },
+  {
+    id: 'card-supplier-risk',
+    space_id: 'dept-quality',
+    space_name: '质量部门知识库',
+    title: '供应商批次风险判断',
+    status: 'published',
+    owner: 'SQE 主管',
+    reviewer: '采购质量经理',
+    updated_at: '2026-05-20 15:35',
+    scenario: '供应商报告、来料记录或批次追溯显示温控、运输或仓储证据缺口。',
+    guidance: ['隔离同批次和同仓储风险物料', '通知采购和 SQE 补充供应商 8D / 温控证明', '提高后续来料抽检比例'],
+    risk_notes: ['供应商报告处于 reviewing 状态时，只能作为处置参考。'],
+    evidence_refs: [
+      { document_id: 'doc-supplier-beichen', source_ref: '北辰电子材料 5 月来料整改报告', document_title: '北辰电子材料 5 月来料整改报告' },
+    ],
+    linked_objects: [
+      { type: 'Supplier', id: 'SUP-BEICHEN', name: '北辰电子材料' },
+      { type: 'MaterialBatch', id: 'MB-7781', name: '焊锡膏 S12' },
+    ],
+    backlinks: ['card-solder-void'],
+  },
+  {
+    id: 'card-reflow-check',
+    space_id: 'team-quality',
+    space_name: '质量团队知识库',
+    title: '回流焊温区异常排查',
+    status: 'reviewing',
+    owner: '设备工程师',
+    reviewer: '设备主管',
+    updated_at: '2026-05-21 09:50',
+    scenario: '质量异常前后设备日志出现温区偏移、未停机报警或维护备注。',
+    guidance: ['拉取异常前后 30 分钟温控曲线', '比对同班次工单和首件复检记录', '必要时创建设备检查任务'],
+    risk_notes: ['轻微偏移未触发停机时，也要与缺陷率和物料批次共同判断。'],
+    evidence_refs: [
+      { document_id: 'doc-equipment-smt03', source_ref: 'SMT-03 / 2026-05-21 09:12', document_title: 'SMT-03 回流炉温区维护日志' },
+    ],
+    linked_objects: [
+      { type: 'Equipment', id: 'SMT-03', name: 'SMT-03 回流炉' },
+      { type: 'WorkOrder', id: 'WO-260521-017', name: '电控模块 V2 工单' },
+    ],
+    backlinks: ['card-solder-void'],
+  },
+];
+
+const fallbackBindingCandidates: BindingCandidate[] = [
+  { text: '北辰电子材料', object_type: 'Supplier', object_id: 'SUP-BEICHEN', object_name: '北辰电子材料', confidence: 0.96, match_type: 'exact', alias: ['北辰材料', 'Beichen'] },
+  { text: 'MB-7781', object_type: 'MaterialBatch', object_id: 'MB-7781', object_name: '焊锡膏 S12', confidence: 0.94, match_type: 'batch_code', alias: ['S12 锡膏'] },
+  { text: 'SMT-03', object_type: 'Equipment', object_id: 'SMT-03', object_name: 'SMT-03 回流炉', confidence: 0.91, match_type: 'equipment_code', alias: ['三号回流炉'] },
+  { text: '焊点虚焊', object_type: 'Defect', object_id: 'D-SOLDER-VOID', object_name: '焊点虚焊', confidence: 0.88, match_type: 'semantic', alias: ['空焊', 'BGA 焊接不良'] },
+];
+
+const fallbackOcrPipeline: OcrPipelineStep[] = [
+  { key: 'upload', title: '资料上传', owner: '上传者', description: '接入 PDF、图片、扫描件、Excel 或外部系统附件。' },
+  { key: 'ocr', title: 'OCR 与版面识别', owner: '系统', description: '提取文字、表格、页眉页脚和签名区，标记低置信字段。' },
+  { key: 'match', title: '主数据匹配', owner: '数据管理员', description: '与 ERP、MES、QMS、设备台账和本体对象匹配。' },
+  { key: 'review', title: '审核发布', owner: '业务负责人', description: '确认知识条目、对象绑定、权限范围后发布。' },
 ];
 
 export default function SemanticAssetCenter() {
@@ -488,7 +633,6 @@ export default function SemanticAssetCenter() {
           { key: 'data', label: '数据资产中心', children: dataAssetView },
           { key: 'ontology', label: '本体建模中心', children: ontologyView },
           { key: 'pages', label: '页面配置中心', children: pageView },
-          { key: 'knowledge', label: '知识库中心', children: <KnowledgeCenter /> },
         ]}
       />
     </div>
@@ -499,31 +643,44 @@ function boolTag(value: boolean) {
   return value ? <Tag color="success">是</Tag> : <Tag>否</Tag>;
 }
 
-function KnowledgeCenter() {
+export function KnowledgeCenter() {
+  const [spaces, setSpaces] = useState<KnowledgeSpace[]>([]);
   const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
-  const [chunks, setChunks] = useState<KnowledgeChunk[]>([]);
+  const [cards, setCards] = useState<KnowledgeCard[]>([]);
+  const [bindingCandidates, setBindingCandidates] = useState<BindingCandidate[]>([]);
+  const [ocrPipeline, setOcrPipeline] = useState<OcrPipelineStep[]>([]);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>();
   const [selectedSourceId, setSelectedSourceId] = useState<string>();
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string>();
+  const [selectedCardId, setSelectedCardId] = useState<string>();
   const [query, setQuery] = useState('焊点虚焊以前怎么处理');
   const [searching, setSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<{ answer: string; results: KnowledgeChunk[] } | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const selectedSpace = spaces.find((item) => item.id === selectedSpaceId) ?? spaces[0];
   const selectedSource = sources.find((item) => item.id === selectedSourceId) ?? sources[0];
-  const visibleDocuments = selectedSourceId
+  const visibleCards = selectedSpace?.id
+    ? cards.filter((item) => item.space_id === selectedSpace.id)
+    : cards;
+  const selectedCard = cards.find((item) => item.id === selectedCardId) ?? visibleCards[0] ?? cards[0];
+  const sourceDocuments = selectedSourceId
     ? documents.filter((item) => item.source_id === selectedSourceId)
     : documents;
-  const selectedDocument = documents.find((item) => item.id === selectedDocumentId) ?? visibleDocuments[0];
   const linkedObjectCount = new Set(
-    documents.flatMap((doc) => doc.linked_objects.map((obj) => `${obj.type}:${obj.id}`)),
+    cards.flatMap((card) => card.linked_objects.map((obj) => `${obj.type}:${obj.id}`)),
   ).size;
 
   const applyFallback = () => {
+    setSpaces(fallbackKnowledgeSpaces);
     setSources(fallbackKnowledgeSources);
     setDocuments(fallbackKnowledgeDocuments);
+    setCards(fallbackKnowledgeCards);
+    setOcrPipeline(fallbackOcrPipeline);
+    setBindingCandidates(fallbackBindingCandidates);
+    setSelectedSpaceId((prev) => prev ?? fallbackKnowledgeSpaces[2]?.id);
     setSelectedSourceId((prev) => prev ?? fallbackKnowledgeSources[0]?.id);
-    setSelectedDocumentId((prev) => prev ?? fallbackKnowledgeDocuments[0]?.id);
+    setSelectedCardId((prev) => prev ?? fallbackKnowledgeCards[0]?.id);
   };
 
   const runFallbackSearch = () => {
@@ -543,17 +700,27 @@ function KnowledgeCenter() {
   const load = async () => {
     setLoading(true);
     try {
-      const [sourceRes, documentRes] = await Promise.all([
+      const [spaceRes, sourceRes, documentRes, cardRes, ocrRes] = await Promise.all([
+        listKnowledgeSpaces(),
         listKnowledgeSources(),
         listKnowledgeDocuments(),
+        listKnowledgeCards(),
+        getKnowledgeOcrPipeline(),
       ]);
+      const nextSpaces = spaceRes.data?.data ?? [];
       const nextSources = sourceRes.data?.data ?? [];
       const nextDocuments = documentRes.data?.data ?? [];
-      if (nextSources.length && nextDocuments.length) {
+      const nextCards = cardRes.data?.data ?? [];
+      const nextOcr = ocrRes.data?.data ?? [];
+      if (nextSources.length && nextDocuments.length && nextCards.length) {
+        setSpaces(nextSpaces.length ? nextSpaces : fallbackKnowledgeSpaces);
         setSources(nextSources);
         setDocuments(nextDocuments);
+        setCards(nextCards);
+        setOcrPipeline(nextOcr.length ? nextOcr : fallbackOcrPipeline);
+        setSelectedSpaceId((prev) => prev ?? nextCards[0]?.space_id ?? nextSpaces[0]?.id);
         setSelectedSourceId((prev) => prev ?? nextSources[0]?.id);
-        setSelectedDocumentId((prev) => prev ?? nextDocuments[0]?.id);
+        setSelectedCardId((prev) => prev ?? nextCards[0]?.id);
       } else {
         applyFallback();
       }
@@ -570,19 +737,22 @@ function KnowledgeCenter() {
   }, []);
 
   useEffect(() => {
-    if (!selectedDocument?.id) {
-      setChunks([]);
+    if (!selectedCard) {
+      setBindingCandidates([]);
       return;
     }
-    listKnowledgeChunks(selectedDocument.id)
+    const bindingText = [
+      selectedCard.title,
+      selectedCard.scenario,
+      ...selectedCard.linked_objects.map((obj) => `${obj.type} ${obj.id} ${obj.name}`),
+    ].join(' ');
+    suggestKnowledgeBindings({ text: bindingText, limit: 8 })
       .then((res) => {
-        const nextChunks = res.data?.data ?? [];
-        setChunks(nextChunks.length
-          ? nextChunks
-          : fallbackKnowledgeChunks.filter((chunk) => chunk.document_id === selectedDocument.id));
+        const nextCandidates = res.data?.data ?? [];
+        setBindingCandidates(nextCandidates.length ? nextCandidates : fallbackBindingCandidates);
       })
-      .catch(() => setChunks(fallbackKnowledgeChunks.filter((chunk) => chunk.document_id === selectedDocument.id)));
-  }, [selectedDocument?.id]);
+      .catch(() => setBindingCandidates(fallbackBindingCandidates));
+  }, [selectedCard?.id]);
 
   const runSearch = async () => {
     if (!query.trim()) {
@@ -610,19 +780,19 @@ function KnowledgeCenter() {
     <div className="knowledge-center">
       <section className="knowledge-overview">
         <div className="knowledge-stat-card">
-          <Typography.Text type="secondary">知识源</Typography.Text>
-          <Typography.Title level={4}>{sources.length}</Typography.Title>
-          <span>按 SOP、CAPA、供应商、设备分域管理</span>
+          <Typography.Text type="secondary">知识空间</Typography.Text>
+          <Typography.Title level={4}>{spaces.length}</Typography.Title>
+          <span>个人、团队、部门、企业分层治理</span>
         </div>
         <div className="knowledge-stat-card">
-          <Typography.Text type="secondary">知识文档</Typography.Text>
+          <Typography.Text type="secondary">知识条目</Typography.Text>
+          <Typography.Title level={4}>{cards.length}</Typography.Title>
+          <span>Obsidian 式业务知识卡片</span>
+        </div>
+        <div className="knowledge-stat-card">
+          <Typography.Text type="secondary">原始资料</Typography.Text>
           <Typography.Title level={4}>{documents.length}</Typography.Title>
-          <span>沉淀制度、历史经验和外部报告</span>
-        </div>
-        <div className="knowledge-stat-card">
-          <Typography.Text type="secondary">切片证据</Typography.Text>
-          <Typography.Title level={4}>{fallbackKnowledgeChunks.length}</Typography.Title>
-          <span>用于问答引用和处置建议追溯</span>
+          <span>SOP、CAPA、报告、日志作为证据来源</span>
         </div>
         <div className="knowledge-stat-card accent">
           <Typography.Text type="secondary">对象关联</Typography.Text>
@@ -635,95 +805,123 @@ function KnowledgeCenter() {
         <aside className="knowledge-left-panel">
           <Card
             className="knowledge-panel-card"
-            title="知识源"
+            title="知识空间"
             extra={<Button size="small" icon={<ReloadOutlined />} loading={loading} onClick={load}>刷新</Button>}
           >
             <div className="knowledge-source-list">
-              {sources.map((item) => (
+              {spaces.map((item) => (
                 <button
                   type="button"
                   key={item.id}
-                  className={item.id === selectedSource?.id ? 'knowledge-source-item active' : 'knowledge-source-item'}
+                  className={item.id === selectedSpace?.id ? 'knowledge-source-item active' : 'knowledge-source-item'}
                   onClick={() => {
-                    setSelectedSourceId(item.id);
-                    const firstDoc = documents.find((doc) => doc.source_id === item.id);
-                    setSelectedDocumentId(firstDoc?.id);
+                    setSelectedSpaceId(item.id);
+                    const firstCard = cards.find((card) => card.space_id === item.id);
+                    setSelectedCardId(firstCard?.id);
                   }}
                 >
                   <span>
                     <strong>{item.name}</strong>
                     <small>{item.description}</small>
                   </span>
-                  <Tag>{item.document_count}</Tag>
+                  <Tag color={item.review_required ? 'warning' : 'success'}>{item.review_required ? '需审核' : '个人'}</Tag>
                 </button>
               ))}
             </div>
           </Card>
 
-          <Card className="knowledge-panel-card" title="文档列表">
+          <Card className="knowledge-panel-card" title="知识条目">
             <div className="knowledge-document-list">
-              {visibleDocuments.map((item) => (
+              {visibleCards.map((item) => (
                 <button
                   type="button"
                   key={item.id}
-                  className={item.id === selectedDocument?.id ? 'knowledge-document-item active' : 'knowledge-document-item'}
-                  onClick={() => setSelectedDocumentId(item.id)}
+                  className={item.id === selectedCard?.id ? 'knowledge-document-item active' : 'knowledge-document-item'}
+                  onClick={() => setSelectedCardId(item.id)}
                 >
                   <Space wrap size={6}>
-                    <Tag color="processing">{item.doc_type}</Tag>
+                    <Tag color="processing">{item.space_name ?? item.space_id}</Tag>
                     <Tag>{item.status}</Tag>
                   </Space>
                   <strong>{item.title}</strong>
                   <small>{item.updated_at}</small>
                 </button>
               ))}
-              {!visibleDocuments.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无知识文档" />}
+              {!visibleCards.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无知识条目" />}
             </div>
           </Card>
         </aside>
 
         <main className="knowledge-main-panel">
           <Card className="knowledge-document-card">
-            {selectedDocument ? (
+            {selectedCard ? (
               <Space direction="vertical" size={14} style={{ width: '100%' }}>
                 <div className="knowledge-document-head">
                   <div>
-                    <Typography.Text type="secondary">当前文档</Typography.Text>
-                    <Typography.Title level={4}>{selectedDocument.title}</Typography.Title>
+                    <Typography.Text type="secondary">当前知识条目</Typography.Text>
+                    <Typography.Title level={4}>{selectedCard.title}</Typography.Title>
                   </div>
                   <Space wrap>
-                    <Tag color="processing">{selectedDocument.doc_type}</Tag>
-                    <Tag color="success">{selectedDocument.status}</Tag>
-                    <Tag>{selectedDocument.updated_at}</Tag>
+                    <Tag color="processing">{selectedCard.space_name ?? selectedCard.space_id}</Tag>
+                    <Tag color={selectedCard.status === 'published' ? 'success' : 'warning'}>{selectedCard.status}</Tag>
+                    <Tag>{selectedCard.updated_at}</Tag>
                   </Space>
                 </div>
-                <Typography.Paragraph>{selectedDocument.summary}</Typography.Paragraph>
+                <Typography.Paragraph>{selectedCard.scenario}</Typography.Paragraph>
+                <div className="knowledge-guidance-list">
+                  {selectedCard.guidance.map((item) => <span key={item}>{item}</span>)}
+                </div>
+                <Space direction="vertical" size={4}>
+                  <Typography.Text strong>风险提示</Typography.Text>
+                  {selectedCard.risk_notes.map((item) => <Typography.Text type="secondary" key={item}>{item}</Typography.Text>)}
+                </Space>
                 <Space wrap>
-                  {selectedDocument.linked_objects.map((obj) => (
+                  {selectedCard.linked_objects.map((obj) => (
                     <Tag key={`${obj.type}-${obj.id}`} color="blue">{obj.type}: {obj.name}</Tag>
                   ))}
                 </Space>
               </Space>
             ) : (
-              <Empty description="请选择知识文档" />
+              <Empty description="请选择知识条目" />
             )}
           </Card>
 
-          <Card className="knowledge-panel-card" title="文档切片与引用证据">
-            {chunks.length ? (
-              <div className="knowledge-chunk-list">
-                {chunks.map((chunk) => (
-                  <Card size="small" key={chunk.id} className="knowledge-chunk-card">
-                    <div className="knowledge-chunk-head">
-                      <Typography.Text strong>{chunk.source_ref}</Typography.Text>
-                      <Tag color="cyan">{Math.round((chunk.score ?? 0.76) * 100)}%</Tag>
-                    </div>
-                    <Typography.Paragraph type="secondary">{chunk.chunk_text}</Typography.Paragraph>
-                  </Card>
-                ))}
+          <Card className="knowledge-panel-card" title="证据来源与对象绑定">
+            {selectedCard ? (
+              <div className="knowledge-binding-grid">
+                <div>
+                  <Typography.Text strong>证据来源</Typography.Text>
+                  <div className="knowledge-chunk-list">
+                    {selectedCard.evidence_refs.map((ref) => (
+                      <Card size="small" key={`${ref.document_id}-${ref.source_ref}`} className="knowledge-chunk-card">
+                        <div className="knowledge-chunk-head">
+                          <Typography.Text strong>{ref.document_title ?? ref.document_id}</Typography.Text>
+                          <Tag color="cyan">source</Tag>
+                        </div>
+                        <Typography.Text type="secondary">{ref.source_ref}</Typography.Text>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Typography.Text strong>AI 推荐绑定 / 数据清洗</Typography.Text>
+                  <div className="knowledge-chunk-list">
+                    {bindingCandidates.map((item) => (
+                      <Card size="small" key={`${item.object_type}-${item.object_id}`} className="knowledge-chunk-card">
+                        <div className="knowledge-chunk-head">
+                          <Typography.Text strong>{item.object_type}: {item.object_name}</Typography.Text>
+                          <Tag color={item.confidence >= 0.9 ? 'success' : 'warning'}>{Math.round(item.confidence * 100)}%</Tag>
+                        </div>
+                        <Typography.Text type="secondary">
+                          命中文本：{item.text} / 匹配方式：{item.match_type} / 别名：{item.alias.join('、')}
+                        </Typography.Text>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请选择文档查看切片" />
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请选择知识条目查看证据和绑定" />
             )}
           </Card>
         </main>
@@ -734,9 +932,32 @@ function KnowledgeCenter() {
               <Alert
                 type="info"
                 showIcon
-                message="本地 TF-IDF 检索"
-                description="MVP 阶段返回候选引用、匹配分和对象关联，后续可替换为 embedding + vector store。"
+                message="知识条目优先，RAG 保留为底层检索"
+                description="用户看到知识卡片，系统内部仍可用全文、TF-IDF 或向量检索补充证据来源。"
               />
+              <Card size="small" className="knowledge-chunk-card">
+                <Typography.Text strong>OCR / 清洗 / 发布链路</Typography.Text>
+                <div className="knowledge-ocr-steps">
+                  {ocrPipeline.map((step) => (
+                    <span key={step.key}>
+                      <strong>{step.title}</strong>
+                      <small>{step.owner}</small>
+                    </span>
+                  ))}
+                </div>
+              </Card>
+              <Select
+                value={selectedSource?.id}
+                options={sources.map((item) => ({ label: item.name, value: item.id }))}
+                onChange={setSelectedSourceId}
+                style={{ width: '100%' }}
+                placeholder="查看原始资料来源"
+              />
+              <div className="knowledge-source-docs">
+                {sourceDocuments.slice(0, 3).map((doc) => (
+                  <Tag key={doc.id}>{doc.title}</Tag>
+                ))}
+              </div>
               <Input.TextArea
                 value={query}
                 rows={4}

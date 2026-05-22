@@ -1,6 +1,6 @@
 # ManuFoundry Architecture Overview
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 This is the current high-level architecture document. It describes what the codebase implements now, and it separates that from Palantir-inspired reference direction.
 
@@ -103,6 +103,7 @@ Main API modules:
 | Graph | `/api/v1/graph` |
 | Pipelines | `/api/v1/pipelines` |
 | Semantic assets | `/api/v1/semantic-assets` |
+| Knowledge base | `/api/v1/knowledge` |
 | Analytics | `/api/v1/analytics` |
 | Maintenance | `/api/v1/maintenance` |
 | Quality | `/api/v1/quality` |
@@ -181,7 +182,7 @@ sequenceDiagram
 | Foundry Pipeline Builder | Data source management, pipeline APIs, scheduler APIs |
 | Object actions | Form actions, rules engine, workflow bindings, notifications |
 | Operational decision apps | Dashboard, maintenance, quality, supply-chain, workflow, reports |
-| AIP-style assistance | Floating AI widget, `/api/v1/ai`, AI builder suggestions, planned source-aware Q&A |
+| AIP-style assistance | Floating AI widget, `/api/v1/ai`, AI builder suggestions, local `/api/v1/knowledge` evidence retrieval |
 | Gotham-style command UI | Event/risk workbench reference docs, notification center, graph impact/trace endpoints |
 
 The important architectural lesson is not a visual copy of Palantir. The lesson is the **object-centric operating model**: users act on meaningful business objects, not disconnected screens.
@@ -216,6 +217,7 @@ Implemented now:
 
 - Workbench shell, app switcher, dynamic menus, workspace, system admin surfaces.
 - Backend APIs for applications, forms platform, workflow, rules, reports, notifications, scheduler, search, templates, AI builder.
+- Local knowledge base APIs with static demo documents and TF-IDF retrieval.
 - Forms metadata persistence and JSON dynamic records.
 - Docker development and production-style compose files.
 - Backend test coverage across security, workflow, rules, notifications, forms, config import/export, templates, scheduler/search/AI builder, graph safety, and model-driven safety.

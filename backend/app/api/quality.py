@@ -702,11 +702,41 @@ async def get_quality_event_impact(event_id: str):
     event = next((e for e in QUALITY_EVENT_DEMO["events"] if e["id"] == event_id), None)
     if not event:
         raise HTTPException(404, "Quality event not found")
+    try:
+        from app.api.graph import (
+            normalize_quality_event_graph_id,
+            quality_graph_payload_from_result,
+        )
+        from app.services.graph_service import graph_service
+
+        graph_result = await asyncio.wait_for(
+            graph_service.impact_analysis_by_object(
+                "QualityEvent",
+                normalize_quality_event_graph_id(event_id),
+                max_hops=5,
+                limit=200,
+            ),
+            timeout=5,
+        )
+        if graph_result:
+            return {"data": quality_graph_payload_from_result(event_id, graph_result)}
+    except asyncio.TimeoutError:
+        pass
+    except Exception:
+        pass
+
     return {
         "data": {
             "event": event,
             "nodes": QUALITY_EVENT_DEMO["nodes"],
             "edges": QUALITY_EVENT_DEMO["edges"],
+            "summary": {
+                "node_count": len(QUALITY_EVENT_DEMO["nodes"]),
+                "edge_count": len(QUALITY_EVENT_DEMO["edges"]),
+                "affected": event.get("affected", {}),
+                "risk_score": event.get("risk_score"),
+            },
+            "source": "fallback",
         }
     }
 

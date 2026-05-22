@@ -36,6 +36,10 @@ scikit-learn==1.6.1
 # Misc
 python-dotenv==1.0.1
 
+# Tests
+pytest==8.3.4
+pytest-asyncio==0.25.0
+
 # ── Optional / future use (uncomment when wired up) ──────
 # prophet==1.1.6           # forecasting — currently unused
 # celery==5.4.0            # task queue — currently unused

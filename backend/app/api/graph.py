@@ -16,6 +16,113 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 router = APIRouter()
 
+QUALITY_BUSINESS_ID_MAP = {
+    "event-qe-001": "quality-event-qe-20260521-001",
+    "defect-001": "defect-001",
+    "inspection-iqc-088": "inspection-batch-ipqc-260521-088",
+    "material-batch-mb-7781": "material-batch-mb-7781",
+    "supplier-s-023": "supplier-s-023",
+    "workorder-260521-017": "workorder-260521-017",
+    "equipment-smt-03": "equipment-smt-03",
+    "order-so-8821": "customer-order-so-8821",
+    "capa-072": "capa-072",
+}
+
+QUALITY_EDGE_REL_MAP = {
+    "r1": ("HAS_DEFECT", "event-qe-001", "defect-001"),
+    "r2": ("FOUND_IN", "defect-001", "inspection-iqc-088"),
+    "r3": ("INSPECTS", "inspection-iqc-088", "material-batch-mb-7781"),
+    "r4": ("SUPPLIED_BY", "material-batch-mb-7781", "supplier-s-023"),
+    "r5": ("USES_BATCH", "workorder-260521-017", "material-batch-mb-7781"),
+    "r6": ("USES_EQUIPMENT", "workorder-260521-017", "equipment-smt-03"),
+    "r7": ("AFFECTS_ORDER", "workorder-260521-017", "order-so-8821"),
+    "r8": ("TRIGGERS", "event-qe-001", "capa-072"),
+}
+
+
+def normalize_quality_event_graph_id(event_id: str) -> str:
+    return f"quality-event-{event_id.lower()}"
+
+
+def _quality_graph_fallback(event_id: str | None = None, source: str = "fallback") -> dict:
+    from app.api.quality import QUALITY_EVENT_DEMO
+
+    event = next((item for item in QUALITY_EVENT_DEMO["events"] if item["id"] == event_id), None)
+    if event is None:
+        event = QUALITY_EVENT_DEMO["events"][0]
+    return {
+        "event": event,
+        "root": QUALITY_EVENT_DEMO["nodes"][0],
+        "nodes": QUALITY_EVENT_DEMO["nodes"],
+        "edges": QUALITY_EVENT_DEMO["edges"],
+        "summary": {
+            "node_count": len(QUALITY_EVENT_DEMO["nodes"]),
+            "edge_count": len(QUALITY_EVENT_DEMO["edges"]),
+            "affected": event.get("affected", {}),
+            "risk_score": event.get("risk_score"),
+        },
+        "source": source,
+    }
+
+
+def _business_node_from_quality_node(node: dict, event_id: str) -> dict:
+    business_id = QUALITY_BUSINESS_ID_MAP.get(node["id"], node["id"])
+    source_id = node["name"]
+    if node["type"] == "QualityEvent":
+        business_id = normalize_quality_event_graph_id(event_id)
+        source_id = event_id
+    return {
+        **node,
+        "id": business_id,
+        "object_id": business_id,
+        "source_id": source_id,
+        "source_system": "quality-demo",
+        "updated_at": "2026-05-22T00:00:00",
+    }
+
+
+def _frontend_node_from_graph_node(node: dict) -> dict:
+    return {
+        "id": node.get("id") or node.get("object_id"),
+        "label": node.get("label") or node.get("type") or "对象",
+        "type": node.get("type") or (node.get("labels") or ["Object"])[0],
+        "name": node.get("name") or node.get("source_id") or node.get("id"),
+        "status": node.get("status") or "unknown",
+        "risk": node.get("risk") or "medium",
+        "summary": node.get("summary") or "",
+        "actions": node.get("actions") or [],
+        "source_id": node.get("source_id"),
+        "source_system": node.get("source_system"),
+    }
+
+
+def _frontend_edge_from_graph_edge(edge: dict, index: int) -> dict:
+    return {
+        "id": edge.get("id") or f"graph-r{index + 1}",
+        "source": edge.get("source"),
+        "target": edge.get("target"),
+        "label": edge.get("label") or edge.get("relation_label") or edge.get("type") or edge.get("relation_type"),
+        "relation_type": edge.get("relation_type") or edge.get("type"),
+    }
+
+
+def quality_graph_payload_from_result(event_id: str, result: dict, source: str = "graph") -> dict:
+    from app.api.quality import QUALITY_EVENT_DEMO
+
+    event = next((item for item in QUALITY_EVENT_DEMO["events"] if item["id"] == event_id), None)
+    nodes = [_frontend_node_from_graph_node(node) for node in (result.get("nodes") or [])]
+    edges = [_frontend_edge_from_graph_edge(edge, index) for index, edge in enumerate(result.get("edges") or [])]
+    if not nodes:
+        return _quality_graph_fallback(event_id, source="fallback-empty-graph")
+    return {
+        "event": event or QUALITY_EVENT_DEMO["events"][0],
+        "root": _frontend_node_from_graph_node(result.get("root") or result["nodes"][0]),
+        "nodes": nodes,
+        "edges": edges,
+        "summary": result.get("summary") or {"node_count": len(nodes), "edge_count": len(edges)},
+        "source": source,
+    }
+
 # Cypher write/admin keywords that must NOT appear in user-supplied queries.
 _FORBIDDEN_CYPHER_PATTERN = re.compile(
     r"\b(CREATE|MERGE|DELETE|DETACH|SET|REMOVE|DROP|CALL|LOAD|FOREACH|USING|GRANT|REVOKE)\b",
@@ -310,6 +417,137 @@ async def graph_stats():
 
     # Mock fallback
     return MOCK_STATS
+
+
+@router.post("/sync/quality-demo")
+async def sync_quality_demo_graph():
+    """Upsert the quality closure demo graph into Neo4j using stable business ids."""
+    async def _sync():
+        from app.api.knowledge import KNOWLEDGE_CARDS
+        from app.api.quality import QUALITY_EVENT_DEMO
+        from app.services.graph_service import graph_service
+
+        event_id = QUALITY_EVENT_DEMO["events"][0]["id"]
+        await graph_service.ensure_business_constraints()
+
+        synced_nodes: list[dict] = []
+        for node in QUALITY_EVENT_DEMO["nodes"]:
+            business_node = _business_node_from_quality_node(node, event_id)
+            synced_nodes.append(await graph_service.upsert_business_node(
+                business_node["type"],
+                business_node["id"],
+                business_node,
+            ))
+
+        synced_edges: list[dict] = []
+        for edge in QUALITY_EVENT_DEMO["edges"]:
+            rel_type, raw_src, raw_tgt = QUALITY_EDGE_REL_MAP.get(
+                edge["id"],
+                ("RELATED_TO", edge["source"], edge["target"]),
+            )
+            if rel_type == "RELATED_TO":
+                continue
+            synced_edges.append(await graph_service.upsert_business_edge(
+                QUALITY_BUSINESS_ID_MAP.get(raw_src, raw_src),
+                QUALITY_BUSINESS_ID_MAP.get(raw_tgt, raw_tgt),
+                rel_type,
+                {
+                    "label": edge.get("label"),
+                    "relation_label": edge.get("label"),
+                    "confidence": 0.92,
+                    "source_system": "quality-demo",
+                },
+            ))
+
+        node_lookup: dict[tuple[str, str], str] = {}
+        for node in QUALITY_EVENT_DEMO["nodes"]:
+            business_node = _business_node_from_quality_node(node, event_id)
+            node_lookup[(business_node["type"], business_node["source_id"])] = business_node["id"]
+            node_lookup[(business_node["type"], business_node["name"])] = business_node["id"]
+            node_lookup[(business_node["type"], business_node["id"])] = business_node["id"]
+
+        for card in KNOWLEDGE_CARDS:
+            card_id = card["id"]
+            await graph_service.upsert_business_node("KnowledgeCard", card_id, {
+                "id": card_id,
+                "label": "知识条目",
+                "name": card["title"],
+                "status": card["status"],
+                "risk": "low",
+                "summary": card["scenario"],
+                "actions": card["guidance"][:3],
+                "source_id": card_id,
+                "source_system": "knowledge-base",
+                "updated_at": card["updated_at"],
+            })
+            synced_nodes.append({"id": card_id, "type": "KnowledgeCard", "name": card["title"]})
+            for linked in card["linked_objects"]:
+                target_id = (
+                    node_lookup.get((linked["type"], linked["id"]))
+                    or node_lookup.get((linked["type"], linked["name"]))
+                )
+                if target_id:
+                    synced_edges.append(await graph_service.upsert_business_edge(
+                        card_id,
+                        target_id,
+                        "EVIDENCE_FOR",
+                        {
+                            "label": "证据支持",
+                            "relation_label": "证据支持",
+                            "confidence": 0.88,
+                            "source_system": "knowledge-base",
+                        },
+                    ))
+
+        return {
+            "data": {
+                "nodes": len(synced_nodes),
+                "edges": len(synced_edges),
+                "root": normalize_quality_event_graph_id(event_id),
+                "source": "neo4j",
+            }
+        }
+
+    try:
+        return await asyncio.wait_for(_sync(), timeout=8)
+    except asyncio.TimeoutError:
+        logger.warning("Quality demo graph sync timed out")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Quality demo graph sync failed: %s", exc)
+
+    return {
+        "data": {
+            "nodes": 0,
+            "edges": 0,
+            "source": "fallback",
+            "message": "Neo4j unavailable; sync skipped and fallback graph remains active.",
+        }
+    }
+
+
+@router.get("/impact-analysis-by-object")
+async def impact_analysis_by_object(
+    object_type: str,
+    object_id: str,
+    max_hops: int = Query(5, ge=1, le=8),
+    limit: int = Query(200, ge=1, le=500),
+):
+    """Business object impact graph with stable string ids."""
+    try:
+        from app.services.graph_service import graph_service
+        data = await asyncio.wait_for(
+            graph_service.impact_analysis_by_object(object_type, object_id, max_hops, limit),
+            timeout=5,
+        )
+        if data:
+            return {"data": {**data, "source": "neo4j"}}
+    except asyncio.TimeoutError:
+        logger.warning("Business impact analysis timed out, falling back")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Business impact analysis failed, falling back: %s", exc)
+
+    event_id = object_id if object_type == "QualityEvent" else "QE-20260521-001"
+    return {"data": _quality_graph_fallback(event_id, source="fallback")}
 
 
 # ── New graph-first endpoints ─────────────────────────────
