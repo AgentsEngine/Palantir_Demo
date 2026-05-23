@@ -1,6 +1,6 @@
 # ManuFoundry Documentation
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 This directory is split into three kinds of documents:
 
@@ -27,6 +27,8 @@ Read these first when you want the current system truth:
 | [API Reference](development/api-reference.md) | Current FastAPI route map and example requests. |
 | [Platform Database Landing Plan](architecture/platform-database.md) | Current low-code forms/application/menu persistence design and rollout notes. |
 | [Knowledge Base](architecture/knowledge-base.md) | Current local knowledge/RAG MVP and future persistence boundary. |
+| [Graph Database Integration](architecture/graph-database-integration.md) | Current graph sync and quality impact graph integration. |
+| [Knowledge Base Workflow](business/knowledge-base-workflow.md) | User workflow for knowledge upload, review, binding, and workbench use. |
 | [Deployment](operations/deployment.md) | Current Docker Compose deployment flow and server update convention. |
 | [Testing](operations/testing.md) | Current backend/frontend verification strategy and test coverage map. |
 
@@ -39,6 +41,7 @@ Read these first when you want the current system truth:
 | [Data Model](architecture/data-model.md) | Current relational model groups, platform forms storage, Neo4j notes, and ontology direction boundaries. |
 | [Integration](business/integration.md) | Data-source integration surface and connector status. |
 | [User Guide](business/user-guide.md) | Product walkthrough and demo-oriented usage notes. |
+| [AI Agent Skill/Tool Contract](architecture/ai-agent-skill-contract.md) | AI skill/tool safety contract and phased backend migration path. |
 
 ## Palantir-Inspired Reference Docs
 

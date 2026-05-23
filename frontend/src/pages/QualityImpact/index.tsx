@@ -34,6 +34,7 @@ import {
 import {
   createCapa,
   executeQualityEventAction,
+  getGraphStats,
   getQualityEventAiSuggestion,
   getQualityEventImpact,
   getRelatedKnowledgeCards,
@@ -73,6 +74,14 @@ interface ImpactEdge {
   source: string;
   target: string;
   label: string;
+}
+
+interface GraphStats {
+  total_nodes: number;
+  total_relationships: number;
+  nodes_by_label?: Array<{ label: string; count: number }>;
+  rels_by_type?: Array<{ rel_type: string; count: number }>;
+  relationships_by_type?: Array<{ rel_type: string; count: number }>;
 }
 
 interface AiSuggestion {
@@ -207,6 +216,31 @@ function normalizeRisk(level: RiskLevel) {
 
 const taskFilters = ['全部', 'P0 高风险', '待分析', '待处置', '审批中'];
 
+const graphViewOptions = [
+  {
+    key: 'impact',
+    label: '影响',
+    desc: '从当前对象看下游影响',
+  },
+  {
+    key: 'trace',
+    label: '追溯',
+    desc: '向上追溯来源批次',
+  },
+  {
+    key: 'task',
+    label: '任务',
+    desc: '查看处置任务链路',
+  },
+  {
+    key: 'part',
+    label: '料号',
+    desc: '按物料/料号展开关系',
+  },
+] as const;
+
+type GraphViewKey = typeof graphViewOptions[number]['key'];
+
 const closureTimeline = [
   {
     time: '09:40',
@@ -260,6 +294,9 @@ export default function QualityImpactWorkbench() {
   const [loading, setLoading] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [knowledgeEvidence, setKnowledgeEvidence] = useState<KnowledgeEvidence[]>([]);
+  const [graphStats, setGraphStats] = useState<GraphStats | null>(null);
+  const [graphSource, setGraphSource] = useState('quality-fallback');
+  const [graphView, setGraphView] = useState<GraphViewKey>('impact');
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) || nodes[0],
@@ -270,6 +307,17 @@ export default function QualityImpactWorkbench() {
     () => edges.filter((edge) => edge.source === selectedNode?.id || edge.target === selectedNode?.id),
     [edges, selectedNode],
   );
+
+  const connectedNodeIds = useMemo(() => {
+    const connected = new Set<string>();
+    visibleEdges.forEach((edge) => {
+      connected.add(edge.source);
+      connected.add(edge.target);
+    });
+    return connected;
+  }, [visibleEdges]);
+
+  const activeGraphView = graphViewOptions.find((item) => item.key === graphView) || graphViewOptions[0];
 
   const loadEvent = async (eventId = event.id) => {
     setLoading(true);
@@ -283,6 +331,7 @@ export default function QualityImpactWorkbench() {
       setEvent(impact.event || matched);
       setNodes(impact.nodes || fallbackNodes);
       setEdges(impact.edges || fallbackEdges);
+      setGraphSource(impact.source || 'quality-api');
       setSelectedNodeId((impact.nodes || fallbackNodes)[0]?.id || fallbackNodes[0].id);
       setAiSuggestion(null);
     } catch {
@@ -290,6 +339,7 @@ export default function QualityImpactWorkbench() {
       setEvent(fallbackEvent);
       setNodes(fallbackNodes);
       setEdges(fallbackEdges);
+      setGraphSource('quality-fallback');
       setSelectedNodeId(fallbackNodes[0].id);
     } finally {
       setLoading(false);
@@ -298,6 +348,12 @@ export default function QualityImpactWorkbench() {
 
   useEffect(() => {
     loadEvent();
+  }, []);
+
+  useEffect(() => {
+    getGraphStats()
+      .then((res) => setGraphStats(res.data))
+      .catch(() => setGraphStats(null));
   }, []);
 
   useEffect(() => {
@@ -432,11 +488,45 @@ export default function QualityImpactWorkbench() {
               <span>{event.description}</span>
             </div>
 
-            <div className="quality-graph-canvas">
+            <div className="quality-graph-canvas object-relationship-canvas">
+              <div className="object-canvas-topbar">
+                <div className="object-canvas-heading">
+                  <div>
+                    <Typography.Text strong>对象关系画布</Typography.Text>
+                    <Typography.Text type="secondary">{activeGraphView.desc}</Typography.Text>
+                  </div>
+                  <Space size={6} wrap>
+                    <Tag color={graphStats ? 'cyan' : 'default'}>
+                      Neo4j {graphStats ? `${graphStats.total_nodes} 节点 / ${graphStats.total_relationships} 关系` : '连接中'}
+                    </Tag>
+                    <Tag color="blue">当前子图 {nodes.length} 对象 / {edges.length} 关系</Tag>
+                    <Tag>{graphSource === 'fallback' || graphSource === 'quality-fallback' ? '演示子图' : graphSource}</Tag>
+                    <Tag color="processing">选中 {visibleEdges.length} 条邻接关系</Tag>
+                  </Space>
+                </div>
+                <div className="object-canvas-view-switch" aria-label="关系视图切换">
+                  {graphViewOptions.map((item) => (
+                    <button
+                      key={item.key}
+                      className={graphView === item.key ? 'active' : ''}
+                      onClick={() => setGraphView(item.key)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="object-canvas-lanes" aria-hidden="true">
+                <span>根对象</span>
+                <span>质量确认</span>
+                <span>物料供应</span>
+                <span>生产执行</span>
+                <span>交付闭环</span>
+              </div>
               {nodes.map((node, index) => (
                 <button
                   key={node.id}
-                  className={`quality-graph-node node-${index} risk-${node.risk} ${node.id === selectedNode?.id ? 'selected' : ''}`}
+                  className={`quality-graph-node node-${index} risk-${node.risk} ${node.id === selectedNode?.id ? 'selected' : ''} ${connectedNodeIds.has(node.id) ? 'connected' : ''}`}
                   style={overflowNodeStyle(index)}
                   onClick={() => setSelectedNodeId(node.id)}
                 >
@@ -450,6 +540,11 @@ export default function QualityImpactWorkbench() {
                   {edge.label}
                 </span>
               ))}
+              <div className="object-canvas-legend">
+                <span><i className="legend-selected" /> 当前对象</span>
+                <span><i className="legend-connected" /> 邻接关系</span>
+                <span><i className="legend-expand" /> 可继续展开</span>
+              </div>
             </div>
 
           </Card>

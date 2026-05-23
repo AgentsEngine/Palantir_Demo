@@ -1,6 +1,6 @@
 # Data Model And Ontology Notes
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 Source of truth: `backend/app/models/relational.py`,
 `backend/app/models/graph_models.py`, and `backend/alembic/versions/*`.

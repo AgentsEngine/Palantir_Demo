@@ -1,8 +1,44 @@
 # Deployment
 
-Last updated: 2026-05-20
+Last updated: 2026-05-23
 
 This document reflects the current repository files and the project deployment convention.
+
+## Local Development Startup
+
+Use separate terminals for backend and frontend when working without Docker.
+
+Backend:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Frontend:
+
+```powershell
+cd frontend
+npm run dev -- --host 127.0.0.1 --port 3000
+```
+
+If the local sandbox blocks Vite dependency pre-bundling, serve the existing
+production build with the lightweight local proxy:
+
+```powershell
+cd frontend
+node local-static-server.mjs
+```
+
+Local verification:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/health
+Invoke-WebRequest http://127.0.0.1:3000
+```
+
+The frontend reads `frontend/.env.local`; the current local proxy target is
+`http://127.0.0.1:8000`.
 
 ## Production Server
 

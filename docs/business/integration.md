@@ -1,6 +1,6 @@
 # Integration Guide
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 This document explains the current integration surface for manufacturing data sources and pipelines. It separates implemented capabilities from planned connector ideas.
 

@@ -1,6 +1,6 @@
 # Current Code Framework
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 This document describes the current code framework at a practical level. For the broader system architecture, read [overview.md](overview.md).
 

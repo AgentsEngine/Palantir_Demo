@@ -1,6 +1,6 @@
 # API Reference
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 Source of truth: `backend/app/main.py` and `backend/app/api/*`.
 
@@ -49,7 +49,7 @@ Default token expiration is controlled by `ACCESS_TOKEN_EXPIRE_MINUTES`; the cur
 | Graph | `/graph` | `/query`, `/neighbors/{entity_id}`, `/path`, `/subgraph/{entity_id}`, `/stats`, `/impact-analysis/{entity_id}`, `/trace/{entity_id}` |
 | Pipelines | `/pipelines` | `/`, `/{pipeline_id}`, `/{pipeline_id}/run`, `/{pipeline_id}/runs` |
 | Semantic assets | `/semantic-assets` | `/data-assets`, `/ontology-objects`, `/ontology-relations`, `/page-contracts` |
-| Knowledge base | `/knowledge` | `/sources`, `/documents`, `/documents/{document_id}/chunks`, `/related`, `/search` |
+| Knowledge base | `/knowledge` | `/sources`, `/spaces`, `/documents`, `/documents/{document_id}/chunks`, `/cards`, `/cards/{card_id}`, `/related-cards`, `/binding-candidates`, `/ocr-pipeline`, `/related`, `/search` |
 | Analytics | `/analytics` | `/overview`, `/aggregate`, `/timeseries`, `/distribution` |
 | Maintenance | `/maintenance` | `/equipment-health`, `/equipment/{equipment_id}/health`, `/predictions`, `/work-orders` |
 | Quality | `/quality` | `/spc/{parameter}`, `/defects`, `/defects/pareto`, `/traceability/{entity_id}`, `/inspections`, `/capa` |
@@ -151,8 +151,10 @@ curl -X POST http://localhost:8000/api/v1/knowledge/search \
 ```
 
 Knowledge API note: the current backend uses static demo sources/documents and
-local TF-IDF retrieval. It is a runnable RAG-shaped MVP, not a persistent vector
-database integration.
+local TF-IDF retrieval. It also exposes knowledge spaces, cards, binding
+candidate suggestions, and an OCR pipeline description for the current
+knowledge-center workflow. It is a runnable RAG-shaped MVP, not a persistent
+vector database integration.
 
 ## Frontend API Client
 

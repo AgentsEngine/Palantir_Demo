@@ -1,6 +1,6 @@
 # ManuFoundry Architecture Overview
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 This is the current high-level architecture document. It describes what the codebase implements now, and it separates that from Palantir-inspired reference direction.
 

@@ -6329,3 +6329,201 @@ button {
 .quality-graph-edge.edge-5 { left: 40%; top: 65%; right: auto; }
 .quality-graph-edge.edge-6 { left: 58%; top: 71%; right: auto; }
 .quality-graph-edge.edge-7 { left: 30%; top: 50%; right: auto; }
+
+.object-canvas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 10px 0 8px;
+}
+
+.object-canvas-toolbar > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.object-canvas-toolbar .ant-typography {
+  color: rgba(230, 247, 252, 0.94);
+}
+
+.object-canvas-toolbar .ant-typography-secondary {
+  color: rgba(192, 222, 230, 0.62) !important;
+  font-size: 12px;
+}
+
+.object-canvas-view-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.object-canvas-view-switch button {
+  min-width: 46px;
+  height: 28px;
+  border: 1px solid rgba(132, 216, 232, 0.18);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(220, 241, 246, 0.72);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.object-canvas-view-switch button:hover,
+.object-canvas-view-switch button.active {
+  border-color: rgba(132, 216, 232, 0.58);
+  background: rgba(45, 120, 145, 0.42);
+  color: #f4fdff;
+}
+
+.object-canvas-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.object-canvas-status .ant-tag {
+  border-color: rgba(132, 216, 232, 0.16);
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(226, 246, 250, 0.88);
+}
+
+.object-relationship-canvas {
+  isolation: isolate;
+}
+
+.object-canvas-topbar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(132, 216, 232, 0.16);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(7, 23, 32, 0.62);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.object-canvas-heading {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.object-canvas-heading > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.object-canvas-heading .ant-typography {
+  color: rgba(236, 250, 253, 0.96);
+}
+
+.object-canvas-heading .ant-typography-secondary {
+  color: rgba(190, 221, 229, 0.66) !important;
+  font-size: 12px;
+}
+
+.object-canvas-topbar .ant-tag {
+  margin-inline-end: 0;
+  border-color: rgba(132, 216, 232, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(226, 246, 250, 0.9);
+}
+
+.object-canvas-lanes {
+  position: absolute;
+  inset: 64px 0 0;
+  z-index: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  pointer-events: none;
+}
+
+.object-canvas-lanes span {
+  border-left: 1px solid rgba(132, 216, 232, 0.07);
+  padding: 12px 10px;
+  color: rgba(192, 222, 230, 0.18);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.object-canvas-lanes span:first-child {
+  border-left: 0;
+}
+
+.object-relationship-canvas .quality-graph-node,
+.object-relationship-canvas .quality-graph-edge {
+  z-index: 2;
+}
+
+.quality-graph-node.connected:not(.selected) {
+  border-color: rgba(132, 216, 232, 0.38);
+  box-shadow: 0 0 0 1px rgba(132, 216, 232, 0.13), 0 10px 22px rgba(0, 0, 0, 0.18);
+}
+
+.object-canvas-legend {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border: 1px solid rgba(132, 216, 232, 0.13);
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgba(8, 26, 36, 0.68);
+  color: rgba(221, 242, 247, 0.74);
+  font-size: 11px;
+}
+
+.object-canvas-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.object-canvas-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.legend-selected {
+  background: #84d8e8;
+}
+
+.legend-connected {
+  background: #f5c85b;
+}
+
+.legend-expand {
+  background: #7fcf9f;
+}
+
+@media (max-width: 1180px) {
+  .object-canvas-toolbar,
+  .object-canvas-topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .object-canvas-view-switch {
+    justify-content: flex-start;
+  }
+}

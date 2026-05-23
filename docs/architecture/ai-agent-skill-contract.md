@@ -1,7 +1,7 @@
 # AI Agent Skill/Tool Contract
 
 > Version: v0.1  
-> Date: 2026-05-22  
+> Date: 2026-05-23  
 > Scope: ManuFoundry system AI Agent architecture, skill/tool contracts, staged delivery path, risk policy, confirmation strategy, and migration from demo mock skills to real backend skills.
 
 ## 1. Purpose

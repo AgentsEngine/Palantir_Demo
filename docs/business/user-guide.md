@@ -1,6 +1,6 @@
 # User Guide And Demo Walkthrough
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 This guide reflects the current application shell and implemented product
 surfaces. Palantir-inspired future ideas live in `docs/architecture/*` reference

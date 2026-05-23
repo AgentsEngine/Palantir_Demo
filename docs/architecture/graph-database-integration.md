@@ -1,6 +1,6 @@
 # Graph Database Integration
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 ## Summary
 
@@ -126,4 +126,3 @@ After the demo sync is stable, the next work should focus on:
 - permission filtering by role;
 - graph layout engine for larger subgraphs;
 - node detail aggregation from PostgreSQL + Neo4j + knowledge base.
-

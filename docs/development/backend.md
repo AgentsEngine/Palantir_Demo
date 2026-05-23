@@ -1,6 +1,6 @@
 # Backend Development Guide
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 Source of truth: `backend/app/main.py`, `backend/app/api/*`,
 `backend/app/models/*`, `backend/alembic/versions/*`, and
@@ -124,15 +124,22 @@ admin-controlled capability, not current behavior.
 `backend/app/api/knowledge.py` exposes:
 
 - `GET /knowledge/sources`
+- `GET /knowledge/spaces`
 - `GET /knowledge/documents`
 - `GET /knowledge/documents/{document_id}/chunks`
+- `GET /knowledge/cards`
+- `GET /knowledge/cards/{card_id}`
+- `GET /knowledge/related-cards`
+- `POST /knowledge/binding-candidates`
+- `GET /knowledge/ocr-pipeline`
 - `GET /knowledge/related`
 - `POST /knowledge/search`
 
 The current implementation uses in-code demo documents and scikit-learn
-TF-IDF/cosine similarity. It preserves a future RAG API shape but does not yet
-use an embedding service, vector database, document uploader, or persistence
-tables.
+TF-IDF/cosine similarity. It also models spaces, knowledge cards, binding
+candidates, and OCR/publishing workflow metadata. It preserves a future RAG API
+shape but does not yet use an embedding service, vector database, persisted
+upload pipeline, or knowledge tables.
 
 ## Security Conventions
 

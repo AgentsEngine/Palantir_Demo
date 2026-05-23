@@ -1,6 +1,6 @@
 # Frontend Development Guide
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 Source of truth: `frontend/src/App.tsx`, `frontend/src/services/api.ts`,
 `frontend/src/config/menus.ts`, and `frontend/package.json`.
@@ -113,8 +113,8 @@ Implemented client groups include:
 - Platform forms: forms, fields, layouts, actions, permissions, workflow
   bindings, dynamic records, and application menu nodes.
 - Workflow, notifications, templates, rules, scheduler, search.
-- Knowledge base: sources, documents, chunks, related evidence, and local RAG
-  search.
+- Knowledge base: spaces, sources, documents, chunks, cards, related evidence,
+  binding candidates, OCR workflow metadata, and local RAG search.
 
 The knowledge base API is currently a local MVP backed by static documents and
 TF-IDF retrieval on the backend. It is not yet connected to an external vector
