@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.api.deps import current_tenant_id
 
 
 ACTION_ALIASES: dict[str, set[str]] = {
@@ -59,7 +60,13 @@ async def get_user_role_ids(user: dict, db: AsyncSession) -> list[int]:
 
     from app.models.relational import UserRole
 
-    result = await db.execute(select(UserRole.role_id).where(UserRole.user_id == uid))
+    tenant_id = current_tenant_id(user)
+    result = await db.execute(
+        select(UserRole.role_id).where(
+            UserRole.user_id == uid,
+            UserRole.tenant_id == tenant_id,
+        )
+    )
     return [int(row[0]) for row in result.fetchall()]
 
 
@@ -84,9 +91,11 @@ async def has_permission(
 
     from app.models.relational import RolePermission
 
+    tenant_id = current_tenant_id(user)
     result = await db.execute(
         select(RolePermission).where(
             RolePermission.role_id.in_(role_ids),
+            RolePermission.tenant_id == tenant_id,
             RolePermission.resource_type.in_([resource_type, "all"]),
         )
     )
@@ -149,9 +158,11 @@ async def has_form_permission(
 
     from app.models.relational import ApplicationForm, ApplicationRole, FormPermission
 
+    tenant_id = current_tenant_id(user)
     permission_rows = (await db.execute(
         select(FormPermission).where(
             FormPermission.form_id == form_id,
+            FormPermission.tenant_id == tenant_id,
             FormPermission.role_id.in_(role_ids),
         )
     )).scalars().all()
@@ -172,6 +183,8 @@ async def has_form_permission(
         .join(ApplicationRole, ApplicationRole.application_id == ApplicationForm.application_id)
         .where(
             ApplicationForm.form_id == form_id,
+            ApplicationForm.tenant_id == tenant_id,
+            ApplicationRole.tenant_id == tenant_id,
             ApplicationRole.role_id.in_(role_ids),
         )
     )).scalars().all()

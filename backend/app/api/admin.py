@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from app.api.deps import require_admin
+from app.api.deps import current_tenant_id, require_admin
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
@@ -321,12 +321,14 @@ async def list_audit_logs(
     action: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    user: dict = Depends(require_admin),
 ):
     """审计日志查询."""
     async def _query(db):
         from sqlalchemy import func as sa_func
         from app.models.relational import AuditLog
-        q = select(AuditLog).order_by(AuditLog.timestamp.desc())
+        tenant_id = current_tenant_id(user)
+        q = select(AuditLog).where(AuditLog.tenant_id == tenant_id).order_by(AuditLog.timestamp.desc())
         if resource_type:
             q = q.where(AuditLog.resource_type == resource_type)
         if action:
@@ -339,7 +341,7 @@ async def list_audit_logs(
         return {
             "data": [
                 {
-                    "id": l.id, "user_id": l.user_id, "action": l.action,
+                    "id": l.id, "tenant_id": l.tenant_id, "user_id": l.user_id, "action": l.action,
                     "resource_type": l.resource_type, "resource_id": l.resource_id,
                     "old_values": l.old_values, "new_values": l.new_values,
                     "timestamp": l.timestamp.isoformat() if l.timestamp else None,

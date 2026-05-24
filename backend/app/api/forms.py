@@ -15,7 +15,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api._model_driven_shared import assert_safe_identifier
-from app.api.deps import get_current_user, get_db, require_admin
+from app.api.deps import current_tenant_id, current_user_id, get_current_user, get_db, require_admin
+from app.core.audit import write_audit_log
 from app.core.permissions import has_form_permission
 
 router = APIRouter()
@@ -196,6 +197,7 @@ def _validate_field_name(field_name: str) -> None:
 def _form_payload(form, *, fields: Optional[list] = None, applications: Optional[list] = None) -> dict:
     payload = {
         "id": form.id,
+        "tenant_id": getattr(form, "tenant_id", None),
         "name": form.name,
         "code": form.code,
         "description": form.description,
@@ -333,18 +335,22 @@ def _record_matches_search(record, fields: list, search: Optional[str]) -> bool:
 
 async def _ensure_application_form_binding(db: AsyncSession, application_id: int, form_id: int) -> None:
     from app.models.relational import ApplicationForm
+    from app.models.relational import Form
 
+    form = await db.get(Form, form_id)
+    tenant_id = getattr(form, "tenant_id", None)
     existing = await db.scalar(
         select(ApplicationForm).where(
             ApplicationForm.application_id == application_id,
             ApplicationForm.form_id == form_id,
+            ApplicationForm.tenant_id == tenant_id,
         )
     )
     if existing:
         if not existing.enabled:
             existing.enabled = True
         return
-    db.add(ApplicationForm(application_id=application_id, form_id=form_id))
+    db.add(ApplicationForm(tenant_id=tenant_id, application_id=application_id, form_id=form_id))
 
 
 def _menu_node_payload(node) -> dict:
@@ -417,10 +423,12 @@ async def list_forms(
 ):
     from app.models.relational import ApplicationForm, Form
 
-    query = select(Form).order_by(Form.created_at.desc(), Form.id.desc())
+    tenant_id = current_tenant_id(user)
+    query = select(Form).where(Form.tenant_id == tenant_id).order_by(Form.created_at.desc(), Form.id.desc())
     if application_id is not None:
         query = query.join(ApplicationForm, ApplicationForm.form_id == Form.id).where(
             ApplicationForm.application_id == application_id,
+            ApplicationForm.tenant_id == tenant_id,
             ApplicationForm.enabled.is_(True),
         )
     forms = (await db.execute(query)).scalars().all()
@@ -441,20 +449,22 @@ async def create_form(
 ):
     from app.models.relational import Application, ApplicationForm, Form, FormAction, FormLayout
 
+    tenant_id = current_tenant_id(user)
     _validate_form_code(body.code)
     if body.table_name:
         assert_safe_identifier(body.table_name)
 
-    existing = await db.scalar(select(Form).where(Form.code == body.code))
+    existing = await db.scalar(select(Form).where(Form.code == body.code, Form.tenant_id == tenant_id))
     if existing:
         raise HTTPException(409, "Form code already exists")
 
     if body.application_id is not None:
         app = await db.get(Application, body.application_id)
-        if not app:
+        if not app or app.tenant_id != tenant_id:
             raise HTTPException(404, "Application not found")
 
     form = Form(
+        tenant_id=tenant_id,
         name=body.name,
         code=body.code,
         description=body.description,
@@ -469,15 +479,23 @@ async def create_form(
     await db.flush()
 
     if body.application_id is not None:
-        db.add(ApplicationForm(application_id=body.application_id, form_id=form.id))
+        db.add(ApplicationForm(tenant_id=tenant_id, application_id=body.application_id, form_id=form.id))
 
-    db.add(FormLayout(form_id=form.id, layout_type="list", config={"columns": []}))
-    db.add(FormLayout(form_id=form.id, layout_type="form", config={"sections": []}))
+    db.add(FormLayout(tenant_id=tenant_id, form_id=form.id, layout_type="list", config={"columns": []}))
+    db.add(FormLayout(tenant_id=tenant_id, form_id=form.id, layout_type="form", config={"sections": []}))
     for idx, (key, label) in enumerate([("create", "Create"), ("edit", "Edit"), ("delete", "Delete"), ("export", "Export")]):
-        db.add(FormAction(form_id=form.id, action_key=key, label=label, sort_order=idx))
+        db.add(FormAction(tenant_id=tenant_id, form_id=form.id, action_key=key, label=label, sort_order=idx))
 
     await db.commit()
     await db.refresh(form)
+    await write_audit_log(
+        tenant_id=tenant_id,
+        user_id=current_user_id(user),
+        action="create",
+        resource_type="form",
+        resource_id=form.id,
+        new_values=body.dict(),
+    )
     return {"data": _form_payload(form)}
 
 
@@ -490,13 +508,14 @@ async def list_application_form_bindings(
     from sqlalchemy.orm import selectinload
     from app.models.relational import Application, ApplicationForm
 
+    tenant_id = current_tenant_id(user)
     app = await db.get(Application, application_id)
-    if not app:
+    if not app or app.tenant_id != tenant_id:
         raise HTTPException(404, "Application not found")
     bindings = (await db.execute(
         select(ApplicationForm)
         .options(selectinload(ApplicationForm.form))
-        .where(ApplicationForm.application_id == application_id)
+        .where(ApplicationForm.application_id == application_id, ApplicationForm.tenant_id == tenant_id)
         .order_by(ApplicationForm.sort_order, ApplicationForm.id)
     )).scalars().all()
     return {"data": [_application_form_payload(binding) for binding in bindings]}
@@ -512,9 +531,12 @@ async def upsert_application_form_binding(
     from sqlalchemy.orm import selectinload
     from app.models.relational import Application, ApplicationForm, Form
 
-    if not await db.get(Application, application_id):
+    tenant_id = current_tenant_id(user)
+    app = await db.get(Application, application_id)
+    form = await db.get(Form, body.form_id)
+    if not app or app.tenant_id != tenant_id:
         raise HTTPException(404, "Application not found")
-    if not await db.get(Form, body.form_id):
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     binding = await db.scalar(
         select(ApplicationForm)
@@ -522,11 +544,12 @@ async def upsert_application_form_binding(
         .where(
             ApplicationForm.application_id == application_id,
             ApplicationForm.form_id == body.form_id,
+            ApplicationForm.tenant_id == tenant_id,
         )
     )
     values = body.dict()
     if binding is None:
-        binding = ApplicationForm(application_id=application_id, **values)
+        binding = ApplicationForm(tenant_id=tenant_id, application_id=application_id, **values)
         db.add(binding)
     else:
         for key, value in values.items():
@@ -545,10 +568,12 @@ async def delete_application_form_binding(
 ):
     from app.models.relational import ApplicationForm
 
+    tenant_id = current_tenant_id(user)
     await db.execute(
         delete(ApplicationForm).where(
             ApplicationForm.application_id == application_id,
             ApplicationForm.form_id == form_id,
+            ApplicationForm.tenant_id == tenant_id,
         )
     )
     await db.commit()
@@ -563,12 +588,13 @@ async def list_application_menu_nodes(
 ):
     from app.models.relational import Application, ApplicationMenuNode
 
+    tenant_id = current_tenant_id(user)
     app = await db.get(Application, application_id)
-    if not app:
+    if not app or app.tenant_id != tenant_id:
         raise HTTPException(404, "Application not found")
     nodes = (await db.execute(
         select(ApplicationMenuNode)
-        .where(ApplicationMenuNode.application_id == application_id)
+        .where(ApplicationMenuNode.application_id == application_id, ApplicationMenuNode.tenant_id == tenant_id)
         .order_by(ApplicationMenuNode.sort_order, ApplicationMenuNode.id)
     )).scalars().all()
     return {"data": [_menu_node_payload(node) for node in nodes]}
@@ -583,18 +609,21 @@ async def create_application_menu_node(
 ):
     from app.models.relational import Application, ApplicationMenuNode, Form
 
+    tenant_id = current_tenant_id(user)
     app = await db.get(Application, application_id)
-    if not app:
+    if not app or app.tenant_id != tenant_id:
         raise HTTPException(404, "Application not found")
-    if body.form_id is not None and not await db.get(Form, body.form_id):
+    form = await db.get(Form, body.form_id) if body.form_id is not None else None
+    if body.form_id is not None and (not form or form.tenant_id != tenant_id):
         raise HTTPException(404, "Form not found")
-    if body.parent_id is not None and not await db.get(ApplicationMenuNode, body.parent_id):
+    parent = await db.get(ApplicationMenuNode, body.parent_id) if body.parent_id is not None else None
+    if body.parent_id is not None and (not parent or parent.tenant_id != tenant_id):
         raise HTTPException(404, "Parent menu node not found")
 
     values = body.dict()
     if values.get("form_id") and not values.get("route_path"):
         values["route_path"] = f"/dynamic/{values['form_id']}"
-    node = ApplicationMenuNode(application_id=application_id, **values)
+    node = ApplicationMenuNode(tenant_id=tenant_id, application_id=application_id, **values)
     db.add(node)
     if body.form_id is not None:
         await _ensure_application_form_binding(db, application_id, body.form_id)
@@ -613,13 +642,16 @@ async def update_application_menu_node(
 ):
     from app.models.relational import ApplicationMenuNode, Form
 
+    tenant_id = current_tenant_id(user)
     node = await db.get(ApplicationMenuNode, node_id)
-    if not node or node.application_id != application_id:
+    if not node or node.application_id != application_id or node.tenant_id != tenant_id:
         raise HTTPException(404, "Menu node not found")
     updates = body.dict(exclude_unset=True)
-    if "form_id" in updates and updates["form_id"] is not None and not await db.get(Form, updates["form_id"]):
+    form = await db.get(Form, updates["form_id"]) if "form_id" in updates and updates["form_id"] is not None else None
+    if "form_id" in updates and updates["form_id"] is not None and (not form or form.tenant_id != tenant_id):
         raise HTTPException(404, "Form not found")
-    if "parent_id" in updates and updates["parent_id"] is not None and not await db.get(ApplicationMenuNode, updates["parent_id"]):
+    parent = await db.get(ApplicationMenuNode, updates["parent_id"]) if "parent_id" in updates and updates["parent_id"] is not None else None
+    if "parent_id" in updates and updates["parent_id"] is not None and (not parent or parent.tenant_id != tenant_id):
         raise HTTPException(404, "Parent menu node not found")
     if updates.get("form_id") and not updates.get("route_path"):
         updates["route_path"] = f"/dynamic/{updates['form_id']}"
@@ -641,8 +673,9 @@ async def delete_application_menu_node(
 ):
     from app.models.relational import ApplicationMenuNode
 
+    tenant_id = current_tenant_id(user)
     node = await db.get(ApplicationMenuNode, node_id)
-    if not node or node.application_id != application_id:
+    if not node or node.application_id != application_id or node.tenant_id != tenant_id:
         raise HTTPException(404, "Menu node not found")
     await db.delete(node)
     await db.commit()
@@ -657,17 +690,18 @@ async def get_form(
 ):
     from app.models.relational import Application, ApplicationForm, Form, FormField
 
+    tenant_id = current_tenant_id(user)
     form = await db.get(Form, form_id)
-    if not form:
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "view")
     fields = (await db.execute(
-        select(FormField).where(FormField.form_id == form_id).order_by(FormField.sort_order, FormField.id)
+        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
     )).scalars().all()
     app_rows = await db.execute(
         select(Application, ApplicationForm)
         .join(ApplicationForm, ApplicationForm.application_id == Application.id)
-        .where(ApplicationForm.form_id == form_id)
+        .where(ApplicationForm.form_id == form_id, ApplicationForm.tenant_id == tenant_id, Application.tenant_id == tenant_id)
         .order_by(ApplicationForm.sort_order)
     )
     applications = [
@@ -693,9 +727,11 @@ async def update_form(
 ):
     from app.models.relational import Form
 
+    tenant_id = current_tenant_id(user)
     form = await db.get(Form, form_id)
-    if not form:
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
+    old_values = _form_payload(form)
     updates = body.dict(exclude_unset=True)
     if updates.get("table_name"):
         assert_safe_identifier(updates["table_name"])
@@ -703,6 +739,15 @@ async def update_form(
         setattr(form, key, value)
     await db.commit()
     await db.refresh(form)
+    await write_audit_log(
+        tenant_id=tenant_id,
+        user_id=current_user_id(user),
+        action="update",
+        resource_type="form",
+        resource_id=form.id,
+        old_values=old_values,
+        new_values=updates,
+    )
     return {"data": _form_payload(form)}
 
 
@@ -715,20 +760,29 @@ async def create_form_field(
 ):
     from app.models.relational import Form, FormField
 
+    tenant_id = current_tenant_id(user)
     _validate_field_name(body.field_name)
     form = await db.get(Form, form_id)
-    if not form:
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     existing = await db.scalar(
-        select(FormField).where(FormField.form_id == form_id, FormField.field_name == body.field_name)
+        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id, FormField.field_name == body.field_name)
     )
     if existing:
         raise HTTPException(409, "Field already exists on this form")
 
-    field = FormField(form_id=form_id, **body.dict())
+    field = FormField(tenant_id=tenant_id, form_id=form_id, **body.dict())
     db.add(field)
     await db.commit()
     await db.refresh(field)
+    await write_audit_log(
+        tenant_id=tenant_id,
+        user_id=current_user_id(user),
+        action="create_field",
+        resource_type="form",
+        resource_id=form_id,
+        new_values=body.dict(),
+    )
     return {"data": _field_payload(field)}
 
 
@@ -742,8 +796,9 @@ async def update_form_field(
 ):
     from app.models.relational import FormField
 
+    tenant_id = current_tenant_id(user)
     field = await db.get(FormField, field_id)
-    if not field or field.form_id != form_id:
+    if not field or field.form_id != form_id or field.tenant_id != tenant_id:
         raise HTTPException(404, "Field not found")
     for key, value in body.dict(exclude_unset=True).items():
         setattr(field, key, value)
@@ -761,8 +816,9 @@ async def archive_form_field(
 ):
     from app.models.relational import FormField
 
+    tenant_id = current_tenant_id(user)
     field = await db.get(FormField, field_id)
-    if not field or field.form_id != form_id:
+    if not field or field.form_id != form_id or field.tenant_id != tenant_id:
         raise HTTPException(404, "Field not found")
     field.archived = True
     await db.commit()
@@ -777,11 +833,13 @@ async def list_form_layouts(
 ):
     from app.models.relational import Form, FormLayout
 
-    if not await db.get(Form, form_id):
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "view")
     layouts = (await db.execute(
-        select(FormLayout).where(FormLayout.form_id == form_id).order_by(FormLayout.layout_type)
+        select(FormLayout).where(FormLayout.form_id == form_id, FormLayout.tenant_id == tenant_id).order_by(FormLayout.layout_type)
     )).scalars().all()
     return {"data": [_layout_payload(layout) for layout in layouts]}
 
@@ -796,16 +854,18 @@ async def upsert_form_layout(
 ):
     from app.models.relational import Form, FormLayout
 
+    tenant_id = current_tenant_id(user)
     assert_safe_identifier(layout_type)
     if body.layout_type != layout_type:
         raise HTTPException(400, "layout_type path and body must match")
-    if not await db.get(Form, form_id):
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     layout = await db.scalar(
-        select(FormLayout).where(FormLayout.form_id == form_id, FormLayout.layout_type == layout_type)
+        select(FormLayout).where(FormLayout.form_id == form_id, FormLayout.tenant_id == tenant_id, FormLayout.layout_type == layout_type)
     )
     if layout is None:
-        layout = FormLayout(form_id=form_id, layout_type=layout_type, config=body.config)
+        layout = FormLayout(tenant_id=tenant_id, form_id=form_id, layout_type=layout_type, config=body.config)
         db.add(layout)
     else:
         layout.config = body.config
@@ -822,12 +882,14 @@ async def list_form_actions(
 ):
     from app.models.relational import Form, FormAction
 
-    if not await db.get(Form, form_id):
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "view")
     actions = (await db.execute(
         select(FormAction)
-        .where(FormAction.form_id == form_id)
+        .where(FormAction.form_id == form_id, FormAction.tenant_id == tenant_id)
         .order_by(FormAction.sort_order, FormAction.id)
     )).scalars().all()
     return {"data": [_action_payload(action) for action in actions]}
@@ -842,10 +904,12 @@ async def create_form_action(
 ):
     from app.models.relational import Form, FormAction
 
+    tenant_id = current_tenant_id(user)
     assert_safe_identifier(body.action_key)
-    if not await db.get(Form, form_id):
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
-    action = FormAction(form_id=form_id, **body.dict())
+    action = FormAction(tenant_id=tenant_id, form_id=form_id, **body.dict())
     db.add(action)
     await db.commit()
     await db.refresh(action)
@@ -862,8 +926,9 @@ async def update_form_action(
 ):
     from app.models.relational import FormAction
 
+    tenant_id = current_tenant_id(user)
     action = await db.get(FormAction, action_id)
-    if not action or action.form_id != form_id:
+    if not action or action.form_id != form_id or action.tenant_id != tenant_id:
         raise HTTPException(404, "Action not found")
     for key, value in body.dict(exclude_unset=True).items():
         setattr(action, key, value)
@@ -881,8 +946,9 @@ async def delete_form_action(
 ):
     from app.models.relational import FormAction
 
+    tenant_id = current_tenant_id(user)
     action = await db.get(FormAction, action_id)
-    if not action or action.form_id != form_id:
+    if not action or action.form_id != form_id or action.tenant_id != tenant_id:
         raise HTTPException(404, "Action not found")
     await db.delete(action)
     await db.commit()
@@ -897,10 +963,12 @@ async def list_form_permissions(
 ):
     from app.models.relational import Form, FormPermission
 
-    if not await db.get(Form, form_id):
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     permissions = (await db.execute(
-        select(FormPermission).where(FormPermission.form_id == form_id).order_by(FormPermission.id)
+        select(FormPermission).where(FormPermission.form_id == form_id, FormPermission.tenant_id == tenant_id).order_by(FormPermission.id)
     )).scalars().all()
     return {"data": [_permission_payload(permission) for permission in permissions]}
 
@@ -914,18 +982,21 @@ async def create_form_permission(
 ):
     from app.models.relational import Form, FormField, FormPermission, Role
 
-    if not await db.get(Form, form_id):
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    role = await db.get(Role, body.role_id)
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
-    if not await db.get(Role, body.role_id):
+    if not role or role.tenant_id != tenant_id:
         raise HTTPException(404, "Role not found")
     if body.field_name:
         _validate_field_name(body.field_name)
         existing_field = await db.scalar(
-            select(FormField).where(FormField.form_id == form_id, FormField.field_name == body.field_name)
+            select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id, FormField.field_name == body.field_name)
         )
         if not existing_field:
             raise HTTPException(404, "Field not found")
-    permission = FormPermission(form_id=form_id, **body.dict())
+    permission = FormPermission(tenant_id=tenant_id, form_id=form_id, **body.dict())
     db.add(permission)
     await db.commit()
     await db.refresh(permission)
@@ -942,14 +1013,15 @@ async def update_form_permission(
 ):
     from app.models.relational import FormField, FormPermission
 
+    tenant_id = current_tenant_id(user)
     permission = await db.get(FormPermission, permission_id)
-    if not permission or permission.form_id != form_id:
+    if not permission or permission.form_id != form_id or permission.tenant_id != tenant_id:
         raise HTTPException(404, "Permission not found")
     updates = body.dict(exclude_unset=True)
     if updates.get("field_name"):
         _validate_field_name(updates["field_name"])
         existing_field = await db.scalar(
-            select(FormField).where(FormField.form_id == form_id, FormField.field_name == updates["field_name"])
+            select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id, FormField.field_name == updates["field_name"])
         )
         if not existing_field:
             raise HTTPException(404, "Field not found")
@@ -969,8 +1041,9 @@ async def delete_form_permission(
 ):
     from app.models.relational import FormPermission
 
+    tenant_id = current_tenant_id(user)
     permission = await db.get(FormPermission, permission_id)
-    if not permission or permission.form_id != form_id:
+    if not permission or permission.form_id != form_id or permission.tenant_id != tenant_id:
         raise HTTPException(404, "Permission not found")
     await db.delete(permission)
     await db.commit()
@@ -985,10 +1058,12 @@ async def list_workflow_bindings(
 ):
     from app.models.relational import Form, WorkflowBinding
 
-    if not await db.get(Form, form_id):
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     bindings = (await db.execute(
-        select(WorkflowBinding).where(WorkflowBinding.form_id == form_id).order_by(WorkflowBinding.id)
+        select(WorkflowBinding).where(WorkflowBinding.form_id == form_id, WorkflowBinding.tenant_id == tenant_id).order_by(WorkflowBinding.id)
     )).scalars().all()
     return {"data": [_workflow_binding_payload(binding) for binding in bindings]}
 
@@ -1002,12 +1077,15 @@ async def create_workflow_binding(
 ):
     from app.models.relational import Form, WorkflowBinding, WorkflowDef
 
+    tenant_id = current_tenant_id(user)
     assert_safe_identifier(body.trigger_action)
-    if not await db.get(Form, form_id):
+    form = await db.get(Form, form_id)
+    wf = await db.get(WorkflowDef, body.workflow_id)
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
-    if not await db.get(WorkflowDef, body.workflow_id):
+    if not wf or wf.tenant_id != tenant_id:
         raise HTTPException(404, "Workflow definition not found")
-    binding = WorkflowBinding(form_id=form_id, **body.dict())
+    binding = WorkflowBinding(tenant_id=tenant_id, form_id=form_id, **body.dict())
     db.add(binding)
     await db.commit()
     await db.refresh(binding)
@@ -1024,8 +1102,9 @@ async def update_workflow_binding(
 ):
     from app.models.relational import WorkflowBinding
 
+    tenant_id = current_tenant_id(user)
     binding = await db.get(WorkflowBinding, binding_id)
-    if not binding or binding.form_id != form_id:
+    if not binding or binding.form_id != form_id or binding.tenant_id != tenant_id:
         raise HTTPException(404, "Workflow binding not found")
     updates = body.dict(exclude_unset=True)
     if updates.get("trigger_action"):
@@ -1046,8 +1125,9 @@ async def delete_workflow_binding(
 ):
     from app.models.relational import WorkflowBinding
 
+    tenant_id = current_tenant_id(user)
     binding = await db.get(WorkflowBinding, binding_id)
-    if not binding or binding.form_id != form_id:
+    if not binding or binding.form_id != form_id or binding.tenant_id != tenant_id:
         raise HTTPException(404, "Workflow binding not found")
     await db.delete(binding)
     await db.commit()
@@ -1066,13 +1146,15 @@ async def list_dynamic_records(
 ):
     from app.models.relational import DynamicRecord, Form, FormField
 
-    if not await db.get(Form, form_id):
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "view")
     fields = (await db.execute(
-        select(FormField).where(FormField.form_id == form_id).order_by(FormField.sort_order, FormField.id)
+        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
     )).scalars().all()
-    query = select(DynamicRecord).where(DynamicRecord.form_id == form_id)
+    query = select(DynamicRecord).where(DynamicRecord.form_id == form_id, DynamicRecord.tenant_id == tenant_id)
     if not include_deleted:
         query = query.where(DynamicRecord.deleted_at.is_(None))
     query = query.order_by(DynamicRecord.created_at.desc(), DynamicRecord.id.desc())
@@ -1098,15 +1180,17 @@ async def create_dynamic_record(
 ):
     from app.models.relational import DynamicRecord, Form, FormField
 
+    tenant_id = current_tenant_id(user)
     form = await db.get(Form, form_id)
-    if not form:
+    if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "create")
     fields = (await db.execute(
-        select(FormField).where(FormField.form_id == form_id).order_by(FormField.sort_order, FormField.id)
+        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
     )).scalars().all()
     _validate_record_data(fields, body.data)
     record = DynamicRecord(
+        tenant_id=tenant_id,
         form_id=form_id,
         model_id=form.model_id,
         data=body.data,
@@ -1117,6 +1201,14 @@ async def create_dynamic_record(
     db.add(record)
     await db.commit()
     await db.refresh(record)
+    await write_audit_log(
+        tenant_id=tenant_id,
+        user_id=current_user_id(user),
+        action="create",
+        resource_type="dynamic_record",
+        resource_id=record.id,
+        new_values=_record_payload(record),
+    )
     return {"data": _record_payload(record)}
 
 
@@ -1130,14 +1222,15 @@ async def update_dynamic_record(
 ):
     from app.models.relational import DynamicRecord, FormField
 
+    tenant_id = current_tenant_id(user)
     record = await db.get(DynamicRecord, record_id)
-    if not record or record.form_id != form_id or record.deleted_at is not None:
+    if not record or record.form_id != form_id or record.tenant_id != tenant_id or record.deleted_at is not None:
         raise HTTPException(404, "Record not found")
     await _ensure_form_permission(db, user, form_id, "edit")
     updates = body.dict(exclude_unset=True)
     if "data" in updates and updates["data"] is not None:
         fields = (await db.execute(
-            select(FormField).where(FormField.form_id == form_id).order_by(FormField.sort_order, FormField.id)
+            select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
         )).scalars().all()
         merged = {**(record.data or {}), **updates["data"]}
         _validate_record_data(fields, merged)
@@ -1146,6 +1239,14 @@ async def update_dynamic_record(
     record.updated_by = _uid(user)
     await db.commit()
     await db.refresh(record)
+    await write_audit_log(
+        tenant_id=tenant_id,
+        user_id=current_user_id(user),
+        action="update",
+        resource_type="dynamic_record",
+        resource_id=record.id,
+        new_values=updates,
+    )
     return {"data": _record_payload(record)}
 
 
@@ -1158,11 +1259,19 @@ async def delete_dynamic_record(
 ):
     from app.models.relational import DynamicRecord
 
+    tenant_id = current_tenant_id(user)
     record = await db.get(DynamicRecord, record_id)
-    if not record or record.form_id != form_id or record.deleted_at is not None:
+    if not record or record.form_id != form_id or record.tenant_id != tenant_id or record.deleted_at is not None:
         raise HTTPException(404, "Record not found")
     await _ensure_form_permission(db, user, form_id, "delete")
     record.deleted_at = datetime.now()
     record.updated_by = _uid(user)
     await db.commit()
+    await write_audit_log(
+        tenant_id=tenant_id,
+        user_id=current_user_id(user),
+        action="delete",
+        resource_type="dynamic_record",
+        resource_id=record.id,
+    )
     return {"ok": True}

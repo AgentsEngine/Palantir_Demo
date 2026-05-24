@@ -39,11 +39,17 @@ try:
     )
     DB_TYPE = "postgresql"
 except ImportError:
+    if settings.IS_PRODUCTION:
+        raise RuntimeError("asyncpg is required when APP_MODE=production")
     logger.info("asyncpg not installed; using SQLite fallback")
 except Exception as exc:
+    if settings.IS_PRODUCTION:
+        raise RuntimeError(f"PostgreSQL engine init failed in production: {exc}") from exc
     logger.warning("PG engine init failed (%s); using SQLite fallback", exc)
 
 if _engine is None:
+    if settings.IS_PRODUCTION:
+        raise RuntimeError("SQLite fallback is disabled when APP_MODE=production")
     try:
         _engine = create_async_engine(_sqlite_url, echo=False)
         DB_TYPE = "sqlite"

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { authMe } from '../services/api';
 
 interface UserInfo {
   id: number;
@@ -7,6 +8,7 @@ interface UserInfo {
   email: string;
   is_admin: boolean;
   roles: { name: string; label: string }[];
+  tenant_id?: number;
 }
 
 interface AuthState {
@@ -15,7 +17,7 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (token: string, user: UserInfo) => void;
   logout: () => void;
-  restore: () => void;
+  restore: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -24,7 +26,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
 
   login: (token, user) => {
-    localStorage.setItem('mf_token', token);
     localStorage.setItem('mf_user', JSON.stringify(user));
     set({ token, user, isAuthenticated: true });
   },
@@ -35,16 +36,26 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token: null, user: null, isAuthenticated: false });
   },
 
-  restore: () => {
-    const token = localStorage.getItem('mf_token');
+  restore: async () => {
+    try {
+      const res = await authMe();
+      const user = res.data as UserInfo;
+      localStorage.setItem('mf_user', JSON.stringify(user));
+      set({ token: null, user, isAuthenticated: true });
+      return;
+    } catch {
+      // Fall back to legacy local state only when the API cannot restore.
+    }
     const userStr = localStorage.getItem('mf_user');
-    if (token && userStr) {
+    if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        set({ token, user, isAuthenticated: true });
+        set({ token: null, user, isAuthenticated: true });
       } catch {
         set({ token: null, user: null, isAuthenticated: false });
       }
+    } else {
+      set({ token: null, user: null, isAuthenticated: false });
     }
   },
 }));

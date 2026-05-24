@@ -13,7 +13,9 @@ from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db, require_admin
+from app.api.deps import current_tenant_id, current_user_id, get_current_user, get_db, require_admin
+from app.config import settings
+from app.core.audit import write_audit_log
 from app.core.db import safe_db_call
 
 router = APIRouter()
@@ -97,10 +99,11 @@ async def _role_names_for_user(db: AsyncSession, user: dict) -> list[str]:
         return _mock_role_names(user)
     try:
         from app.models.relational import Role, UserRole
+        tenant_id = current_tenant_id(user)
         result = await db.execute(
             select(Role.name)
             .join(UserRole, UserRole.role_id == Role.id)
-            .where(UserRole.user_id == uid)
+            .where(UserRole.user_id == uid, UserRole.tenant_id == tenant_id, Role.tenant_id == tenant_id)
         )
         names = [r[0] for r in result.fetchall()]
         return names or _mock_role_names(user)
@@ -115,12 +118,15 @@ async def _user_can_access_application(db: AsyncSession, user: dict, app_id: int
     if not role_names:
         return False
     from app.models.relational import ApplicationRole, Role
+    tenant_id = current_tenant_id(user)
 
     allowed_role_id = await db.scalar(
         select(Role.id)
         .join(ApplicationRole, ApplicationRole.role_id == Role.id)
         .where(
             ApplicationRole.application_id == app_id,
+            ApplicationRole.tenant_id == tenant_id,
+            Role.tenant_id == tenant_id,
             Role.name.in_(role_names),
         )
         .limit(1)
@@ -193,18 +199,24 @@ def _mock_visible_apps(user: dict) -> list[dict]:
     ]
 
 
-async def _ensure_default_seed(db: AsyncSession) -> None:
-    from app.models.relational import Application, ApplicationMenu, ApplicationRole, MenuItem, Role
+async def _ensure_default_seed(db: AsyncSession, tenant_id: int = 1) -> None:
+    from app.models.relational import Application, ApplicationMenu, ApplicationRole, MenuItem, Role, Tenant
 
-    existing = await db.scalar(select(Application.id).limit(1))
+    tenant = await db.get(Tenant, tenant_id)
+    if tenant is None:
+        db.add(Tenant(id=tenant_id, name="Default Tenant", slug="default"))
+        await db.flush()
+
+    existing = await db.scalar(select(Application.id).where(Application.tenant_id == tenant_id).limit(1))
     if existing:
         return
 
     db_menus: dict[str, MenuItem] = {}
     for menu in DEFAULT_MENUS:
-        item = await db.scalar(select(MenuItem).where(MenuItem.route_path == menu["route_path"]))
+        item = await db.scalar(select(MenuItem).where(MenuItem.route_path == menu["route_path"], MenuItem.tenant_id == tenant_id))
         if item is None:
             item = MenuItem(
+                tenant_id=tenant_id,
                 parent_id=None,
                 title=menu["title"],
                 icon=menu["icon"],
@@ -216,11 +228,12 @@ async def _ensure_default_seed(db: AsyncSession) -> None:
             await db.flush()
         db_menus[menu["route_path"]] = item
 
-    roles = (await db.execute(select(Role))).scalars().all()
+    roles = (await db.execute(select(Role).where(Role.tenant_id == tenant_id))).scalars().all()
     role_by_name = {role.name: role for role in roles}
 
     for app_cfg in DEFAULT_APPLICATIONS:
         app = Application(
+            tenant_id=tenant_id,
             name=app_cfg["name"],
             code=app_cfg["code"],
             description=app_cfg["description"],
@@ -235,11 +248,11 @@ async def _ensure_default_seed(db: AsyncSession) -> None:
         for idx, route in enumerate(app_cfg["menu_routes"]):
             menu = db_menus.get(route)
             if menu:
-                db.add(ApplicationMenu(application_id=app.id, menu_id=menu.id, sort_order=idx, is_default=route == app.default_route))
+                db.add(ApplicationMenu(tenant_id=tenant_id, application_id=app.id, menu_id=menu.id, sort_order=idx, is_default=route == app.default_route))
         for role_name in app_cfg["role_names"]:
             role = role_by_name.get(role_name)
             if role:
-                db.add(ApplicationRole(application_id=app.id, role_id=role.id))
+                db.add(ApplicationRole(tenant_id=tenant_id, application_id=app.id, role_id=role.id))
     await db.commit()
 
 
@@ -258,10 +271,11 @@ async def _application_to_dict(db: AsyncSession, app, include_bindings: bool = F
         "is_pinned": app.is_pinned,
     }
     if include_bindings:
+        tenant_id = app.tenant_id
         menu_rows = await db.execute(
             select(MenuItem, ApplicationMenu)
             .join(ApplicationMenu, ApplicationMenu.menu_id == MenuItem.id)
-            .where(ApplicationMenu.application_id == app.id)
+            .where(ApplicationMenu.application_id == app.id, ApplicationMenu.tenant_id == tenant_id, MenuItem.tenant_id == tenant_id)
             .order_by(ApplicationMenu.sort_order, MenuItem.sort_order)
         )
         payload["menus"] = [
@@ -280,7 +294,7 @@ async def _application_to_dict(db: AsyncSession, app, include_bindings: bool = F
         role_rows = await db.execute(
             select(Role)
             .join(ApplicationRole, ApplicationRole.role_id == Role.id)
-            .where(ApplicationRole.application_id == app.id)
+            .where(ApplicationRole.application_id == app.id, ApplicationRole.tenant_id == tenant_id, Role.tenant_id == tenant_id)
             .order_by(Role.id)
         )
         payload["roles"] = [
@@ -298,23 +312,27 @@ async def list_applications(
     async def _query(session):
         from app.models.relational import Application, ApplicationRole, Role
 
-        await _ensure_default_seed(session)
+        tenant_id = current_tenant_id(user)
+        await _ensure_default_seed(session, tenant_id)
         role_names = await _role_names_for_user(session, user)
-        query = select(Application).where(Application.status == "published").order_by(Application.sort_order, Application.id)
+        query = select(Application).where(Application.status == "published", Application.tenant_id == tenant_id).order_by(Application.sort_order, Application.id)
         if not user.get("is_admin"):
             if not role_names:
                 return {"data": []}
             query = (
                 query.join(ApplicationRole, ApplicationRole.application_id == Application.id)
                 .where(ApplicationRole.role_id.in_(
-                    select(Role.id).where(Role.name.in_(role_names))
+                    select(Role.id).where(Role.name.in_(role_names), Role.tenant_id == tenant_id)
                 ))
+                .where(ApplicationRole.tenant_id == tenant_id)
                 .distinct()
             )
         apps = (await session.execute(query)).scalars().all()
         return {"data": [await _application_to_dict(session, app) for app in apps]}
 
     result = await safe_db_call(_query)
+    if result is None and settings.IS_PRODUCTION:
+        raise HTTPException(503, "Applications database unavailable")
     return result or {"data": _mock_visible_apps(user)}
 
 
@@ -323,15 +341,16 @@ async def list_application_menus(app_id: int, user: dict = Depends(get_current_u
     async def _query(session):
         from app.models.relational import Application, ApplicationMenu, ApplicationMenuNode, MenuItem
 
-        await _ensure_default_seed(session)
+        tenant_id = current_tenant_id(user)
+        await _ensure_default_seed(session, tenant_id)
         app = await session.get(Application, app_id)
-        if not app or app.status != "published":
+        if not app or app.tenant_id != tenant_id or app.status != "published":
             raise HTTPException(404, "Application not found")
         if not await _user_can_access_application(session, user, app_id):
             raise HTTPException(403, "Application access denied")
         platform_nodes = (await session.execute(
             select(ApplicationMenuNode)
-            .where(ApplicationMenuNode.application_id == app_id, ApplicationMenuNode.visible.is_(True))
+            .where(ApplicationMenuNode.application_id == app_id, ApplicationMenuNode.tenant_id == tenant_id, ApplicationMenuNode.visible.is_(True))
             .order_by(ApplicationMenuNode.sort_order, ApplicationMenuNode.id)
         )).scalars().all()
         if platform_nodes:
@@ -339,7 +358,7 @@ async def list_application_menus(app_id: int, user: dict = Depends(get_current_u
         rows = await session.execute(
             select(MenuItem, ApplicationMenu)
             .join(ApplicationMenu, ApplicationMenu.menu_id == MenuItem.id)
-            .where(ApplicationMenu.application_id == app_id, MenuItem.is_visible.is_(True))
+            .where(ApplicationMenu.application_id == app_id, ApplicationMenu.tenant_id == tenant_id, MenuItem.tenant_id == tenant_id, MenuItem.is_visible.is_(True))
             .order_by(ApplicationMenu.sort_order, MenuItem.sort_order)
         )
         items = [
@@ -360,6 +379,8 @@ async def list_application_menus(app_id: int, user: dict = Depends(get_current_u
     result = await safe_db_call(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(503, "Application menu database unavailable")
     app = next((a for a in DEFAULT_APPLICATIONS if a["id"] == app_id), None)
     if not app:
         raise HTTPException(404, "Application not found")
@@ -372,9 +393,10 @@ async def get_application(app_id: int, user: dict = Depends(get_current_user), d
     async def _query(session):
         from app.models.relational import Application
 
-        await _ensure_default_seed(session)
+        tenant_id = current_tenant_id(user)
+        await _ensure_default_seed(session, tenant_id)
         app = await session.get(Application, app_id)
-        if not app:
+        if not app or app.tenant_id != tenant_id:
             raise HTTPException(404, "Application not found")
         if not user.get("is_admin") and app.status != "published":
             raise HTTPException(404, "Application not found")
@@ -385,6 +407,8 @@ async def get_application(app_id: int, user: dict = Depends(get_current_user), d
     result = await safe_db_call(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(503, "Application database unavailable")
     app = next((a for a in DEFAULT_APPLICATIONS if a["id"] == app_id), None)
     if not app:
         raise HTTPException(404, "Application not found")
@@ -396,11 +420,14 @@ async def admin_list_applications(user: dict = Depends(require_admin), db: Async
     async def _query(session):
         from app.models.relational import Application
 
-        await _ensure_default_seed(session)
-        apps = (await session.execute(select(Application).order_by(Application.sort_order, Application.id))).scalars().all()
+        tenant_id = current_tenant_id(user)
+        await _ensure_default_seed(session, tenant_id)
+        apps = (await session.execute(select(Application).where(Application.tenant_id == tenant_id).order_by(Application.sort_order, Application.id))).scalars().all()
         return {"data": [await _application_to_dict(session, app, include_bindings=True) for app in apps]}
 
     result = await safe_db_call(_query)
+    if result is None and settings.IS_PRODUCTION:
+        raise HTTPException(503, "Applications database unavailable")
     return result or {"data": [_mock_application_payload(app, include_bindings=True) for app in DEFAULT_APPLICATIONS]}
 
 
@@ -409,15 +436,26 @@ async def admin_create_application(body: ApplicationCreate, user: dict = Depends
     async def _query(db):
         from app.models.relational import Application
 
-        app = Application(**body.dict())
+        tenant_id = current_tenant_id(user)
+        app = Application(tenant_id=tenant_id, **body.dict())
         db.add(app)
         await db.commit()
         await db.refresh(app)
+        await write_audit_log(
+            tenant_id=tenant_id,
+            user_id=current_user_id(user),
+            action="create",
+            resource_type="application",
+            resource_id=app.id,
+            new_values=body.dict(),
+        )
         return {"data": await _application_to_dict(db, app, include_bindings=True)}
 
     result = await safe_db_call(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(503, "Application database unavailable")
     return {"data": {**body.dict(), "id": max(a["id"] for a in DEFAULT_APPLICATIONS) + 1, "menus": [], "roles": []}}
 
 
@@ -426,18 +464,31 @@ async def admin_update_application(app_id: int, body: ApplicationUpdate, user: d
     async def _query(db):
         from app.models.relational import Application
 
+        tenant_id = current_tenant_id(user)
         app = await db.get(Application, app_id)
-        if not app:
+        if not app or app.tenant_id != tenant_id:
             raise HTTPException(404, "Application not found")
+        old_values = await _application_to_dict(db, app, include_bindings=False)
         for key, value in body.dict(exclude_unset=True).items():
             setattr(app, key, value)
         await db.commit()
         await db.refresh(app)
+        await write_audit_log(
+            tenant_id=tenant_id,
+            user_id=current_user_id(user),
+            action="update",
+            resource_type="application",
+            resource_id=app.id,
+            old_values=old_values,
+            new_values=body.dict(exclude_unset=True),
+        )
         return {"data": await _application_to_dict(db, app, include_bindings=True)}
 
     result = await safe_db_call(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(503, "Application database unavailable")
     raise HTTPException(404, "Application not found")
 
 
@@ -446,14 +497,24 @@ async def admin_delete_application(app_id: int, user: dict = Depends(require_adm
     async def _query(db):
         from app.models.relational import Application
 
+        tenant_id = current_tenant_id(user)
         app = await db.get(Application, app_id)
-        if not app:
+        if not app or app.tenant_id != tenant_id:
             raise HTTPException(404, "Application not found")
         await db.delete(app)
         await db.commit()
+        await write_audit_log(
+            tenant_id=tenant_id,
+            user_id=current_user_id(user),
+            action="delete",
+            resource_type="application",
+            resource_id=app_id,
+        )
         return {"ok": True}
 
     result = await safe_db_call(_query)
+    if result is None and settings.IS_PRODUCTION:
+        raise HTTPException(503, "Application database unavailable")
     return result or {"ok": True}
 
 
@@ -462,22 +523,33 @@ async def admin_update_application_bindings(app_id: int, body: BindingUpdate, us
     async def _query(db):
         from app.models.relational import Application, ApplicationMenu, ApplicationRole
 
+        tenant_id = current_tenant_id(user)
         app = await db.get(Application, app_id)
-        if not app:
+        if not app or app.tenant_id != tenant_id:
             raise HTTPException(404, "Application not found")
         if body.menu_ids is not None:
-            await db.execute(delete(ApplicationMenu).where(ApplicationMenu.application_id == app_id))
+            await db.execute(delete(ApplicationMenu).where(ApplicationMenu.application_id == app_id, ApplicationMenu.tenant_id == tenant_id))
             for idx, menu_id in enumerate(body.menu_ids):
-                db.add(ApplicationMenu(application_id=app_id, menu_id=menu_id, sort_order=idx, is_default=idx == 0))
+                db.add(ApplicationMenu(tenant_id=tenant_id, application_id=app_id, menu_id=menu_id, sort_order=idx, is_default=idx == 0))
         if body.role_ids is not None:
-            await db.execute(delete(ApplicationRole).where(ApplicationRole.application_id == app_id))
+            await db.execute(delete(ApplicationRole).where(ApplicationRole.application_id == app_id, ApplicationRole.tenant_id == tenant_id))
             for role_id in body.role_ids:
-                db.add(ApplicationRole(application_id=app_id, role_id=role_id))
+                db.add(ApplicationRole(tenant_id=tenant_id, application_id=app_id, role_id=role_id))
         await db.commit()
         await db.refresh(app)
+        await write_audit_log(
+            tenant_id=tenant_id,
+            user_id=current_user_id(user),
+            action="update_bindings",
+            resource_type="application",
+            resource_id=app_id,
+            new_values=body.dict(exclude_unset=True),
+        )
         return {"data": await _application_to_dict(db, app, include_bindings=True)}
 
     result = await safe_db_call(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(503, "Application database unavailable")
     raise HTTPException(404, "Application not found")

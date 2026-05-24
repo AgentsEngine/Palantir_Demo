@@ -8,12 +8,13 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.config import settings
 from app.core.logging import get_logger
 from app.core.security import create_access_token, hash_password, verify_password
 
@@ -123,12 +124,24 @@ class ChangePasswordRequest(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────
 
-def _build_token_and_user(uid: int, username: str, is_admin: bool, user_payload: dict) -> dict:
+def _build_token_and_user(uid: int, username: str, is_admin: bool, user_payload: dict, tenant_id: int = 1) -> dict:
     token = create_access_token(
         subject=username,
-        extra={"uid": uid, "is_admin": is_admin},
+        extra={"uid": uid, "is_admin": is_admin, "tenant_id": tenant_id},
     )
-    return {"token": token, "user": user_payload}
+    return {"token": token, "user": {**user_payload, "tenant_id": tenant_id}}
+
+
+def _set_auth_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=settings.IS_PRODUCTION,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
 
 
 async def _db_login(db: AsyncSession, body: LoginRequest) -> Optional[dict]:
@@ -143,6 +156,8 @@ async def _db_login(db: AsyncSession, body: LoginRequest) -> Optional[dict]:
         result = await db.execute(select(User).where(User.username == body.username))
         user = result.scalar_one_or_none()
     except Exception as exc:
+        if settings.IS_PRODUCTION:
+            raise HTTPException(503, "Authentication database unavailable") from exc
         logger.warning("Auth DB query failed (falling back to mock): %s", exc)
         return None
 
@@ -167,6 +182,7 @@ async def _db_login(db: AsyncSession, body: LoginRequest) -> Optional[dict]:
             "display_name": user.display_name, "email": user.email,
             "is_admin": user.is_admin, "roles": roles,
         },
+        tenant_id=getattr(user, "tenant_id", None) or 1,
     )
 
 
@@ -180,6 +196,7 @@ def _mock_login(body: LoginRequest) -> dict:
                     "display_name": u["display_name"], "email": u["email"],
                     "is_admin": u["is_admin"], "roles": u["roles"],
                 },
+                tenant_id=1,
             )
     raise HTTPException(401, "用户名或密码错误")
 
@@ -187,17 +204,23 @@ def _mock_login(body: LoginRequest) -> dict:
 # ── Endpoints ─────────────────────────────────────────────
 
 @router.post("/login")
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(body: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """用户登录（JWT 由 settings.SECRET_KEY 签发）."""
     db_result = await _db_login(db, body)
     if db_result is not None:
+        _set_auth_cookie(response, db_result["token"])
         return db_result
-    return _mock_login(body)
+    if settings.IS_PRODUCTION:
+        raise HTTPException(401, "Invalid credentials")
+    result = _mock_login(body)
+    _set_auth_cookie(response, result["token"])
+    return result
 
 
 @router.post("/logout")
-async def logout():
+async def logout(response: Response):
     """登出（前端清除 token 即可，JWT 无状态）."""
+    response.delete_cookie("access_token", path="/")
     return {"ok": True}
 
 
@@ -210,7 +233,7 @@ async def get_me(
     if user.get("_anonymous"):
         return {
             "id": 0, "username": "guest", "display_name": "访客",
-            "email": "", "is_admin": False, "roles": [],
+            "email": "", "is_admin": False, "roles": [], "tenant_id": 1,
         }
 
     username = user.get("sub")
@@ -230,6 +253,7 @@ async def get_me(
                 "id": u.id, "username": u.username,
                 "display_name": u.display_name, "email": u.email,
                 "is_admin": u.is_admin, "roles": roles,
+                "tenant_id": getattr(u, "tenant_id", None) or user.get("tenant_id") or 1,
             }
     except Exception as exc:
         logger.debug("/me DB lookup failed, using mock: %s", exc)
@@ -240,5 +264,6 @@ async def get_me(
                 "id": u["id"], "username": u["username"],
                 "display_name": u["display_name"], "email": u["email"],
                 "is_admin": u["is_admin"], "roles": u["roles"],
+                "tenant_id": user.get("tenant_id") or 1,
             }
     raise HTTPException(401, "用户不存在")

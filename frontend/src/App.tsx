@@ -74,6 +74,7 @@ const TemplateMarketPage = lazy(() => import('./pages/TemplateMarket'));
 const RuleEnginePage = lazy(() => import('./pages/RuleEngine'));
 
 const { Header, Sider, Content } = Layout;
+const isProductionMode = import.meta.env.VITE_APP_MODE === 'production';
 
 interface DynamicMenu {
   id: number;
@@ -412,6 +413,13 @@ function AppContent() {
         localStorage.setItem('mf_current_app_id', String(matched.id));
       })
       .catch(() => {
+        if (isProductionMode) {
+          message.error('应用列表加载失败');
+          setApplications([]);
+          setCurrentApplication(null);
+          setDynamicMenus([]);
+          return;
+        }
         const storedId = Number(localStorage.getItem('mf_current_app_id'));
         const matched = fallbackApplications.find((app) => app.id === storedId) || fallbackApplications[0];
         setApplications(fallbackApplications);
@@ -454,7 +462,14 @@ function AppContent() {
           .filter((m: DynamicMenu) => m.is_visible !== false);
         setDynamicMenus(buildDynamicMenuTree(items));
       })
-      .catch(() => setDynamicMenus(buildDynamicMenuTree(groupedFallbackMenusByApplication[currentApplication.id] || richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || [])));
+      .catch(() => {
+        if (isProductionMode) {
+          message.error('应用菜单加载失败');
+          setDynamicMenus([]);
+          return;
+        }
+        setDynamicMenus(buildDynamicMenuTree(groupedFallbackMenusByApplication[currentApplication.id] || richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || []));
+      });
   }, [currentApplication]);
 
   const loadNotifications = useCallback(() => {
@@ -765,8 +780,13 @@ export default function App() {
   const [restored, setRestored] = useState(false);
 
   useEffect(() => {
-    restore();
-    setRestored(true);
+    let mounted = true;
+    restore().finally(() => {
+      if (mounted) setRestored(true);
+    });
+    return () => {
+      mounted = false;
+    };
   }, [restore]);
 
   if (!restored) return <PageLoader />;

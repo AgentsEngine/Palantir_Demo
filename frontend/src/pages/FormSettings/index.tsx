@@ -35,8 +35,19 @@ import {
   UserSwitchOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Button, Input, Modal, Segmented, Select, Space, Tabs, Tag, Typography, message } from 'antd';
+import { Button, Input, InputNumber, Modal, Segmented, Select, Space, Switch, Tabs, Tag, Typography, message } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
+import {
+  makeDefaultViewConfig,
+  sortByOrder,
+  type ViewColumnRenderType,
+  type ViewConfig,
+  type ViewControlType,
+  type ViewFilterConfig,
+  type ViewFilterOperator,
+  type ViewTableColumnConfig,
+  type ViewTableDensity,
+} from '@/utils/viewConfig';
 import './style.css';
 
 type DesignerTab = 'form' | 'filter' | 'flow' | 'permission';
@@ -195,6 +206,38 @@ const ruleOperatorOptions = [
   { value: 'notEquals', label: '不等于' },
   { value: 'contains', label: '包含' },
   { value: 'notEmpty', label: '不为空' },
+];
+
+const viewControlOptions: Array<{ value: ViewControlType; label: string }> = [
+  { value: 'keyword', label: '关键词' },
+  { value: 'text', label: '文本输入' },
+  { value: 'select', label: '下拉选择' },
+  { value: 'dateRange', label: '日期范围' },
+  { value: 'date', label: '单日期' },
+  { value: 'number', label: '数字' },
+  { value: 'relation', label: '关联对象' },
+];
+
+const viewFilterOperatorOptions: Array<{ value: ViewFilterOperator; label: string }> = [
+  { value: 'contains', label: '包含' },
+  { value: 'equals', label: '等于' },
+  { value: 'between', label: '范围内' },
+  { value: 'gte', label: '大于等于' },
+  { value: 'lte', label: '小于等于' },
+];
+
+const viewColumnRenderOptions: Array<{ value: ViewColumnRenderType; label: string }> = [
+  { value: 'text', label: '文本' },
+  { value: 'tag', label: '标签' },
+  { value: 'date', label: '日期' },
+  { value: 'number', label: '数字' },
+  { value: 'progress', label: '进度条' },
+];
+
+const tableDensityOptions: Array<{ value: ViewTableDensity; label: string }> = [
+  { value: 'compact', label: '紧凑' },
+  { value: 'middle', label: '标准' },
+  { value: 'large', label: '宽松' },
 ];
 
 const FLOW_NODE_WIDTH = 220;
@@ -438,6 +481,24 @@ function fieldInput(field: DesignerField, placeholderOverride?: string, disabled
   return <Input disabled={disabled} placeholder={placeholder} />;
 }
 
+function designerFieldsToViewFields(fields: DesignerField[]) {
+  return fields.map((field) => ({
+    fieldName: field.key,
+    label: field.name,
+    fieldType: field.type,
+    searchable: field.searchable,
+    sortable: field.sortable,
+    visibleInList: field.listVisible,
+  }));
+}
+
+function makeDesignerViewConfig(config: DesignerConfig): ViewConfig {
+  return makeDefaultViewConfig(
+    designerFieldsToViewFields(config.fields),
+    config.filters.map((filter) => filter.key),
+  );
+}
+
 function makeFieldControl(field: DesignerField): LayoutControl {
   return {
     id: `field-${field.key}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -638,6 +699,9 @@ export default function FormSettingsPage() {
   const [componentPanel, setComponentPanel] = useState<ComponentPanel>('components');
   const [version, setVersion] = useState('v0.1');
   const baseConfig = (formId && configs[formId]) || { ...defaultConfig, id: formId || defaultConfig.id };
+  const [viewConfig, setViewConfig] = useState<ViewConfig>(() => makeDesignerViewConfig(baseConfig));
+  const [expandedViewRow, setExpandedViewRow] = useState<string>('filter-0');
+  const [viewPreviewDevice, setViewPreviewDevice] = useState<'desktop' | 'narrow'>('desktop');
   const [layoutControls, setLayoutControls] = useState<LayoutControl[]>(baseConfig.fields.map(makeFieldControl));
   const [selectedControlId, setSelectedControlId] = useState<string>('');
   const [selectedAssetKey, setSelectedAssetKey] = useState<string>(baseConfig.fields[0]?.key || '');
@@ -677,6 +741,9 @@ export default function FormSettingsPage() {
     setLayoutControls(nextControls);
     setSelectedControlId(nextControls[0]?.id || '');
     setSelectedAssetKey(baseConfig.fields[0]?.key || '');
+    setViewConfig(makeDesignerViewConfig(baseConfig));
+    setExpandedViewRow('filter-0');
+    setViewPreviewDevice('desktop');
     setVersion(baseConfig.version);
     setCopiedControl(null);
     setHistory([]);
@@ -734,6 +801,12 @@ export default function FormSettingsPage() {
     const missingRequired = baseConfig.fields.filter((field) => field.required && !canvasFieldKeys.has(field.key));
     const enumWithoutSource = baseConfig.fields.filter((field) => field.type.includes('下拉') && !field.optionSource);
     const relationWithoutSource = baseConfig.fields.filter((field) => field.type.includes('关联') && !field.optionSource);
+    const enabledFilters = viewConfig.filters.filter((filter) => filter.enabled);
+    const enabledColumns = viewConfig.table.columns.filter((column) => column.enabled);
+    const invalidViewFields = [
+      ...enabledFilters.filter((filter) => !baseConfig.fields.some((field) => field.key === filter.fieldName)).map((filter) => filter.label),
+      ...enabledColumns.filter((column) => !baseConfig.fields.some((field) => field.key === column.fieldName)).map((column) => column.label),
+    ];
     const checks: PublishCheckItem[] = [
       {
         level: missingRequired.length ? 'error' : 'suggestion',
@@ -761,13 +834,28 @@ export default function FormSettingsPage() {
         detail: hiddenRequiredControls.length ? `以下控件同时隐藏且必填：${hiddenRequiredControls.map((control) => control.name).join('、')}` : '未发现隐藏且必填的规则冲突。',
       },
       {
+        level: enabledFilters.length ? 'suggestion' : 'warning',
+        title: '筛选条件',
+        detail: enabledFilters.length ? `已启用 ${enabledFilters.length} 个运行页筛选条件。` : '建议至少启用一个运行页筛选条件。',
+      },
+      {
+        level: enabledColumns.length ? 'suggestion' : 'error',
+        title: '数据展示列',
+        detail: enabledColumns.length ? `已启用 ${enabledColumns.length} 个表格展示列。` : '运行页表格至少需要一个展示列。',
+      },
+      {
+        level: invalidViewFields.length ? 'error' : 'suggestion',
+        title: '视图字段绑定',
+        detail: invalidViewFields.length ? `以下筛选或列绑定字段不存在：${invalidViewFields.join('、')}` : '筛选条件和表格列均已绑定有效字段。',
+      },
+      {
         level: baseConfig.id === 'alert-center' ? 'suggestion' : 'warning',
         title: '严重告警处理规则',
         detail: baseConfig.id === 'alert-center' ? '已启用推荐规则：严重告警要求附件证据和处理时限。' : '建议按业务场景配置高风险记录的强制处理规则。',
       },
     ];
     return checks;
-  }, [baseConfig.fields, baseConfig.id, hiddenRequiredControls, layoutControls, searchableFieldCount]);
+  }, [baseConfig.fields, baseConfig.id, hiddenRequiredControls, layoutControls, searchableFieldCount, viewConfig]);
   const publishErrorCount = publishChecks.filter((item) => item.level === 'error').length;
   const publishWarningCount = publishChecks.filter((item) => item.level === 'warning').length;
 
@@ -834,6 +922,50 @@ export default function FormSettingsPage() {
   };
 
   const markUnsaved = () => setHasUnsavedChanges(true);
+
+  const updateViewConfig = (updater: (current: ViewConfig) => ViewConfig) => {
+    setViewConfig((current) => updater(current));
+    markUnsaved();
+  };
+
+  const updateViewFilter = (id: string, patch: Partial<ViewFilterConfig>) => {
+    updateViewConfig((current) => ({
+      ...current,
+      filters: current.filters.map((filter) => (filter.id === id ? { ...filter, ...patch } : filter)),
+    }));
+  };
+
+  const updateViewColumn = (id: string, patch: Partial<ViewTableColumnConfig>) => {
+    updateViewConfig((current) => ({
+      ...current,
+      table: {
+        ...current.table,
+        columns: current.table.columns.map((column) => (column.id === id ? { ...column, ...patch } : column)),
+      },
+    }));
+  };
+
+  const moveViewItem = (kind: 'filter' | 'column', id: string, direction: -1 | 1) => {
+    updateViewConfig((current) => {
+      const source = kind === 'filter' ? sortByOrder(current.filters) : sortByOrder(current.table.columns);
+      const index = source.findIndex((item) => item.id === id);
+      const targetIndex = index + direction;
+      if (index < 0 || targetIndex < 0 || targetIndex >= source.length) return current;
+      const next = [...source];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      const reordered = next.map((item, sortOrder) => ({ ...item, sortOrder }));
+      return kind === 'filter'
+        ? { ...current, filters: reordered as ViewFilterConfig[] }
+        : { ...current, table: { ...current.table, columns: reordered as ViewTableColumnConfig[] } };
+    });
+  };
+
+  const updateViewTable = (patch: Partial<ViewConfig['table']>) => {
+    updateViewConfig((current) => ({
+      ...current,
+      table: { ...current.table, ...patch },
+    }));
+  };
 
   const saveDraft = () => {
     setHasUnsavedChanges(false);
@@ -1429,6 +1561,190 @@ export default function FormSettingsPage() {
     );
   };
 
+  const viewFieldOptions = baseConfig.fields.map((field) => ({ value: field.key, label: `${field.name} (${field.key})` }));
+  const sortedViewFilters = sortByOrder(viewConfig.filters);
+  const sortedViewColumns = sortByOrder(viewConfig.table.columns);
+  const enabledViewFilters = sortedViewFilters.filter((filter) => filter.enabled);
+  const enabledViewColumns = sortedViewColumns.filter((column) => column.enabled);
+  const viewSampleRows = [
+    { alertId: 'AL-2605-001', title: '压缩空气压力偏低', device: '空压站 2#', level: '严重', status: '已派发', source: '能源站', owner: '李工', occurredAt: '2026-05-24' },
+    { alertId: 'AL-2605-002', title: 'A 线节拍延迟', device: '总装 A 线', level: '中等', status: '确认中', source: '生产执行', owner: '王工', occurredAt: '2026-05-24' },
+    { alertId: 'AL-2605-003', title: '来料批次延迟', device: '供应链', level: '中等', status: '跟进中', source: '供应链', owner: '周工', occurredAt: '2026-05-23' },
+  ];
+
+  const renderViewFilterControl = (filter: ViewFilterConfig) => {
+    const placeholder = filter.placeholder || filter.label;
+    if (filter.controlType === 'select' || filter.controlType === 'relation') {
+      return <Select allowClear disabled placeholder={placeholder} options={[{ value: 'demo', label: placeholder }]} />;
+    }
+    if (filter.controlType === 'dateRange') {
+      return <Input disabled prefix={<CalendarOutlined />} placeholder="开始日期  →  结束日期" />;
+    }
+    return <Input disabled prefix={filter.controlType === 'keyword' ? <SearchOutlined /> : undefined} placeholder={placeholder} />;
+  };
+
+  const renderViewFilterRow = (filter: ViewFilterConfig, index: number) => {
+    const expanded = expandedViewRow === filter.id;
+    return (
+      <div className={`view-config-row ${expanded ? 'view-config-row-expanded' : ''}`} key={filter.id}>
+        <button className="view-config-row-main" type="button" onClick={() => setExpandedViewRow(expanded ? '' : filter.id)}>
+          <span className="view-config-order">{index + 1}</span>
+          <span className="view-config-primary">
+            <strong>{filter.label}</strong>
+            <small>{filter.fieldName} · {viewControlOptions.find((item) => item.value === filter.controlType)?.label} · {viewFilterOperatorOptions.find((item) => item.value === filter.operator)?.label}</small>
+          </span>
+          <Tag color={filter.enabled ? 'green' : 'default'}>{filter.enabled ? '启用' : '停用'}</Tag>
+          <Tag color={filter.advanced ? 'blue' : 'cyan'}>{filter.advanced ? '高级' : '常用'}</Tag>
+        </button>
+        <Space size={4} className="view-config-row-actions">
+          <Button size="small" onClick={() => moveViewItem('filter', filter.id, -1)} disabled={index === 0}>上移</Button>
+          <Button size="small" onClick={() => moveViewItem('filter', filter.id, 1)} disabled={index === sortedViewFilters.length - 1}>下移</Button>
+          <Switch size="small" checked={filter.enabled} onChange={(enabled) => updateViewFilter(filter.id, { enabled })} />
+        </Space>
+        {expanded && (
+          <div className="view-config-inline-editor">
+            <label><span>绑定字段</span><Select value={filter.fieldName} options={viewFieldOptions} onChange={(fieldName) => {
+              const field = baseConfig.fields.find((item) => item.key === fieldName);
+              updateViewFilter(filter.id, { fieldName, label: field?.name || filter.label });
+            }} /></label>
+            <label><span>显示名称</span><Input value={filter.label} onChange={(event) => updateViewFilter(filter.id, { label: event.target.value })} /></label>
+            <label><span>控件类型</span><Select value={filter.controlType} options={viewControlOptions} onChange={(controlType) => updateViewFilter(filter.id, { controlType, operator: controlType === 'dateRange' ? 'between' : filter.operator })} /></label>
+            <label><span>操作符</span><Select value={filter.operator} options={viewFilterOperatorOptions} onChange={(operator) => updateViewFilter(filter.id, { operator })} /></label>
+            <label><span>默认值</span><Input allowClear value={String(filter.defaultValue ?? '')} onChange={(event) => updateViewFilter(filter.id, { defaultValue: event.target.value })} /></label>
+            <label><span>占位提示</span><Input allowClear value={filter.placeholder || ''} onChange={(event) => updateViewFilter(filter.id, { placeholder: event.target.value })} /></label>
+            <label><span>显示位置</span><Select value={filter.advanced ? 'advanced' : 'common'} options={[{ value: 'common', label: '常用筛选' }, { value: 'advanced', label: '高级筛选' }]} onChange={(value) => updateViewFilter(filter.id, { advanced: value === 'advanced' })} /></label>
+            <label><span>清空默认值</span><Button onClick={() => updateViewFilter(filter.id, { defaultValue: '' })}>清空</Button></label>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderViewColumnRow = (column: ViewTableColumnConfig, index: number) => {
+    const expanded = expandedViewRow === column.id;
+    return (
+      <div className={`view-config-row ${expanded ? 'view-config-row-expanded' : ''}`} key={column.id}>
+        <button className="view-config-row-main" type="button" onClick={() => setExpandedViewRow(expanded ? '' : column.id)}>
+          <span className="view-config-order">{index + 1}</span>
+          <span className="view-config-primary">
+            <strong>{column.label}</strong>
+            <small>{column.fieldName} · {viewColumnRenderOptions.find((item) => item.value === column.renderType)?.label} · {column.width || 140}px</small>
+          </span>
+          <Tag color={column.enabled ? 'green' : 'default'}>{column.enabled ? '展示' : '隐藏'}</Tag>
+          {column.sortable && <Tag color="blue">可排序</Tag>}
+          {column.fixed && <Tag color="purple">固定{column.fixed === 'left' ? '左侧' : '右侧'}</Tag>}
+        </button>
+        <Space size={4} className="view-config-row-actions">
+          <Button size="small" onClick={() => moveViewItem('column', column.id, -1)} disabled={index === 0}>上移</Button>
+          <Button size="small" onClick={() => moveViewItem('column', column.id, 1)} disabled={index === sortedViewColumns.length - 1}>下移</Button>
+          <Switch size="small" checked={column.enabled} onChange={(enabled) => updateViewColumn(column.id, { enabled })} />
+        </Space>
+        {expanded && (
+          <div className="view-config-inline-editor view-config-inline-editor-wide">
+            <label><span>绑定字段</span><Select value={column.fieldName} options={viewFieldOptions} onChange={(fieldName) => {
+              const field = baseConfig.fields.find((item) => item.key === fieldName);
+              updateViewColumn(column.id, { fieldName, label: field?.name || column.label });
+            }} /></label>
+            <label><span>列标题</span><Input value={column.label} onChange={(event) => updateViewColumn(column.id, { label: event.target.value })} /></label>
+            <label><span>列宽</span><InputNumber min={80} max={420} value={column.width || 140} onChange={(width) => updateViewColumn(column.id, { width: Number(width || 140) })} /></label>
+            <label><span>渲染类型</span><Select value={column.renderType} options={viewColumnRenderOptions} onChange={(renderType) => updateViewColumn(column.id, { renderType })} /></label>
+            <label><span>固定列</span><Select value={column.fixed || 'none'} options={[{ value: 'none', label: '不固定' }, { value: 'left', label: '固定左侧' }, { value: 'right', label: '固定右侧' }]} onChange={(value) => updateViewColumn(column.id, { fixed: value === 'none' ? undefined : value as 'left' | 'right' })} /></label>
+            <label><span>空值展示</span><Input value={column.emptyText} onChange={(event) => updateViewColumn(column.id, { emptyText: event.target.value })} /></label>
+            <label><span>允许排序</span><Switch checked={column.sortable} onChange={(sortable) => updateViewColumn(column.id, { sortable })} /></label>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderDataViewDesigner = () => (
+    <div className="data-view-designer">
+      <section className="data-view-hero">
+        <div>
+          <strong>{baseConfig.name}数据视图配置</strong>
+          <span>配置运行页面的上方筛选区和下方数据展示区，保存发布后同步作用于程序页与动态表单页。</span>
+        </div>
+        <Space wrap>
+          <Segmented value={viewPreviewDevice} onChange={(value) => setViewPreviewDevice(value as 'desktop' | 'narrow')} options={[{ value: 'desktop', label: '桌面预览' }, { value: 'narrow', label: '窄屏预览' }]} />
+          <Tag color="blue">{enabledViewFilters.length} 个筛选</Tag>
+          <Tag color="green">{enabledViewColumns.length} 个展示列</Tag>
+        </Space>
+      </section>
+
+      <section className="view-config-section">
+        <div className="view-config-section-head">
+          <div><strong>上方筛选区</strong><span>配置查询条件、操作符、默认值和常用/高级位置。</span></div>
+          <Button size="small" onClick={() => {
+            const field = baseConfig.fields.find((item) => !viewConfig.filters.some((filter) => filter.fieldName === item.key)) || baseConfig.fields[0];
+            if (!field) return;
+            updateViewConfig((current) => ({
+              ...current,
+              filters: [...current.filters, {
+                id: `filter-${field.key}-${Date.now()}`,
+                fieldName: field.key,
+                label: field.name,
+                controlType: 'text',
+                operator: 'contains',
+                placeholder: `请输入${field.name}`,
+                enabled: true,
+                advanced: current.filters.length > 3,
+                sortOrder: current.filters.length,
+              }],
+            }));
+          }}>新增筛选项</Button>
+        </div>
+        <div className="view-config-list">
+          {sortedViewFilters.map(renderViewFilterRow)}
+        </div>
+      </section>
+
+      <section className="view-config-section">
+        <div className="view-config-section-head">
+          <div><strong>下方数据展示区</strong><span>配置表格列、操作、排序、分页和行交互。</span></div>
+          <Space wrap>
+            <Select size="small" value={viewConfig.table.density} options={tableDensityOptions} onChange={(density) => updateViewTable({ density })} />
+            <Select size="small" value={String(viewConfig.table.pageSize)} options={[10, 20, 50, 100].map((value) => ({ value: String(value), label: `${value} 条/页` }))} onChange={(value) => updateViewTable({ pageSize: Number(value) })} />
+            <Select size="small" value={viewConfig.table.rowClickAction} options={[{ value: 'detail', label: '点击行看详情' }, { value: 'edit', label: '点击行编辑' }, { value: 'none', label: '无行点击' }]} onChange={(rowClickAction) => updateViewTable({ rowClickAction })} />
+          </Space>
+        </div>
+        <div className="view-config-list">
+          {sortedViewColumns.map(renderViewColumnRow)}
+        </div>
+      </section>
+
+      <section className={`view-runtime-preview view-runtime-preview-${viewPreviewDevice}`}>
+        <div className="view-runtime-preview-head">
+          <strong>运行页预览</strong>
+          <span>上方筛选 + 下方数据表格</span>
+        </div>
+        <div className="view-runtime-filter-preview">
+          {enabledViewFilters.filter((filter) => !filter.advanced).map((filter) => (
+            <label key={filter.id}>
+              <span>{filter.label}</span>
+              {renderViewFilterControl(filter)}
+            </label>
+          ))}
+          <Space className="view-runtime-actions">
+            <Button>重置</Button>
+            <Button type="primary" icon={<SearchOutlined />}>查询</Button>
+          </Space>
+        </div>
+        <div className="view-runtime-table-preview">
+          <div className="view-runtime-table-head" style={{ gridTemplateColumns: `repeat(${Math.max(enabledViewColumns.length, 1)}, minmax(110px, 1fr)) 140px` }}>
+            {enabledViewColumns.map((column) => <span key={column.id}>{column.label}</span>)}
+            <span>操作</span>
+          </div>
+          {viewSampleRows.map((row, rowIndex) => (
+            <div className="view-runtime-table-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${Math.max(enabledViewColumns.length, 1)}, minmax(110px, 1fr)) 140px` }}>
+              {enabledViewColumns.map((column) => <span key={column.id}>{String(row[column.fieldName as keyof typeof row] ?? column.emptyText)}</span>)}
+              <span>详情　处理</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+
   return (
     <div className="form-designer-page">
       <header className="form-designer-toolbar">
@@ -1457,8 +1773,8 @@ export default function FormSettingsPage() {
         </Space>
       </header>
 
-      <section className={`form-designer-shell ${activeTab === 'permission' ? 'form-designer-shell-no-left' : ''}`}>
-        {activeTab !== 'permission' && (
+      <section className={`form-designer-shell ${activeTab === 'permission' || activeTab === 'filter' ? 'form-designer-shell-no-left' : ''} ${activeTab === 'filter' ? 'form-designer-shell-data-view' : ''}`}>
+        {activeTab !== 'permission' && activeTab !== 'filter' && (
           <aside className="form-designer-left">
             <div className="designer-panel-head">
               <strong>{activeTab === 'flow' ? '节点' : '控件'}</strong>
@@ -1700,25 +2016,6 @@ export default function FormSettingsPage() {
             >
               <div className="create-form-modal" onClick={(event) => event.stopPropagation()}>
                 <div className={`create-form-grid ${isCanvasDragActive ? 'canvas-drag-active' : ''}`}>
-                  <div className="designer-canvas-guide">
-                    <div>
-                      <strong>配置引导</strong>
-                      <span>从左侧拖入字段或控件，点击画布元素在右侧配置属性，发布前先运行检查。</span>
-                    </div>
-                    <Space wrap>
-                      <Tag color="blue">字段 {baseConfig.fields.length}</Tag>
-                      <Tag color="green">画布控件 {layoutControls.length}</Tag>
-                      <Tag color={publishErrorCount ? 'red' : 'success'}>阻断项 {publishErrorCount}</Tag>
-                    </Space>
-                  </div>
-                  <div className="designer-section-map">
-                    {alertSections.map((section) => (
-                      <button key={section.key} type="button" onClick={applyBusinessSectionLayout}>
-                        <strong>{section.title}</strong>
-                        <small>{section.desc}</small>
-                      </button>
-                    ))}
-                  </div>
                   {layoutControls.map(renderCanvasControl)}
                   {isCanvasDragActive && draggedControlId && !dropHint && <div className="canvas-drop-end-indicator">拖到这里放在末尾</div>}
                 </div>
@@ -1731,25 +2028,8 @@ export default function FormSettingsPage() {
           )}
 
           {activeTab === 'filter' && (
-            <div className="canvas-board create-form-canvas">
-              <div className="create-form-modal">
-                <div className="create-form-modal-head">
-                  <strong>{baseConfig.name}数据筛选</strong>
-                  <span>配置运行页面上方的数据查询条件。</span>
-                </div>
-                <div className="create-form-grid">
-                  {baseConfig.filters.map((field) => (
-                    <label key={field.key}>
-                      <span>{field.name}</span>
-                      {fieldInput(field)}
-                    </label>
-                  ))}
-                </div>
-                <div className="create-form-actions">
-                  <Button>重置</Button>
-                  <Button type="primary">查询</Button>
-                </div>
-              </div>
+            <div className="canvas-board data-view-canvas">
+              {renderDataViewDesigner()}
             </div>
           )}
 
@@ -1886,7 +2166,7 @@ export default function FormSettingsPage() {
           )}
         </main>
 
-        {activeTab !== 'permission' && (
+        {activeTab !== 'permission' && activeTab !== 'filter' && (
         <aside className="form-designer-right">
           <div className="designer-panel-head">
             <strong>属性</strong>

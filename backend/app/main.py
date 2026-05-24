@@ -10,6 +10,7 @@ from app.core.logging import get_logger, setup_logging
 # Initialize logging before anything else
 setup_logging(level=settings.LOG_LEVEL)
 logger = get_logger(__name__)
+settings.validate_runtime()
 
 
 @asynccontextmanager

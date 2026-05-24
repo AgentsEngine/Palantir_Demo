@@ -399,10 +399,20 @@ class PipelineRun(TimestampMixin, Base):
 
 # ── 报表族 (Phase 1) ──────────────────────────────────────
 
+class Tenant(TimestampMixin, Base):
+    __tablename__ = "tenants"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(200))
+    slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(50), default="active")
+
+
 class Report(TimestampMixin, Base):
     __tablename__ = "reports"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     config: Mapped[str] = mapped_column(Text, default="{}")
@@ -417,6 +427,7 @@ class ReportSnapshot(TimestampMixin, Base):
     __tablename__ = "report_snapshots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     report_id: Mapped[int] = mapped_column(ForeignKey("reports.id"))
     config: Mapped[str] = mapped_column(Text, default="{}")
     version: Mapped[int] = mapped_column(Integer, default=1)
@@ -494,6 +505,7 @@ class MenuItem(TimestampMixin, Base):
     __tablename__ = "menu_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("menu_items.id"), nullable=True)
     title: Mapped[str] = mapped_column(String(200))
     icon: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -508,6 +520,7 @@ class Application(TimestampMixin, Base):
     __tablename__ = "applications"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
     code: Mapped[str] = mapped_column(String(100), unique=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -525,6 +538,7 @@ class ApplicationMenu(TimestampMixin, Base):
     __tablename__ = "application_menus"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     application_id: Mapped[int] = mapped_column(ForeignKey("applications.id"))
     menu_id: Mapped[int] = mapped_column(ForeignKey("menu_items.id"))
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
@@ -537,6 +551,7 @@ class ApplicationRole(TimestampMixin, Base):
     __tablename__ = "application_roles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     application_id: Mapped[int] = mapped_column(ForeignKey("applications.id"))
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
 
@@ -547,6 +562,7 @@ class Form(TimestampMixin, Base):
     __tablename__ = "forms"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
     code: Mapped[str] = mapped_column(String(100), unique=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -573,6 +589,7 @@ class ApplicationForm(TimestampMixin, Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     application_id: Mapped[int] = mapped_column(ForeignKey("applications.id"))
     form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"))
     alias: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
@@ -592,6 +609,7 @@ class ApplicationMenuNode(TimestampMixin, Base):
     __tablename__ = "application_menu_nodes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     application_id: Mapped[int] = mapped_column(ForeignKey("applications.id"))
     parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("application_menu_nodes.id"), nullable=True)
     node_type: Mapped[str] = mapped_column(String(50), default="form")
@@ -611,6 +629,7 @@ class FormField(TimestampMixin, Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"))
     meta_field_id: Mapped[Optional[int]] = mapped_column(ForeignKey("meta_fields.id"), nullable=True)
     field_name: Mapped[str] = mapped_column(String(200))
@@ -638,6 +657,7 @@ class FormLayout(TimestampMixin, Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"))
     layout_type: Mapped[str] = mapped_column(String(50), default="list")
     config: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -649,6 +669,7 @@ class FormAction(TimestampMixin, Base):
     __tablename__ = "form_actions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"))
     action_key: Mapped[str] = mapped_column(String(100))
     label: Mapped[str] = mapped_column(String(200))
@@ -664,6 +685,7 @@ class FormPermission(TimestampMixin, Base):
     __tablename__ = "form_permissions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"))
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
     action: Mapped[str] = mapped_column(String(50))
@@ -677,6 +699,7 @@ class DynamicRecord(TimestampMixin, Base):
     __tablename__ = "dynamic_records"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"))
     model_id: Mapped[Optional[int]] = mapped_column(ForeignKey("meta_models.id"), nullable=True)
     data: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -695,6 +718,7 @@ class WorkflowBinding(TimestampMixin, Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"))
     workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow_defs.id"))
     trigger_action: Mapped[str] = mapped_column(String(50), default="submit")
@@ -708,6 +732,7 @@ class User(TimestampMixin, Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     username: Mapped[str] = mapped_column(String(100), unique=True)
     display_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
@@ -722,6 +747,7 @@ class Role(TimestampMixin, Base):
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
     label: Mapped[str] = mapped_column(String(200))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -734,6 +760,7 @@ class UserRole(TimestampMixin, Base):
     __tablename__ = "user_roles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
 
@@ -745,6 +772,7 @@ class RolePermission(TimestampMixin, Base):
     __tablename__ = "role_permissions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
     resource_type: Mapped[str] = mapped_column(String(50))
     resource_key: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
@@ -759,6 +787,7 @@ class WorkflowDef(TimestampMixin, Base):
     __tablename__ = "workflow_defs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     config: Mapped[str] = mapped_column(Text, default="{}")
@@ -773,6 +802,7 @@ class WorkflowInstance(TimestampMixin, Base):
     __tablename__ = "workflow_instances"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow_defs.id"))
     title: Mapped[str] = mapped_column(String(200))
     initiator_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -852,6 +882,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     action: Mapped[str] = mapped_column(String(50))
     resource_type: Mapped[str] = mapped_column(String(100))

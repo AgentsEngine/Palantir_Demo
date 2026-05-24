@@ -1,6 +1,8 @@
 # ── Production: build static dist and serve via nginx ────
 FROM node:20-alpine AS build
 WORKDIR /app
+ARG VITE_APP_MODE=production
+ENV VITE_APP_MODE=$VITE_APP_MODE
 
 # Cache deps layer separately
 COPY package.json package-lock.json* ./

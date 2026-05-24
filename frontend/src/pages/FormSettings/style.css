@@ -306,6 +306,78 @@
   font-size: 12px;
 }
 
+.designer-side-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #d9e8ef;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.designer-side-guide strong {
+  color: #172026;
+  font-size: 12px;
+}
+
+.designer-side-guide span {
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.designer-side-guide div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.designer-side-guide .ant-tag {
+  margin-inline-end: 0;
+  font-size: 11px;
+}
+
+.designer-side-sections {
+  display: grid;
+  gap: 6px;
+}
+
+.designer-side-sections button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px dashed #cfdce4;
+  border-radius: 7px;
+  background: #fbfdfe;
+  color: #243b47;
+  cursor: pointer;
+  text-align: left;
+}
+
+.designer-side-sections button:hover {
+  border-color: #78b7c8;
+  background: #f1f9fb;
+}
+
+.designer-side-sections strong,
+.designer-side-sections small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.designer-side-sections strong {
+  font-size: 12px;
+}
+
+.designer-side-sections small {
+  color: #7a8995;
+  font-size: 11px;
+}
+
 .designer-template-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2164,6 +2236,247 @@
   border-bottom: 0;
 }
 
+.form-designer-shell-data-view {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.data-view-canvas {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 14px;
+  overflow: auto;
+}
+
+.data-view-designer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.data-view-hero,
+.view-config-section,
+.view-runtime-preview {
+  border: 1px solid #dce5ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.data-view-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.data-view-hero div,
+.view-config-section-head div,
+.view-runtime-preview-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.data-view-hero strong,
+.view-config-section-head strong,
+.view-runtime-preview-head strong {
+  color: #172026;
+  font-size: 14px;
+}
+
+.data-view-hero span,
+.view-config-section-head span,
+.view-runtime-preview-head span {
+  color: #71818c;
+  font-size: 12px;
+}
+
+.view-config-section {
+  overflow: hidden;
+}
+
+.view-config-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #edf1f5;
+  background: #fbfcfd;
+}
+
+.view-config-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.view-config-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.view-config-row:last-child {
+  border-bottom: 0;
+}
+
+.view-config-row-expanded {
+  background: #fbfcfd;
+}
+
+.view-config-row-main {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.view-config-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #eef5f8;
+  color: #2f6678;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.view-config-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.view-config-primary strong,
+.view-config-primary small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-config-primary small {
+  color: #7a8995;
+  font-size: 11px;
+}
+
+.view-config-row-actions {
+  align-self: center;
+}
+
+.view-config-inline-editor {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dce5ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.view-config-inline-editor-wide {
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+}
+
+.view-config-inline-editor label,
+.view-runtime-filter-preview label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.view-config-inline-editor label span,
+.view-runtime-filter-preview label span {
+  color: #3d4f5a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.view-config-inline-editor .ant-input-number {
+  width: 100%;
+}
+
+.view-runtime-preview {
+  padding: 14px;
+}
+
+.view-runtime-preview-head {
+  margin-bottom: 12px;
+}
+
+.view-runtime-filter-preview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.view-runtime-actions {
+  justify-content: flex-end;
+}
+
+.view-runtime-table-preview {
+  margin-top: 12px;
+  border: 1px solid #dce5ec;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.view-runtime-table-head,
+.view-runtime-table-row {
+  display: grid;
+  min-width: 720px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.view-runtime-table-head {
+  background: #f4f7f9;
+  color: #233642;
+  font-weight: 700;
+}
+
+.view-runtime-table-row:last-child {
+  border-bottom: 0;
+}
+
+.view-runtime-table-head span,
+.view-runtime-table-row span {
+  min-width: 0;
+  padding: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-right: 1px solid #edf1f5;
+}
+
+.view-runtime-table-head span:last-child,
+.view-runtime-table-row span:last-child {
+  border-right: 0;
+}
+
+.view-runtime-preview-narrow .view-runtime-filter-preview {
+  grid-template-columns: 1fr;
+}
+
 @media (max-width: 1200px) {
   .form-designer-toolbar {
     grid-template-columns: minmax(180px, 240px) minmax(300px, 1fr) max-content;
@@ -2175,6 +2488,10 @@
 
   .form-designer-shell {
     grid-template-columns: 220px minmax(480px, 1fr);
+  }
+
+  .form-designer-shell-data-view {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .form-designer-right {
@@ -2215,8 +2532,17 @@
   .canvas-chart-row,
   .designer-section-map,
   .create-form-grid,
-  .flow-canvas {
+  .flow-canvas,
+  .view-config-row,
+  .view-config-row-main,
+  .view-config-inline-editor,
+  .view-config-inline-editor-wide,
+  .view-runtime-filter-preview {
     grid-template-columns: 1fr;
+  }
+
+  .view-config-row-actions {
+    justify-content: flex-start;
   }
 
   .designer-canvas-guide {

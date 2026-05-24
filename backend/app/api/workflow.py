@@ -4,11 +4,15 @@ import json
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 
 router = APIRouter()
+
+from app.api.deps import current_tenant_id, current_user_id, get_current_user
+from app.config import settings
+from app.core.audit import write_audit_log
 
 
 # ── Schemas ───────────────────────────────────────────────
@@ -308,11 +312,12 @@ def _get_mock_instance_by_id(inst_id: int) -> Optional[dict]:
 # ── Workflow Definition CRUD ─────────────────────────────
 
 @router.get("/definitions")
-async def list_definitions():
+async def list_definitions(user: dict = Depends(get_current_user)):
     """工作流定义列表."""
     async def _query(db):
         from app.models.relational import WorkflowDef
-        result = await db.execute(select(WorkflowDef).order_by(WorkflowDef.id))
+        tenant_id = current_tenant_id(user)
+        result = await db.execute(select(WorkflowDef).where(WorkflowDef.tenant_id == tenant_id).order_by(WorkflowDef.id))
         defs = result.scalars().all()
         return {"data": [
             {"id": d.id, "name": d.name, "description": d.description,
@@ -325,16 +330,19 @@ async def list_definitions():
     result = await _try_db(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(503, "Workflow database unavailable")
     return {"data": _MOCK_WORKFLOWS}
 
 
 @router.get("/definitions/{def_id}")
-async def get_definition(def_id: int):
+async def get_definition(def_id: int, user: dict = Depends(get_current_user)):
     """获取工作流定义详情."""
     async def _query(db):
         from app.models.relational import WorkflowDef
+        tenant_id = current_tenant_id(user)
         d = await db.get(WorkflowDef, def_id)
-        if not d:
+        if not d or d.tenant_id != tenant_id:
             return None
         return {
             "id": d.id, "name": d.name, "description": d.description,
@@ -346,6 +354,8 @@ async def get_definition(def_id: int):
     result = await _try_db(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(404, "Workflow not found")
     for d in _MOCK_WORKFLOWS:
         if d["id"] == def_id:
             return d
@@ -353,16 +363,18 @@ async def get_definition(def_id: int):
 
 
 @router.post("/definitions")
-async def create_definition(body: WorkflowDefCreate):
+async def create_definition(body: WorkflowDefCreate, user: dict = Depends(get_current_user)):
     """创建工作流定义."""
     async def _query(db):
         from app.models.relational import WorkflowDef
+        tenant_id = current_tenant_id(user)
         config_data = body.config or {"nodes": [], "edges": []}
         # If body.steps is provided, embed steps into config for execution
         if body.steps:
             config_data["steps"] = body.steps
 
         d = WorkflowDef(
+            tenant_id=tenant_id,
             name=body.name, description=body.description,
             config=json.dumps(config_data, ensure_ascii=False),
             form_config=json.dumps(body.form_config or {"fields": []}, ensure_ascii=False),
@@ -370,11 +382,21 @@ async def create_definition(body: WorkflowDefCreate):
         db.add(d)
         await db.commit()
         await db.refresh(d)
+        await write_audit_log(
+            tenant_id=tenant_id,
+            user_id=current_user_id(user),
+            action="create",
+            resource_type="workflow_def",
+            resource_id=d.id,
+            new_values=body.dict(),
+        )
         return {"id": d.id, "name": d.name}
 
     result = await _try_db(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(503, "Workflow database unavailable")
     global _wf_id_counter
     _wf_id_counter += 1
     config_data = body.config or {"nodes": [], "edges": []}
@@ -391,12 +413,13 @@ async def create_definition(body: WorkflowDefCreate):
 
 
 @router.put("/definitions/{def_id}")
-async def update_definition(def_id: int, body: WorkflowDefCreate):
+async def update_definition(def_id: int, body: WorkflowDefCreate, user: dict = Depends(get_current_user)):
     """更新工作流定义."""
     async def _query(db):
         from app.models.relational import WorkflowDef
+        tenant_id = current_tenant_id(user)
         d = await db.get(WorkflowDef, def_id)
-        if not d:
+        if not d or d.tenant_id != tenant_id:
             return None
         d.name = body.name
         if body.description is not None:
@@ -415,6 +438,8 @@ async def update_definition(def_id: int, body: WorkflowDefCreate):
     result = await _try_db(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(404, "Workflow not found")
     for d in _MOCK_WORKFLOWS:
         if d["id"] == def_id:
             d["name"] = body.name
@@ -427,12 +452,13 @@ async def update_definition(def_id: int, body: WorkflowDefCreate):
 
 
 @router.delete("/definitions/{def_id}")
-async def delete_definition(def_id: int):
+async def delete_definition(def_id: int, user: dict = Depends(get_current_user)):
     """删除工作流定义."""
     async def _query(db):
         from app.models.relational import WorkflowDef
+        tenant_id = current_tenant_id(user)
         d = await db.get(WorkflowDef, def_id)
-        if not d:
+        if not d or d.tenant_id != tenant_id:
             return None
         await db.delete(d)
         await db.commit()
@@ -441,6 +467,8 @@ async def delete_definition(def_id: int):
     result = await _try_db(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(404, "Workflow not found")
     return {"ok": True}
 
 
@@ -452,11 +480,13 @@ async def list_instances(
     initiator_id: Optional[int] = None,
     workflow_id: Optional[int] = None,
     resource_type: Optional[str] = None,
+    user: dict = Depends(get_current_user),
 ):
     """工作流实例列表 (supports filtering by status, initiator, workflow, resource_type)."""
     async def _query(db):
         from app.models.relational import WorkflowInstance, WorkflowApproval
-        query = select(WorkflowInstance).order_by(WorkflowInstance.created_at.desc())
+        tenant_id = current_tenant_id(user)
+        query = select(WorkflowInstance).where(WorkflowInstance.tenant_id == tenant_id).order_by(WorkflowInstance.created_at.desc())
         if status:
             query = query.where(WorkflowInstance.status == status)
         if initiator_id:
@@ -509,6 +539,8 @@ async def list_instances(
     result = await _try_db(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(503, "Workflow instances database unavailable")
 
     # Mock fallback with filtering
     filtered = _MOCK_INSTANCES
@@ -540,12 +572,13 @@ async def list_instances(
 
 
 @router.get("/instances/{inst_id}")
-async def get_instance(inst_id: int):
+async def get_instance(inst_id: int, user: dict = Depends(get_current_user)):
     """获取工作流实例详情 (with full step history)."""
     async def _query(db):
         from app.models.relational import WorkflowInstance, WorkflowApproval, WorkflowDef
+        tenant_id = current_tenant_id(user)
         inst = await db.get(WorkflowInstance, inst_id)
-        if not inst:
+        if not inst or inst.tenant_id != tenant_id:
             return None
 
         approvals_res = await db.execute(
@@ -585,6 +618,8 @@ async def get_instance(inst_id: int):
     result = await _try_db(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(404, "Instance not found")
 
     # Mock fallback
     inst = _get_mock_instance_by_id(inst_id)
@@ -605,12 +640,13 @@ async def get_instance(inst_id: int):
 
 
 @router.post("/definitions/{def_id}/start")
-async def start_instance(def_id: int, body: WorkflowStartRequest):
+async def start_instance(def_id: int, body: WorkflowStartRequest, user: dict = Depends(get_current_user)):
     """发起工作流实例 (creates WorkflowInstance + first WorkflowApproval)."""
     async def _query(db):
         from app.models.relational import WorkflowDef, WorkflowInstance, WorkflowApproval
+        tenant_id = current_tenant_id(user)
         d = await db.get(WorkflowDef, def_id)
-        if not d:
+        if not d or d.tenant_id != tenant_id:
             return None
         config = json.loads(d.config) if isinstance(d.config, str) else d.config
         steps = config.get("steps", [])
@@ -629,7 +665,9 @@ async def start_instance(def_id: int, body: WorkflowStartRequest):
         }
 
         inst = WorkflowInstance(
+            tenant_id=tenant_id,
             workflow_id=def_id, title=body.title,
+            initiator_id=current_user_id(user),
             form_data=json.dumps(body.form_data or {}, ensure_ascii=False),
             workflow_state=json.dumps(state, ensure_ascii=False),
             status="pending",
@@ -645,6 +683,14 @@ async def start_instance(def_id: int, body: WorkflowStartRequest):
             db.add(approval)
         await db.commit()
         await db.refresh(inst)
+        await write_audit_log(
+            tenant_id=tenant_id,
+            user_id=current_user_id(user),
+            action="start",
+            resource_type="workflow_instance",
+            resource_id=inst.id,
+            new_values={"workflow_id": def_id, "title": body.title, "resource_type": body.resource_type, "resource_id": body.resource_id},
+        )
         return {
             "instance_id": inst.id,
             "status": inst.status,
@@ -655,6 +701,8 @@ async def start_instance(def_id: int, body: WorkflowStartRequest):
     result = await _try_db(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(404, "Workflow definition not found")
 
     # Mock fallback
     wf = _get_mock_workflow_by_id(def_id)
@@ -720,30 +768,31 @@ async def start_instance(def_id: int, body: WorkflowStartRequest):
 
 
 @router.post("/instances/{inst_id}/approve")
-async def approve_step(inst_id: int, body: StepApprovalRequest):
+async def approve_step(inst_id: int, body: StepApprovalRequest, user: dict = Depends(get_current_user)):
     """审批通过当前步骤 (moves to next step or completes workflow)."""
-    return await _act_on_step(inst_id, body, action="approve")
+    return await _act_on_step(inst_id, body, action="approve", user=user)
 
 
 @router.post("/instances/{inst_id}/reject")
-async def reject_step(inst_id: int, body: StepApprovalRequest):
+async def reject_step(inst_id: int, body: StepApprovalRequest, user: dict = Depends(get_current_user)):
     """驳回当前步骤 (marks instance as rejected)."""
-    return await _act_on_step(inst_id, body, action="reject")
+    return await _act_on_step(inst_id, body, action="reject", user=user)
 
 
-async def _act_on_step(inst_id: int, body: StepApprovalRequest, action: str):
+async def _act_on_step(inst_id: int, body: StepApprovalRequest, action: str, user: dict | None = None):
     """Core step action logic — approve moves forward, reject terminates."""
     if action not in ("approve", "reject"):
         raise HTTPException(400, "action must be 'approve' or 'reject'")
 
     async def _query(db):
         from app.models.relational import WorkflowInstance, WorkflowApproval, WorkflowDef
+        tenant_id = current_tenant_id(user or {})
         inst = await db.get(WorkflowInstance, inst_id)
-        if not inst:
+        if not inst or inst.tenant_id != tenant_id:
             return None
 
         wf_def = await db.get(WorkflowDef, inst.workflow_id)
-        if not wf_def:
+        if not wf_def or wf_def.tenant_id != tenant_id:
             return None
 
         config = json.loads(wf_def.config) if isinstance(wf_def.config, str) else wf_def.config
@@ -760,7 +809,7 @@ async def _act_on_step(inst_id: int, body: StepApprovalRequest, action: str):
             pending_approval.action = action
             pending_approval.comment = body.comment
             pending_approval.acted_at = datetime.now()
-            pending_approval.approver_id = body.user_id
+            pending_approval.approver_id = current_user_id(user or {}) or body.user_id
 
         if action == "reject":
             inst.status = "rejected"
@@ -793,6 +842,13 @@ async def _act_on_step(inst_id: int, body: StepApprovalRequest, action: str):
             inst.workflow_state = json.dumps(state, ensure_ascii=False)
 
         await db.commit()
+        await write_audit_log(
+            tenant_id=tenant_id,
+            user_id=current_user_id(user or {}),
+            action=action,
+            resource_type="workflow_instance",
+            resource_id=inst.id,
+        )
         return {
             "id": inst.id, "status": inst.status,
             "current_step": state.get("current_step", current_step_idx),
@@ -802,6 +858,8 @@ async def _act_on_step(inst_id: int, body: StepApprovalRequest, action: str):
     result = await _try_db(_query)
     if result is not None:
         return result
+    if settings.IS_PRODUCTION:
+        raise HTTPException(404, "Instance not found")
 
     # Mock fallback
     inst = _get_mock_instance_by_id(inst_id)
@@ -873,13 +931,13 @@ async def _act_on_step(inst_id: int, body: StepApprovalRequest, action: str):
 
 # Legacy act endpoint kept for backward compatibility
 @router.post("/instances/{inst_id}/act")
-async def approve_or_reject(inst_id: int, body: ApprovalAction):
+async def approve_or_reject(inst_id: int, body: ApprovalAction, user: dict = Depends(get_current_user)):
     """审批/驳回工作流实例 (legacy endpoint)."""
     if body.action not in ("approve", "reject"):
         raise HTTPException(400, "action must be 'approve' or 'reject'")
 
     step_body = StepApprovalRequest(comment=body.comment, user_id=1)
-    return await _act_on_step(inst_id, step_body, action=body.action)
+    return await _act_on_step(inst_id, step_body, action=body.action, user=user)
 
 
 @router.post("/instances/{inst_id}/cancel")

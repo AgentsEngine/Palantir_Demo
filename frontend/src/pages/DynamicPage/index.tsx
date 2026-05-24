@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Table, Button, Space, Input, Modal, Form, Tag, Spin, message,
@@ -21,6 +21,12 @@ import {
   type PlatformFormField,
 } from '@/services/api';
 import RelationPicker from '@/components/FormWidgets/RelationPicker';
+import {
+  normalizeViewConfig,
+  sortByOrder,
+  type ViewConfig,
+  type ViewFilterConfig,
+} from '@/utils/viewConfig';
 
 interface FieldDef {
   field_name: string;
@@ -46,6 +52,7 @@ interface PageConfig {
     list_fields?: string[];
     form_fields?: string[];
     search_fields?: string[];
+    viewConfig?: ViewConfig;
   };
 }
 
@@ -198,7 +205,33 @@ function mapPlatformField(field: PlatformFormField): FieldDef {
     visible_in_list: field.visible_in_list,
     visible_in_form: field.visible_in_form,
     enum_values: field.enum_values,
+    relation_config: (field.ui_config as any)?.relation_config,
   };
+}
+
+function fieldToViewField(field: FieldDef) {
+  return {
+    fieldName: field.field_name,
+    label: field.label,
+    fieldType: field.field_type,
+    searchable: field.searchable,
+    sortable: field.sortable,
+    visibleInList: field.visible_in_list,
+  };
+}
+
+function filterValueToPayload(filter: ViewFilterConfig, value: unknown) {
+  if (value === undefined || value === null || value === '') return null;
+  if (Array.isArray(value) && value.length === 0) return null;
+  if (filter.controlType === 'dateRange' && Array.isArray(value)) {
+    const [start, end] = value;
+    return {
+      field: filter.fieldName,
+      op: filter.operator || 'between',
+      value: [dayjs.isDayjs(start) ? start.format('YYYY-MM-DD') : start, dayjs.isDayjs(end) ? end.format('YYYY-MM-DD') : end],
+    };
+  }
+  return { field: filter.fieldName, op: filter.operator, value };
 }
 
 function unwrapApiData<T>(payload: unknown): T | null {
@@ -226,18 +259,37 @@ export default function DynamicPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filterValues, setFilterValues] = useState<Record<string, unknown>>({});
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Record<string, any> | null>(null);
   const [form] = Form.useForm();
+  const [filterForm] = Form.useForm();
   const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const viewConfig = useMemo(() => normalizeViewConfig(
+    pageConfig?.config?.viewConfig,
+    fields.map(fieldToViewField),
+    pageConfig?.config?.search_fields,
+  ), [fields, pageConfig?.config?.search_fields, pageConfig?.config?.viewConfig]);
+
+  const activeFilters = useMemo(() => sortByOrder(viewConfig.filters).filter((filter) => filter.enabled), [viewConfig.filters]);
+  const tableConfigColumns = useMemo(() => sortByOrder(viewConfig.table.columns).filter((column) => column.enabled), [viewConfig.table.columns]);
+  const structuredFilters = useMemo(() => activeFilters
+    .map((filter) => filterValueToPayload(filter, filterValues[filter.id] ?? filter.defaultValue))
+    .filter(Boolean), [activeFilters, filterValues]);
 
   const loadData = useCallback(async () => {
     if (!slug || (!pageConfig && !platformForm)) return;
     setLoading(true);
     try {
       if (platformForm) {
-        const res = await listPlatformDynamicRecords(platformForm.id, { page, page_size: 20, search: search || undefined });
+        const res = await listPlatformDynamicRecords(platformForm.id, {
+          page,
+          page_size: viewConfig.table.pageSize,
+          search: search || undefined,
+          filters: structuredFilters.length ? JSON.stringify(structuredFilters) : undefined,
+        });
         const records = unwrapApiList<any>(res);
         setData(records.map((record) => ({ id: record.id, ...(record.data || {}), _status: record.status })));
         setTotal(res.data?.total ?? records.length);
@@ -248,7 +300,7 @@ export default function DynamicPage() {
       }
     } catch { message.error('加载数据失败'); }
     finally { setLoading(false); }
-  }, [slug, pageConfig, platformForm, page, search]);
+  }, [slug, pageConfig, platformForm, page, search, structuredFilters, viewConfig.table.pageSize]);
 
   useEffect(() => {
     (async () => {
@@ -275,6 +327,7 @@ export default function DynamicPage() {
               list_fields: dbForm.fields?.filter((field) => field.visible_in_list && !field.archived).map((field) => field.field_name),
               form_fields: dbForm.fields?.filter((field) => field.visible_in_form && !field.archived).map((field) => field.field_name),
               search_fields: dbForm.fields?.filter((field) => field.searchable && !field.archived).map((field) => field.field_name),
+              viewConfig: (dbForm.config as any)?.viewConfig,
             },
           });
           return;
