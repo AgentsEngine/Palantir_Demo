@@ -5,11 +5,13 @@ import {
   DatabaseOutlined,
   FileSearchOutlined,
   FormOutlined,
+  InboxOutlined,
   NodeIndexOutlined,
+  PlusOutlined,
   ReloadOutlined,
   RobotOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Card, Col, Empty, Input, List, Row, Select, Space, Table, Tabs, Tag, Typography, message } from 'antd';
+import { Button, Card, Col, Empty, Input, List, Row, Select, Space, Table, Tabs, Tag, Tree, Typography, Upload, message } from 'antd';
 import {
   getKnowledgeOcrPipeline,
   getRelatedKnowledgeCards,
@@ -24,6 +26,7 @@ import {
   listSemanticPageContracts,
   searchKnowledge,
   suggestKnowledgeBindings,
+  uploadKnowledgeAsset,
 } from '@/services/api';
 
 type DataField = {
@@ -179,6 +182,31 @@ type OcrPipelineStep = {
   title: string;
   owner: string;
   description: string;
+};
+
+type KnowledgeUploadSummary = {
+  fileName: string;
+  status: string;
+  documentTitle?: string;
+  chunkCount: number;
+  markdownPreview?: string;
+  permissionScope: string;
+};
+
+type KnowledgeChatMessage = {
+  id: string;
+  role: 'assistant' | 'user';
+  content: string;
+};
+
+const uploadedKnowledgeSource: KnowledgeSource = {
+  id: 'uploaded',
+  name: '上传资料',
+  type: 'Uploaded',
+  owner: '当前用户',
+  status: 'active',
+  document_count: 0,
+  description: '通过知识库页面上传并解析的 Markdown、Excel、PDF 或图片。',
 };
 
 const fallbackKnowledgeSources: KnowledgeSource[] = [
@@ -657,6 +685,16 @@ export function KnowledgeCenter() {
   const [searching, setSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<{ answer: string; results: KnowledgeChunk[] } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadScope, setUploadScope] = useState('enterprise');
+  const [uploading, setUploading] = useState(false);
+  const [lastUpload, setLastUpload] = useState<KnowledgeUploadSummary | null>(null);
+  const [chatMessages, setChatMessages] = useState<KnowledgeChatMessage[]>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      content: '可以在这里询问知识库，也可以把 Markdown、Excel、PDF 或图片拖进来入库。',
+    },
+  ]);
 
   const selectedSpace = spaces.find((item) => item.id === selectedSpaceId) ?? spaces[0];
   const selectedSource = sources.find((item) => item.id === selectedSourceId) ?? sources[0];
@@ -667,9 +705,28 @@ export function KnowledgeCenter() {
   const sourceDocuments = selectedSourceId
     ? documents.filter((item) => item.source_id === selectedSourceId)
     : documents;
-  const linkedObjectCount = new Set(
-    cards.flatMap((card) => card.linked_objects.map((obj) => `${obj.type}:${obj.id}`)),
-  ).size;
+  const directoryTreeData = spaces.map((space) => {
+    const spaceCards = cards.filter((card) => card.space_id === space.id);
+    return {
+      key: `space:${space.id}`,
+      title: (
+        <span className="knowledge-tree-node">
+          <strong>{space.name}</strong>
+          <small>{spaceCards.length} 篇</small>
+        </span>
+      ),
+      children: spaceCards.map((card) => ({
+        key: `card:${card.id}`,
+        title: (
+          <span className="knowledge-tree-node document">
+            <strong>{card.title}</strong>
+            <small>{card.updated_at}</small>
+          </span>
+        ),
+      })),
+    };
+  });
+  const selectedDirectoryKeys = selectedCard ? [`card:${selectedCard.id}`] : selectedSpace ? [`space:${selectedSpace.id}`] : [];
 
   const applyFallback = () => {
     setSpaces(fallbackKnowledgeSpaces);
@@ -759,193 +816,314 @@ export function KnowledgeCenter() {
       message.warning('请输入检索问题');
       return;
     }
+    const currentQuery = query.trim();
+    setChatMessages((prev) => [
+      ...prev,
+      { id: `user-${Date.now()}`, role: 'user', content: currentQuery },
+    ]);
     setSearching(true);
     try {
-      const res = await searchKnowledge({ query, limit: 5 });
+      const res = await searchKnowledge({ query: currentQuery, limit: 5 });
       const nextResult = res.data?.data ?? null;
       if (nextResult?.results?.length) {
         setSearchResult(nextResult);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: `${nextResult.answer} 已找到 ${nextResult.results.length} 条引用来源。`,
+          },
+        ]);
       } else {
         runFallbackSearch();
+        setChatMessages((prev) => [
+          ...prev,
+          { id: `assistant-${Date.now()}`, role: 'assistant', content: '没有检索到正式入库结果，先展示本地演示知识作为参考。' },
+        ]);
       }
     } catch {
       runFallbackSearch();
+      setChatMessages((prev) => [
+        ...prev,
+        { id: `assistant-${Date.now()}`, role: 'assistant', content: '知识库检索暂时不可用，已切换到本地演示结果。' },
+      ]);
       message.warning('已使用本地演示知识库检索');
     } finally {
       setSearching(false);
     }
   };
 
+  const handleKnowledgeUpload = async (options: any) => {
+    const file = options.file as File;
+    setUploading(true);
+    try {
+      const res = await uploadKnowledgeAsset(file, {
+        permission_scope: uploadScope,
+        owner_user_id: 'demo-user',
+      });
+      const payload = res.data?.data;
+      if (!res.data?.ok || !payload?.document) {
+        throw new Error(payload?.job?.error || 'Knowledge upload failed');
+      }
+
+      const uploadedDocument: KnowledgeDocument = {
+        id: payload.document.document_id,
+        source_id: 'uploaded',
+        title: payload.document.title,
+        doc_type: payload.document.source_type,
+        status: payload.document.status,
+        updated_at: payload.document.updated_at,
+        summary: `Uploaded knowledge asset: ${payload.document.source_file_name}`,
+        linked_objects: [],
+      };
+
+      setSources((prev) => {
+        const hasUploaded = prev.some((item) => item.id === uploadedKnowledgeSource.id);
+        const nextSource = {
+          ...uploadedKnowledgeSource,
+          document_count: documents.filter((item) => item.source_id === 'uploaded').length + 1,
+        };
+        return hasUploaded
+          ? prev.map((item) => (item.id === 'uploaded' ? nextSource : item))
+          : [nextSource, ...prev];
+      });
+      setDocuments((prev) => [uploadedDocument, ...prev.filter((item) => item.id !== uploadedDocument.id)]);
+      setSelectedSourceId('uploaded');
+      setLastUpload({
+        fileName: payload.asset?.source_file_name ?? file.name,
+        status: payload.job?.status ?? uploadedDocument.status,
+        documentTitle: uploadedDocument.title,
+        chunkCount: payload.chunks?.length ?? 0,
+        markdownPreview: payload.document.markdown_content?.slice(0, 180),
+        permissionScope: uploadScope,
+      });
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `upload-${Date.now()}`,
+          role: 'assistant',
+          content: `${payload.document.title} 已解析入库，生成 ${payload.chunks?.length ?? 0} 个知识片段。`,
+        },
+      ]);
+      message.success('知识文档已上传并完成解析');
+      options.onSuccess?.(res.data);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '知识文档上传失败');
+      options.onError?.(error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="knowledge-center">
-      <section className="knowledge-overview">
-        <div className="knowledge-stat-card">
-          <Typography.Text type="secondary">知识空间</Typography.Text>
-          <Typography.Title level={4}>{spaces.length}</Typography.Title>
-          <span>个人、团队、部门、企业分层治理</span>
-        </div>
-        <div className="knowledge-stat-card">
-          <Typography.Text type="secondary">知识条目</Typography.Text>
-          <Typography.Title level={4}>{cards.length}</Typography.Title>
-          <span>Obsidian 式业务知识卡片</span>
-        </div>
-        <div className="knowledge-stat-card">
-          <Typography.Text type="secondary">原始资料</Typography.Text>
-          <Typography.Title level={4}>{documents.length}</Typography.Title>
-          <span>SOP、CAPA、报告、日志作为证据来源</span>
-        </div>
-        <div className="knowledge-stat-card accent">
-          <Typography.Text type="secondary">对象关联</Typography.Text>
-          <Typography.Title level={4}>{linkedObjectCount || 8}</Typography.Title>
-          <span>连接异常、批次、供应商、设备和 CAPA</span>
-        </div>
-      </section>
-
       <section className="knowledge-workbench">
         <aside className="knowledge-left-panel">
           <Card
-            className="knowledge-panel-card"
-            title="知识空间"
-            extra={<Button size="small" icon={<ReloadOutlined />} loading={loading} onClick={load}>刷新</Button>}
+            className="knowledge-panel-card knowledge-directory-card"
+            title={<Space><DatabaseOutlined />知识目录</Space>}
+            extra={
+              <Space size={6}>
+                <Button size="small" icon={<PlusOutlined />} onClick={() => message.info('可在这里新增组织、部门、项目或个人目录层级')}>
+                  新增层级
+                </Button>
+                <Button size="small" icon={<ReloadOutlined />} loading={loading} onClick={load}>刷新</Button>
+              </Space>
+            }
           >
-            <div className="knowledge-source-list">
-              {spaces.map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  className={item.id === selectedSpace?.id ? 'knowledge-source-item active' : 'knowledge-source-item'}
-                  onClick={() => {
-                    setSelectedSpaceId(item.id);
-                    const firstCard = cards.find((card) => card.space_id === item.id);
-                    setSelectedCardId(firstCard?.id);
-                  }}
-                >
-                  <span>
-                    <strong>{item.name}</strong>
-                    <small>{item.description}</small>
-                  </span>
-                  <Tag color={item.review_required ? 'warning' : 'success'}>{item.review_required ? '需审核' : '个人'}</Tag>
-                </button>
-              ))}
+            <div className="knowledge-tree-tools">
+              <Input.Search size="small" placeholder="搜索文档、标签、空间" />
+              <Select
+                size="small"
+                value={uploadScope}
+                onChange={setUploadScope}
+                options={[
+                  { label: '组织导入视图', value: 'enterprise' },
+                  { label: '质量团队视图', value: 'team-quality' },
+                  { label: '部门知识视图', value: 'dept-quality' },
+                  { label: '个人定义视图', value: 'personal' },
+                ]}
+              />
             </div>
-          </Card>
-
-          <Card className="knowledge-panel-card" title="知识条目">
-            <div className="knowledge-document-list">
-              {visibleCards.map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  className={item.id === selectedCard?.id ? 'knowledge-document-item active' : 'knowledge-document-item'}
-                  onClick={() => setSelectedCardId(item.id)}
-                >
-                  <Space wrap size={6}>
-                    <Tag color="processing">{item.space_name ?? item.space_id}</Tag>
-                    <Tag>{item.status}</Tag>
-                  </Space>
-                  <strong>{item.title}</strong>
-                  <small>{item.updated_at}</small>
-                </button>
-              ))}
-              {!visibleCards.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无知识条目" />}
-            </div>
+            <Tree.DirectoryTree
+              className="knowledge-directory-tree"
+              blockNode
+              defaultExpandAll
+              selectedKeys={selectedDirectoryKeys}
+              treeData={directoryTreeData}
+              onSelect={(keys) => {
+                const key = String(keys[0] ?? '');
+                if (key.startsWith('space:')) {
+                  const spaceId = key.slice('space:'.length);
+                  setSelectedSpaceId(spaceId);
+                  setSelectedCardId(cards.find((card) => card.space_id === spaceId)?.id);
+                }
+                if (key.startsWith('card:')) {
+                  const cardId = key.slice('card:'.length);
+                  const card = cards.find((item) => item.id === cardId);
+                  setSelectedCardId(cardId);
+                  if (card?.space_id) {
+                    setSelectedSpaceId(card.space_id);
+                  }
+                }
+              }}
+            />
           </Card>
         </aside>
 
         <main className="knowledge-main-panel">
-          <Card className="knowledge-document-card">
+          <Card className="knowledge-document-card knowledge-tab-card">
             {selectedCard ? (
-              <Space direction="vertical" size={14} style={{ width: '100%' }}>
-                <div className="knowledge-document-head">
-                  <div>
-                    <Typography.Text type="secondary">当前知识条目</Typography.Text>
-                    <Typography.Title level={4}>{selectedCard.title}</Typography.Title>
-                  </div>
-                  <Space wrap>
-                    <Tag color="processing">{selectedCard.space_name ?? selectedCard.space_id}</Tag>
-                    <Tag color={selectedCard.status === 'published' ? 'success' : 'warning'}>{selectedCard.status}</Tag>
-                    <Tag>{selectedCard.updated_at}</Tag>
-                  </Space>
-                </div>
-                <Typography.Paragraph>{selectedCard.scenario}</Typography.Paragraph>
-                <div className="knowledge-guidance-list">
-                  {selectedCard.guidance.map((item) => <span key={item}>{item}</span>)}
-                </div>
-                <Space direction="vertical" size={4}>
-                  <Typography.Text strong>风险提示</Typography.Text>
-                  {selectedCard.risk_notes.map((item) => <Typography.Text type="secondary" key={item}>{item}</Typography.Text>)}
-                </Space>
-                <Space wrap>
-                  {selectedCard.linked_objects.map((obj) => (
-                    <Tag key={`${obj.type}-${obj.id}`} color="blue">{obj.type}: {obj.name}</Tag>
-                  ))}
-                </Space>
-              </Space>
+              <Tabs
+                className="knowledge-main-tabs"
+                items={[
+                  {
+                    key: 'summary',
+                    label: '当前知识条目',
+                    children: (
+                      <Space direction="vertical" size={18} style={{ width: '100%' }}>
+                        <div className="knowledge-document-head">
+                          <div>
+                            <Typography.Text type="secondary">当前知识条目</Typography.Text>
+                            <Typography.Title level={4}>{selectedCard.title}</Typography.Title>
+                          </div>
+                          <Space wrap>
+                            <Tag color="processing">{selectedCard.space_name ?? selectedCard.space_id}</Tag>
+                            <Tag color={selectedCard.status === 'published' ? 'success' : 'warning'}>{selectedCard.status}</Tag>
+                            <Tag>{selectedCard.updated_at}</Tag>
+                          </Space>
+                        </div>
+                        <Typography.Paragraph>{selectedCard.scenario}</Typography.Paragraph>
+                        <div className="knowledge-note-properties">
+                          <div>
+                            <span>tags</span>
+                            <Space wrap>
+                              {selectedCard.linked_objects.slice(0, 4).map((obj) => (
+                                <Tag key={`${obj.type}-${obj.id}`} color="purple">{obj.type}</Tag>
+                              ))}
+                            </Space>
+                          </div>
+                          <div><span>created</span><Typography.Text type="secondary">{selectedCard.updated_at}</Typography.Text></div>
+                          <div><span>owner</span><Typography.Text type="secondary">{selectedCard.owner}</Typography.Text></div>
+                        </div>
+                        <Typography.Title level={5}>处理建议</Typography.Title>
+                        <div className="knowledge-guidance-list">
+                          {selectedCard.guidance.map((item) => <span key={item}>{item}</span>)}
+                        </div>
+                        <Space direction="vertical" size={4}>
+                          <Typography.Text strong>风险提示</Typography.Text>
+                          {selectedCard.risk_notes.map((item) => <Typography.Text type="secondary" key={item}>{item}</Typography.Text>)}
+                        </Space>
+                        <Typography.Title level={5}>关联对象</Typography.Title>
+                        <Space wrap>
+                          {selectedCard.linked_objects.map((obj) => (
+                            <Tag key={`${obj.type}-${obj.id}`} color="blue">{obj.type}: {obj.name}</Tag>
+                          ))}
+                        </Space>
+                      </Space>
+                    ),
+                  },
+                  {
+                    key: 'evidence',
+                    label: '证据来源与对象绑定',
+                    children: (
+                      <div className="knowledge-binding-grid">
+                        <div>
+                          <Typography.Text strong>证据来源</Typography.Text>
+                          <div className="knowledge-chunk-list">
+                            {selectedCard.evidence_refs.map((ref) => (
+                              <Card size="small" key={`${ref.document_id}-${ref.source_ref}`} className="knowledge-chunk-card">
+                                <div className="knowledge-chunk-head">
+                                  <Typography.Text strong>{ref.document_title ?? ref.document_id}</Typography.Text>
+                                  <Tag color="cyan">source</Tag>
+                                </div>
+                                <Typography.Text type="secondary">{ref.source_ref}</Typography.Text>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <Typography.Text strong>AI 推荐绑定 / 数据清洗</Typography.Text>
+                          <div className="knowledge-chunk-list">
+                            {bindingCandidates.map((item) => (
+                              <Card size="small" key={`${item.object_type}-${item.object_id}`} className="knowledge-chunk-card">
+                                <div className="knowledge-chunk-head">
+                                  <Typography.Text strong>{item.object_type}: {item.object_name}</Typography.Text>
+                                  <Tag color={item.confidence >= 0.9 ? 'success' : 'warning'}>{Math.round(item.confidence * 100)}%</Tag>
+                                </div>
+                                <Typography.Text type="secondary">
+                                  命中文本：{item.text} / 匹配方式：{item.match_type} / 别名：{item.alias.join('、')}
+                                </Typography.Text>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'content',
+                    label: '具体内容展示',
+                    children: (
+                      <div className="knowledge-note-content">
+                        <Typography.Title level={4}>{selectedCard.title}</Typography.Title>
+                        <Typography.Paragraph>{selectedCard.scenario}</Typography.Paragraph>
+                        <Typography.Title level={5}>核心内容</Typography.Title>
+                        <ul>
+                          {selectedCard.guidance.map((item) => <li key={item}>{item}</li>)}
+                        </ul>
+                        <Typography.Title level={5}>风险与约束</Typography.Title>
+                        <ul>
+                          {selectedCard.risk_notes.map((item) => <li key={item}>{item}</li>)}
+                        </ul>
+                        <Typography.Title level={5}>引用证据</Typography.Title>
+                        {selectedCard.evidence_refs.map((ref) => (
+                          <Typography.Paragraph key={`${ref.document_id}-${ref.source_ref}`}>
+                            <Typography.Text strong>{ref.document_title ?? ref.document_id}</Typography.Text>
+                            <br />
+                            <Typography.Text type="secondary">{ref.source_ref}</Typography.Text>
+                          </Typography.Paragraph>
+                        ))}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             ) : (
               <Empty description="请选择知识条目" />
-            )}
-          </Card>
-
-          <Card className="knowledge-panel-card" title="证据来源与对象绑定">
-            {selectedCard ? (
-              <div className="knowledge-binding-grid">
-                <div>
-                  <Typography.Text strong>证据来源</Typography.Text>
-                  <div className="knowledge-chunk-list">
-                    {selectedCard.evidence_refs.map((ref) => (
-                      <Card size="small" key={`${ref.document_id}-${ref.source_ref}`} className="knowledge-chunk-card">
-                        <div className="knowledge-chunk-head">
-                          <Typography.Text strong>{ref.document_title ?? ref.document_id}</Typography.Text>
-                          <Tag color="cyan">source</Tag>
-                        </div>
-                        <Typography.Text type="secondary">{ref.source_ref}</Typography.Text>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Typography.Text strong>AI 推荐绑定 / 数据清洗</Typography.Text>
-                  <div className="knowledge-chunk-list">
-                    {bindingCandidates.map((item) => (
-                      <Card size="small" key={`${item.object_type}-${item.object_id}`} className="knowledge-chunk-card">
-                        <div className="knowledge-chunk-head">
-                          <Typography.Text strong>{item.object_type}: {item.object_name}</Typography.Text>
-                          <Tag color={item.confidence >= 0.9 ? 'success' : 'warning'}>{Math.round(item.confidence * 100)}%</Tag>
-                        </div>
-                        <Typography.Text type="secondary">
-                          命中文本：{item.text} / 匹配方式：{item.match_type} / 别名：{item.alias.join('、')}
-                        </Typography.Text>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请选择知识条目查看证据和绑定" />
             )}
           </Card>
         </main>
 
         <aside className="knowledge-rag-panel">
-          <Card className="knowledge-rag-card" title={<Space><RobotOutlined />RAG 检索测试</Space>}>
-            <Space direction="vertical" size={12} style={{ width: '100%' }}>
-              <Alert
-                type="info"
-                showIcon
-                message="知识条目优先，RAG 保留为底层检索"
-                description="用户看到知识卡片，系统内部仍可用全文、TF-IDF 或向量检索补充证据来源。"
-              />
-              <Card size="small" className="knowledge-chunk-card">
-                <Typography.Text strong>OCR / 清洗 / 发布链路</Typography.Text>
-                <div className="knowledge-ocr-steps">
-                  {ocrPipeline.map((step) => (
-                    <span key={step.key}>
-                      <strong>{step.title}</strong>
-                      <small>{step.owner}</small>
-                    </span>
-                  ))}
+          <Card className="knowledge-rag-card knowledge-chat-card" title={<Space><RobotOutlined />知识对话</Space>}>
+            <Space className="knowledge-chat-stack" direction="vertical" size={12}>
+              <Upload.Dragger
+                className="knowledge-upload-dragger"
+                accept=".md,.markdown,.xlsx,.xls,.pdf,.png,.jpg,.jpeg"
+                maxCount={1}
+                showUploadList={false}
+                customRequest={handleKnowledgeUpload}
+                disabled={uploading}
+              >
+                <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+                <p className="ant-upload-text">{uploading ? '正在解析入库...' : '拖拽文档到对话里'}</p>
+                <p className="ant-upload-hint">自动生成 Markdown 与可检索片段</p>
+              </Upload.Dragger>
+
+              {lastUpload && (
+                <div className="knowledge-upload-result">
+                  <Space wrap>
+                    <Tag color={lastUpload.status === 'completed' ? 'success' : 'processing'}>{lastUpload.status}</Tag>
+                    <Tag>{lastUpload.permissionScope}</Tag>
+                    <Tag>{lastUpload.chunkCount} chunks</Tag>
+                  </Space>
+                  <Typography.Text strong>{lastUpload.documentTitle ?? lastUpload.fileName}</Typography.Text>
+                  {lastUpload.markdownPreview && <Typography.Text type="secondary">{lastUpload.markdownPreview}</Typography.Text>}
                 </div>
-              </Card>
+              )}
+
               <Select
                 value={selectedSource?.id}
                 options={sources.map((item) => ({ label: item.name, value: item.id }))}
@@ -958,15 +1136,26 @@ export function KnowledgeCenter() {
                   <Tag key={doc.id}>{doc.title}</Tag>
                 ))}
               </div>
+
+              <div className="knowledge-chat-thread">
+                {chatMessages.map((item) => (
+                  <div key={item.id} className={`knowledge-chat-message ${item.role}`}>
+                    {item.content}
+                  </div>
+                ))}
+              </div>
+
               <Input.TextArea
+                className="knowledge-chat-input"
                 value={query}
                 rows={4}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="输入业务问题，例如：焊点虚焊以前怎么处理？"
+                placeholder="询问当前知识库，例如：这个 SOP 适用于哪些质量异常？"
               />
-              <Button block type="primary" icon={<RobotOutlined />} loading={searching} onClick={runSearch}>
-                检索知识库
+              <Button className="knowledge-chat-send" block type="primary" icon={<RobotOutlined />} loading={searching} onClick={runSearch}>
+                发送并检索
               </Button>
+
               {searchResult ? (
                 <div className="knowledge-result-list">
                   <Typography.Text type="secondary">{searchResult.answer}</Typography.Text>
@@ -982,7 +1171,7 @@ export function KnowledgeCenter() {
                   ))}
                 </div>
               ) : (
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="输入问题后查看引用来源" />
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="发送问题后查看引用来源" />
               )}
             </Space>
           </Card>

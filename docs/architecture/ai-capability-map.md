@@ -15,6 +15,7 @@ The project already contains the first AI entry points:
 - Frontend AI assistant page: `frontend/src/pages/AIAssistant/index.tsx`
 - Frontend API wrappers: `frontend/src/services/api.ts`
 - Optional model settings: `OPENAI_API_KEY`, `OPENAI_MODEL`
+- GLM-compatible backend settings: `GLM_API_KEY`, `GLM_MODEL`, `GLM_BASE_URL`, and backend-only system prompt / system setting configuration
 
 Current implementation is mostly rule-based and mock-oriented. The long-term direction is to let AI safely read, analyze, recommend, prepare, and, with authorization, execute business actions across model-driven apps, workflow, supply chain, quality, maintenance, graph, reports, and rules.
 
@@ -144,18 +145,50 @@ Recommended backend structure:
 ```text
 backend/app/services/ai/
   client.py          # LLM provider adapter
+  providers.py       # OpenAI-compatible, GLM, Qwen, DeepSeek, local/mock
   orchestrator.py    # intent, planning, tool routing
   prompts.py         # system and domain prompts
   tools.py           # business tool registry
   policies.py        # risk levels and confirmation requirements
   schemas.py         # structured request/response models
+  knowledge_ingestion.py # file -> Markdown -> chunks -> embeddings MVP
 ```
+
+### 5.1 LLM Provider And System Settings
+
+The AI layer should treat GLM and OpenAI-style providers as backend-hosted
+model adapters. Frontend clients must not receive provider API keys, raw system
+prompts, or privileged routing configuration.
+
+Recommended GLM configuration:
+
+| Setting | Purpose | Exposure |
+| --- | --- | --- |
+| `GLM_API_KEY` | Backend credential for GLM requests | Backend secret only |
+| `GLM_MODEL` | Default GLM chat model used by the assistant | Backend config, optionally surfaced as a display name |
+| `GLM_BASE_URL` | Provider endpoint for OpenAI-compatible GLM APIs | Backend config only |
+| AI system setting / system prompt | Defines assistant identity, product boundaries, tool-use rules, and safety posture | Backend config only |
+
+System settings belong in backend configuration or an admin-controlled settings
+table, not in browser state. The frontend may select high-level modes such as
+"knowledge Q&A" or "business assistant", but the backend must translate those
+modes into approved system prompts and tool policies.
+
+Provider adapters should support deterministic fallback behavior. If the GLM
+provider is unavailable, the assistant may return rule-based guidance or a
+retrieval-only answer, but it must not expose secret values or provider errors
+to end users.
 
 Existing routers should remain thin:
 
 - `ai_assistant.py` handles chat and analysis endpoints.
 - `ai_builder.py` handles model/page generation endpoints.
 - Business execution should go through existing services and APIs instead of raw SQL inside prompts.
+
+Knowledge-backed AI answers should use the ingestion chain described in
+[Knowledge Base](knowledge-base.md): raw files are normalized to Markdown,
+chunked, embedded, indexed in a pgvector-ready shape, retrieved as RAG evidence,
+and then cited in the final answer.
 
 For the detailed Skill/Tool contract, risk policy, confirmation payload, phased Agent roadmap, and migration path from demo mock skills to real backend skills, see [AI Agent Skill/Tool Contract](ai-agent-skill-contract.md).
 

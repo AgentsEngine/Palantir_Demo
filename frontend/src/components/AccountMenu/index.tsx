@@ -7,7 +7,6 @@ import {
   RobotOutlined,
   SafetyCertificateOutlined,
   SkinOutlined,
-  TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { Avatar, Dropdown, Space, Tag } from 'antd';
@@ -92,16 +91,10 @@ export default function AccountMenu({ user, onNavigate, onLogout }: AccountMenuP
               onClick: () => onNavigate('/account-center?section=palantir-config'),
             },
             {
-              key: 'users',
-              label: '用户管理',
-              icon: <TeamOutlined />,
-              onClick: () => onNavigate('/account-center?section=users'),
-            },
-            {
-              key: 'roles',
-              label: '角色权限',
+              key: 'identity-access',
+              label: '用户与权限',
               icon: <SafetyCertificateOutlined />,
-              onClick: () => onNavigate('/account-center?section=roles'),
+              onClick: () => onNavigate('/account-center?section=identity-access'),
             },
             {
               key: 'audit',

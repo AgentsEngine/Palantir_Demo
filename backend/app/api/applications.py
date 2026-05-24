@@ -61,22 +61,22 @@ DEFAULT_APPLICATIONS = [
     {
         "id": 1, "name": "生产态势", "code": "production-dashboard", "description": "生产效率、OEE、产线告警和班次趋势的业务工作包。",
         "icon": "DashboardOutlined", "default_route": "/dashboard", "sort_order": 10, "status": "published", "is_pinned": True,
-        "menu_routes": ["/dashboard"], "role_names": ["admin", "production_manager"],
+        "menu_routes": ["/dashboard"], "role_names": ["admin", "production_manager", "process_engineer", "viewer"],
     },
     {
         "id": 2, "name": "预测性维护", "code": "maintenance-analysis", "description": "设备健康总览、健康分析、故障预测和工单管理。",
         "icon": "ToolOutlined", "default_route": "/maintenance", "sort_order": 20, "status": "published", "is_pinned": True,
-        "menu_routes": ["/maintenance"], "role_names": ["admin", "production_manager"],
+        "menu_routes": ["/maintenance"], "role_names": ["admin", "production_manager", "maintenance_manager", "maintenance_engineer", "viewer"],
     },
     {
         "id": 3, "name": "质量分析", "code": "quality-control", "description": "质量缺陷、检验批次、料号追踪和过程能力分析。",
         "icon": "SafetyCertificateOutlined", "default_route": "/quality", "sort_order": 30, "status": "published", "is_pinned": False,
-        "menu_routes": ["/quality", "/program/quality-event"], "role_names": ["admin", "quality_inspector"],
+        "menu_routes": ["/quality", "/program/quality-event"], "role_names": ["admin", "quality_inspector", "quality_engineer", "viewer"],
     },
     {
         "id": 4, "name": "供应链风险", "code": "supply-risk", "description": "供应商交付、库存水位、风险预警和替代方案。",
         "icon": "ShopOutlined", "default_route": "/supply-chain", "sort_order": 40, "status": "published", "is_pinned": False,
-        "menu_routes": ["/supply-chain"], "role_names": ["admin", "production_manager"],
+        "menu_routes": ["/supply-chain"], "role_names": ["admin", "production_manager", "supply_chain_manager", "warehouse_operator", "viewer"],
     },
 ]
 

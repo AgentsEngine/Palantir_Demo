@@ -16,6 +16,7 @@ The intended model is:
 
 ```text
 Authentication -> user identity
+Organizations  -> data-scope source
 Roles          -> business responsibility
 Permissions    -> resource/action grants
 Applications   -> workspace visibility
@@ -67,6 +68,8 @@ Core tables:
 | Table | Meaning |
 | --- | --- |
 | `users` | Login identity and admin flag |
+| `org_units` | Company/factory/department/team hierarchy |
+| `user_org_memberships` | User organization memberships and primary position |
 | `roles` | Business or system roles |
 | `user_roles` | Many-to-many user-role assignment |
 | `role_permissions` | Generic resource/action grants |
@@ -94,6 +97,65 @@ all       *                        *
 ```
 
 `resource_key="*"` and `action="*"` are supported wildcards.
+
+## Identity, Role, And Organization
+
+The current design keeps role and organization separate:
+
+```text
+User -> Roles        -> what the user can do
+User -> Organization -> where the user belongs and what data scope they may see
+```
+
+That means a production manager role should not encode a specific factory or
+department. The role grants capabilities such as viewing production dashboards
+or approving work orders. The user's organization membership supplies the
+future data filter, such as "Shanghai Plant A", "Quality Department", or
+"Warehouse Team".
+
+Admin APIs now expose these identity surfaces together:
+
+```text
+GET    /api/v1/admin/users
+POST   /api/v1/admin/users
+PUT    /api/v1/admin/users/{user_id}
+DELETE /api/v1/admin/users/{user_id}
+
+GET    /api/v1/admin/roles
+POST   /api/v1/admin/roles
+PUT    /api/v1/admin/roles/{role_id}/permissions
+DELETE /api/v1/admin/roles/{role_id}
+
+GET    /api/v1/admin/org-units
+POST   /api/v1/admin/org-units
+PUT    /api/v1/admin/org-units/{org_id}
+DELETE /api/v1/admin/org-units/{org_id}
+```
+
+The frontend exposes this as one workbench: **用户与权限**.
+
+Recommended administration flow:
+
+1. Maintain organization hierarchy in **组织管理**.
+2. Maintain permission packages in **角色管理**.
+3. Bind every account to both role and organization in **用户管理**.
+4. Configure application visibility, menu access, form permissions, and workflow
+   assignees by selecting roles from this shared identity system.
+
+Current organization-aware seed data:
+
+| User | Primary organization | Position |
+| --- | --- | --- |
+| `admin` | ManuFoundry 制造集团 | 系统超级管理员 |
+| `pm_li` | 生产运营部 | 生产经理 |
+| `qe_wang` | 质量管理部 | 质量工程师 |
+| `mm_zhou` | 设备维护部 | 设备维护经理 |
+| `me_sun` | 设备维护部 | 维修工程师 |
+| `pe_huang` | 工艺工程部 | 工艺工程师 |
+| `scm_liu` | 供应链管理部 | 供应链经理 |
+| `wh_feng` | 仓储物流组 | 仓储操作员 |
+| `ds_he` | 数据治理组 | 数据专员 |
+| `auditor_gu` | 审计观察组 | 审计观察员 |
 
 ## Permission Decision Helpers
 
@@ -339,4 +401,3 @@ Known current status after this permission update:
 - Focused permission/form tests pass.
 - The full suite currently has unrelated `rules` / `rules_trigger` failures in
   the existing test set and should be addressed separately.
-

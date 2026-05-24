@@ -38,6 +38,8 @@ import {
 import { Button, Input, InputNumber, Modal, Popover, Segmented, Select, Space, Switch, Tabs, Tag, Typography, message } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  adminListOrgUnits,
+  adminListRoles,
   createPlatformForm,
   createPlatformFormField,
   listPlatformFormLayouts,
@@ -68,6 +70,7 @@ import ProfessionalFlowDesigner, {
   createDefaultFlowConfig,
   validateFlowDesignerConfig,
   type FlowDesignerConfig,
+  type FlowDesignerNode,
 } from './ProfessionalFlowDesigner';
 import './style.css';
 
@@ -78,9 +81,8 @@ type ControlWidth = 'quarter' | 'half' | 'threeQuarter' | 'full';
 type FlowPortSide = 'top' | 'right' | 'bottom' | 'left';
 type DropPosition = 'before' | 'after';
 type ControlRuleKey = 'visible' | 'readonly' | 'required';
-type PreviewMode = 'create' | 'edit' | 'detail' | 'list';
+type PreviewMode = 'create' | 'edit' | 'list';
 type PreviewDevice = 'desktop' | 'tablet' | 'mobile';
-type PreviewRole = 'admin' | 'manager' | 'engineer' | 'viewer';
 type PublishCheckLevel = 'error' | 'warning' | 'suggestion';
 
 interface ControlRuleCondition {
@@ -148,6 +150,7 @@ interface LayoutControl {
   fieldKey?: string;
   placeholder?: string;
   helpText?: string;
+  optionSource?: string;
   width: ControlWidth;
   rules: ControlRules;
 }
@@ -233,7 +236,6 @@ const controlWidthOptions = [
 const previewModeOptions = [
   { value: 'create', label: '新建记录' },
   { value: 'edit', label: '编辑记录' },
-  { value: 'detail', label: '只读详情' },
   { value: 'list', label: '列表页' },
 ];
 
@@ -243,11 +245,16 @@ const previewDeviceOptions = [
   { value: 'mobile', label: '手机', icon: <MobileOutlined /> },
 ];
 
-const previewRoleOptions = [
-  { value: 'admin', label: '系统管理员' },
-  { value: 'manager', label: '生产经理' },
-  { value: 'engineer', label: '维修工程师' },
-  { value: 'viewer', label: '普通查看者' },
+const controlTypeOptions = [
+  { value: 'text', label: '文本输入' },
+  { value: 'textarea', label: '多行文本' },
+  { value: 'number', label: '数值输入' },
+  { value: 'select', label: '下拉选择' },
+  { value: 'relation', label: '对象/人员选择' },
+  { value: 'datetime', label: '日期时间' },
+  { value: 'upload', label: '附件上传' },
+  { value: 'switch', label: '开关切换' },
+  { value: 'readonly-text', label: '只读展示' },
 ];
 
 const ruleLabels: Record<ControlRuleKey, string> = {
@@ -506,26 +513,72 @@ const recommendedRules = [
   '超过处理时限时自动标记为逾期并提醒责任人',
 ];
 
-const rolePreviewNotes: Record<PreviewRole, string> = {
-  admin: '可查看、编辑、发布和回滚全部配置',
-  manager: '可查看关键字段、调整责任人并审批关闭',
-  engineer: '可编辑处理过程、附件证据和处理结论',
-  viewer: '仅可查看公开字段，敏感处理信息只读',
-};
+function getFlowNodeAssigneeLabel(node?: FlowDesignerNode) {
+  if (!node) return '未选择流程节点';
+  if (node.type === 'startEvent') return '发起人';
+  if (node.type === 'endEvent') return '流程归档';
+  if (node.assigneeSource === 'field') return `${node.assigneeValue || '未配置'}字段`;
+  if (node.assigneeSource === 'departmentOwner') return '部门负责人';
+  if (node.assigneeSource === 'initiatorManager') return '发起人上级';
+  return node.assigneeValue || '未配置处理人';
+}
 
-function fieldInput(field: DesignerField, placeholderOverride?: string, disabled = false) {
+function getPreviewNodeNote(node?: FlowDesignerNode) {
+  if (!node) return '请选择流程节点，预览会按该节点的处理人和字段权限展示运行效果。';
+  const permissions = Object.values(node.fieldPermissions || {});
+  const editableCount = permissions.filter((permission) => permission.editable).length;
+  const requiredCount = permissions.filter((permission) => permission.required).length;
+  return `当前节点：${node.label}；处理人：${getFlowNodeAssigneeLabel(node)}；可编辑 ${editableCount} 个字段，必填 ${requiredCount} 个字段。`;
+}
+
+function optionSourceToOptions(source?: string, fallback?: string) {
+  const raw = source || fallback || '';
+  const values = raw
+    .split(/[、,/，|]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const normalized = values.length ? values : (fallback ? [fallback] : ['待配置选项']);
+  return normalized.map((item) => ({ value: item, label: item }));
+}
+
+function inferFieldControlType(field?: DesignerField) {
+  if (!field) return 'text';
+  if (field.type.includes('下拉')) return 'select';
+  if (field.type.includes('人员') || field.type.includes('关联')) return 'relation';
+  if (field.type.includes('日期')) return 'datetime';
+  if (field.type.includes('附件')) return 'upload';
+  if (field.type.includes('多行')) return 'textarea';
+  if (field.type.includes('数字') || field.type.includes('数值')) return 'number';
+  return 'text';
+}
+
+function isDataSourceControlType(controlType?: string) {
+  return controlType === 'select' || controlType === 'relation';
+}
+
+function fieldInput(field: DesignerField, placeholderOverride?: string, disabled = false, optionSourceOverride?: string, controlTypeOverride?: string) {
   const placeholder = placeholderOverride || field.placeholder;
-  if (field.type.includes('下拉') || field.type.includes('人员') || field.type.includes('关联')) {
-    return <Select disabled={disabled} placeholder={placeholder} options={[{ value: 'demo', label: placeholder }]} />;
+  const controlType = controlTypeOverride && controlTypeOverride !== 'field' ? controlTypeOverride : inferFieldControlType(field);
+  if (controlType === 'select' || controlType === 'relation') {
+    return <Select disabled={disabled} placeholder={placeholder} options={optionSourceToOptions(optionSourceOverride || field.optionSource, placeholder)} />;
   }
-  if (field.type.includes('日期')) {
+  if (controlType === 'datetime') {
     return <Input disabled={disabled} placeholder={placeholder} prefix={<CalendarOutlined />} />;
   }
-  if (field.type.includes('附件')) {
+  if (controlType === 'upload') {
     return <Button disabled={disabled} icon={<PaperClipOutlined />}>{placeholder || '选择文件'}</Button>;
   }
-  if (field.type.includes('多行')) {
+  if (controlType === 'textarea') {
     return <Input.TextArea disabled={disabled} placeholder={placeholder} autoSize={{ minRows: 2, maxRows: 4 }} />;
+  }
+  if (controlType === 'number') {
+    return <Input disabled={disabled} placeholder={placeholder} suffix="#" />;
+  }
+  if (controlType === 'switch') {
+    return <Segmented disabled={disabled} options={['否', '是']} value="否" />;
+  }
+  if (controlType === 'readonly-text') {
+    return <Input disabled value={placeholder || field.name} />;
   }
   return <Input disabled={disabled} placeholder={placeholder} />;
 }
@@ -626,11 +679,12 @@ function makeFieldControl(field: DesignerField): LayoutControl {
   return {
     id: `field-${field.key}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     source: 'field',
-    controlType: 'field',
+    controlType: inferFieldControlType(field),
     name: field.name,
     fieldKey: field.key,
     placeholder: field.placeholder,
     helpText: '',
+    optionSource: field.optionSource,
     width: field.type.includes('多行') ? 'full' : 'half',
     rules: makeControlRules(Boolean(field.required)),
   };
@@ -645,6 +699,7 @@ function makeComponentControl(component: ComponentDefinition): LayoutControl {
     desc: component.desc,
     placeholder: component.desc,
     helpText: '',
+    optionSource: ['select', 'relation'].includes(component.controlType) ? component.desc : undefined,
     width: component.defaultWidth || 'half',
     rules: makeControlRules(),
   };
@@ -837,7 +892,7 @@ export default function FormSettingsPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('create');
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
-  const [previewRole, setPreviewRole] = useState<PreviewRole>('admin');
+  const [previewFlowNodeId, setPreviewFlowNodeId] = useState('');
   const [publishCheckOpen, setPublishCheckOpen] = useState(false);
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
   const [draggedControlId, setDraggedControlId] = useState('');
@@ -849,6 +904,25 @@ export default function FormSettingsPage() {
   const [platformForm, setPlatformForm] = useState<PlatformForm | null>(null);
   const [workflowMeta, setWorkflowMeta] = useState<WorkflowDesignerMeta>({});
   const [isPersistingFlow, setPersistingFlow] = useState(false);
+  const [identityRoles, setIdentityRoles] = useState<string[]>([]);
+  const [identityOrgUnits, setIdentityOrgUnits] = useState<string[]>([]);
+  const permissionRoles = identityRoles.length ? identityRoles : baseConfig.roles;
+  const permissionOrgUnits = identityOrgUnits.length ? identityOrgUnits : ['本部门', '所属工厂', '个人创建'];
+  const previewFlowNodes = useMemo(
+    () => professionalFlowConfig.nodes.filter((node) => node.executable || node.type === 'startEvent' || node.type === 'endEvent'),
+    [professionalFlowConfig.nodes],
+  );
+  const selectedPreviewFlowNode = useMemo(
+    () => previewFlowNodes.find((node) => node.id === previewFlowNodeId) || previewFlowNodes[0],
+    [previewFlowNodeId, previewFlowNodes],
+  );
+  const previewFlowNodeOptions = useMemo(
+    () => previewFlowNodes.map((node) => ({
+      value: node.id,
+      label: `${node.label} · ${getFlowNodeAssigneeLabel(node)}`,
+    })),
+    [previewFlowNodes],
+  );
   const [flowNodes, setFlowNodes] = useState<FlowNode[]>(() => makeFlowNodes(baseConfig.flowSteps));
   const [flowConnections, setFlowConnections] = useState<FlowConnection[]>(() => makeFlowConnections(makeFlowNodes(baseConfig.flowSteps)));
   const [pendingFlowPort, setPendingFlowPort] = useState<{ nodeId: string; side: FlowPortSide } | null>(null);
@@ -862,6 +936,18 @@ export default function FormSettingsPage() {
     scaleX: number;
     scaleY: number;
   } | null>(null);
+
+  useEffect(() => {
+    Promise.all([adminListRoles(), adminListOrgUnits()])
+      .then(([roleRes, orgRes]) => {
+        setIdentityRoles((roleRes.data?.data || []).map((role: any) => role.label || role.name).filter(Boolean));
+        setIdentityOrgUnits((orgRes.data?.data || []).map((org: any) => org.name).filter(Boolean));
+      })
+      .catch(() => {
+        setIdentityRoles([]);
+        setIdentityOrgUnits([]);
+      });
+  }, []);
 
   useEffect(() => {
     const nextControls = baseConfig.fields.map(makeFieldControl);
@@ -880,6 +966,7 @@ export default function FormSettingsPage() {
     setPreviewOpen(false);
     setPublishCheckOpen(false);
     setVersionPanelOpen(false);
+    setPreviewFlowNodeId('');
     setDraggedControlId('');
     setDropHint(null);
     setCanvasDragActive(false);
@@ -893,6 +980,16 @@ export default function FormSettingsPage() {
     setFlowConnections(makeFlowConnections(nextFlowNodes));
     setPendingFlowPort(null);
   }, [baseConfig.id, baseConfig.version, baseConfig.fields, baseConfig.flowSteps]);
+
+  useEffect(() => {
+    if (!previewFlowNodeOptions.length) {
+      if (previewFlowNodeId) setPreviewFlowNodeId('');
+      return;
+    }
+    if (!previewFlowNodeOptions.some((item) => item.value === previewFlowNodeId)) {
+      setPreviewFlowNodeId(previewFlowNodeOptions[0].value);
+    }
+  }, [previewFlowNodeId, previewFlowNodeOptions]);
 
   useEffect(() => {
     if (selectedControlId) {
@@ -976,6 +1073,14 @@ export default function FormSettingsPage() {
       return baseConfig.fields.find((field) => field.key === targetKey);
     },
     [activeTab, baseConfig.fields, baseConfig.filters, selectedAssetKey, selectedControl],
+  );
+  const selectedEffectiveControlType = selectedControl
+    ? selectedControl.controlType === 'field'
+      ? inferFieldControlType(selectedField)
+      : selectedControl.controlType
+    : '';
+  const selectedControlUsesDataSource = Boolean(
+    selectedControl && isDataSourceControlType(selectedEffectiveControlType),
   );
   const normalizedLibrarySearch = librarySearch.trim().toLowerCase();
   const matchesLibrarySearch = (text: string) => !normalizedLibrarySearch || text.toLowerCase().includes(normalizedLibrarySearch);
@@ -1758,7 +1863,7 @@ export default function FormSettingsPage() {
       return <Input disabled={disabled} placeholder={placeholder} suffix="#" />;
     }
     if (['select', 'relation'].includes(control.controlType)) {
-      return <Select disabled={disabled} placeholder={placeholder} options={[{ value: 'demo', label: placeholder }]} />;
+      return <Select disabled={disabled} placeholder={placeholder} options={optionSourceToOptions(control.optionSource, placeholder)} />;
     }
     if (control.controlType === 'datetime') {
       return <Input disabled={disabled} placeholder={placeholder} prefix={<CalendarOutlined />} />;
@@ -1793,7 +1898,7 @@ export default function FormSettingsPage() {
           {renderControlActions(control)}
           <label>
             {renderControlLabel(control)}
-            {fieldInput(field, control.placeholder, control.rules.readonly.enabled)}
+            {fieldInput(field, control.placeholder, control.rules.readonly.enabled, control.optionSource, control.controlType)}
             {control.helpText && <small className="designer-control-help">{control.helpText}</small>}
           </label>
         </div>
@@ -1934,7 +2039,15 @@ export default function FormSettingsPage() {
     : null;
   const activeRuleLabel = ruleModal ? ruleLabels[ruleModal.ruleKey] : '';
   const conditionFieldOptions = baseConfig.fields.map((field) => ({ value: field.key, label: field.name }));
-  const previewControls = layoutControls.filter((control) => control.rules.visible.enabled);
+  const getPreviewFieldPermission = (fieldKey?: string) => (
+    fieldKey ? selectedPreviewFlowNode?.fieldPermissions?.[fieldKey] : undefined
+  );
+  const previewControls = layoutControls.filter((control) => {
+    if (!control.rules.visible.enabled) return false;
+    if (control.source !== 'field') return true;
+    const permission = getPreviewFieldPermission(control.fieldKey);
+    return permission?.visible !== false;
+  });
   const renderPreviewContent = () => {
     if (previewMode === 'list') {
       const columns = baseConfig.fields.filter((field) => field.listVisible).slice(0, previewDevice === 'mobile' ? 3 : 6);
@@ -1955,12 +2068,22 @@ export default function FormSettingsPage() {
       <div className="designer-preview-form">
         {previewControls.map((control) => {
           const field = baseConfig.fields.find((item) => item.key === control.fieldKey);
+          const permission = getPreviewFieldPermission(control.fieldKey);
+          const readonlyByNode = permission ? !permission.editable : false;
+          const requiredByNode = permission?.required ?? false;
+          const required = control.rules.required.enabled || requiredByNode;
+          const readonly = control.rules.readonly.enabled || readonlyByNode;
           return (
             <div className={`designer-preview-control ${controlWidthClass(previewDevice === 'mobile' ? 'full' : control.width)}`} key={control.id}>
-              <span className={control.rules.required.enabled ? 'designer-required-label' : undefined}>{control.name}</span>
+              <span className={required ? 'designer-required-label' : undefined}>{control.name}</span>
               {control.source === 'field' && field
-                ? fieldInput(field, control.placeholder, previewMode === 'detail' || control.rules.readonly.enabled || previewRole === 'viewer')
-                : renderComponentInput({ ...control, rules: { ...control.rules, readonly: { ...control.rules.readonly, enabled: previewMode === 'detail' || previewRole === 'viewer' } } })}
+                ? fieldInput(field, control.placeholder, readonly, control.optionSource, control.controlType)
+                : renderComponentInput({ ...control, rules: { ...control.rules, readonly: { ...control.rules.readonly, enabled: readonly } } })}
+              {field && permission && (
+                <small className="designer-preview-node-permission">
+                  {permission.editable ? '当前节点可编辑' : '当前节点只读'}{permission.required ? ' / 必填' : ''}
+                </small>
+              )}
               {control.helpText && <small>{control.helpText}</small>}
             </div>
           );
@@ -2459,7 +2582,7 @@ export default function FormSettingsPage() {
                 type: field.type,
                 required: field.required,
               }))}
-              roles={baseConfig.roles}
+              roles={permissionRoles}
               onChange={(nextConfig) => {
                 setProfessionalFlowConfig(nextConfig);
                 markUnsaved();
@@ -2479,7 +2602,7 @@ export default function FormSettingsPage() {
               <div className="permission-workbench">
                 <aside className="permission-role-rail">
                   <div className="permission-section-title">角色</div>
-                  {baseConfig.roles.map((role, index) => (
+                  {permissionRoles.map((role, index) => (
                     <button className={`permission-role-card ${index === 0 ? 'permission-role-active' : ''}`} key={role} type="button">
                       <span className="permission-role-icon"><UserSwitchOutlined /></span>
                       <span>
@@ -2515,8 +2638,8 @@ export default function FormSettingsPage() {
                   <section className="permission-card permission-scope-card">
                     <div className="permission-section-title">数据范围</div>
                     <div className="permission-scope-grid">
-                      <div><span>范围模式</span><strong>本部门 + 个人创建</strong></div>
-                      <div><span>数据条件</span><strong>所属设备组 / 处理人</strong></div>
+                      <div><span>范围模式</span><strong>主组织 + 个人创建</strong></div>
+                      <div><span>组织来源</span><strong>{permissionOrgUnits.slice(0, 3).join(' / ')}</strong></div>
                       <div><span>敏感数据</span><strong>脱敏显示</strong></div>
                     </div>
                   </section>
@@ -2582,14 +2705,58 @@ export default function FormSettingsPage() {
                               onChange={(event) => updateSelectedControl({ name: event.target.value })}
                             />
                           </label>
-                          <label className="designer-prop-locked"><span>控件类型</span><Input value={selectedControl.controlType} disabled /></label>
+                          <label>
+                            <span>控件类型</span>
+                            <Select
+                              value={selectedEffectiveControlType}
+                              options={controlTypeOptions}
+                              onChange={(controlType) => {
+                                const nextWidth = controlType === 'textarea' || controlType === 'upload' ? 'full' : selectedControl.width;
+                                updateSelectedControl({ controlType, width: nextWidth as ControlWidth });
+                              }}
+                            />
+                          </label>
                           <label className="designer-prop-locked">
                             <span>字段来源</span>
                             <Input value={selectedField ? selectedField.name : '未绑定字段'} disabled />
                           </label>
-                        </section>
+                      </section>
+                      {selectedControlUsesDataSource && (
                         <section className="designer-prop-section">
-                          <strong className="designer-prop-section-title">布局</strong>
+                          <strong className="designer-prop-section-title">数据源与选项</strong>
+                          <label>
+                            <span>来源类型</span>
+                            <Input
+                              value={
+                                selectedEffectiveControlType === 'relation' || selectedField?.type.includes('关联')
+                                  ? '关联对象'
+                                  : selectedField?.type.includes('人员')
+                                    ? '组织人员'
+                                    : '静态枚举'
+                              }
+                              readOnly
+                            />
+                          </label>
+                          <label>
+                            <span>选项来源</span>
+                            <Input
+                              allowClear
+                              placeholder="例如：系统监测、人工上报、外部接口"
+                              value={selectedControl.optionSource || selectedField?.optionSource || ''}
+                              onChange={(event) => updateSelectedControl({ optionSource: event.target.value })}
+                            />
+                          </label>
+                          <label>
+                            <span>选项预览</span>
+                            <Select
+                              value={optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)[0]?.value}
+                              options={optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)}
+                            />
+                          </label>
+                        </section>
+                      )}
+                      <section className="designer-prop-section">
+                        <strong className="designer-prop-section-title">布局</strong>
                           <label className="designer-prop-row-wide">
                             <span>控件宽度</span>
                             <div className="designer-width-picker">
@@ -2611,18 +2778,7 @@ export default function FormSettingsPage() {
                           <label><span>显示</span>{controlRuleToggle('visible')}</label>
                           <label><span>只读</span>{controlRuleToggle('readonly')}</label>
                           <label><span>必输</span>{controlRuleToggle('required')}</label>
-                          <div className="designer-rule-summary-list">
-                            {(['visible', 'readonly', 'required'] as ControlRuleKey[]).map((ruleKey) => {
-                              const rule = selectedControl.rules[ruleKey];
-                              const condition = rule.conditions;
-                              return (
-                                <span key={ruleKey}>
-                                  {ruleLabels[ruleKey]}：{rule.enabled ? (condition?.sourceField ? `当 ${condition.sourceField} ${condition.operator || 'equals'} ${condition.value || '指定值'} 时生效` : '始终生效') : '关闭'}
-                                </span>
-                              );
-                            })}
-                            {hiddenRequiredControls.length > 0 && <Tag color="red">存在隐藏且必填冲突</Tag>}
-                          </div>
+                          {hiddenRequiredControls.length > 0 && <Tag color="red">存在隐藏且必填冲突</Tag>}
                         </section>
                         <section className="designer-prop-section">
                           <strong className="designer-prop-section-title">提示与联动</strong>
@@ -2698,14 +2854,20 @@ export default function FormSettingsPage() {
         <div className="designer-preview-toolbar">
           <Segmented value={previewMode} onChange={(value) => setPreviewMode(value as PreviewMode)} options={previewModeOptions} />
           <Segmented value={previewDevice} onChange={(value) => setPreviewDevice(value as PreviewDevice)} options={previewDeviceOptions.map((item) => ({ value: item.value, label: <span>{item.icon}{item.label}</span> }))} />
-          <Select value={previewRole} onChange={(value) => setPreviewRole(value as PreviewRole)} options={previewRoleOptions} />
+          <Select
+            className="designer-preview-node-select"
+            value={selectedPreviewFlowNode?.id}
+            onChange={setPreviewFlowNodeId}
+            options={previewFlowNodeOptions}
+            placeholder="选择流程节点"
+          />
         </div>
-        <div className="designer-role-note">{rolePreviewNotes[previewRole]}</div>
+        <div className="designer-role-note">{getPreviewNodeNote(selectedPreviewFlowNode)}</div>
         <div className={`designer-preview-shell designer-preview-${previewDevice}`}>
           <div className="designer-preview-surface">
             <div className="designer-preview-head">
               <strong>{baseConfig.createTitle}</strong>
-              <Tag color={previewMode === 'detail' ? 'default' : 'blue'}>{previewModeOptions.find((item) => item.value === previewMode)?.label}</Tag>
+              <Tag color="blue">{previewModeOptions.find((item) => item.value === previewMode)?.label}</Tag>
             </div>
             {renderPreviewContent()}
           </div>

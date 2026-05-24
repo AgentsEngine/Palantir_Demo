@@ -34,7 +34,7 @@ const commandSlides = [
     core: 'Low-code',
     orbit: ['App', 'Form', 'Flow', 'BI'],
     features: [
-      { label: '应用装配', desc: '菜单、页面、权限一体编排' },
+      { label: '菜单管理', desc: '菜单、页面、权限一体编排' },
       { label: '表单设计', desc: '字段模型与业务画布分离' },
       { label: '看板编排', desc: '指标、图表和动作联动' },
     ],

@@ -26,6 +26,24 @@ The intended chain is:
   -> 质量异常等工作台自动调用
 ```
 
+For retrieval-backed AI, the technical ingestion chain is:
+
+```text
+raw file
+  -> Markdown normalization
+  -> chunking with source metadata
+  -> embedding through backend provider adapter
+  -> pgvector-ready vector rows
+  -> RAG retrieval
+  -> cited answer, draft, or workbench evidence
+```
+
+The raw file remains the evidence source of record. Markdown is the normalized,
+reviewable intermediate representation used for chunking, evidence previews,
+and human correction. Embeddings are derived retrieval artifacts and can be
+regenerated when the embedding model, chunking strategy, or source document
+version changes.
+
 The UI should not expose "chunks" as the main user-facing concept. Chunking can
 remain an internal retrieval implementation, but business users should see:
 
@@ -83,8 +101,37 @@ The MVP keeps data in code-level demo arrays, but the target persistent model is
 Internal retrieval can still use chunks or embeddings:
 
 ```text
-source document -> internal chunk/index/embedding -> retrieval candidate
+source document -> Markdown -> internal chunk/index/embedding -> retrieval candidate
 ```
+
+The current implementation is pgvector-ready but demo-backed:
+
+```text
+original file
+  -> Markdown conversion
+  -> chunk records with source location and permission scope
+  -> deterministic demo embedding vector
+  -> vector-shaped search result
+```
+
+When PostgreSQL + pgvector is enabled, the in-memory chunk and embedding store
+should be replaced by persistent `knowledge_documents`, `knowledge_chunks`, and
+`knowledge_embeddings` tables without changing the public API shape.
+
+Recommended vector-row shape:
+
+| Field | Purpose |
+| --- | --- |
+| `chunk_id` | Stable chunk identifier, usually derived from document version and chunk hash |
+| `document_id` / `document_version` | Link back to the original uploaded or synchronized source |
+| `markdown_path` | Pointer to the normalized Markdown artifact or section |
+| `source_locator` | Page, sheet, heading, paragraph, or OCR region used for citation |
+| `content` | Chunk text used for retrieval and answer grounding |
+| `embedding_model` | Model used to generate the vector |
+| `embedding` | pgvector-compatible dense vector |
+| `metadata` | JSON metadata such as source type, language, object links, review state, permissions |
+| `permission_scope` | Space/team/department/enterprise visibility filter |
+| `content_hash` | Idempotency and re-ingestion comparison |
 
 But the user-facing artifact should be:
 
@@ -185,6 +232,40 @@ reviewed, especially for:
 - dates;
 - handwritten fields.
 
+## Markdown, Embedding, And RAG Flow
+
+The ingestion pipeline should treat every source format as a candidate for a
+common Markdown representation:
+
+| Source type | Markdown normalization notes |
+| --- | --- |
+| PDF / Word | Preserve headings, paragraphs, tables, page references, and document title |
+| Spreadsheet | Convert relevant sheets and ranges into Markdown tables with sheet/range metadata |
+| Image / scanned PDF | Use OCR text plus layout hints and confidence markers |
+| Plain text / copied notes | Preserve author, timestamp, source space, and explicit object links |
+
+After Markdown normalization:
+
+1. Chunk by semantic section first, then by token/length limits.
+2. Attach source metadata to every chunk before embedding.
+3. Generate embeddings only through the backend provider adapter.
+4. Store vectors in a pgvector-ready schema with permission and review metadata.
+5. Retrieve by vector similarity plus filters for space, permission, object type,
+   review state, and source category.
+6. Return evidence references to the AI assistant and UI, not just answer text.
+
+This keeps the user-facing path simple:
+
+```text
+uploaded file -> reviewed Markdown/evidence -> answer with citations
+```
+
+And keeps the backend path ready for production RAG:
+
+```text
+document row -> chunk rows -> embedding rows -> pgvector query -> rerank -> cited context
+```
+
 ## Current MVP Implementation
 
 Backend endpoints under `/api/v1/knowledge`:
@@ -202,6 +283,20 @@ Backend endpoints under `/api/v1/knowledge`:
 | `GET` | `/ocr-pipeline` | Return the OCR and publishing pipeline |
 | `GET` | `/related` | Legacy evidence lookup |
 | `POST` | `/search` | Local TF-IDF retrieval for RAG-shaped search |
+
+Target ingestion endpoints or service operations should align with the Agent
+tool contract:
+
+| Operation | Purpose |
+| --- | --- |
+| `knowledge.ingest_document` | Register the uploaded or synchronized raw file and source metadata |
+| `knowledge.convert_to_markdown` | Create the normalized Markdown representation |
+| `knowledge.chunk_markdown` | Produce stable chunks with source locators and permission metadata |
+| `knowledge.embed_chunks` | Generate backend-hosted embeddings and store pgvector-ready rows |
+| `knowledge.search` | Retrieve cards and chunks as RAG evidence for assistants and workbenches |
+
+The MVP may expose these as internal service steps before they become public
+HTTP endpoints.
 
 Frontend surfaces:
 

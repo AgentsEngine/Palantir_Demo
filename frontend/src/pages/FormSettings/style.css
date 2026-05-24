@@ -2359,6 +2359,10 @@
   gap: 4px;
 }
 
+.designer-preview-node-select {
+  min-width: 220px;
+}
+
 .designer-role-note {
   margin-bottom: 12px;
   padding: 8px 10px;
@@ -2430,6 +2434,10 @@
 .designer-preview-control small {
   color: #667085;
   font-size: 11px;
+}
+
+.designer-preview-node-permission {
+  color: #78909c !important;
 }
 
 .designer-preview-table {

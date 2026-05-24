@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ApiOutlined,
@@ -11,7 +11,6 @@ import {
   RobotOutlined,
   SafetyCertificateOutlined,
   SkinOutlined,
-  TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import {
@@ -34,10 +33,10 @@ import {
 } from 'antd';
 import { useAuthStore } from '../../stores/authStore';
 import AppMenuManagement from '../SystemAdmin/AppMenuManagement';
-import RoleManagement from '../SystemAdmin/RoleManagement';
+import IdentityAccessManagement from '../SystemAdmin/IdentityAccessManagement';
 import SemanticAssetCenter, { KnowledgeCenter } from '../SystemAdmin/SemanticAssetCenter';
-import UserManagement from '../SystemAdmin/UserManagement';
 import { PalantirConfigBlueprint } from '../SystemAdmin';
+import { getAISettings, testSavedAISettings, updateAISettings } from '../../services/api';
 
 interface CurrentApplication {
   name?: string;
@@ -48,11 +47,14 @@ interface AccountCenterProps {
 }
 
 const { Title, Text } = Typography;
+const AI_SETTINGS_STORAGE_KEY = 'mf_ai_assistant_settings';
 
 export default function AccountCenter({ currentApplication }: AccountCenterProps) {
   const user = useAuthStore((s) => s.user);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = searchParams.get('section') || 'account';
+  const identityDefaultTab = activeSection === 'roles' ? 'roles' : activeSection === 'orgs' ? 'orgs' : 'users';
+  const normalizedSection = ['users', 'roles', 'orgs'].includes(activeSection) ? 'identity-access' : activeSection;
   const roles = user?.roles?.length ? user.roles.map((role: any) => role.label || role.name).join(' / ') : '-';
   const roleLabel = user?.is_admin ? '系统管理员' : user?.roles?.[0]?.label || '业务用户';
 
@@ -107,16 +109,10 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
         children: <PalantirConfigBlueprint />,
       },
       {
-        key: 'users',
-        label: '用户管理',
-        icon: <TeamOutlined />,
-        children: <UserManagement />,
-      },
-      {
-        key: 'roles',
-        label: '角色权限',
+        key: 'identity-access',
+        label: '用户与权限',
         icon: <SafetyCertificateOutlined />,
-        children: <RoleManagement />,
+        children: <IdentityAccessManagement key={identityDefaultTab} defaultActiveKey={identityDefaultTab} />,
       },
       {
         key: 'audit',
@@ -125,7 +121,7 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
         children: <AuditPanel />,
       },
     ];
-  }, [currentApplication, roleLabel, roles, user]);
+  }, [currentApplication, identityDefaultTab, roleLabel, roles, user]);
 
   return (
     <div className="account-center-page">
@@ -142,7 +138,7 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
 
       <Tabs
         className="account-center-tabs"
-        activeKey={activeSection}
+        activeKey={normalizedSection}
         items={items}
         onChange={(key) => setSearchParams({ section: key })}
       />
@@ -378,13 +374,13 @@ function AIPlatformPanelV2() {
   const [form] = Form.useForm();
   const savedSettings = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem('mf_ai_assistant_settings') || '{}');
+      return JSON.parse(localStorage.getItem(AI_SETTINGS_STORAGE_KEY) || '{}');
     } catch {
       return {};
     }
   }, []);
 
-  const defaultSettings = {
+  const defaultSettings = useMemo(() => ({
     aiEnabled: true,
     provider: 'openai-compatible',
     baseUrl: 'https://api.openai.com/v1',
@@ -409,6 +405,16 @@ function AIPlatformPanelV2() {
     highRiskConfirm: true,
     sensitiveMasking: true,
     forbiddenActions: ['auto_order', 'delete_data', 'change_permission'],
+    guestAccess: 'disabled',
+    rolePolicies: [
+      { role: 'admin', enabled: true, capabilities: ['qa', 'rag', 'business_query', 'report', 'draft', 'save_draft', 'workflow', 'config'], domains: ['production', 'quality', 'maintenance', 'supply-chain', 'workflow', 'low-code'], agentMode: 'save_after_confirm' },
+      { role: 'production_manager', enabled: true, capabilities: ['qa', 'rag', 'business_query', 'report', 'draft', 'save_draft', 'workflow'], domains: ['production', 'maintenance', 'workflow'], agentMode: 'save_after_confirm' },
+      { role: 'quality_engineer', enabled: true, capabilities: ['qa', 'rag', 'business_query', 'report', 'draft', 'save_draft'], domains: ['quality'], agentMode: 'save_after_confirm' },
+      { role: 'maintenance_manager', enabled: true, capabilities: ['qa', 'rag', 'business_query', 'report', 'draft', 'save_draft'], domains: ['maintenance'], agentMode: 'save_after_confirm' },
+      { role: 'supply_chain_manager', enabled: true, capabilities: ['qa', 'rag', 'business_query', 'report', 'draft', 'save_draft'], domains: ['supply-chain'], agentMode: 'save_after_confirm' },
+      { role: 'viewer', enabled: true, capabilities: ['qa', 'rag', 'report'], domains: ['production', 'quality', 'maintenance', 'supply-chain'], agentMode: 'readonly' },
+    ],
+    riskPolicy: { low: 'allow', medium: 'confirm', high: 'confirm_and_audit', critical: 'blocked' },
     ragEnabled: false,
     knowledgeScopes: ['project_docs', 'sop'],
     topK: 5,
@@ -418,11 +424,98 @@ function AIPlatformPanelV2() {
     retentionDays: 90,
     dailyLimit: 1000,
     userDailyLimit: 100,
+  }), []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadBackendSettings = async () => {
+      try {
+        const response = await getAISettings();
+        const backendSettings = response.data?.settings || response.data?.data?.settings || response.data?.data;
+        if (!cancelled && backendSettings && typeof backendSettings === 'object' && !Array.isArray(backendSettings)) {
+          const mergedSettings = { ...defaultSettings, ...savedSettings, ...backendSettings };
+          form.setFieldsValue(mergedSettings);
+          localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(mergedSettings));
+        }
+      } catch {
+        if (!cancelled) {
+          form.setFieldsValue({ ...defaultSettings, ...savedSettings });
+        }
+      }
+    };
+
+    loadBackendSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [defaultSettings, form, savedSettings]);
+
+  const saveLocalSettings = (values: Record<string, unknown>) => {
+    localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(values));
   };
 
+  const aiRoleOptions = [
+    { label: 'Admin', value: 'admin' },
+    { label: 'Production manager', value: 'production_manager' },
+    { label: 'Quality engineer', value: 'quality_engineer' },
+    { label: 'Maintenance manager', value: 'maintenance_manager' },
+    { label: 'Supply chain manager', value: 'supply_chain_manager' },
+    { label: 'Operator', value: 'operator' },
+    { label: 'Viewer', value: 'viewer' },
+  ];
+
+  const aiCapabilityOptions = [
+    { label: 'Page Q&A', value: 'qa' },
+    { label: 'Knowledge RAG', value: 'rag' },
+    { label: 'Business query', value: 'business_query' },
+    { label: 'Report summary', value: 'report' },
+    { label: 'Generate draft', value: 'draft' },
+    { label: 'Save draft after confirm', value: 'save_draft' },
+    { label: 'Start workflow', value: 'workflow' },
+    { label: 'Config assistant', value: 'config' },
+  ];
+
+  const aiDomainOptions = [
+    { label: 'Production', value: 'production' },
+    { label: 'Quality', value: 'quality' },
+    { label: 'Maintenance', value: 'maintenance' },
+    { label: 'Supply chain', value: 'supply-chain' },
+    { label: 'Workflow', value: 'workflow' },
+    { label: 'Low-code', value: 'low-code' },
+  ];
+
   const handleSave = () => {
-    localStorage.setItem('mf_ai_assistant_settings', JSON.stringify(form.getFieldsValue()));
+    saveLocalSettings(form.getFieldsValue());
     message.success('AI 设置已保存到本地 Demo 配置');
+  };
+
+  const handleSaveToBackend = async () => {
+    const values = form.getFieldsValue();
+    saveLocalSettings(values);
+    try {
+      await updateAISettings(values);
+      message.success('AI settings saved to backend system settings');
+    } catch {
+      message.warning('Backend AI settings unavailable; saved local demo settings');
+    }
+  };
+
+  const handleTestConnection = async () => {
+    const values = form.getFieldsValue();
+    saveLocalSettings(values);
+    try {
+      await updateAISettings(values);
+      const response = await testSavedAISettings();
+      if (response.data?.ok) {
+        message.success(response.data?.message || 'AI provider configuration accepted');
+      } else {
+        message.warning(response.data?.message || 'AI provider configuration is incomplete');
+      }
+    } catch {
+      message.error('AI provider test failed');
+    }
   };
 
   return (
@@ -448,6 +541,7 @@ function AIPlatformPanelV2() {
                 { label: 'Azure OpenAI', value: 'azure-openai' },
                 { label: 'DeepSeek', value: 'deepseek' },
                 { label: 'Qwen', value: 'qwen' },
+                { label: 'GLM', value: 'glm' },
                 { label: 'Local Model', value: 'local' },
               ]} />
             </Form.Item>
@@ -478,14 +572,18 @@ function AIPlatformPanelV2() {
                 { label: 'gpt-4o', value: 'gpt-4o' },
                 { label: 'deepseek-chat', value: 'deepseek-chat' },
                 { label: 'qwen-plus', value: 'qwen-plus' },
+                { label: 'glm-4-flash', value: 'glm-4-flash' },
+                { label: 'glm-4-plus', value: 'glm-4-plus' },
               ]} />
             </Form.Item>
             <Form.Item name="reasoningModel" label="推理/Agent 模型">
               <Select options={[
                 { label: 'gpt-4o', value: 'gpt-4o' },
                 { label: 'gpt-4o-mini', value: 'gpt-4o-mini' },
+                { label: 'glm-4v-plus', value: 'glm-4v-plus' },
                 { label: 'deepseek-reasoner', value: 'deepseek-reasoner' },
                 { label: 'qwen-max', value: 'qwen-max' },
+                { label: 'glm-4-plus', value: 'glm-4-plus' },
               ]} />
             </Form.Item>
             <Form.Item name="embeddingModel" label="嵌入模型">
@@ -493,6 +591,7 @@ function AIPlatformPanelV2() {
                 { label: 'text-embedding-3-small', value: 'text-embedding-3-small' },
                 { label: 'text-embedding-3-large', value: 'text-embedding-3-large' },
                 { label: 'bge-m3', value: 'bge-m3' },
+                { label: 'embedding-3', value: 'embedding-3' },
               ]} />
             </Form.Item>
             <Form.Item name="visionModel" label="视觉模型">
@@ -654,10 +753,13 @@ function AIPlatformPanelV2() {
               <Input type="number" min={1} />
             </Form.Item>
             <Space>
+              <Button icon={<ApiOutlined />} onClick={handleTestConnection}>
+                Test backend AI
+              </Button>
               <Button icon={<ApiOutlined />} onClick={() => message.success('Demo 连通性检查通过')}>
                 测试连接
               </Button>
-              <Button type="primary" icon={<RobotOutlined />} onClick={handleSave}>
+              <Button type="primary" icon={<RobotOutlined />} onClick={handleSaveToBackend}>
                 保存 AI 设置
               </Button>
             </Space>

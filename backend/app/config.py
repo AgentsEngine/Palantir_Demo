@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     # Optional integrations
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"
+    AI_PROVIDER: str = "mock"
+    AI_BASE_URL: str = ""
+    AI_API_KEY: str = ""
+    AI_CHAT_MODEL: str = "mock-chat"
+    AI_REASONING_MODEL: str = "mock-reasoning"
+    AI_EMBEDDING_MODEL: str = "mock-embedding"
+    AI_VISION_MODEL: str = "disabled"
+    AI_TIMEOUT_SECONDS: int = 30
 
     @property
     def IS_PRODUCTION(self) -> bool:

@@ -11,10 +11,18 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+from app.services.ai.knowledge_ingestion import (
+    CHUNKS as INGESTED_CHUNKS,
+    DOCUMENTS as INGESTED_DOCUMENTS,
+    JOBS as INGESTION_JOBS,
+    ingest_asset,
+    search_ingested_knowledge,
+)
 
 router = APIRouter()
 
@@ -470,11 +478,78 @@ async def list_documents(source_id: str | None = None):
     documents = KNOWLEDGE_DOCUMENTS
     if source_id:
         documents = [item for item in documents if item["source_id"] == source_id]
-    return {"data": documents}
+    ingested = [
+        {
+            "id": item["document_id"],
+            "source_id": "uploaded",
+            "title": item["title"],
+            "doc_type": item["source_type"],
+            "status": item["status"],
+            "updated_at": item["updated_at"],
+            "summary": f"Uploaded knowledge asset: {item['source_file_name']}",
+            "linked_objects": [],
+        }
+        for item in INGESTED_DOCUMENTS.values()
+    ]
+    return {"data": [*documents, *ingested]}
+
+
+@router.post("/assets/upload")
+async def upload_knowledge_asset(
+    file: UploadFile = File(...),
+    permission_scope: str = "enterprise",
+    owner_user_id: str = "demo-user",
+):
+    content = await file.read()
+    result = ingest_asset(
+        file_name=file.filename or "uploaded-asset",
+        content=content,
+        owner_user_id=owner_user_id,
+        permission_scope=permission_scope,
+    )
+    if result["job"]["status"] == "failed":
+        return {"data": result, "ok": False}
+    return {"data": result, "ok": True}
+
+
+@router.get("/ingestion-jobs/{job_id}")
+async def get_ingestion_job(job_id: str):
+    job = INGESTION_JOBS.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Knowledge ingestion job not found")
+    return {"data": job}
+
+
+@router.get("/documents/{document_id}")
+async def get_document(document_id: str):
+    ingested = INGESTED_DOCUMENTS.get(document_id)
+    if ingested:
+        return {"data": ingested}
+    document = next((item for item in KNOWLEDGE_DOCUMENTS if item["id"] == document_id), None)
+    if not document:
+        raise HTTPException(status_code=404, detail="Knowledge document not found")
+    return {"data": document}
+
+
+@router.get("/documents/{document_id}/markdown")
+async def get_document_markdown(document_id: str):
+    ingested = INGESTED_DOCUMENTS.get(document_id)
+    if not ingested:
+        raise HTTPException(status_code=404, detail="Markdown document not found")
+    return {
+        "data": {
+            "document_id": document_id,
+            "markdown_content": ingested["markdown_content"],
+            "source_file_name": ingested["source_file_name"],
+        }
+    }
 
 
 @router.get("/documents/{document_id}/chunks")
 async def list_document_chunks(document_id: str):
+    if document_id in INGESTED_DOCUMENTS:
+        chunks = [chunk for chunk in INGESTED_CHUNKS.values() if chunk["document_id"] == document_id]
+        return {"data": chunks}
     if not any(item["id"] == document_id for item in KNOWLEDGE_DOCUMENTS):
         raise HTTPException(status_code=404, detail="Knowledge document not found")
     chunks = [chunk for chunk in KNOWLEDGE_CHUNKS if chunk["document_id"] == document_id]
@@ -573,6 +648,9 @@ async def search_knowledge(body: KnowledgeSearchBody):
     ranked = sorted(enumerate(scores), key=lambda item: item[1], reverse=True)
 
     results = []
+    for item in search_ingested_knowledge(query, limit=body.limit):
+        results.append(item)
+
     for index, score in ranked:
         if score <= 0:
             continue
@@ -580,7 +658,10 @@ async def search_knowledge(body: KnowledgeSearchBody):
         document = _document_by_id(chunk["document_id"])
         if not _matches_object(document, body.object_type, body.object_id):
             continue
-        results.append(_chunk_payload(chunk, float(score)))
+        payload = _chunk_payload(chunk, float(score))
+        payload.setdefault("snippet", payload.get("chunk_text", "")[:300])
+        payload.setdefault("source_location", payload.get("source_ref", "demo-source"))
+        results.append(payload)
         if len(results) >= max(1, min(body.limit, 10)):
             break
 

@@ -925,7 +925,7 @@ export default function AppMenuManagement() {
       return;
     }
     if (configs.some((item) => item.formId === selectedForm.id)) {
-      message.warning('该表单已被应用装配使用，请先解除绑定');
+      message.warning('该表单已被菜单管理使用，请先解除绑定');
       return;
     }
     const nextForms = forms.filter((item) => item.id !== selectedForm.id);
@@ -1225,7 +1225,7 @@ export default function AppMenuManagement() {
           },
           {
             key: 'assembly',
-            label: '应用装配',
+            label: '菜单管理',
             children: (
               <AssemblyWorkspace
                 apps={applications}
@@ -1822,7 +1822,7 @@ function AssemblyWorkspace({
       <section className="assembly-help">
         <div>
           <Typography.Title level={5}>
-            应用装配
+            菜单管理
             <Typography.Text className="assembly-current-app">：{selectedApp.name}</Typography.Text>
           </Typography.Title>
           <Typography.Text type="secondary">

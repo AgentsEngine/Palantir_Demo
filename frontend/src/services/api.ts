@@ -114,6 +114,17 @@ export const getRelatedKnowledge = (params?: { object_type?: string; object_id?:
 export const suggestKnowledgeBindings = (data: { text: string; limit?: number }) =>
   api.post('/knowledge/binding-candidates', data);
 export const getKnowledgeOcrPipeline = () => api.get('/knowledge/ocr-pipeline');
+export const uploadKnowledgeAsset = (
+  file: File,
+  params?: { permission_scope?: string; owner_user_id?: string },
+) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/knowledge/assets/upload', formData, {
+    params,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
 export const searchKnowledge = (data: {
   query: string;
   limit?: number;
@@ -170,6 +181,12 @@ export const getSupplyChainAnalytics = () => api.get('/supply-chain/analytics');
 export const sendChat = (message: string, sessionId?: string) =>
   api.post('/ai/chat', { message, session_id: sessionId });
 export const smartAnalyze = (query: string) => api.post('/ai/analyze', { query });
+export const sendAgentChat = (data: Record<string, unknown>) => api.post('/ai/agent', data);
+export const testAIProvider = (providerConfig: Record<string, unknown>) =>
+  api.post('/ai/provider/test', { provider_config: providerConfig });
+export const getAISettings = () => api.get('/ai/settings');
+export const updateAISettings = (settings: Record<string, unknown>) => api.put('/ai/settings', { settings });
+export const testSavedAISettings = () => api.post('/ai/settings/test');
 
 // Reports
 export const listReports = (params?: Record<string, unknown>) => api.get('/reports', { params });
@@ -242,6 +259,10 @@ export const adminListUsers = () => api.get('/admin/users');
 export const adminCreateUser = (data: Record<string, unknown>) => api.post('/admin/users', data);
 export const adminUpdateUser = (id: number, data: Record<string, unknown>) => api.put(`/admin/users/${id}`, data);
 export const adminDeleteUser = (id: number) => api.delete(`/admin/users/${id}`);
+export const adminListOrgUnits = () => api.get('/admin/org-units');
+export const adminCreateOrgUnit = (data: Record<string, unknown>) => api.post('/admin/org-units', data);
+export const adminUpdateOrgUnit = (id: number, data: Record<string, unknown>) => api.put(`/admin/org-units/${id}`, data);
+export const adminDeleteOrgUnit = (id: number) => api.delete(`/admin/org-units/${id}`);
 export const adminListRoles = () => api.get('/admin/roles');
 export const adminCreateRole = (data: Record<string, unknown>) => api.post('/admin/roles', data);
 export const adminDeleteRole = (id: number) => api.delete(`/admin/roles/${id}`);

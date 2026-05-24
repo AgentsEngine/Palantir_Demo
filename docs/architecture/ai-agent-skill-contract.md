@@ -30,6 +30,17 @@ Current AI entry points:
 
 Near-term work should preserve these APIs where possible and move orchestration behind them. Routers should remain thin; business logic belongs in `backend/app/services/ai/*` and existing domain services.
 
+Current AI system settings are backend-owned. The frontend Account Center can
+edit provider settings, but runtime provider selection and tests go through
+`/api/v1/ai/settings`, `/api/v1/ai/settings/test`, and
+`/api/v1/ai/provider/test`.
+
+GLM is treated as an explicit provider (`provider = "glm"`) rather than a
+generic OpenAI-compatible label. The first implementation can reuse the
+OpenAI-compatible request shape, while keeping a separate provider name for
+future GLM-specific authentication, model naming, embedding, and vision
+behavior.
+
 ## 3. Core Concepts
 
 ### 3.1 Skill
@@ -54,6 +65,8 @@ A tool is a backend operation callable by the AI orchestrator. A tool must be de
 Tool examples:
 
 - `knowledge.search`
+- `knowledge.ingest_document`
+- `knowledge.embed_chunks`
 - `graph.query_impact`
 - `inventory.get_stock`
 - `quality.get_event`
@@ -85,6 +98,11 @@ User / Scheduler / Rule Trigger
   -> Audit log
   -> User-visible result with evidence
 ```
+
+LLM provider settings, including GLM system configuration, are backend-owned.
+The Agent may request a model capability such as "chat", "summarize", or
+"embed", but it must not accept a raw API key, arbitrary base URL, or unreviewed
+system prompt from the browser.
 
 ## 4. Skill Contract
 
@@ -166,6 +184,7 @@ Tool side-effect classes:
 | --- | --- | --- |
 | `read` | Reads data only. | Search knowledge, read inventory, read workflow status. |
 | `analyze` | Computes derived insight without write. | Quality trend explanation, supplier risk summary. |
+| `index_write` | Writes internal retrieval artifacts but not business records. | Store parsed Markdown, chunks, embeddings, vector index rows. |
 | `draft_write` | Creates or updates a draft with no final business commitment. | CAPA draft, purchase request draft, low-code config draft. |
 | `workflow_action` | Starts, approves, rejects, or advances workflow. | Submit material number application. |
 | `notification` | Sends or schedules user-visible messages. | Notify quality owner. |
@@ -181,6 +200,43 @@ Tool implementation rules:
 - Use idempotency keys for repeated writes and workflow/external calls.
 - Never accept raw SQL, raw Python, or arbitrary endpoint names from an LLM.
 - Keep sensitive values out of prompts, tool logs, and frontend responses.
+- Keep provider credentials and system prompts on the backend. GLM settings such
+  as `GLM_API_KEY`, `GLM_MODEL`, `GLM_BASE_URL`, and approved system settings
+  are configuration inputs to the provider adapter, not user-provided tool
+  arguments.
+
+### 5.1 Knowledge Ingestion Tools
+
+Knowledge ingestion is a controlled internal write path. It prepares retrieval
+evidence but does not by itself publish enterprise knowledge or execute business
+actions.
+
+Recommended ingestion tools:
+
+| Tool | Side effect | Purpose |
+| --- | --- | --- |
+| `knowledge.ingest_document` | `index_write` | Accept uploaded or synchronized source files, persist source metadata, and start parsing. |
+| `knowledge.convert_to_markdown` | `index_write` | Normalize PDF, Word, spreadsheet, image OCR, or plain text into reviewable Markdown. |
+| `knowledge.chunk_markdown` | `index_write` | Split Markdown into stable chunks with source offsets, headings, and evidence metadata. |
+| `knowledge.embed_chunks` | `index_write` | Generate embeddings through the backend provider adapter and write pgvector-ready rows. |
+| `knowledge.search` | `read` | Retrieve chunks/cards as RAG evidence with permission filtering and source references. |
+
+The canonical retrieval path is:
+
+```text
+raw file
+  -> Markdown normalization
+  -> chunking with document/page/heading metadata
+  -> embedding
+  -> pgvector-ready index
+  -> RAG retrieval
+  -> cited assistant answer or draft skill context
+```
+
+Ingestion tools must be idempotent by document version and chunk hash so that a
+re-ingest updates changed chunks without duplicating unchanged vectors. Parsed
+Markdown and embedding rows should keep links back to the original source file,
+document version, page or section, uploader, permission scope, and review state.
 
 ## 6. Risk Levels
 
@@ -189,7 +245,7 @@ Risk is assigned by business impact, reversibility, data sensitivity, and whethe
 | Level | Definition | Examples | Default control |
 | --- | --- | --- | --- |
 | Low | Read-only or reversible suggestion with limited data scope. | Knowledge Q&A, page usage help, read workflow status. | No confirmation; show sources when available. |
-| Medium | Draft creation or recommendation that may influence business decisions. | CAPA draft, repair order draft, purchase request draft, model suggestion. | User review before save or submit; audit write if saved. |
+| Medium | Draft creation, retrieval-index writes, or recommendation that may influence business decisions. | CAPA draft, repair order draft, purchase request draft, model suggestion, document ingestion. | User review before save/publish/submit; audit write if saved or indexed. |
 | High | Write action, workflow submission, operational commitment, or broad data impact. | Submit workflow, send notifications to many users, publish generated config, create purchase request. | Explicit confirmation with reviewed payload; audit required. |
 | Critical | Financial/legal/external system commitment, permission/security change, irreversible action. | Create purchase order in ERP, change role permissions, delete data, auto-order goods. | Admin or role-owner approval; policy limits; idempotency; reconciliation plan. |
 
@@ -254,7 +310,7 @@ The frontend can display this payload in a business-specific review panel. The b
 | --- | --- | --- | --- | --- |
 | Phase 0 | Preserve demo usefulness | Existing chat, AI Builder, knowledge search | Document contracts, identify mock boundaries, keep current endpoints stable | Demo behavior remains unchanged. |
 | Phase 1 | Source-aware read skills | Q&A, knowledge, graph, business data reads | `services/ai` scaffolding, skill registry, read tool registry, structured evidence output | AI answers can cite local knowledge/business sources. |
-| Phase 2 | Assisted draft skills | CAPA draft, repair order draft, purchase request draft, model/page suggestions | Draft-first tools, validation, confirmation payloads, audit for saved drafts | Users can review and save drafts without final workflow submission. |
+| Phase 2 | Assisted draft skills | CAPA draft, repair order draft, purchase request draft, model/page suggestions | Draft-first tools, validation, confirmation payloads, audit for saved drafts, pgvector-ready ingestion | Users can review and save drafts without final workflow submission; knowledge files can flow raw file -> Markdown -> embedding -> RAG. |
 | Phase 3 | Confirmed workflow actions | Submit workflow, notify owner, create follow-up task | Confirmation token, idempotency, workflow tool wrappers, audit result records | AI can execute selected actions only after explicit confirmation. |
 | Phase 4 | Proactive agent runs | Scheduled risk patrol, overdue approval reminders, inventory alerts | Scheduler-triggered skills, service principal policy, notification rules, result review queue | AI can prepare alerts/drafts from scheduled checks. |
 | Phase 5 | Policy-based automation | Low-risk auto reminders and narrow auto-drafts | Policy engine, allowlists, amount/category limits, reconciliation reports | Automation is limited, observable, and reversible. |
@@ -316,6 +372,7 @@ Target service layout:
 backend/app/services/ai/
   __init__.py
   client.py             # LLM provider adapter; optional in early phases
+  config.py             # backend-owned provider/system settings resolver
   orchestrator.py       # intent, planning, skill routing
   skills.py             # skill registry and skill contracts
   tools.py              # tool registry and tool contracts
@@ -333,6 +390,12 @@ Router responsibilities:
 - `/api/v1/ai-builder/*` should become low-code skills behind the same endpoint contract.
 - `/api/v1/knowledge/*` can remain a direct local RAG API and also be registered as tools.
 
+Backend provider configuration must be centralized behind the AI service layer.
+GLM credentials and system settings should be loaded from environment variables
+or backend-managed settings, then passed to `client.py` by the orchestrator. The
+frontend should only send user intent, conversation context, selected business
+mode, and uploaded document references.
+
 Domain services remain the source of truth for business behavior. The AI layer composes them; it does not replace them.
 
 ## 11. Initial Skill Backlog
@@ -340,6 +403,7 @@ Domain services remain the source of truth for business behavior. The AI layer c
 | Priority | Skill | Risk | First real tool dependencies |
 | --- | --- | --- | --- |
 | P0 | `knowledge.answer_question` | Low | `knowledge.search` |
+| P0 | `knowledge.ingest_for_rag` | Medium | `knowledge.ingest_document`, `knowledge.convert_to_markdown`, `knowledge.embed_chunks` |
 | P0 | `quality.analyze_event` | Medium | `quality.get_event`, `knowledge.search`, `graph.query_impact` |
 | P1 | `quality.prepare_capa_draft` | Medium | `forms.create_dynamic_record_draft`, `rules.validate` |
 | P1 | `low_code.suggest_model` | Medium | Existing AI Builder logic behind skill wrapper |

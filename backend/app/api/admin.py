@@ -21,6 +21,9 @@ class UserCreate(BaseModel):
     password: str
     is_admin: bool = False
     role_ids: list[int] = []
+    org_unit_ids: list[int] = []
+    primary_org_unit_id: Optional[int] = None
+    position_title: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
@@ -29,6 +32,9 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_admin: Optional[bool] = None
     role_ids: Optional[list[int]] = None
+    org_unit_ids: Optional[list[int]] = None
+    primary_org_unit_id: Optional[int] = None
+    position_title: Optional[str] = None
 
 
 class RoleCreate(BaseModel):
@@ -40,6 +46,26 @@ class RoleCreate(BaseModel):
 class PermissionSet(BaseModel):
     role_id: int
     permissions: list[dict]
+
+
+class OrgUnitCreate(BaseModel):
+    code: str
+    name: str
+    parent_id: Optional[int] = None
+    org_type: str = "department"
+    sort_order: int = 0
+    status: str = "active"
+    description: Optional[str] = None
+
+
+class OrgUnitUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    parent_id: Optional[int] = None
+    org_type: Optional[str] = None
+    sort_order: Optional[int] = None
+    status: Optional[str] = None
+    description: Optional[str] = None
 
 
 # ── Mock data ─────────────────────────────────────────────
@@ -134,23 +160,53 @@ from app.core.db import safe_db_call as _try_db  # noqa: E402
 # ── User CRUD ────────────────────────────────────────────
 
 @router.get("/users")
-async def list_users():
+async def list_users(user_ctx: dict = Depends(require_admin)):
     """用户列表."""
     async def _query(db):
-        from app.models.relational import User, UserRole, Role
-        result = await db.execute(select(User).order_by(User.id))
+        from app.models.relational import OrgUnit, Role, User, UserOrgMembership, UserRole
+        tenant_id = current_tenant_id(user_ctx)
+        result = await db.execute(select(User).where(User.tenant_id == tenant_id).order_by(User.id))
         users = result.scalars().all()
         out = []
         for u in users:
             roles_res = await db.execute(
-                select(Role.name, Role.label)
+                select(Role.id, Role.name, Role.label)
                 .join(UserRole, UserRole.role_id == Role.id)
-                .where(UserRole.user_id == u.id)
+                .where(UserRole.user_id == u.id, UserRole.tenant_id == tenant_id, Role.tenant_id == tenant_id)
+                .order_by(Role.id)
+            )
+            orgs_res = await db.execute(
+                select(
+                    OrgUnit.id,
+                    OrgUnit.code,
+                    OrgUnit.name,
+                    OrgUnit.org_type,
+                    UserOrgMembership.position_title,
+                    UserOrgMembership.is_primary,
+                )
+                .join(UserOrgMembership, UserOrgMembership.org_unit_id == OrgUnit.id)
+                .where(
+                    UserOrgMembership.user_id == u.id,
+                    UserOrgMembership.tenant_id == tenant_id,
+                    OrgUnit.tenant_id == tenant_id,
+                )
+                .order_by(UserOrgMembership.is_primary.desc(), OrgUnit.sort_order, OrgUnit.id)
             )
             out.append({
                 "id": u.id, "username": u.username, "display_name": u.display_name,
                 "email": u.email, "is_active": u.is_active, "is_admin": u.is_admin,
-                "roles": [{"id": 0, "name": r[0], "label": r[1]} for r in roles_res.fetchall()],
+                "roles": [{"id": r[0], "name": r[1], "label": r[2]} for r in roles_res.fetchall()],
+                "org_units": [
+                    {
+                        "id": o[0],
+                        "code": o[1],
+                        "name": o[2],
+                        "org_type": o[3],
+                        "position_title": o[4],
+                        "is_primary": o[5],
+                    }
+                    for o in orgs_res.fetchall()
+                ],
             })
         return {"data": out}
 
@@ -159,14 +215,16 @@ async def list_users():
 
 
 @router.post("/users")
-async def create_user(body: UserCreate):
+async def create_user(body: UserCreate, user_ctx: dict = Depends(require_admin)):
     """创建用户."""
     async def _query(db):
-        from app.models.relational import User, UserRole
+        from app.models.relational import OrgUnit, User, UserOrgMembership, UserRole
+        tenant_id = current_tenant_id(user_ctx)
         existing = await db.scalar(select(User).where(User.username == body.username))
         if existing:
             raise HTTPException(400, "用户名已存在")
         user = User(
+            tenant_id=tenant_id,
             username=body.username, display_name=body.display_name,
             email=body.email, hashed_password=_hash_password(body.password),
             is_admin=body.is_admin,
@@ -174,7 +232,25 @@ async def create_user(body: UserCreate):
         db.add(user)
         await db.flush()
         for rid in body.role_ids:
-            db.add(UserRole(user_id=user.id, role_id=rid))
+            db.add(UserRole(tenant_id=tenant_id, user_id=user.id, role_id=rid))
+        org_unit_ids = list(dict.fromkeys(body.org_unit_ids))
+        if body.primary_org_unit_id and body.primary_org_unit_id not in org_unit_ids:
+            org_unit_ids.insert(0, body.primary_org_unit_id)
+        if org_unit_ids:
+            valid_org_ids = set((await db.execute(
+                select(OrgUnit.id).where(OrgUnit.tenant_id == tenant_id, OrgUnit.id.in_(org_unit_ids))
+            )).scalars().all())
+            primary_id = body.primary_org_unit_id or org_unit_ids[0]
+            for org_id in org_unit_ids:
+                if org_id not in valid_org_ids:
+                    continue
+                db.add(UserOrgMembership(
+                    tenant_id=tenant_id,
+                    user_id=user.id,
+                    org_unit_id=org_id,
+                    position_title=body.position_title,
+                    is_primary=org_id == primary_id,
+                ))
         await db.commit()
         return {"id": user.id, "username": user.username}
 
@@ -185,12 +261,13 @@ async def create_user(body: UserCreate):
 
 
 @router.put("/users/{user_id}")
-async def update_user(user_id: int, body: UserUpdate):
+async def update_user(user_id: int, body: UserUpdate, user_ctx: dict = Depends(require_admin)):
     """更新用户."""
     async def _query(db):
-        from app.models.relational import User, UserRole
+        from app.models.relational import OrgUnit, User, UserOrgMembership, UserRole
+        tenant_id = current_tenant_id(user_ctx)
         user = await db.get(User, user_id)
-        if not user:
+        if not user or user.tenant_id != tenant_id:
             return None
         if body.display_name is not None:
             user.display_name = body.display_name
@@ -202,10 +279,45 @@ async def update_user(user_id: int, body: UserUpdate):
             user.is_admin = body.is_admin
         if body.role_ids is not None:
             await db.execute(
-                UserRole.__table__.delete().where(UserRole.user_id == user_id)
+                UserRole.__table__.delete().where(UserRole.user_id == user_id, UserRole.tenant_id == tenant_id)
             )
             for rid in body.role_ids:
-                db.add(UserRole(user_id=user_id, role_id=rid))
+                db.add(UserRole(tenant_id=tenant_id, user_id=user_id, role_id=rid))
+        if body.org_unit_ids is not None:
+            await db.execute(
+                UserOrgMembership.__table__.delete().where(
+                    UserOrgMembership.user_id == user_id,
+                    UserOrgMembership.tenant_id == tenant_id,
+                )
+            )
+            org_unit_ids = list(dict.fromkeys(body.org_unit_ids))
+            if body.primary_org_unit_id and body.primary_org_unit_id not in org_unit_ids:
+                org_unit_ids.insert(0, body.primary_org_unit_id)
+            if org_unit_ids:
+                valid_org_ids = set((await db.execute(
+                    select(OrgUnit.id).where(OrgUnit.tenant_id == tenant_id, OrgUnit.id.in_(org_unit_ids))
+                )).scalars().all())
+                primary_id = body.primary_org_unit_id or org_unit_ids[0]
+                for org_id in org_unit_ids:
+                    if org_id not in valid_org_ids:
+                        continue
+                    db.add(UserOrgMembership(
+                        tenant_id=tenant_id,
+                        user_id=user_id,
+                        org_unit_id=org_id,
+                        position_title=body.position_title,
+                        is_primary=org_id == primary_id,
+                    ))
+        elif body.position_title is not None or body.primary_org_unit_id is not None:
+            memberships = (await db.execute(select(UserOrgMembership).where(
+                UserOrgMembership.user_id == user_id,
+                UserOrgMembership.tenant_id == tenant_id,
+            ))).scalars().all()
+            for membership in memberships:
+                if body.position_title is not None:
+                    membership.position_title = body.position_title
+                if body.primary_org_unit_id is not None:
+                    membership.is_primary = membership.org_unit_id == body.primary_org_unit_id
         await db.commit()
         return {"id": user.id}
 
@@ -214,14 +326,19 @@ async def update_user(user_id: int, body: UserUpdate):
 
 
 @router.delete("/users/{user_id}")
-async def delete_user(user_id: int):
+async def delete_user(user_id: int, user_ctx: dict = Depends(require_admin)):
     """删除用户."""
     async def _query(db):
-        from app.models.relational import User, UserRole
+        from app.models.relational import User, UserOrgMembership, UserRole
+        tenant_id = current_tenant_id(user_ctx)
         user = await db.get(User, user_id)
-        if not user:
+        if not user or user.tenant_id != tenant_id:
             return None
-        await db.execute(UserRole.__table__.delete().where(UserRole.user_id == user_id))
+        await db.execute(UserRole.__table__.delete().where(UserRole.user_id == user_id, UserRole.tenant_id == tenant_id))
+        await db.execute(UserOrgMembership.__table__.delete().where(
+            UserOrgMembership.user_id == user_id,
+            UserOrgMembership.tenant_id == tenant_id,
+        ))
         await db.delete(user)
         await db.commit()
         return {"ok": True}
@@ -232,17 +349,137 @@ async def delete_user(user_id: int):
 
 # ── Role CRUD ────────────────────────────────────────────
 
+# -- Organization CRUD -----------------------------------------------------
+
+@router.get("/org-units")
+async def list_org_units(user_ctx: dict = Depends(require_admin)):
+    """List organization units used as the source of data-scope permissions."""
+    async def _query(db):
+        from app.models.relational import OrgUnit, UserOrgMembership
+        from sqlalchemy import func as sa_func
+
+        tenant_id = current_tenant_id(user_ctx)
+        member_counts = dict((await db.execute(
+            select(UserOrgMembership.org_unit_id, sa_func.count(UserOrgMembership.user_id))
+            .where(UserOrgMembership.tenant_id == tenant_id)
+            .group_by(UserOrgMembership.org_unit_id)
+        )).all())
+        orgs = (await db.execute(
+            select(OrgUnit).where(OrgUnit.tenant_id == tenant_id).order_by(OrgUnit.sort_order, OrgUnit.id)
+        )).scalars().all()
+        return {
+            "data": [
+                {
+                    "id": org.id,
+                    "tenant_id": org.tenant_id,
+                    "parent_id": org.parent_id,
+                    "code": org.code,
+                    "name": org.name,
+                    "org_type": org.org_type,
+                    "sort_order": org.sort_order,
+                    "status": org.status,
+                    "description": org.description,
+                    "member_count": int(member_counts.get(org.id, 0)),
+                }
+                for org in orgs
+            ]
+        }
+
+    result = await _try_db(_query)
+    return result or {"data": []}
+
+
+@router.post("/org-units")
+async def create_org_unit(body: OrgUnitCreate, user_ctx: dict = Depends(require_admin)):
+    """Create an organization unit."""
+    async def _query(db):
+        from app.models.relational import OrgUnit
+
+        tenant_id = current_tenant_id(user_ctx)
+        existing = await db.scalar(select(OrgUnit).where(OrgUnit.tenant_id == tenant_id, OrgUnit.code == body.code))
+        if existing:
+            raise HTTPException(400, "组织编码已存在")
+        if body.parent_id is not None:
+            parent = await db.get(OrgUnit, body.parent_id)
+            if not parent or parent.tenant_id != tenant_id:
+                raise HTTPException(400, "父级组织不存在")
+        org = OrgUnit(tenant_id=tenant_id, **body.dict())
+        db.add(org)
+        await db.commit()
+        await db.refresh(org)
+        return {"id": org.id, "code": org.code}
+
+    result = await _try_db(_query)
+    if result is not None:
+        return result
+    return {"id": 0, "code": body.code}
+
+
+@router.put("/org-units/{org_id}")
+async def update_org_unit(org_id: int, body: OrgUnitUpdate, user_ctx: dict = Depends(require_admin)):
+    """Update an organization unit."""
+    async def _query(db):
+        from app.models.relational import OrgUnit
+
+        tenant_id = current_tenant_id(user_ctx)
+        org = await db.get(OrgUnit, org_id)
+        if not org or org.tenant_id != tenant_id:
+            return None
+        updates = body.dict(exclude_unset=True)
+        if "parent_id" in updates and updates["parent_id"] is not None:
+            if updates["parent_id"] == org_id:
+                raise HTTPException(400, "父级组织不能是自己")
+            parent = await db.get(OrgUnit, updates["parent_id"])
+            if not parent or parent.tenant_id != tenant_id:
+                raise HTTPException(400, "父级组织不存在")
+        for key, value in updates.items():
+            setattr(org, key, value)
+        await db.commit()
+        return {"id": org.id}
+
+    result = await _try_db(_query)
+    return result or {"id": org_id}
+
+
+@router.delete("/org-units/{org_id}")
+async def delete_org_unit(org_id: int, user_ctx: dict = Depends(require_admin)):
+    """Delete an empty organization unit."""
+    async def _query(db):
+        from app.models.relational import OrgUnit, UserOrgMembership
+
+        tenant_id = current_tenant_id(user_ctx)
+        org = await db.get(OrgUnit, org_id)
+        if not org or org.tenant_id != tenant_id:
+            return None
+        child = await db.scalar(select(OrgUnit.id).where(OrgUnit.parent_id == org_id, OrgUnit.tenant_id == tenant_id).limit(1))
+        if child:
+            raise HTTPException(400, "请先删除子组织")
+        member = await db.scalar(select(UserOrgMembership.id).where(
+            UserOrgMembership.org_unit_id == org_id,
+            UserOrgMembership.tenant_id == tenant_id,
+        ).limit(1))
+        if member:
+            raise HTTPException(400, "该组织仍有成员，不能删除")
+        await db.delete(org)
+        await db.commit()
+        return {"ok": True}
+
+    result = await _try_db(_query)
+    return result or {"ok": True}
+
+
 @router.get("/roles")
-async def list_roles():
+async def list_roles(user_ctx: dict = Depends(require_admin)):
     """角色列表."""
     async def _query(db):
         from app.models.relational import Role, RolePermission
-        result = await db.execute(select(Role).order_by(Role.id))
+        tenant_id = current_tenant_id(user_ctx)
+        result = await db.execute(select(Role).where(Role.tenant_id == tenant_id).order_by(Role.id))
         roles = result.scalars().all()
         out = []
         for r in roles:
             perms_res = await db.execute(
-                select(RolePermission).where(RolePermission.role_id == r.id)
+                select(RolePermission).where(RolePermission.role_id == r.id, RolePermission.tenant_id == tenant_id)
             )
             perms = perms_res.scalars().all()
             out.append({
@@ -259,11 +496,12 @@ async def list_roles():
 
 
 @router.post("/roles")
-async def create_role(body: RoleCreate):
+async def create_role(body: RoleCreate, user_ctx: dict = Depends(require_admin)):
     """创建角色."""
     async def _query(db):
         from app.models.relational import Role
-        role = Role(name=body.name, label=body.label, description=body.description)
+        tenant_id = current_tenant_id(user_ctx)
+        role = Role(tenant_id=tenant_id, name=body.name, label=body.label, description=body.description)
         db.add(role)
         await db.commit()
         await db.refresh(role)
@@ -276,16 +514,19 @@ async def create_role(body: RoleCreate):
 
 
 @router.put("/roles/{role_id}/permissions")
-async def set_permissions(body: PermissionSet):
+async def set_permissions(role_id: int, body: PermissionSet, user_ctx: dict = Depends(require_admin)):
     """设置角色权限."""
     async def _query(db):
         from app.models.relational import RolePermission
+        tenant_id = current_tenant_id(user_ctx)
+        target_role_id = body.role_id or role_id
         await db.execute(
-            RolePermission.__table__.delete().where(RolePermission.role_id == body.role_id)
+            RolePermission.__table__.delete().where(RolePermission.role_id == target_role_id, RolePermission.tenant_id == tenant_id)
         )
         for p in body.permissions:
             db.add(RolePermission(
-                role_id=body.role_id,
+                tenant_id=tenant_id,
+                role_id=target_role_id,
                 resource_type=p.get("resource_type", "action"),
                 resource_key=p.get("resource_key"),
                 action=p.get("action", "view"),
@@ -298,12 +539,13 @@ async def set_permissions(body: PermissionSet):
 
 
 @router.delete("/roles/{role_id}")
-async def delete_role(role_id: int):
+async def delete_role(role_id: int, user_ctx: dict = Depends(require_admin)):
     """删除角色."""
     async def _query(db):
         from app.models.relational import Role
+        tenant_id = current_tenant_id(user_ctx)
         role = await db.get(Role, role_id)
-        if not role:
+        if not role or role.tenant_id != tenant_id:
             return None
         await db.delete(role)
         await db.commit()

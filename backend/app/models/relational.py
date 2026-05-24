@@ -741,6 +741,45 @@ class User(TimestampMixin, Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
     roles: Mapped[list["UserRole"]] = relationship(back_populates="user")
+    org_memberships: Mapped[list["UserOrgMembership"]] = relationship(back_populates="user")
+
+
+class OrgUnit(TimestampMixin, Base):
+    __tablename__ = "org_units"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "code", name="uq_org_units_tenant_code"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("org_units.id"), nullable=True, index=True)
+    code: Mapped[str] = mapped_column(String(100))
+    name: Mapped[str] = mapped_column(String(200))
+    org_type: Mapped[str] = mapped_column(String(50), default="department")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(50), default="active")
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    parent: Mapped[Optional["OrgUnit"]] = relationship(remote_side=[id], back_populates="children")
+    children: Mapped[list["OrgUnit"]] = relationship(back_populates="parent")
+    memberships: Mapped[list["UserOrgMembership"]] = relationship(back_populates="org_unit")
+
+
+class UserOrgMembership(TimestampMixin, Base):
+    __tablename__ = "user_org_memberships"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "user_id", "org_unit_id", name="uq_user_org_memberships_user_org"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    org_unit_id: Mapped[int] = mapped_column(ForeignKey("org_units.id"), index=True)
+    position_title: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    user: Mapped["User"] = relationship(back_populates="org_memberships")
+    org_unit: Mapped["OrgUnit"] = relationship(back_populates="memberships")
 
 
 class Role(TimestampMixin, Base):
