@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import {
   Alert,
   Badge,
@@ -115,6 +115,26 @@ interface GraphPayload {
   nodes?: Array<Record<string, unknown>>;
   edges?: Array<Record<string, unknown>>;
   source?: string;
+}
+
+interface PositionedImpactNode extends ImpactNode {
+  x: number;
+  y: number;
+  layoutRole: 'root' | 'neighbor' | 'outer';
+}
+
+interface PositionedImpactEdge extends ImpactEdge {
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  labelX: number;
+  labelY: number;
+}
+
+interface NodePosition {
+  x: number;
+  y: number;
 }
 
 const fallbackEvent: QualityEvent = {
@@ -239,15 +259,183 @@ const relationLabel: Record<string, string> = {
   EVIDENCE_FOR: '证据',
 };
 
-function overflowNodeStyle(index: number): CSSProperties | undefined {
-  if (index < 9) return undefined;
-  const col = (index - 9) % 4;
-  const row = Math.floor((index - 9) / 4);
+const typeStage: Record<string, number> = {
+  Supplier: 14,
+  Material: 28,
+  MaterialBatch: 28,
+  Inspection: 42,
+  InspectionBatch: 42,
+  Defect: 50,
+  QualityEvent: 50,
+  CAPA: 58,
+  Equipment: 64,
+  WorkOrder: 70,
+  CustomerOrder: 86,
+  SalesOrder: 86,
+  KnowledgeItem: 90,
+};
+
+function overflowNodeStyle(index: number): CSSProperties {
+  const col = index % 4;
+  const row = Math.floor(index / 4);
   return {
     left: `${18 + col * 20}%`,
-    top: `${86 + row * 8}%`,
+    top: `${84 + row * 8}%`,
     transform: 'translate(-50%, -50%)',
   };
+}
+
+function nodePositionStyle(node: PositionedImpactNode, index: number): CSSProperties {
+  if (node.x > 0 && node.y > 0) {
+    return {
+      left: `${node.x}%`,
+      top: `${node.y}%`,
+      transform: 'translate(-50%, -50%)',
+    };
+  }
+  return overflowNodeStyle(index);
+}
+
+function getTypeStage(type: string) {
+  return typeStage[type] ?? 50;
+}
+
+function clampPosition(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getEdgeDirection(edge: ImpactEdge, selectedId: string, nodeById: Map<string, ImpactNode>, view: GraphViewKey) {
+  const source = nodeById.get(edge.source);
+  const target = nodeById.get(edge.target);
+  const sourceStage = getTypeStage(source?.type || '');
+  const targetStage = getTypeStage(target?.type || '');
+
+  if (view === 'trace') {
+    if (edge.target === selectedId) return 'left';
+    if (edge.source === selectedId) return 'right';
+  }
+
+  if (edge.source === selectedId) return targetStage >= sourceStage ? 'right' : 'left';
+  if (edge.target === selectedId) return sourceStage <= targetStage ? 'left' : 'right';
+  return targetStage >= sourceStage ? 'right' : 'left';
+}
+
+function buildGraphLayout(
+  graphNodes: ImpactNode[],
+  graphEdges: ImpactEdge[],
+  selectedId: string | undefined,
+  view: GraphViewKey,
+  positionOverrides: Record<string, NodePosition> = {},
+) {
+  if (!graphNodes.length) {
+    return { layoutNodes: [], layoutEdges: [] };
+  }
+
+  const rootId = selectedId && graphNodes.some((node) => node.id === selectedId)
+    ? selectedId
+    : graphNodes[0].id;
+  const nodeById = new Map(graphNodes.map((node) => [node.id, node]));
+  const neighborIds = new Set<string>();
+  graphEdges.forEach((edge) => {
+    if (edge.source === rootId && nodeById.has(edge.target)) neighborIds.add(edge.target);
+    if (edge.target === rootId && nodeById.has(edge.source)) neighborIds.add(edge.source);
+  });
+
+  const leftNodes: ImpactNode[] = [];
+  const rightNodes: ImpactNode[] = [];
+  const sameStageNodes: ImpactNode[] = [];
+  const outerNodes: ImpactNode[] = [];
+
+  graphNodes.forEach((node) => {
+    if (node.id === rootId) return;
+    if (!neighborIds.has(node.id)) {
+      outerNodes.push(node);
+      return;
+    }
+
+    const directEdge = graphEdges.find((edge) => (
+      (edge.source === rootId && edge.target === node.id) ||
+      (edge.target === rootId && edge.source === node.id)
+    ));
+    const direction = directEdge ? getEdgeDirection(directEdge, rootId, nodeById, view) : 'right';
+    const stageDiff = getTypeStage(node.type) - getTypeStage(nodeById.get(rootId)?.type || '');
+    if (Math.abs(stageDiff) < 6) {
+      sameStageNodes.push(node);
+    } else if (direction === 'left') {
+      leftNodes.push(node);
+    } else {
+      rightNodes.push(node);
+    }
+  });
+
+  const positioned = new Map<string, PositionedImpactNode>();
+  const root = nodeById.get(rootId) || graphNodes[0];
+  positioned.set(root.id, { ...root, x: 50, y: 50, layoutRole: 'root' });
+
+  const spread = (items: ImpactNode[], x: number, role: PositionedImpactNode['layoutRole']) => {
+    const start = items.length <= 2 ? 42 : 30;
+    const end = items.length <= 2 ? 58 : 70;
+    items.forEach((node, index) => {
+      const y = items.length === 1 ? 50 : start + ((end - start) * index) / (items.length - 1);
+      positioned.set(node.id, { ...node, x, y, layoutRole: role });
+    });
+  };
+
+  spread(leftNodes, 30, 'neighbor');
+  spread(rightNodes, 70, 'neighbor');
+  sameStageNodes.forEach((node, index) => {
+    positioned.set(node.id, {
+      ...node,
+      x: index % 2 === 0 ? 50 : 58,
+      y: index < 2 ? 30 : 72,
+      layoutRole: 'neighbor',
+    });
+  });
+
+  outerNodes.forEach((node, index) => {
+    const fallback = overflowNodeStyle(index);
+    const stage = getTypeStage(node.type);
+    const x = Math.max(14, Math.min(86, stage));
+    const y = index % 2 === 0 ? 20 + (index % 4) * 12 : 78 - (index % 4) * 10;
+    positioned.set(node.id, {
+      ...node,
+      x: Number.isFinite(x) ? x : parseFloat(String(fallback.left)) || 50,
+      y,
+      layoutRole: 'outer',
+    });
+  });
+
+  Object.entries(positionOverrides).forEach(([nodeId, position]) => {
+    const node = positioned.get(nodeId);
+    if (!node) return;
+    positioned.set(nodeId, {
+      ...node,
+      x: clampPosition(position.x, 8, 92),
+      y: clampPosition(position.y, 14, 86),
+    });
+  });
+
+  const layoutNodes = graphNodes
+    .map((node) => positioned.get(node.id))
+    .filter(Boolean) as PositionedImpactNode[];
+  const layoutEdges = graphEdges
+    .map((edge) => {
+      const source = positioned.get(edge.source);
+      const target = positioned.get(edge.target);
+      if (!source || !target) return null;
+      return {
+        ...edge,
+        sourceX: source.x,
+        sourceY: source.y,
+        targetX: target.x,
+        targetY: target.y,
+        labelX: (source.x + target.x) / 2,
+        labelY: (source.y + target.y) / 2,
+      };
+    })
+    .filter(Boolean) as PositionedImpactEdge[];
+
+  return { layoutNodes, layoutEdges };
 }
 
 function normalizeRisk(level: RiskLevel) {
@@ -363,13 +551,13 @@ function decorateNodesForContext(nextNodes: ImpactNode[], context: GraphContext,
   });
 }
 
-const taskFilters = ['全部', 'P0 高风险', '待分析', '待处置', '审批中'];
+const partFilters = ['全部', '物料批次', '工单', '供应商', '设备'];
 
 const objectQuickEntries = [
-  { objectType: 'MaterialBatch', objectId: 'MB-7781 / 焊锡膏 S12', title: '物料批次 MB-7781' },
-  { objectType: 'WorkOrder', objectId: 'WO-260521-017', title: '工单 WO-260521-017' },
-  { objectType: 'Supplier', objectId: '北辰电子材料', title: '供应商 北辰电子材料' },
-  { objectType: 'Equipment', objectId: 'SMT-03 回流焊', title: '设备 SMT-03 回流焊' },
+  { objectType: 'MaterialBatch', objectId: 'MB-7781 / 焊锡膏 S12', title: '物料批次 MB-7781', hint: '供应 / 库存 / 工单 / 订单' },
+  { objectType: 'WorkOrder', objectId: 'WO-260521-017', title: '工单 WO-260521-017', hint: '用料 / 设备 / 质量 / 交付' },
+  { objectType: 'Supplier', objectId: '北辰电子材料', title: '供应商 北辰电子材料', hint: '来料批次 / 整改 / 风险' },
+  { objectType: 'Equipment', objectId: 'SMT-03 回流焊', title: '设备 SMT-03 回流焊', hint: '工序 / 维护 / 缺陷关联' },
 ];
 
 const graphViewOptions = [
@@ -441,6 +629,9 @@ const closureTimeline = [
 ];
 
 export default function QualityImpactWorkbench() {
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ nodeId: string; moved: boolean } | null>(null);
+  const suppressClickRef = useRef(false);
   const [events, setEvents] = useState<QualityEvent[]>([fallbackEvent]);
   const [event, setEvent] = useState<QualityEvent>(fallbackEvent);
   const [nodes, setNodes] = useState<ImpactNode[]>(fallbackNodes);
@@ -453,6 +644,8 @@ export default function QualityImpactWorkbench() {
   const [graphStats, setGraphStats] = useState<GraphStats | null>(null);
   const [graphSource, setGraphSource] = useState('quality-fallback');
   const [graphView, setGraphView] = useState<GraphViewKey>('impact');
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const [nodePositionOverrides, setNodePositionOverrides] = useState<Record<string, NodePosition>>({});
   const [graphContext, setGraphContext] = useState<GraphContext>({
     objectType: 'QualityEvent',
     objectId: fallbackEvent.id,
@@ -477,6 +670,26 @@ export default function QualityImpactWorkbench() {
     });
     return connected;
   }, [visibleEdges]);
+
+  const canvasNodes = useMemo(() => {
+    if (!selectedNode) {
+      return nodes;
+    }
+    const selected = nodes.filter((node) => node.id === selectedNode.id);
+    const connected = nodes.filter((node) => node.id !== selectedNode.id && connectedNodeIds.has(node.id));
+    const remaining = nodes.filter((node) => node.id !== selectedNode.id && !connectedNodeIds.has(node.id));
+    return [...selected, ...connected, ...remaining];
+  }, [connectedNodeIds, nodes, selectedNode]);
+
+  const canvasEdges = useMemo(
+    () => (visibleEdges.length ? visibleEdges : edges.slice(0, 6)),
+    [edges, visibleEdges],
+  );
+
+  const { layoutNodes, layoutEdges } = useMemo(
+    () => buildGraphLayout(canvasNodes, canvasEdges, selectedNode?.id, graphView, nodePositionOverrides),
+    [canvasEdges, canvasNodes, graphView, nodePositionOverrides, selectedNode?.id],
+  );
 
   const activeGraphView = graphViewOptions.find((item) => item.key === graphView) || graphViewOptions[0];
 
@@ -536,6 +749,7 @@ export default function QualityImpactWorkbench() {
     eventOverride?: QualityEvent,
   ) => {
     setLoading(true);
+    setNodePositionOverrides({});
     try {
       const maxHops = view === 'trace' ? 3 : 2;
       const limit = view === 'task' ? 60 : 80;
@@ -604,6 +818,7 @@ export default function QualityImpactWorkbench() {
 
   const changeGraphView = (view: GraphViewKey) => {
     setGraphView(view);
+    setNodePositionOverrides({});
     loadObjectGraph(graphContext, view);
   };
 
@@ -695,6 +910,44 @@ export default function QualityImpactWorkbench() {
     }
   };
 
+  const moveNodeByPointer = (nodeId: string, event: PointerEvent<HTMLElement>) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = clampPosition(((event.clientX - rect.left) / rect.width) * 100, 8, 92);
+    const y = clampPosition(((event.clientY - rect.top) / rect.height) * 100, 14, 86);
+    dragRef.current = { nodeId, moved: true };
+    suppressClickRef.current = true;
+    setNodePositionOverrides((prev) => ({
+      ...prev,
+      [nodeId]: { x, y },
+    }));
+  };
+
+  const startNodeDrag = (nodeId: string, event: PointerEvent<HTMLButtonElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = { nodeId, moved: false };
+    setDraggingNodeId(nodeId);
+  };
+
+  const updateNodeDrag = (nodeId: string, event: PointerEvent<HTMLButtonElement>) => {
+    if (dragRef.current?.nodeId !== nodeId) return;
+    moveNodeByPointer(nodeId, event);
+  };
+
+  const finishNodeDrag = (nodeId: string, event: PointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (dragRef.current?.nodeId === nodeId && !dragRef.current.moved) {
+      suppressClickRef.current = false;
+    }
+    dragRef.current = null;
+    setDraggingNodeId(null);
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 0);
+  };
+
   return (
     <div className="quality-impact-page">
       <section className="quality-command-hero">
@@ -712,11 +965,28 @@ export default function QualityImpactWorkbench() {
         <aside className="quality-left-rail">
           <Card className="quality-side-panel quality-task-panel">
             <div className="quality-task-filter">
-              {taskFilters.map((filter, index) => (
+              {partFilters.map((filter, index) => (
                 <button key={filter} className={index === 0 ? 'active' : ''}>{filter}</button>
               ))}
             </div>
             <Space direction="vertical" size={10} style={{ width: '100%' }}>
+              <div className="quality-object-entry-title">料号 / 对象追踪</div>
+              {objectQuickEntries.map((item) => (
+                <button
+                  key={`${item.objectType}-${item.objectId}`}
+                  className={`quality-event-card quality-object-entry ${graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 'active' : ''}`}
+                  onClick={() => openObjectGraph(item)}
+                >
+                  <span>
+                    <Badge color="blue" />
+                    <strong>{item.title}</strong>
+                  </span>
+                  <small>{item.objectType}</small>
+                  <em>{item.hint}</em>
+                  <Progress percent={graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 100 : 36} size="small" strokeColor="#2d7891" />
+                </button>
+              ))}
+              <div className="quality-object-entry-title">关联异常 / 待办</div>
               {events.map((item) => (
                 <button
                   key={item.id}
@@ -730,22 +1000,6 @@ export default function QualityImpactWorkbench() {
                   <small>{item.id}</small>
                   <em>{item.source}</em>
                   <Progress percent={item.risk_score} size="small" strokeColor={item.risk_score > 85 ? '#c83f49' : '#d48806'} />
-                </button>
-              ))}
-              <div className="quality-object-entry-title">对象入口</div>
-              {objectQuickEntries.map((item) => (
-                <button
-                  key={`${item.objectType}-${item.objectId}`}
-                  className={`quality-event-card quality-object-entry ${graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 'active' : ''}`}
-                  onClick={() => openObjectGraph(item)}
-                >
-                  <span>
-                    <Badge color="blue" />
-                    <strong>{item.title}</strong>
-                  </span>
-                  <small>{item.objectType}</small>
-                  <em>点击后从 Neo4j 查询关系</em>
-                  <Progress percent={graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 100 : 36} size="small" strokeColor="#2d7891" />
                 </button>
               ))}
               <button
@@ -784,7 +1038,7 @@ export default function QualityImpactWorkbench() {
               <span>{event.description}</span>
             </div>
 
-            <div className="quality-graph-canvas object-relationship-canvas">
+            <div className="quality-graph-canvas object-relationship-canvas" ref={canvasRef}>
               <div className="object-canvas-topbar">
                 <div className="object-canvas-heading">
                   <div>
@@ -813,26 +1067,57 @@ export default function QualityImpactWorkbench() {
                 </div>
               </div>
               <div className="object-canvas-lanes" aria-hidden="true">
-                <span>根对象</span>
-                <span>质量确认</span>
-                <span>物料供应</span>
+                <span>供应侧</span>
+                <span>来料检验</span>
+                <span>质量处置</span>
                 <span>生产执行</span>
-                <span>交付闭环</span>
+                <span>交付影响</span>
               </div>
-              {nodes.map((node, index) => (
+              <svg className="object-canvas-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                {layoutEdges.map((edge) => {
+                  const bend = Math.max(8, Math.abs(edge.targetX - edge.sourceX) / 2);
+                  const sourceControlX = edge.sourceX + (edge.targetX >= edge.sourceX ? bend : -bend);
+                  const targetControlX = edge.targetX - (edge.targetX >= edge.sourceX ? bend : -bend);
+                  return (
+                    <path
+                      key={edge.id}
+                      d={`M ${edge.sourceX} ${edge.sourceY} C ${sourceControlX} ${edge.sourceY}, ${targetControlX} ${edge.targetY}, ${edge.targetX} ${edge.targetY}`}
+                    />
+                  );
+                })}
+              </svg>
+              {layoutNodes.map((node, index) => (
                 <button
                   key={node.id}
-                  className={`quality-graph-node node-${index} risk-${node.risk} ${node.id === selectedNode?.id ? 'selected' : ''} ${connectedNodeIds.has(node.id) ? 'connected' : ''}`}
-                  style={overflowNodeStyle(index)}
-                  onClick={() => selectGraphNode(node)}
+                  className={`quality-graph-node risk-${node.risk} role-${node.layoutRole} ${node.id === selectedNode?.id ? 'selected' : ''} ${connectedNodeIds.has(node.id) ? 'connected' : ''} ${draggingNodeId === node.id ? 'dragging' : ''}`}
+                  style={nodePositionStyle(node, index)}
+                  onPointerDown={(pointerEvent) => startNodeDrag(node.id, pointerEvent)}
+                  onPointerMove={(pointerEvent) => updateNodeDrag(node.id, pointerEvent)}
+                  onPointerUp={(pointerEvent) => finishNodeDrag(node.id, pointerEvent)}
+                  onPointerCancel={(pointerEvent) => finishNodeDrag(node.id, pointerEvent)}
+                  onClick={(clickEvent) => {
+                    if (suppressClickRef.current) {
+                      clickEvent.preventDefault();
+                      return;
+                    }
+                    selectGraphNode(node);
+                  }}
                 >
                   <span>{typeIcon[node.type] || <NodeIndexOutlined />}</span>
                   <strong>{node.label}</strong>
                   <small>{node.name}</small>
                 </button>
               ))}
-              {edges.map((edge, index) => (
-                <span key={edge.id} className={`quality-graph-edge edge-${index}`}>
+              {layoutEdges.map((edge) => (
+                <span
+                  key={edge.id}
+                  className="quality-graph-edge"
+                  style={{
+                    left: `${edge.labelX}%`,
+                    top: `${edge.labelY}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
                   {edge.label}
                 </span>
               ))}

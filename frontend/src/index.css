@@ -6547,6 +6547,481 @@ button {
   background: #7fcf9f;
 }
 
+/* Quality object map: fresh technical supply-network style */
+.quality-impact-page {
+  background:
+    linear-gradient(180deg, #f8fcfd 0%, #eef6f8 100%),
+    radial-gradient(circle at 18% 12%, rgba(79, 166, 190, 0.08), transparent 30%),
+    radial-gradient(circle at 84% 18%, rgba(78, 185, 158, 0.08), transparent 28%);
+}
+
+.quality-command-hero {
+  border-color: rgba(31, 105, 132, 0.18);
+  background: linear-gradient(135deg, #0f3b4a, #176274);
+  box-shadow: 0 12px 28px rgba(20, 79, 101, 0.14);
+}
+
+.quality-task-panel .ant-card-body {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 251, 252, 0.96));
+}
+
+.quality-task-filter {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quality-task-filter button {
+  min-height: 28px;
+  border-color: rgba(43, 120, 145, 0.16);
+  background: rgba(248, 252, 253, 0.92);
+}
+
+.quality-object-entry-title {
+  margin-top: 4px;
+  padding-left: 2px;
+  color: #245f73;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.quality-event-card.quality-object-entry {
+  min-height: 86px;
+  border-color: rgba(45, 120, 145, 0.16);
+  background:
+    linear-gradient(90deg, rgba(226, 247, 250, 0.82), rgba(255, 255, 255, 0.95) 36%),
+    #fff;
+}
+
+.quality-event-card.quality-object-entry:hover,
+.quality-event-card.quality-object-entry.active {
+  border-color: #48a7bd;
+  background:
+    linear-gradient(90deg, rgba(205, 244, 249, 0.95), #ffffff 42%),
+    #fff;
+}
+
+.quality-impact-graph-card .ant-card-body {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(239, 248, 250, 0.92)),
+    radial-gradient(circle at 50% 42%, rgba(64, 173, 198, 0.16), transparent 42%);
+}
+
+.quality-event-summary {
+  border-color: rgba(45, 120, 145, 0.14);
+  background: rgba(255, 255, 255, 0.82);
+  color: #244a58;
+  box-shadow: 0 8px 20px rgba(21, 71, 90, 0.06);
+}
+
+.object-relationship-canvas.quality-graph-canvas {
+  overflow: hidden;
+  border-color: rgba(45, 120, 145, 0.2);
+  background:
+    radial-gradient(circle at 52% 47%, rgba(66, 179, 204, 0.22), transparent 31%),
+    linear-gradient(90deg, rgba(45, 120, 145, 0.06) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(45, 120, 145, 0.06) 1px, transparent 1px),
+    linear-gradient(135deg, #f8fdfe 0%, #e8f5f8 100%);
+  background-size: auto, 44px 44px, 44px 44px, auto;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.58), inset 0 -80px 120px rgba(60, 150, 170, 0.08);
+}
+
+.object-canvas-topbar {
+  top: 12px;
+  right: 12px;
+  left: 12px;
+}
+
+.object-canvas-heading {
+  max-width: min(520px, 58%);
+  border-color: rgba(45, 120, 145, 0.16);
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 12px 28px rgba(35, 95, 118, 0.1);
+}
+
+.object-canvas-heading .ant-typography {
+  color: #163f4f;
+}
+
+.object-canvas-heading .ant-typography-secondary {
+  color: #66838e !important;
+}
+
+.object-canvas-topbar .ant-tag {
+  border-color: rgba(45, 120, 145, 0.14);
+  background: rgba(246, 252, 253, 0.88);
+  color: #245f73;
+}
+
+.object-canvas-view-switch {
+  border-color: rgba(45, 120, 145, 0.14);
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 12px 28px rgba(35, 95, 118, 0.08);
+}
+
+.object-canvas-view-switch button {
+  border-color: rgba(45, 120, 145, 0.12);
+  background: #f8fcfd;
+  color: #587783;
+}
+
+.object-canvas-view-switch button:hover,
+.object-canvas-view-switch button.active {
+  border-color: #48a7bd;
+  background: #dff5f8;
+  color: #12475a;
+}
+
+.object-canvas-lanes {
+  z-index: 0;
+}
+
+.object-canvas-lanes span {
+  border-left-color: rgba(45, 120, 145, 0.1);
+  padding-top: 82px;
+  color: rgba(32, 91, 111, 0.24);
+  font-size: 12px;
+}
+
+.supply-network-routes {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.network-route {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(55, 151, 174, 0.5), rgba(88, 196, 166, 0.36), transparent);
+  box-shadow: 0 0 18px rgba(55, 151, 174, 0.14);
+}
+
+.route-primary {
+  left: 15%;
+  top: 48%;
+  width: 70%;
+  height: 3px;
+}
+
+.route-upper {
+  left: 24%;
+  top: 37%;
+  width: 49%;
+  height: 2px;
+  transform: rotate(-10deg);
+}
+
+.route-lower {
+  left: 28%;
+  top: 67%;
+  width: 48%;
+  height: 2px;
+  transform: rotate(9deg);
+}
+
+.route-return {
+  left: 56%;
+  top: 57%;
+  width: 31%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(246, 180, 69, 0.02), rgba(246, 180, 69, 0.42), transparent);
+  transform: rotate(28deg);
+}
+
+.network-pin {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #2d7891;
+  box-shadow: 0 0 0 5px rgba(45, 120, 145, 0.12), 0 0 18px rgba(45, 120, 145, 0.24);
+}
+
+.pin-supplier { left: 74%; top: 38%; }
+.pin-production { left: 50%; top: 67%; }
+.pin-customer { left: 78%; top: 78%; }
+
+.object-relationship-canvas .quality-graph-node {
+  z-index: 3;
+  width: 136px;
+  min-height: 66px;
+  border: 1px solid rgba(45, 120, 145, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 28px rgba(35, 95, 118, 0.12);
+  color: #153847;
+  backdrop-filter: blur(8px);
+}
+
+.object-relationship-canvas .quality-graph-node:hover,
+.object-relationship-canvas .quality-graph-node.selected {
+  border-color: #30a7c2;
+  background: #f8feff;
+  box-shadow: 0 0 0 3px rgba(48, 167, 194, 0.13), 0 16px 34px rgba(35, 95, 118, 0.16);
+}
+
+.object-relationship-canvas .quality-graph-node.connected:not(.selected) {
+  border-color: rgba(245, 181, 72, 0.5);
+  box-shadow: 0 0 0 2px rgba(245, 181, 72, 0.12), 0 12px 28px rgba(35, 95, 118, 0.12);
+}
+
+.object-relationship-canvas .quality-graph-node > span {
+  background: #e9f8fb;
+  color: #23748b;
+}
+
+.object-relationship-canvas .quality-graph-node strong {
+  color: #113846;
+}
+
+.object-relationship-canvas .quality-graph-node small {
+  color: #607c87;
+}
+
+.object-relationship-canvas .quality-graph-node.risk-critical {
+  border-color: rgba(207, 73, 84, 0.46);
+}
+
+.object-relationship-canvas .quality-graph-node.risk-major,
+.object-relationship-canvas .quality-graph-node.risk-medium {
+  border-color: rgba(221, 159, 54, 0.48);
+}
+
+.object-relationship-canvas .quality-graph-edge {
+  z-index: 4;
+  border-color: rgba(45, 120, 145, 0.18);
+  background: rgba(255, 255, 255, 0.82);
+  color: #1e6a80;
+  box-shadow: 0 8px 18px rgba(35, 95, 118, 0.08);
+}
+
+.quality-graph-node.node-0 { left: 50%; top: 36%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-1 { left: 34%; top: 44%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-2 { left: 50%; top: 52%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-3 { left: 68%; top: 40%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-4 { left: 82%; top: 56%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-5 { left: 50%; top: 70%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-6 { left: 32%; top: 70%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-7 { left: 68%; top: 80%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-8 { left: 18%; top: 56%; right: auto; transform: translate(-50%, -50%); }
+
+.quality-graph-edge.edge-0 { left: 42%; top: 40%; right: auto; }
+.quality-graph-edge.edge-1 { left: 44%; top: 49%; right: auto; }
+.quality-graph-edge.edge-2 { left: 58%; top: 47%; right: auto; }
+.quality-graph-edge.edge-3 { left: 73%; top: 49%; right: auto; }
+.quality-graph-edge.edge-4 { left: 58%; top: 61%; right: auto; }
+.quality-graph-edge.edge-5 { left: 40%; top: 67%; right: auto; }
+.quality-graph-edge.edge-6 { left: 59%; top: 75%; right: auto; }
+.quality-graph-edge.edge-7 { left: 27%; top: 52%; right: auto; }
+
+.object-canvas-legend {
+  border-color: rgba(45, 120, 145, 0.16);
+  background: rgba(255, 255, 255, 0.76);
+  color: #4d727f;
+  box-shadow: 0 10px 24px rgba(35, 95, 118, 0.08);
+}
+
+/* Cleaner metro-map layout for the object relationship canvas */
+.object-relationship-canvas.quality-graph-canvas {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(67, 181, 204, 0.18), transparent 24%),
+    linear-gradient(90deg, rgba(45, 120, 145, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(45, 120, 145, 0.045) 1px, transparent 1px),
+    linear-gradient(135deg, #fbfeff 0%, #eef8fa 100%);
+  background-size: auto, 48px 48px, 48px 48px, auto;
+}
+
+.object-canvas-heading {
+  max-width: 360px;
+}
+
+.object-canvas-heading .ant-space {
+  max-width: 100%;
+}
+
+.object-canvas-heading .ant-tag:nth-of-type(n + 3) {
+  display: none;
+}
+
+.supply-network-routes::before,
+.supply-network-routes::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.supply-network-routes::before {
+  left: 16%;
+  top: 50%;
+  width: 68%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(45, 120, 145, 0.36), rgba(45, 120, 145, 0.36), transparent);
+}
+
+.supply-network-routes::after {
+  left: 50%;
+  top: 28%;
+  width: 2px;
+  height: 46%;
+  background: linear-gradient(180deg, transparent, rgba(45, 120, 145, 0.28), rgba(45, 120, 145, 0.28), transparent);
+}
+
+.network-route {
+  opacity: 0.62;
+}
+
+.route-primary {
+  left: 28%;
+  top: 41%;
+  width: 44%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(83, 190, 162, 0.44), transparent);
+}
+
+.route-upper {
+  left: 28%;
+  top: 60%;
+  width: 44%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(83, 190, 162, 0.34), transparent);
+  transform: none;
+}
+
+.route-lower {
+  left: 34%;
+  top: 33%;
+  width: 2px;
+  height: 34%;
+  background: linear-gradient(180deg, transparent, rgba(83, 190, 162, 0.32), transparent);
+  transform: none;
+}
+
+.route-return {
+  left: 66%;
+  top: 33%;
+  width: 2px;
+  height: 42%;
+  background: linear-gradient(180deg, transparent, rgba(246, 180, 69, 0.36), transparent);
+  transform: none;
+}
+
+.network-pin {
+  display: none;
+}
+
+.object-relationship-canvas .quality-graph-node {
+  width: 128px;
+  min-height: 62px;
+  border-radius: 10px;
+}
+
+.object-relationship-canvas .quality-graph-node.selected {
+  width: 150px;
+  min-height: 72px;
+  border-width: 2px;
+}
+
+.quality-graph-node.node-0 { left: 50%; top: 50%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-1 { left: 33%; top: 42%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-2 { left: 67%; top: 42%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-3 { left: 33%; top: 62%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-4 { left: 67%; top: 62%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-5 { left: 18%; top: 50%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-6 { left: 82%; top: 50%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-7 { left: 50%; top: 28%; right: auto; transform: translate(-50%, -50%); }
+.quality-graph-node.node-8 { left: 50%; top: 74%; right: auto; transform: translate(-50%, -50%); }
+
+.quality-graph-edge {
+  min-width: auto;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.quality-graph-edge::before,
+.quality-graph-edge::after {
+  display: none;
+}
+
+.quality-graph-edge.edge-0 { left: 50%; top: 39%; right: auto; transform: translateX(-50%); }
+.quality-graph-edge.edge-1 { left: 50%; top: 60%; right: auto; transform: translateX(-50%); }
+.quality-graph-edge.edge-2 { left: 34%; top: 50%; right: auto; transform: translateX(-50%); }
+.quality-graph-edge.edge-3 { left: 66%; top: 50%; right: auto; transform: translateX(-50%); }
+.quality-graph-edge.edge-4 { left: 50%; top: 29%; right: auto; transform: translateX(-50%); }
+.quality-graph-edge.edge-5 { left: 50%; top: 72%; right: auto; transform: translateX(-50%); }
+.quality-graph-edge.edge-6,
+.quality-graph-edge.edge-7,
+.quality-graph-edge.edge-8,
+.quality-graph-edge.edge-9 {
+  display: none;
+}
+
+/* Data-driven graph rendering: node positions and edges now come from nodes/edges. */
+.supply-network-routes {
+  display: none;
+}
+
+.object-canvas-links {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.object-canvas-links path {
+  fill: none;
+  stroke: rgba(45, 120, 145, 0.42);
+  stroke-width: 0.22;
+  vector-effect: non-scaling-stroke;
+}
+
+.object-canvas-links path:nth-child(2n) {
+  stroke: rgba(75, 178, 155, 0.38);
+}
+
+.object-canvas-links path:nth-child(3n) {
+  stroke: rgba(232, 171, 63, 0.36);
+}
+
+.object-relationship-canvas .quality-graph-node {
+  z-index: 3;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.object-relationship-canvas .quality-graph-node.role-root {
+  width: 154px;
+  min-height: 74px;
+}
+
+.object-relationship-canvas .quality-graph-node.dragging {
+  z-index: 8;
+  cursor: grabbing;
+  box-shadow: 0 0 0 4px rgba(48, 167, 194, 0.16), 0 22px 46px rgba(35, 95, 118, 0.22);
+}
+
+.object-relationship-canvas .quality-graph-node.role-outer {
+  opacity: 0.76;
+}
+
+.object-relationship-canvas .quality-graph-node.role-outer:not(.connected):not(.selected) {
+  transform: translate(-50%, -50%) scale(0.92) !important;
+}
+
+.object-relationship-canvas .quality-graph-edge {
+  z-index: 4;
+  border-color: rgba(45, 120, 145, 0.16);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 8px 18px rgba(35, 95, 118, 0.08);
+  pointer-events: none;
+}
+
 @media (max-width: 1180px) {
   .object-canvas-toolbar,
   .object-canvas-topbar {
