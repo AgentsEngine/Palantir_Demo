@@ -21,19 +21,20 @@
 
 .form-designer-toolbar {
   flex: 0 0 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(190px, 260px) minmax(360px, 1fr) max-content;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
+  gap: 10px;
+  padding: 10px 12px;
   border: 1px solid #dce3ea;
   border-radius: 8px;
   background: #ffffff;
 }
 
 .form-designer-tabs {
-  flex: 1;
-  min-width: 360px;
+  justify-self: center;
+  width: min(520px, 100%);
+  min-width: 0;
 }
 
 .form-designer-tabs .ant-tabs-nav {
@@ -42,6 +43,11 @@
 
 .form-designer-tabs .ant-tabs-nav-wrap {
   justify-content: center;
+}
+
+.form-designer-tabs .ant-tabs-nav-list {
+  justify-content: center;
+  width: 100%;
 }
 
 .form-designer-tabs .ant-tabs-tab span {
@@ -55,10 +61,15 @@
   align-items: baseline;
   gap: 6px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .form-designer-title .ant-typography {
   margin: 0;
+  overflow: hidden;
+  max-width: 132px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .form-designer-title > .ant-space {
@@ -94,6 +105,33 @@
   height: 24px !important;
   padding-inline: 6px !important;
   font-size: 12px;
+}
+
+.form-designer-actions {
+  justify-self: end;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.form-designer-actions .ant-btn {
+  height: 28px;
+  padding-inline: 7px;
+}
+
+.form-designer-actions .ant-btn-text {
+  width: 28px;
+  padding: 0;
+}
+
+.form-designer-actions .ant-btn-primary {
+  min-width: 82px;
+}
+
+.designer-unsaved-tag {
+  margin-inline-end: 2px;
+  padding-inline: 5px;
+  font-size: 11px;
+  line-height: 20px;
 }
 
 .form-designer-shell {
@@ -2127,6 +2165,14 @@
 }
 
 @media (max-width: 1200px) {
+  .form-designer-toolbar {
+    grid-template-columns: minmax(180px, 240px) minmax(300px, 1fr) max-content;
+  }
+
+  .form-designer-tabs {
+    width: min(460px, 100%);
+  }
+
   .form-designer-shell {
     grid-template-columns: 220px minmax(480px, 1fr);
   }
@@ -2144,6 +2190,7 @@
 
   .form-designer-toolbar {
     align-items: flex-start;
+    display: flex;
     flex-direction: column;
   }
 

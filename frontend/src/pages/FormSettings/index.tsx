@@ -1446,16 +1446,14 @@ export default function FormSettingsPage() {
           }}
           items={tabs.map((item) => ({ key: item.key, label: <span>{item.icon}{item.label}</span> }))}
         />
-        <Space wrap>
-          {hasUnsavedChanges && <Tag color="orange">当前有未保存修改</Tag>}
-          <Button icon={<ArrowLeftOutlined />} onClick={warnBeforeLeave}>返回表单</Button>
-          <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>预览</Button>
-          <Button icon={<WarningOutlined />} onClick={() => setPublishCheckOpen(true)}>
-            发布检查
-          </Button>
-          <Button icon={<HistoryOutlined />} onClick={() => setVersionPanelOpen(true)}>版本差异</Button>
-          <Button icon={<SaveOutlined />} onClick={saveDraft}>保存草稿</Button>
-          <Button type="primary" icon={<CheckCircleOutlined />} onClick={publishConfig}>保存配置</Button>
+        <Space className="form-designer-actions" size={4} wrap={false}>
+          {hasUnsavedChanges && <Tag className="designer-unsaved-tag" color="orange">未保存</Tag>}
+          <Button size="small" type="text" title="返回表单" aria-label="返回表单" icon={<ArrowLeftOutlined />} onClick={warnBeforeLeave} />
+          <Button size="small" type="text" title="预览" aria-label="预览" icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)} />
+          <Button size="small" type="text" title="发布检查" aria-label="发布检查" icon={<WarningOutlined />} onClick={() => setPublishCheckOpen(true)} />
+          <Button size="small" type="text" title="版本差异" aria-label="版本差异" icon={<HistoryOutlined />} onClick={() => setVersionPanelOpen(true)} />
+          <Button size="small" type="text" title="保存草稿" aria-label="保存草稿" icon={<SaveOutlined />} onClick={saveDraft} />
+          <Button size="small" type="primary" icon={<CheckCircleOutlined />} onClick={publishConfig}>保存配置</Button>
         </Space>
       </header>
 
@@ -1495,6 +1493,15 @@ export default function FormSettingsPage() {
               />
               <div className="designer-quick-panel">
                 <div className="designer-group-title">快捷排版</div>
+                <div className="designer-side-guide">
+                  <strong>配置引导</strong>
+                  <span>拖入字段/控件，选中后在右侧配置属性，发布前运行检查。</span>
+                  <div>
+                    <Tag color="blue">字段 {baseConfig.fields.length}</Tag>
+                    <Tag color="green">控件 {layoutControls.length}</Tag>
+                    <Tag color={publishErrorCount ? 'red' : 'success'}>阻断 {publishErrorCount}</Tag>
+                  </div>
+                </div>
                 <div className="designer-quick-grid">
                   <Button size="small" icon={<LayoutOutlined />} onClick={applyTwoColumnLayout}>两列</Button>
                   <Button size="small" icon={<TableOutlined />} onClick={applyCompactLayout}>紧凑</Button>
@@ -1504,6 +1511,14 @@ export default function FormSettingsPage() {
                   <Button size="small" icon={<CheckSquareOutlined />} onClick={batchSetRequired}>批量必填</Button>
                   <Button size="small" onClick={() => batchUpdateVisibleControls({ width: 'full' })}>全宽</Button>
                   <Button size="small" icon={<UndoOutlined />} disabled={!history.length} onClick={undoLayoutChange}>撤销</Button>
+                </div>
+                <div className="designer-side-sections">
+                  {alertSections.map((section) => (
+                    <button key={section.key} type="button" onClick={applyBusinessSectionLayout}>
+                      <strong>{section.title}</strong>
+                      <small>{section.desc}</small>
+                    </button>
+                  ))}
                 </div>
               </div>
               {componentPanel === 'components' ? (
