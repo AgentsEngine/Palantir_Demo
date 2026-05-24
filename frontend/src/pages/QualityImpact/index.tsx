@@ -34,6 +34,7 @@ import {
 import {
   createCapa,
   executeQualityEventAction,
+  getBusinessImpactAnalysis,
   getGraphStats,
   getQualityEventAiSuggestion,
   getQualityEventImpact,
@@ -74,6 +75,7 @@ interface ImpactEdge {
   source: string;
   target: string;
   label: string;
+  relation_type?: string;
 }
 
 interface GraphStats {
@@ -99,6 +101,20 @@ interface KnowledgeEvidence {
   guidance: string[];
   evidence_refs: Array<{ source_ref: string; document_title?: string; source_name?: string }>;
   linked_objects: Array<{ type: string; id: string; name: string }>;
+}
+
+interface GraphContext {
+  objectType: string;
+  objectId: string;
+  title: string;
+}
+
+interface GraphPayload {
+  event?: QualityEvent;
+  root?: Record<string, unknown>;
+  nodes?: Array<Record<string, unknown>>;
+  edges?: Array<Record<string, unknown>>;
+  source?: string;
 }
 
 const fallbackEvent: QualityEvent = {
@@ -199,6 +215,30 @@ const typeIcon: Record<string, JSX.Element> = {
   KnowledgeCard: <FileProtectOutlined />,
 };
 
+const objectTypeLabel: Record<string, string> = {
+  QualityEvent: '质量异常',
+  Defect: '缺陷',
+  InspectionBatch: '检验批次',
+  MaterialBatch: '物料批次',
+  Supplier: '供应商',
+  WorkOrder: '工单',
+  Equipment: '设备',
+  CustomerOrder: '客户订单',
+  CAPA: 'CAPA',
+};
+
+const relationLabel: Record<string, string> = {
+  HAS_DEFECT: '发现',
+  FOUND_IN: '发现于',
+  INSPECTS: '检验',
+  SUPPLIED_BY: '供应',
+  USES_BATCH: '使用',
+  USES_EQUIPMENT: '经过',
+  AFFECTS_ORDER: '影响',
+  TRIGGERS: '触发',
+  EVIDENCE_FOR: '证据',
+};
+
 function overflowNodeStyle(index: number): CSSProperties | undefined {
   if (index < 9) return undefined;
   const col = (index - 9) % 4;
@@ -214,7 +254,123 @@ function normalizeRisk(level: RiskLevel) {
   return riskColor[level] || 'blue';
 }
 
+function pickNodeId(node: Record<string, unknown>, index = 0) {
+  return String(node.id || node.object_id || node.source_id || node.name || `graph-node-${index}`);
+}
+
+function normalizeGraphNode(node: Record<string, unknown>, index: number): ImpactNode {
+  const labels = Array.isArray(node.labels) ? node.labels as string[] : [];
+  const type = String(node.type || labels[0] || 'Object');
+  const name = String(node.name || node.source_id || node.id || type);
+  return {
+    id: pickNodeId(node, index),
+    label: String(node.label || objectTypeLabel[type] || type),
+    type,
+    name,
+    status: String(node.status || 'unknown'),
+    risk: String(node.risk || node.severity || 'medium'),
+    summary: String(node.summary || node.description || `${objectTypeLabel[type] || type}：${name}`),
+    actions: Array.isArray(node.actions) ? node.actions as string[] : ['查看关系', '展开影响'],
+    source_id: typeof node.source_id === 'string' ? node.source_id : undefined,
+    source_system: typeof node.source_system === 'string' ? node.source_system : undefined,
+  };
+}
+
+function normalizeGraphEdge(edge: Record<string, unknown>, index: number): ImpactEdge {
+  const relType = String(edge.relation_type || edge.type || edge.label || 'RELATED');
+  return {
+    id: String(edge.id || `graph-edge-${index}`),
+    source: String(edge.source || ''),
+    target: String(edge.target || ''),
+    label: String(edge.label || relationLabel[relType] || relType),
+    relation_type: relType,
+  };
+}
+
+function normalizeGraphPayload(payload: GraphPayload) {
+  const nextNodes = (payload.nodes || []).map((node, index) => normalizeGraphNode(node, index));
+  const validNodeIds = new Set(nextNodes.map((node) => node.id));
+  const nextEdges = (payload.edges || [])
+    .map((edge, index) => normalizeGraphEdge(edge, index))
+    .filter((edge) => validNodeIds.has(edge.source) && validNodeIds.has(edge.target));
+
+  return {
+    event: payload.event,
+    nodes: nextNodes.length ? nextNodes : fallbackNodes,
+    edges: nextEdges.length ? nextEdges : fallbackEdges,
+    source: payload.source || 'graph-api',
+  };
+}
+
+function normalizeMatchValue(value?: string) {
+  return (value || '').toLowerCase().replace(/\s+/g, '');
+}
+
+const objectTypeAliases: Record<string, string[]> = {
+  MaterialBatch: ['Material'],
+  InspectionBatch: ['Inspection'],
+  CustomerOrder: ['SalesOrder'],
+  QualityEvent: ['Defect', 'Inspection'],
+};
+
+function pickSelectedNodeIdForContext(nextNodes: ImpactNode[], context: GraphContext) {
+  const targetTypes = [context.objectType, ...(objectTypeAliases[context.objectType] || [])]
+    .map((item) => normalizeMatchValue(item));
+  const targetId = normalizeMatchValue(context.objectId);
+  const targetTitle = normalizeMatchValue(context.title);
+
+  const matched = nextNodes.find((node) => {
+    const nodeType = normalizeMatchValue(node.type);
+    const nodeId = normalizeMatchValue(node.id);
+    const sourceId = normalizeMatchValue(node.source_id);
+    const name = normalizeMatchValue(node.name);
+
+    return (
+      (targetTypes.includes(nodeType) || !targetTypes.length) &&
+      (
+        nodeId === targetId ||
+        sourceId === targetId ||
+        name === targetId ||
+        name === targetTitle ||
+        nodeId.includes(targetId) ||
+        targetId.includes(nodeId)
+      )
+    );
+  });
+
+  return matched?.id || nextNodes[0]?.id || fallbackNodes[0].id;
+}
+
+function decorateNodesForContext(nextNodes: ImpactNode[], context: GraphContext, eventData?: QualityEvent) {
+  if (context.objectType !== 'QualityEvent' || !eventData) {
+    return nextNodes;
+  }
+
+  let updatedRoot = false;
+  return nextNodes.map((node) => {
+    if (updatedRoot || node.type !== 'QualityEvent') {
+      return node;
+    }
+    updatedRoot = true;
+    return {
+      ...node,
+      name: eventData.id,
+      status: eventData.status,
+      risk: eventData.severity,
+      summary: eventData.description,
+      source_id: eventData.id,
+    };
+  });
+}
+
 const taskFilters = ['全部', 'P0 高风险', '待分析', '待处置', '审批中'];
+
+const objectQuickEntries = [
+  { objectType: 'MaterialBatch', objectId: 'MB-7781 / 焊锡膏 S12', title: '物料批次 MB-7781' },
+  { objectType: 'WorkOrder', objectId: 'WO-260521-017', title: '工单 WO-260521-017' },
+  { objectType: 'Supplier', objectId: '北辰电子材料', title: '供应商 北辰电子材料' },
+  { objectType: 'Equipment', objectId: 'SMT-03 回流焊', title: '设备 SMT-03 回流焊' },
+];
 
 const graphViewOptions = [
   {
@@ -297,6 +453,11 @@ export default function QualityImpactWorkbench() {
   const [graphStats, setGraphStats] = useState<GraphStats | null>(null);
   const [graphSource, setGraphSource] = useState('quality-fallback');
   const [graphView, setGraphView] = useState<GraphViewKey>('impact');
+  const [graphContext, setGraphContext] = useState<GraphContext>({
+    objectType: 'QualityEvent',
+    objectId: fallbackEvent.id,
+    title: fallbackEvent.title,
+  });
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) || nodes[0],
@@ -319,21 +480,116 @@ export default function QualityImpactWorkbench() {
 
   const activeGraphView = graphViewOptions.find((item) => item.key === graphView) || graphViewOptions[0];
 
+  const contextualTimeline = useMemo(() => {
+    if (graphContext.objectType === 'QualityEvent') {
+      return closureTimeline;
+    }
+
+    const sourceLabel = graphSource.includes('fallback') ? '演示子图' : 'Neo4j 子图';
+    return [
+      {
+        time: '当前',
+        offset: 8,
+        width: 18,
+        title: '对象选中',
+        actor: graphContext.title,
+        status: '已切换',
+        desc: `左侧已切换到 ${graphContext.objectType}，右侧展示该对象详情。`,
+        color: 'blue',
+      },
+      {
+        time: '查询',
+        offset: 30,
+        width: 24,
+        title: `${activeGraphView.label}查询`,
+        actor: sourceLabel,
+        status: loading ? '进行中' : '已返回',
+        desc: `后端按 ${graphContext.objectType}:${graphContext.objectId} 查询关系子图。`,
+        color: loading ? 'gray' : 'blue',
+      },
+      {
+        time: '渲染',
+        offset: 58,
+        width: 22,
+        title: '画布更新',
+        actor: `${nodes.length} 对象 / ${edges.length} 关系`,
+        status: '已同步',
+        desc: '中间画布、右侧详情和相关证据已经按当前对象刷新。',
+        color: 'blue',
+      },
+      {
+        time: '下一步',
+        offset: 83,
+        width: 12,
+        title: '动作处理',
+        actor: selectedNode?.name || graphContext.title,
+        status: '待确认',
+        desc: '用户可继续点击节点展开上下文，或执行 CAPA、冻结、复检、通知等动作。',
+        color: 'gray',
+      },
+    ];
+  }, [activeGraphView.label, edges.length, graphContext, graphSource, loading, nodes.length, selectedNode?.name]);
+
+  const loadObjectGraph = async (
+    context: GraphContext,
+    view: GraphViewKey = graphView,
+    eventOverride?: QualityEvent,
+  ) => {
+    setLoading(true);
+    try {
+      const maxHops = view === 'trace' ? 3 : 2;
+      const limit = view === 'task' ? 60 : 80;
+      const res = await getBusinessImpactAnalysis({
+        object_type: context.objectType,
+        object_id: context.objectId,
+        max_hops: maxHops,
+        limit,
+      });
+      const normalized = normalizeGraphPayload(res.data?.data || {});
+      if (eventOverride || normalized.event) {
+        setEvent((eventOverride || normalized.event) as QualityEvent);
+      }
+      const nextNodes = decorateNodesForContext(normalized.nodes, context, eventOverride || normalized.event);
+      setNodes(nextNodes);
+      setEdges(normalized.edges);
+      setGraphSource(`${normalized.source} / ${view}`);
+      setSelectedNodeId(pickSelectedNodeIdForContext(nextNodes, context));
+      setGraphContext(context);
+      setAiSuggestion(null);
+    } catch {
+      if (context.objectType === 'QualityEvent') {
+        const impactRes = await getQualityEventImpact(context.objectId);
+        const normalized = normalizeGraphPayload(impactRes.data?.data || {});
+        if (eventOverride || normalized.event) {
+          setEvent((eventOverride || normalized.event) as QualityEvent);
+        }
+        const nextNodes = decorateNodesForContext(normalized.nodes, context, eventOverride || normalized.event);
+        setNodes(nextNodes);
+        setEdges(normalized.edges);
+        setGraphSource(`${normalized.source} / ${view}`);
+        setSelectedNodeId(pickSelectedNodeIdForContext(nextNodes, context));
+      } else {
+        message.warning('图谱查询暂时不可用，已保留当前画布');
+      }
+      setGraphContext(context);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadEvent = async (eventId = event.id) => {
     setLoading(true);
     try {
       const eventsRes = await listQualityEvents();
       const nextEvents = eventsRes.data?.data || [fallbackEvent];
       const matched = nextEvents.find((item: QualityEvent) => item.id === eventId) || nextEvents[0];
-      const impactRes = await getQualityEventImpact(matched.id);
-      const impact = impactRes.data?.data || {};
       setEvents(nextEvents);
-      setEvent(impact.event || matched);
-      setNodes(impact.nodes || fallbackNodes);
-      setEdges(impact.edges || fallbackEdges);
-      setGraphSource(impact.source || 'quality-api');
-      setSelectedNodeId((impact.nodes || fallbackNodes)[0]?.id || fallbackNodes[0].id);
-      setAiSuggestion(null);
+      setEvent(matched);
+      await loadObjectGraph(
+        { objectType: 'QualityEvent', objectId: matched.id, title: matched.title },
+        graphView,
+        matched,
+      );
     } catch {
       setEvents([fallbackEvent]);
       setEvent(fallbackEvent);
@@ -344,6 +600,24 @@ export default function QualityImpactWorkbench() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const changeGraphView = (view: GraphViewKey) => {
+    setGraphView(view);
+    loadObjectGraph(graphContext, view);
+  };
+
+  const openObjectGraph = (context: GraphContext) => {
+    loadObjectGraph(context, graphView);
+  };
+
+  const selectGraphNode = (node: ImpactNode) => {
+    setSelectedNodeId(node.id);
+    setGraphContext({
+      objectType: node.type,
+      objectId: node.source_id || node.name || node.id,
+      title: node.name,
+    });
   };
 
   useEffect(() => {
@@ -428,7 +702,7 @@ export default function QualityImpactWorkbench() {
           <Typography.Title level={3}>质量异常任务处置台</Typography.Title>
         </div>
         <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={() => loadEvent(event.id)} loading={loading}>刷新</Button>
+          <Button icon={<ReloadOutlined />} onClick={() => loadObjectGraph(graphContext, graphView)} loading={loading}>刷新</Button>
           <Button icon={<RobotOutlined />} onClick={runAiAnalysis} loading={loading}>AI 分析影响</Button>
           <Button type="primary" icon={<FileProtectOutlined />} onClick={() => runAction('generate_capa')}>生成 CAPA</Button>
         </Space>
@@ -458,7 +732,26 @@ export default function QualityImpactWorkbench() {
                   <Progress percent={item.risk_score} size="small" strokeColor={item.risk_score > 85 ? '#c83f49' : '#d48806'} />
                 </button>
               ))}
-              <button className="quality-event-card">
+              <div className="quality-object-entry-title">对象入口</div>
+              {objectQuickEntries.map((item) => (
+                <button
+                  key={`${item.objectType}-${item.objectId}`}
+                  className={`quality-event-card quality-object-entry ${graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 'active' : ''}`}
+                  onClick={() => openObjectGraph(item)}
+                >
+                  <span>
+                    <Badge color="blue" />
+                    <strong>{item.title}</strong>
+                  </span>
+                  <small>{item.objectType}</small>
+                  <em>点击后从 Neo4j 查询关系</em>
+                  <Progress percent={graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 100 : 36} size="small" strokeColor="#2d7891" />
+                </button>
+              ))}
+              <button
+                className={`quality-event-card ${graphContext.objectType === 'CAPA' && graphContext.objectId === 'CAPA-072' ? 'active' : ''}`}
+                onClick={() => openObjectGraph({ objectType: 'CAPA', objectId: 'CAPA-072', title: 'CAPA-072' })}
+              >
                 <span>
                   <Badge color="orange" />
                   <strong>待生成 CAPA 草稿</strong>
@@ -467,7 +760,10 @@ export default function QualityImpactWorkbench() {
                 <em>质量经理 / 待确认</em>
                 <Progress percent={64} size="small" strokeColor="#d48806" />
               </button>
-              <button className="quality-event-card">
+              <button
+                className={`quality-event-card ${graphContext.objectType === 'Supplier' && graphContext.objectId === '北辰电子材料' ? 'active' : ''}`}
+                onClick={() => openObjectGraph({ objectType: 'Supplier', objectId: '北辰电子材料', title: '供应商 北辰电子材料' })}
+              >
                 <span>
                   <Badge color="gold" />
                   <strong>供应商风险复核</strong>
@@ -509,7 +805,7 @@ export default function QualityImpactWorkbench() {
                     <button
                       key={item.key}
                       className={graphView === item.key ? 'active' : ''}
-                      onClick={() => setGraphView(item.key)}
+                      onClick={() => changeGraphView(item.key)}
                     >
                       {item.label}
                     </button>
@@ -528,7 +824,7 @@ export default function QualityImpactWorkbench() {
                   key={node.id}
                   className={`quality-graph-node node-${index} risk-${node.risk} ${node.id === selectedNode?.id ? 'selected' : ''} ${connectedNodeIds.has(node.id) ? 'connected' : ''}`}
                   style={overflowNodeStyle(index)}
-                  onClick={() => setSelectedNodeId(node.id)}
+                  onClick={() => selectGraphNode(node)}
                 >
                   <span>{typeIcon[node.type] || <NodeIndexOutlined />}</span>
                   <strong>{node.label}</strong>
@@ -628,7 +924,7 @@ export default function QualityImpactWorkbench() {
             </div>
             <div className="quality-timeline-track">
               <span className="quality-now-line" />
-              {closureTimeline.map((item) => (
+              {contextualTimeline.map((item) => (
                 <button
                   key={item.title}
                   className={`quality-timeline-segment segment-${item.color}`}
@@ -638,7 +934,7 @@ export default function QualityImpactWorkbench() {
                   <span>{item.time}</span>
                   <strong>{item.title}</strong>
                   <em>{item.actor}</em>
-                  <Tag color={item.status === '进行中' ? 'processing' : item.status === '已完成' ? 'success' : 'default'}>
+                  <Tag color={item.status === '进行中' ? 'processing' : item.status.includes('已') ? 'success' : 'default'}>
                     {item.status}
                   </Tag>
                 </button>

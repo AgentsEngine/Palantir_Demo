@@ -6154,6 +6154,22 @@ button {
   height: 4px !important;
 }
 
+.quality-object-entry-title {
+  margin: 2px 0 -2px;
+  color: #68808a;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.quality-event-card.quality-object-entry {
+  min-height: 82px;
+}
+
+.quality-event-card.quality-object-entry.active {
+  border-color: #2d7891;
+  background: #edf9fc;
+}
+
 .quality-impact-graph-card .ant-card-body {
   background:
     radial-gradient(circle at 50% 44%, rgba(64, 151, 174, 0.18), transparent 42%),
@@ -6359,14 +6375,20 @@ button {
   flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
+  border: 1px solid rgba(132, 216, 232, 0.12);
+  border-radius: 10px;
+  padding: 5px;
+  background: rgba(7, 24, 34, 0.38);
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
 }
 
 .object-canvas-view-switch button {
   min-width: 46px;
-  height: 28px;
+  height: 26px;
   border: 1px solid rgba(132, 216, 232, 0.18);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
   color: rgba(220, 241, 246, 0.72);
   cursor: pointer;
   font-size: 12px;
@@ -6399,31 +6421,37 @@ button {
 
 .object-canvas-topbar {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  left: 12px;
+  top: 14px;
+  right: 14px;
+  left: 14px;
   z-index: 5;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  border: 1px solid rgba(132, 216, 232, 0.16);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: rgba(7, 23, 32, 0.62);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
-  backdrop-filter: blur(12px);
+  pointer-events: none;
 }
 
 .object-canvas-heading {
-  display: grid;
+  display: flex;
   min-width: 0;
-  gap: 6px;
+  max-width: min(620px, 66%);
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 7px;
+  border: 1px solid rgba(132, 216, 232, 0.12);
+  border-radius: 10px;
+  padding: 8px 9px;
+  background: linear-gradient(135deg, rgba(5, 20, 30, 0.42), rgba(11, 43, 58, 0.2));
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
 }
 
 .object-canvas-heading > div {
   display: flex;
   min-width: 0;
+  max-width: 180px;
   flex-direction: column;
   gap: 2px;
 }
@@ -6439,14 +6467,17 @@ button {
 
 .object-canvas-topbar .ant-tag {
   margin-inline-end: 0;
-  border-color: rgba(132, 216, 232, 0.18);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(226, 246, 250, 0.9);
+  border-color: rgba(132, 216, 232, 0.14);
+  border-radius: 999px;
+  background: rgba(10, 35, 48, 0.46);
+  color: rgba(226, 246, 250, 0.82);
+  font-size: 11px;
+  line-height: 20px;
 }
 
 .object-canvas-lanes {
   position: absolute;
-  inset: 64px 0 0;
+  inset: 0;
   z-index: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -6455,7 +6486,7 @@ button {
 
 .object-canvas-lanes span {
   border-left: 1px solid rgba(132, 216, 232, 0.07);
-  padding: 12px 10px;
+  padding: 76px 10px 12px;
   color: rgba(192, 222, 230, 0.18);
   font-size: 11px;
   font-weight: 700;
@@ -6521,6 +6552,10 @@ button {
   .object-canvas-topbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .object-canvas-heading {
+    max-width: 100%;
   }
 
   .object-canvas-view-switch {

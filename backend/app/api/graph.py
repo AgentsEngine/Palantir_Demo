@@ -529,15 +529,15 @@ async def sync_quality_demo_graph():
 async def impact_analysis_by_object(
     object_type: str,
     object_id: str,
-    max_hops: int = Query(5, ge=1, le=8),
-    limit: int = Query(200, ge=1, le=500),
+    max_hops: int = Query(2, ge=1, le=3),
+    limit: int = Query(80, ge=1, le=120),
 ):
     """Business object impact graph with stable string ids."""
     try:
         from app.services.graph_service import graph_service
         data = await asyncio.wait_for(
             graph_service.impact_analysis_by_object(object_type, object_id, max_hops, limit),
-            timeout=5,
+            timeout=3,
         )
         if data:
             return {"data": {**data, "source": "neo4j"}}

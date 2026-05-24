@@ -31,6 +31,13 @@ BUSINESS_GRAPH_LABELS = [
     "KnowledgeCard",
 ]
 
+BUSINESS_LABEL_ALIASES = {
+    "MaterialBatch": ["Material"],
+    "InspectionBatch": ["Inspection"],
+    "CustomerOrder": ["SalesOrder"],
+    "QualityEvent": ["Defect", "Inspection"],
+}
+
 BUSINESS_GRAPH_RELS = [
     "HAS_DEFECT", "FOUND_IN", "INSPECTS", "SUPPLIED_BY",
     "USES_BATCH", "USES_EQUIPMENT", "AFFECTS_ORDER", "TRIGGERS",
@@ -122,60 +129,63 @@ class GraphService:
         self,
         object_type: str,
         object_id: str,
-        max_hops: int = 5,
-        limit: int = 200,
+        max_hops: int = 2,
+        limit: int = 80,
     ) -> dict[str, Any] | None:
-        if object_type not in BUSINESS_GRAPH_LABELS:
+        allowed_labels = set(BUSINESS_GRAPH_LABELS) | set(SAFE_LABELS)
+        if object_type not in allowed_labels:
             raise ValueError(f"Invalid business label: {object_type}")
         self._check_driver()
-        max_hops = max(1, min(max_hops, 8))
-        limit = max(1, min(limit, 500))
+        max_hops = max(1, min(max_hops, 3))
+        limit = max(1, min(limit, 120))
         async with neo4j_driver.session() as session:
-            result = await session.run(
-                f"""
-                MATCH (root:{object_type})
-                WHERE root.id = $object_id
-                   OR root.source_id = $object_id
-                   OR root.name = $object_id
-                CALL {{
-                  WITH root
-                  OPTIONAL MATCH p = (root)-[*1..{max_hops}]-(related)
-                  WITH p WHERE p IS NOT NULL
-                  UNWIND nodes(p) AS n
-                  RETURN collect(DISTINCT n) AS pathNodes
-                }}
-                CALL {{
-                  WITH root
-                  OPTIONAL MATCH p = (root)-[*1..{max_hops}]-(related)
-                  WITH p WHERE p IS NOT NULL
-                  UNWIND relationships(p) AS r
-                  RETURN collect(DISTINCT r) AS pathRels
-                }}
-                WITH root, [root] + pathNodes AS nodes, pathRels AS rels
-                RETURN
-                  root {{.*, labels: labels(root)}} AS root,
-                  [n IN nodes | n {{.*, labels: labels(n)}}][0..$limit] AS nodes,
-                  [r IN rels | r {{.*, type: type(r), source: startNode(r).id, target: endNode(r).id}}][0..$limit] AS edges
-                """,
-                object_id=object_id,
-                limit=limit,
-            )
-            records = await result.data()
-            if not records:
-                return None
-            record = records[0]
-            nodes = record.get("nodes") or []
-            edges = record.get("edges") or []
-            return {
-                "root": record.get("root"),
-                "nodes": nodes,
-                "edges": edges,
-                "summary": {
-                    "node_count": len(nodes),
-                    "edge_count": len(edges),
-                    "max_hops": max_hops,
-                },
-            }
+            query_labels = [
+                label for label in [object_type, *BUSINESS_LABEL_ALIASES.get(object_type, [])]
+                if label in allowed_labels
+            ]
+            for label in query_labels:
+                result = await session.run(
+                    f"""
+                    MATCH (root:{label})
+                    WHERE root.id = $object_id
+                       OR root.object_id = $object_id
+                       OR root.source_id = $object_id
+                       OR root.name = $object_id
+                       OR toString(root.pg_id) = $object_id
+                       OR root.sku = $object_id
+                    OPTIONAL MATCH p = (root)-[*1..{max_hops}]-(related)
+                    WITH root, collect(DISTINCT related)[0..$limit] AS relatedNodes, collect(relationships(p)) AS relGroups
+                    WITH root, [root] + relatedNodes AS nodes, reduce(allRels = [], rels IN relGroups | allRels + rels) AS flattenedRels
+                    UNWIND CASE WHEN size(flattenedRels) = 0 THEN [null] ELSE flattenedRels END AS r
+                    WITH root, nodes, collect(DISTINCT r) AS rels
+                    RETURN
+                      root {{.*, id: coalesce(root.id, toString(root.pg_id), root.name), labels: labels(root)}} AS root,
+                      [n IN nodes | n {{.*, id: coalesce(n.id, toString(n.pg_id), n.name), labels: labels(n)}}][0..$limit] AS nodes,
+                      [r IN rels WHERE r IS NOT NULL | r {{.*, type: type(r), source: coalesce(startNode(r).id, toString(startNode(r).pg_id), startNode(r).name), target: coalesce(endNode(r).id, toString(endNode(r).pg_id), endNode(r).name)}}][0..$limit] AS edges
+                    """,
+                    object_id=object_id,
+                    limit=limit,
+                )
+                records = await result.data()
+                if not records:
+                    continue
+                record = records[0]
+                nodes = record.get("nodes") or []
+                edges = record.get("edges") or []
+                if not nodes:
+                    continue
+                return {
+                    "root": record.get("root"),
+                    "nodes": nodes,
+                    "edges": edges,
+                    "summary": {
+                        "node_count": len(nodes),
+                        "edge_count": len(edges),
+                        "max_hops": max_hops,
+                        "label": label,
+                    },
+                }
+            return None
 
     # ── Entity CRUD ──────────────────────────────────────
 

@@ -85,7 +85,7 @@ export const getBusinessImpactAnalysis = (params: {
   object_id: string;
   max_hops?: number;
   limit?: number;
-}) => api.get('/graph/impact-analysis-by-object', { params });
+}) => api.get('/graph/impact-analysis-by-object', { params, timeout: 6000 });
 export const getEntityRelationships = (entityType: string, entityId: number, relType?: string) =>
   api.get(`/ontology/entities/${entityType}/instances/${entityId}/relationships`, { params: { rel_type: relType } });
 
