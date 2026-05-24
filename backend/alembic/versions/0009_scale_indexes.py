@@ -1,6 +1,6 @@
 """add large-list indexes for SaaS core tables
 
-Revision ID: 0009_dynamic_record_scale_indexes
+Revision ID: 0009_scale_indexes
 Revises: 0008_saas_tenants
 Create Date: 2026-05-24
 """
@@ -9,7 +9,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0009_dynamic_record_scale_indexes"
+revision = "0009_scale_indexes"
 down_revision = "0008_saas_tenants"
 branch_labels = None
 depends_on = None
