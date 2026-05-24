@@ -15,7 +15,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api._model_driven_shared import assert_safe_identifier
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_user, get_db, require_admin
+from app.core.permissions import has_form_permission
 
 router = APIRouter()
 
@@ -172,6 +173,16 @@ class WorkflowBindingUpdate(BaseModel):
 def _uid(user: dict) -> Optional[int]:
     uid = user.get("uid")
     return int(uid) if isinstance(uid, int) and uid > 0 else None
+
+
+async def _ensure_form_permission(
+    db: AsyncSession,
+    user: dict,
+    form_id: int,
+    action: str,
+) -> None:
+    if not await has_form_permission(user, form_id, action, db):
+        raise HTTPException(403, "Form permission denied")
 
 
 def _validate_form_code(code: str) -> None:
@@ -413,6 +424,12 @@ async def list_forms(
             ApplicationForm.enabled.is_(True),
         )
     forms = (await db.execute(query)).scalars().all()
+    if not user.get("is_admin"):
+        visible_forms = []
+        for form in forms:
+            if await has_form_permission(user, form.id, "view", db):
+                visible_forms.append(form)
+        forms = visible_forms
     return {"data": [_form_payload(form) for form in forms]}
 
 
@@ -420,7 +437,7 @@ async def list_forms(
 async def create_form(
     body: FormCreate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Application, ApplicationForm, Form, FormAction, FormLayout
 
@@ -468,7 +485,7 @@ async def create_form(
 async def list_application_form_bindings(
     application_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from sqlalchemy.orm import selectinload
     from app.models.relational import Application, ApplicationForm
@@ -490,7 +507,7 @@ async def upsert_application_form_binding(
     application_id: int,
     body: ApplicationFormUpsert,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from sqlalchemy.orm import selectinload
     from app.models.relational import Application, ApplicationForm, Form
@@ -524,7 +541,7 @@ async def delete_application_form_binding(
     application_id: int,
     form_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import ApplicationForm
 
@@ -542,7 +559,7 @@ async def delete_application_form_binding(
 async def list_application_menu_nodes(
     application_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Application, ApplicationMenuNode
 
@@ -562,7 +579,7 @@ async def create_application_menu_node(
     application_id: int,
     body: MenuNodeCreate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Application, ApplicationMenuNode, Form
 
@@ -592,7 +609,7 @@ async def update_application_menu_node(
     node_id: int,
     body: MenuNodeUpdate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import ApplicationMenuNode, Form
 
@@ -620,7 +637,7 @@ async def delete_application_menu_node(
     application_id: int,
     node_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import ApplicationMenuNode
 
@@ -643,6 +660,7 @@ async def get_form(
     form = await db.get(Form, form_id)
     if not form:
         raise HTTPException(404, "Form not found")
+    await _ensure_form_permission(db, user, form_id, "view")
     fields = (await db.execute(
         select(FormField).where(FormField.form_id == form_id).order_by(FormField.sort_order, FormField.id)
     )).scalars().all()
@@ -671,7 +689,7 @@ async def update_form(
     form_id: int,
     body: FormUpdate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Form
 
@@ -693,7 +711,7 @@ async def create_form_field(
     form_id: int,
     body: FormFieldCreate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Form, FormField
 
@@ -720,7 +738,7 @@ async def update_form_field(
     field_id: int,
     body: FormFieldUpdate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import FormField
 
@@ -739,7 +757,7 @@ async def archive_form_field(
     form_id: int,
     field_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import FormField
 
@@ -761,6 +779,7 @@ async def list_form_layouts(
 
     if not await db.get(Form, form_id):
         raise HTTPException(404, "Form not found")
+    await _ensure_form_permission(db, user, form_id, "view")
     layouts = (await db.execute(
         select(FormLayout).where(FormLayout.form_id == form_id).order_by(FormLayout.layout_type)
     )).scalars().all()
@@ -773,7 +792,7 @@ async def upsert_form_layout(
     layout_type: str,
     body: FormLayoutUpsert,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Form, FormLayout
 
@@ -805,6 +824,7 @@ async def list_form_actions(
 
     if not await db.get(Form, form_id):
         raise HTTPException(404, "Form not found")
+    await _ensure_form_permission(db, user, form_id, "view")
     actions = (await db.execute(
         select(FormAction)
         .where(FormAction.form_id == form_id)
@@ -818,7 +838,7 @@ async def create_form_action(
     form_id: int,
     body: FormActionCreate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Form, FormAction
 
@@ -838,7 +858,7 @@ async def update_form_action(
     action_id: int,
     body: FormActionUpdate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import FormAction
 
@@ -857,7 +877,7 @@ async def delete_form_action(
     form_id: int,
     action_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import FormAction
 
@@ -873,7 +893,7 @@ async def delete_form_action(
 async def list_form_permissions(
     form_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Form, FormPermission
 
@@ -890,7 +910,7 @@ async def create_form_permission(
     form_id: int,
     body: FormPermissionCreate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Form, FormField, FormPermission, Role
 
@@ -918,7 +938,7 @@ async def update_form_permission(
     permission_id: int,
     body: FormPermissionUpdate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import FormField, FormPermission
 
@@ -945,7 +965,7 @@ async def delete_form_permission(
     form_id: int,
     permission_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import FormPermission
 
@@ -961,7 +981,7 @@ async def delete_form_permission(
 async def list_workflow_bindings(
     form_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Form, WorkflowBinding
 
@@ -978,7 +998,7 @@ async def create_workflow_binding(
     form_id: int,
     body: WorkflowBindingCreate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import Form, WorkflowBinding, WorkflowDef
 
@@ -1000,7 +1020,7 @@ async def update_workflow_binding(
     binding_id: int,
     body: WorkflowBindingUpdate,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import WorkflowBinding
 
@@ -1022,7 +1042,7 @@ async def delete_workflow_binding(
     form_id: int,
     binding_id: int,
     db: AsyncSession = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     from app.models.relational import WorkflowBinding
 
@@ -1048,6 +1068,7 @@ async def list_dynamic_records(
 
     if not await db.get(Form, form_id):
         raise HTTPException(404, "Form not found")
+    await _ensure_form_permission(db, user, form_id, "view")
     fields = (await db.execute(
         select(FormField).where(FormField.form_id == form_id).order_by(FormField.sort_order, FormField.id)
     )).scalars().all()
@@ -1080,6 +1101,7 @@ async def create_dynamic_record(
     form = await db.get(Form, form_id)
     if not form:
         raise HTTPException(404, "Form not found")
+    await _ensure_form_permission(db, user, form_id, "create")
     fields = (await db.execute(
         select(FormField).where(FormField.form_id == form_id).order_by(FormField.sort_order, FormField.id)
     )).scalars().all()
@@ -1111,6 +1133,7 @@ async def update_dynamic_record(
     record = await db.get(DynamicRecord, record_id)
     if not record or record.form_id != form_id or record.deleted_at is not None:
         raise HTTPException(404, "Record not found")
+    await _ensure_form_permission(db, user, form_id, "edit")
     updates = body.dict(exclude_unset=True)
     if "data" in updates and updates["data"] is not None:
         fields = (await db.execute(
@@ -1138,6 +1161,7 @@ async def delete_dynamic_record(
     record = await db.get(DynamicRecord, record_id)
     if not record or record.form_id != form_id or record.deleted_at is not None:
         raise HTTPException(404, "Record not found")
+    await _ensure_form_permission(db, user, form_id, "delete")
     record.deleted_at = datetime.now()
     record.updated_by = _uid(user)
     await db.commit()

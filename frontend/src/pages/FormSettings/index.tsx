@@ -1,18 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlertOutlined,
+  ApartmentOutlined,
   ArrowLeftOutlined,
   CalendarOutlined,
+  CheckSquareOutlined,
   CheckCircleOutlined,
   CopyOutlined,
   DatabaseOutlined,
   DeleteOutlined,
   DragOutlined,
+  EyeOutlined,
   FileImageOutlined,
   FileSearchOutlined,
   FormOutlined,
+  HistoryOutlined,
   HolderOutlined,
+  LayoutOutlined,
   LinkOutlined,
   LockOutlined,
+  MobileOutlined,
   NumberOutlined,
   PaperClipOutlined,
   SaveOutlined,
@@ -20,10 +27,13 @@ import {
   SelectOutlined,
   SettingOutlined,
   SwitcherOutlined,
+  TabletOutlined,
   TableOutlined,
   TagsOutlined,
+  UndoOutlined,
   UserOutlined,
   UserSwitchOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import { Button, Input, Modal, Segmented, Select, Space, Tabs, Tag, Typography, message } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -36,6 +46,10 @@ type ControlWidth = 'quarter' | 'half' | 'threeQuarter' | 'full';
 type FlowPortSide = 'top' | 'right' | 'bottom' | 'left';
 type DropPosition = 'before' | 'after';
 type ControlRuleKey = 'visible' | 'readonly' | 'required';
+type PreviewMode = 'create' | 'edit' | 'detail' | 'list';
+type PreviewDevice = 'desktop' | 'tablet' | 'mobile';
+type PreviewRole = 'admin' | 'manager' | 'engineer' | 'viewer';
+type PublishCheckLevel = 'error' | 'warning' | 'suggestion';
 
 interface ControlRuleCondition {
   sourceField?: string;
@@ -130,11 +144,44 @@ interface FlowNodeDefinition {
   icon: React.ReactNode;
 }
 
+interface BusinessSection {
+  key: string;
+  title: string;
+  desc: string;
+  fieldKeys: string[];
+}
+
+interface PublishCheckItem {
+  level: PublishCheckLevel;
+  title: string;
+  detail: string;
+}
+
 const controlWidthOptions = [
   { value: 'quarter', label: '25%' },
   { value: 'half', label: '50%' },
   { value: 'threeQuarter', label: '75%' },
   { value: 'full', label: '100%' },
+];
+
+const previewModeOptions = [
+  { value: 'create', label: '新建记录' },
+  { value: 'edit', label: '编辑记录' },
+  { value: 'detail', label: '只读详情' },
+  { value: 'list', label: '列表页' },
+];
+
+const previewDeviceOptions = [
+  { value: 'desktop', label: '桌面', icon: <LayoutOutlined /> },
+  { value: 'tablet', label: '平板', icon: <TabletOutlined /> },
+  { value: 'mobile', label: '手机', icon: <MobileOutlined /> },
+];
+
+const previewRoleOptions = [
+  { value: 'admin', label: '系统管理员' },
+  { value: 'manager', label: '生产经理' },
+  { value: 'engineer', label: '维修工程师' },
+  { value: 'viewer', label: '普通查看者' },
 ];
 
 const ruleLabels: Record<ControlRuleKey, string> = {
@@ -225,7 +272,13 @@ const configs: Record<string, DesignerConfig> = {
       { key: 'title', name: '告警标题', type: '文本输入', placeholder: '请输入告警标题', required: true, listVisible: true, searchable: true, validation: '2-80 个字符' },
       { key: 'device', name: '关联设备', type: '关联对象', placeholder: '选择设备', required: true, listVisible: true, searchable: true, optionSource: '设备台账' },
       { key: 'level', name: '告警等级', type: '下拉选择', placeholder: '严重 / 一般 / 提醒', required: true, listVisible: true, searchable: true, optionSource: '严重、一般、提醒' },
+      { key: 'source', name: '告警来源', type: '下拉选择', placeholder: '系统监测 / 人工上报 / 外部接口', required: true, listVisible: true, searchable: true, optionSource: '系统监测、人工上报、外部接口' },
+      { key: 'occurredAt', name: '发生时间', type: '日期控件', placeholder: '选择告警发生时间', required: true, listVisible: true, sortable: true },
       { key: 'owner', name: '处理人', type: '人员选择', placeholder: '选择处理人', listVisible: true, searchable: true, optionSource: '组织人员' },
+      { key: 'dueAt', name: '处理时限', type: '日期控件', placeholder: '选择处理截止时间', listVisible: true, sortable: true, validation: '严重告警必须配置处理时限' },
+      { key: 'status', name: '告警状态', type: '下拉选择', placeholder: '待处理 / 处理中 / 已关闭', listVisible: true, searchable: true, optionSource: '待处理、处理中、已关闭' },
+      { key: 'resolution', name: '处理结论', type: '多行文本', placeholder: '填写处理过程和关闭结论', listVisible: false, validation: '关闭告警时必填' },
+      { key: 'evidence', name: '附件证据', type: '附件控件', placeholder: '上传现场图片、日志或凭证', listVisible: false, validation: '严重告警建议必填' },
     ],
     filters: [
       { key: 'keyword', name: '告警编号 / 标题', type: '搜索输入', placeholder: '请输入关键词' },
@@ -335,10 +388,49 @@ const commonControls = commonControlKeys
   .map((key) => componentGroups.flatMap((group) => group.items).find((item) => item.key === key))
   .filter((item): item is ComponentDefinition => Boolean(item));
 
+const alertBusinessSections: BusinessSection[] = [
+  { key: 'basic', title: '基础信息', desc: '识别告警、说明主题和来源', fieldKeys: ['alertId', 'title', 'source', 'occurredAt'] },
+  { key: 'device', title: '设备信息', desc: '定位设备、等级和影响范围', fieldKeys: ['device', 'level'] },
+  { key: 'handle', title: '告警处理', desc: '明确责任人、时限、状态和结论', fieldKeys: ['owner', 'dueAt', 'status', 'resolution'] },
+  { key: 'evidence', title: '附件证据', desc: '上传现场图片、日志和处理凭证', fieldKeys: ['evidence'] },
+  { key: 'approval', title: '审批/流转信息', desc: '展示流程状态、操作记录和关闭轨迹', fieldKeys: [] },
+];
+
+const fieldTemplates: DesignerField[] = [
+  { key: 'templateCode', name: '业务编号', type: '文本 / 自动编号', placeholder: '自动生成唯一编号', locked: true, required: true, listVisible: true, searchable: true, sortable: true },
+  { key: 'templateTitle', name: '标题', type: '文本输入', placeholder: '请输入标题', required: true, listVisible: true, searchable: true },
+  { key: 'templateStatus', name: '状态', type: '下拉选择', placeholder: '待处理 / 处理中 / 已关闭', listVisible: true, searchable: true, optionSource: '待处理、处理中、已关闭' },
+  { key: 'templateLevel', name: '等级', type: '下拉选择', placeholder: '高 / 中 / 低', listVisible: true, searchable: true, optionSource: '高、中、低' },
+  { key: 'templateOwner', name: '责任人', type: '人员选择', placeholder: '选择责任人', listVisible: true, searchable: true, optionSource: '组织人员' },
+  { key: 'templateTime', name: '时间', type: '日期控件', placeholder: '选择时间', listVisible: true, sortable: true },
+  { key: 'templateAttachment', name: '附件', type: '附件控件', placeholder: '上传附件', listVisible: false },
+  { key: 'templateRemark', name: '备注', type: '多行文本', placeholder: '填写备注说明', listVisible: false },
+];
+
+const recommendedRules = [
+  '选择关联设备后自动带出产线、设备位置和默认处理人',
+  '告警等级为“严重”时，附件证据和处理时限必填',
+  '告警状态为“已关闭”时，处理结论必填',
+  '超过处理时限时自动标记为逾期并提醒责任人',
+];
+
+const rolePreviewNotes: Record<PreviewRole, string> = {
+  admin: '可查看、编辑、发布和回滚全部配置',
+  manager: '可查看关键字段、调整责任人并审批关闭',
+  engineer: '可编辑处理过程、附件证据和处理结论',
+  viewer: '仅可查看公开字段，敏感处理信息只读',
+};
+
 function fieldInput(field: DesignerField, placeholderOverride?: string, disabled = false) {
   const placeholder = placeholderOverride || field.placeholder;
   if (field.type.includes('下拉') || field.type.includes('人员') || field.type.includes('关联')) {
     return <Select disabled={disabled} placeholder={placeholder} options={[{ value: 'demo', label: placeholder }]} />;
+  }
+  if (field.type.includes('日期')) {
+    return <Input disabled={disabled} placeholder={placeholder} prefix={<CalendarOutlined />} />;
+  }
+  if (field.type.includes('附件')) {
+    return <Button disabled={disabled} icon={<PaperClipOutlined />}>{placeholder || '选择文件'}</Button>;
   }
   if (field.type.includes('多行')) {
     return <Input.TextArea disabled={disabled} placeholder={placeholder} autoSize={{ minRows: 2, maxRows: 4 }} />;
@@ -552,6 +644,15 @@ export default function FormSettingsPage() {
   const [propertyTab, setPropertyTab] = useState<'control' | 'field'>('control');
   const [copiedControl, setCopiedControl] = useState<LayoutControl | null>(null);
   const [history, setHistory] = useState<LayoutControl[][]>([]);
+  const [future, setFuture] = useState<LayoutControl[][]>([]);
+  const [librarySearch, setLibrarySearch] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('create');
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
+  const [previewRole, setPreviewRole] = useState<PreviewRole>('admin');
+  const [publishCheckOpen, setPublishCheckOpen] = useState(false);
+  const [versionPanelOpen, setVersionPanelOpen] = useState(false);
   const [draggedControlId, setDraggedControlId] = useState('');
   const [dropHint, setDropHint] = useState<{ controlId: string; position: DropPosition } | null>(null);
   const [isCanvasDragActive, setCanvasDragActive] = useState(false);
@@ -579,6 +680,12 @@ export default function FormSettingsPage() {
     setVersion(baseConfig.version);
     setCopiedControl(null);
     setHistory([]);
+    setFuture([]);
+    setLibrarySearch('');
+    setHasUnsavedChanges(false);
+    setPreviewOpen(false);
+    setPublishCheckOpen(false);
+    setVersionPanelOpen(false);
     setDraggedControlId('');
     setDropHint(null);
     setCanvasDragActive(false);
@@ -606,6 +713,63 @@ export default function FormSettingsPage() {
     () => baseConfig.fields.find((field) => field.key === (selectedControl?.fieldKey || selectedAssetKey)),
     [baseConfig.fields, selectedAssetKey, selectedControl],
   );
+  const normalizedLibrarySearch = librarySearch.trim().toLowerCase();
+  const matchesLibrarySearch = (text: string) => !normalizedLibrarySearch || text.toLowerCase().includes(normalizedLibrarySearch);
+  const filteredCommonControls = commonControls.filter((item) => matchesLibrarySearch(`${item.name} ${item.desc} ${item.category}`));
+  const filteredComponentGroups = componentGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => matchesLibrarySearch(`${group.category} ${item.name} ${item.desc}`)),
+    }))
+    .filter((group) => !normalizedLibrarySearch || group.items.length > 0 || matchesLibrarySearch(group.category));
+  const filteredFields = baseConfig.fields.filter((field) => matchesLibrarySearch(`${field.name} ${field.key} ${field.type} ${field.optionSource || ''}`));
+  const alertSections = baseConfig.id === 'alert-center' ? alertBusinessSections : [
+    { key: 'default', title: '基础信息', desc: '当前表单的主要录入字段', fieldKeys: baseConfig.fields.map((field) => field.key) },
+  ];
+  const searchableFieldCount = baseConfig.fields.filter((field) => field.searchable).length;
+  const requiredControlsInCanvas = layoutControls.filter((control) => control.rules.required.enabled).length;
+  const hiddenRequiredControls = layoutControls.filter((control) => !control.rules.visible.enabled && control.rules.required.enabled);
+  const publishChecks = useMemo<PublishCheckItem[]>(() => {
+    const canvasFieldKeys = new Set(layoutControls.map((control) => control.fieldKey).filter(Boolean));
+    const missingRequired = baseConfig.fields.filter((field) => field.required && !canvasFieldKeys.has(field.key));
+    const enumWithoutSource = baseConfig.fields.filter((field) => field.type.includes('下拉') && !field.optionSource);
+    const relationWithoutSource = baseConfig.fields.filter((field) => field.type.includes('关联') && !field.optionSource);
+    const checks: PublishCheckItem[] = [
+      {
+        level: missingRequired.length ? 'error' : 'suggestion',
+        title: '必填字段覆盖',
+        detail: missingRequired.length ? `以下必填字段不在表单中：${missingRequired.map((field) => field.name).join('、')}` : '所有必填字段都已放入表单画布。',
+      },
+      {
+        level: enumWithoutSource.length ? 'error' : 'suggestion',
+        title: '枚举选项完整性',
+        detail: enumWithoutSource.length ? `以下枚举字段缺少选项：${enumWithoutSource.map((field) => field.name).join('、')}` : '枚举字段均已配置选项来源。',
+      },
+      {
+        level: relationWithoutSource.length ? 'warning' : 'suggestion',
+        title: '关联数据源',
+        detail: relationWithoutSource.length ? `以下关联字段需要补充数据源：${relationWithoutSource.map((field) => field.name).join('、')}` : '关联字段均有数据来源。',
+      },
+      {
+        level: searchableFieldCount ? 'suggestion' : 'warning',
+        title: '搜索体验',
+        detail: searchableFieldCount ? `已配置 ${searchableFieldCount} 个可搜索字段。` : '建议至少配置一个可搜索字段。',
+      },
+      {
+        level: hiddenRequiredControls.length ? 'error' : 'suggestion',
+        title: '规则冲突',
+        detail: hiddenRequiredControls.length ? `以下控件同时隐藏且必填：${hiddenRequiredControls.map((control) => control.name).join('、')}` : '未发现隐藏且必填的规则冲突。',
+      },
+      {
+        level: baseConfig.id === 'alert-center' ? 'suggestion' : 'warning',
+        title: '严重告警处理规则',
+        detail: baseConfig.id === 'alert-center' ? '已启用推荐规则：严重告警要求附件证据和处理时限。' : '建议按业务场景配置高风险记录的强制处理规则。',
+      },
+    ];
+    return checks;
+  }, [baseConfig.fields, baseConfig.id, hiddenRequiredControls, layoutControls, searchableFieldCount]);
+  const publishErrorCount = publishChecks.filter((item) => item.level === 'error').length;
+  const publishWarningCount = publishChecks.filter((item) => item.level === 'warning').length;
 
   const updateSelectedControlRule = (ruleKey: ControlRuleKey, patch: Partial<ControlRule>) => {
     if (!selectedControl) return;
@@ -667,6 +831,111 @@ export default function FormSettingsPage() {
         title={title}
       />
     );
+  };
+
+  const markUnsaved = () => setHasUnsavedChanges(true);
+
+  const saveDraft = () => {
+    setHasUnsavedChanges(false);
+    message.success('草稿已保存，发布前不会影响已发布表单');
+  };
+
+  const publishConfig = () => {
+    setPublishCheckOpen(true);
+  };
+
+  const confirmPublish = () => {
+    if (publishErrorCount > 0) {
+      message.error('请先处理发布检查中的阻断项');
+      return;
+    }
+    setPublishCheckOpen(false);
+    setHasUnsavedChanges(false);
+    message.success('配置已发布，已记录变更摘要和发布时间');
+  };
+
+  const warnBeforeLeave = () => {
+    if (!hasUnsavedChanges) {
+      navigate(`/program/${baseConfig.id}`);
+      return;
+    }
+    Modal.confirm({
+      title: '当前有未保存修改',
+      content: '离开后本次表单设置调整将不会保留。建议先保存草稿或发布配置。',
+      okText: '仍然离开',
+      cancelText: '继续配置',
+      onOk: () => navigate(`/program/${baseConfig.id}`),
+    });
+  };
+
+  const applyTwoColumnLayout = () => {
+    commitLayoutChange((current) => current.map((control) => ({ ...control, width: 'half' })));
+    message.success('已应用两列布局');
+  };
+
+  const applyCompactLayout = () => {
+    commitLayoutChange((current) => current.map((control) => ({
+      ...control,
+      width: control.controlType === 'textarea' || control.controlType === 'upload' ? 'full' : 'quarter',
+    })));
+    message.success('已应用紧凑布局');
+  };
+
+  const applyBusinessSectionLayout = () => {
+    const controls: LayoutControl[] = [];
+    alertSections.forEach((section) => {
+      controls.push({
+        id: `section-${section.key}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        source: 'component',
+        controlType: 'divider',
+        name: section.title,
+        desc: section.desc,
+        width: 'full',
+        rules: makeControlRules(),
+      });
+      section.fieldKeys
+        .map((fieldKey) => baseConfig.fields.find((field) => field.key === fieldKey))
+        .filter((field): field is DesignerField => Boolean(field))
+        .forEach((field) => controls.push(makeFieldControl(field)));
+    });
+    commitLayoutChange(() => controls);
+    setSelectedControlId(controls.find((control) => control.fieldKey)?.id || '');
+    message.success('已按告警业务分组重新排版');
+  };
+
+  const batchUpdateVisibleControls = (patch: Partial<LayoutControl>) => {
+    commitLayoutChange((current) => current.map((control) => (
+      control.source === 'field' ? { ...control, ...patch } : control
+    )));
+  };
+
+  const batchSetRequired = () => {
+    commitLayoutChange((current) => current.map((control) => (
+      control.source === 'field'
+        ? { ...control, rules: { ...control.rules, required: { ...control.rules.required, enabled: true } } }
+        : control
+    )));
+    message.success('已将画布中的字段批量设为必填');
+  };
+
+  const addTemplateField = (template: DesignerField) => {
+    const field = { ...template, key: `${template.key}-${Date.now()}` };
+    const control = makeFieldControl(field);
+    commitLayoutChange((current) => [...current, control]);
+    setSelectedControlId(control.id);
+    message.success(`已添加常用字段模板：${template.name}`);
+  };
+
+  const redoLayoutChange = () => {
+    setFuture((current) => {
+      const nextState = current[current.length - 1];
+      if (!nextState) return current;
+      setHistory((previous) => [...previous.slice(-19), layoutControls]);
+      setLayoutControls(nextState);
+      setSelectedControlId('');
+      message.success('已重做画布操作');
+      return current.slice(0, -1);
+    });
   };
 
   const startFlowNodeDrag = (event: React.PointerEvent<HTMLDivElement>, node: FlowNode) => {
@@ -751,6 +1020,8 @@ export default function FormSettingsPage() {
     setLayoutControls((current) => {
       const next = updater(current);
       setHistory((previous) => [...previous.slice(-19), current]);
+      setFuture([]);
+      markUnsaved();
       return next;
     });
   };
@@ -759,8 +1030,10 @@ export default function FormSettingsPage() {
     setHistory((current) => {
       const previous = current[current.length - 1];
       if (!previous) return current;
+      setFuture((next) => [...next.slice(-19), layoutControls]);
       setLayoutControls(previous);
       setSelectedControlId('');
+      markUnsaved();
       message.success('已撤回上一步画布操作');
       return current.slice(0, -1);
     });
@@ -871,6 +1144,10 @@ export default function FormSettingsPage() {
       if (metaKey && key === 'z') {
         event.preventDefault();
         undoLayoutChange();
+      }
+      if (metaKey && key === 'y') {
+        event.preventDefault();
+        redoLayoutChange();
       }
       if (!metaKey && (event.key === 'Delete' || event.key === 'Backspace') && selectedControl) {
         event.preventDefault();
@@ -1117,6 +1394,40 @@ export default function FormSettingsPage() {
     : null;
   const activeRuleLabel = ruleModal ? ruleLabels[ruleModal.ruleKey] : '';
   const conditionFieldOptions = baseConfig.fields.map((field) => ({ value: field.key, label: field.name }));
+  const previewControls = layoutControls.filter((control) => control.rules.visible.enabled);
+  const renderPreviewContent = () => {
+    if (previewMode === 'list') {
+      const columns = baseConfig.fields.filter((field) => field.listVisible).slice(0, previewDevice === 'mobile' ? 3 : 6);
+      return (
+        <div className="designer-preview-table">
+          <div className="designer-preview-table-head">
+            {columns.map((field) => <span key={field.key}>{field.name}</span>)}
+          </div>
+          {[1, 2, 3].map((row) => (
+            <div className="designer-preview-table-row" key={row}>
+              {columns.map((field) => <span key={field.key}>{field.placeholder || field.name}</span>)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div className="designer-preview-form">
+        {previewControls.map((control) => {
+          const field = baseConfig.fields.find((item) => item.key === control.fieldKey);
+          return (
+            <div className={`designer-preview-control ${controlWidthClass(previewDevice === 'mobile' ? 'full' : control.width)}`} key={control.id}>
+              <span className={control.rules.required.enabled ? 'designer-required-label' : undefined}>{control.name}</span>
+              {control.source === 'field' && field
+                ? fieldInput(field, control.placeholder, previewMode === 'detail' || control.rules.readonly.enabled || previewRole === 'viewer')
+                : renderComponentInput({ ...control, rules: { ...control.rules, readonly: { ...control.rules.readonly, enabled: previewMode === 'detail' || previewRole === 'viewer' } } })}
+              {control.helpText && <small>{control.helpText}</small>}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="form-designer-page">
@@ -1136,9 +1447,15 @@ export default function FormSettingsPage() {
           items={tabs.map((item) => ({ key: item.key, label: <span>{item.icon}{item.label}</span> }))}
         />
         <Space wrap>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/program/${baseConfig.id}`)}>返回表单</Button>
-          <Button icon={<SaveOutlined />}>保存草稿</Button>
-          <Button type="primary" icon={<CheckCircleOutlined />}>保存配置</Button>
+          {hasUnsavedChanges && <Tag color="orange">当前有未保存修改</Tag>}
+          <Button icon={<ArrowLeftOutlined />} onClick={warnBeforeLeave}>返回表单</Button>
+          <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>预览</Button>
+          <Button icon={<WarningOutlined />} onClick={() => setPublishCheckOpen(true)}>
+            发布检查
+          </Button>
+          <Button icon={<HistoryOutlined />} onClick={() => setVersionPanelOpen(true)}>版本差异</Button>
+          <Button icon={<SaveOutlined />} onClick={saveDraft}>保存草稿</Button>
+          <Button type="primary" icon={<CheckCircleOutlined />} onClick={publishConfig}>保存配置</Button>
         </Space>
       </header>
 
@@ -1151,6 +1468,18 @@ export default function FormSettingsPage() {
                 <span>{activeTab === 'flow' ? '流程节点库' : tabs.find((item) => item.key === activeTab)?.label}</span>
               )}
             </div>
+            {activeTab === 'form' && (
+              <div className="designer-library-search">
+                <Input
+                  allowClear
+                  prefix={<SearchOutlined />}
+                  placeholder="搜索字段、控件或分类"
+                  value={librarySearch}
+                  onChange={(event) => setLibrarySearch(event.target.value)}
+                />
+                <small>字段库绑定业务数据，控件库负责展示和布局。</small>
+              </div>
+            )}
 
           {activeTab === 'form' ? (
             <>
@@ -1164,12 +1493,25 @@ export default function FormSettingsPage() {
                   { label: '字段库', value: 'fieldTypes' },
                 ]}
               />
+              <div className="designer-quick-panel">
+                <div className="designer-group-title">快捷排版</div>
+                <div className="designer-quick-grid">
+                  <Button size="small" icon={<LayoutOutlined />} onClick={applyTwoColumnLayout}>两列</Button>
+                  <Button size="small" icon={<TableOutlined />} onClick={applyCompactLayout}>紧凑</Button>
+                  <Button size="small" icon={<ApartmentOutlined />} onClick={applyBusinessSectionLayout}>业务分组</Button>
+                </div>
+                <div className="designer-quick-grid">
+                  <Button size="small" icon={<CheckSquareOutlined />} onClick={batchSetRequired}>批量必填</Button>
+                  <Button size="small" onClick={() => batchUpdateVisibleControls({ width: 'full' })}>全宽</Button>
+                  <Button size="small" icon={<UndoOutlined />} disabled={!history.length} onClick={undoLayoutChange}>撤销</Button>
+                </div>
+              </div>
               {componentPanel === 'components' ? (
                 <div className="designer-component-library">
                   <section className="designer-component-group">
                     <div className="designer-group-title">常用控件</div>
                     <div className="designer-component-list">
-                      {commonControls.map((item) => (
+                      {filteredCommonControls.map((item) => (
                         <div
                           className="designer-component"
                           draggable
@@ -1187,7 +1529,7 @@ export default function FormSettingsPage() {
                       ))}
                     </div>
                   </section>
-                  {componentGroups.map((group) => (
+                  {filteredComponentGroups.map((group) => (
                     <details className="designer-component-group designer-component-collapse" key={group.category}>
                       <summary className="designer-group-title">
                         <span>{group.category}</span>
@@ -1218,10 +1560,18 @@ export default function FormSettingsPage() {
                 <>
                   <div className="designer-panel-head designer-panel-head-gap">
                     <strong>字段库</strong>
-                    <span>{baseConfig.fields.length} 个</span>
+                    <span>{filteredFields.length} / {baseConfig.fields.length} 个</span>
+                  </div>
+                  <div className="designer-template-grid">
+                    {fieldTemplates.filter((field) => matchesLibrarySearch(`${field.name} ${field.type}`)).map((field) => (
+                      <button key={field.key} type="button" onClick={() => addTemplateField(field)}>
+                        <span>{field.name}</span>
+                        <small>{field.type}</small>
+                      </button>
+                    ))}
                   </div>
                   <div className="designer-field-list">
-                    {baseConfig.fields.map((field) => (
+                    {filteredFields.map((field) => (
                       <div
                         className={`designer-field ${selectedAssetKey === field.key ? 'designer-field-active' : ''}`}
                         draggable
@@ -1335,6 +1685,25 @@ export default function FormSettingsPage() {
             >
               <div className="create-form-modal" onClick={(event) => event.stopPropagation()}>
                 <div className={`create-form-grid ${isCanvasDragActive ? 'canvas-drag-active' : ''}`}>
+                  <div className="designer-canvas-guide">
+                    <div>
+                      <strong>配置引导</strong>
+                      <span>从左侧拖入字段或控件，点击画布元素在右侧配置属性，发布前先运行检查。</span>
+                    </div>
+                    <Space wrap>
+                      <Tag color="blue">字段 {baseConfig.fields.length}</Tag>
+                      <Tag color="green">画布控件 {layoutControls.length}</Tag>
+                      <Tag color={publishErrorCount ? 'red' : 'success'}>阻断项 {publishErrorCount}</Tag>
+                    </Space>
+                  </div>
+                  <div className="designer-section-map">
+                    {alertSections.map((section) => (
+                      <button key={section.key} type="button" onClick={applyBusinessSectionLayout}>
+                        <strong>{section.title}</strong>
+                        <small>{section.desc}</small>
+                      </button>
+                    ))}
+                  </div>
                   {layoutControls.map(renderCanvasControl)}
                   {isCanvasDragActive && draggedControlId && !dropHint && <div className="canvas-drop-end-indicator">拖到这里放在末尾</div>}
                 </div>
@@ -1570,6 +1939,18 @@ export default function FormSettingsPage() {
                           <label><span>显示</span>{controlRuleToggle('visible')}</label>
                           <label><span>只读</span>{controlRuleToggle('readonly')}</label>
                           <label><span>必输</span>{controlRuleToggle('required')}</label>
+                          <div className="designer-rule-summary-list">
+                            {(['visible', 'readonly', 'required'] as ControlRuleKey[]).map((ruleKey) => {
+                              const rule = selectedControl.rules[ruleKey];
+                              const condition = rule.conditions;
+                              return (
+                                <span key={ruleKey}>
+                                  {ruleLabels[ruleKey]}：{rule.enabled ? (condition?.sourceField ? `当 ${condition.sourceField} ${condition.operator || 'equals'} ${condition.value || '指定值'} 时生效` : '始终生效') : '关闭'}
+                                </span>
+                              );
+                            })}
+                            {hiddenRequiredControls.length > 0 && <Tag color="red">存在隐藏且必填冲突</Tag>}
+                          </div>
                         </section>
                         <section className="designer-prop-section">
                           <strong className="designer-prop-section-title">提示与联动</strong>
@@ -1620,12 +2001,90 @@ export default function FormSettingsPage() {
                 <label><span>默认列数</span><Select value="2" options={[{ value: '1', label: '单列' }, { value: '2', label: '两列' }, { value: '3', label: '三列' }]} /></label>
                 <label><span>字段间距</span><Select value="12" options={[{ value: '8', label: '紧凑' }, { value: '12', label: '标准' }, { value: '16', label: '宽松' }]} /></label>
                 <label><span>表单说明</span><Input value={baseConfig.description} readOnly /></label>
+                <label><span>发布状态</span><Input value={hasUnsavedChanges ? '当前草稿有未保存修改' : '草稿与已发布版本一致'} readOnly /></label>
+                <label><span>发布检查</span><Input value={`${publishErrorCount} 个阻断项 / ${publishWarningCount} 个警告`} readOnly /></label>
+              </section>
+              <section className="designer-prop-section">
+                <strong className="designer-prop-section-title">推荐联动</strong>
+                {recommendedRules.map((rule) => <div className="designer-rule-pill" key={rule}>{rule}</div>)}
               </section>
             </div>
           )}
         </aside>
         )}
       </section>
+
+      <Modal
+        centered
+        className="designer-preview-modal"
+        footer={null}
+        onCancel={() => setPreviewOpen(false)}
+        open={previewOpen}
+        title="表单预览"
+        width={980}
+      >
+        <div className="designer-preview-toolbar">
+          <Segmented value={previewMode} onChange={(value) => setPreviewMode(value as PreviewMode)} options={previewModeOptions} />
+          <Segmented value={previewDevice} onChange={(value) => setPreviewDevice(value as PreviewDevice)} options={previewDeviceOptions.map((item) => ({ value: item.value, label: <span>{item.icon}{item.label}</span> }))} />
+          <Select value={previewRole} onChange={(value) => setPreviewRole(value as PreviewRole)} options={previewRoleOptions} />
+        </div>
+        <div className="designer-role-note">{rolePreviewNotes[previewRole]}</div>
+        <div className={`designer-preview-shell designer-preview-${previewDevice}`}>
+          <div className="designer-preview-surface">
+            <div className="designer-preview-head">
+              <strong>{baseConfig.createTitle}</strong>
+              <Tag color={previewMode === 'detail' ? 'default' : 'blue'}>{previewModeOptions.find((item) => item.value === previewMode)?.label}</Tag>
+            </div>
+            {renderPreviewContent()}
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        centered
+        className="designer-check-modal"
+        okText={publishErrorCount ? '处理阻断项' : '确认发布'}
+        onCancel={() => setPublishCheckOpen(false)}
+        onOk={confirmPublish}
+        open={publishCheckOpen}
+        title="发布检查"
+      >
+        <div className="designer-check-summary">
+          <Tag color={publishErrorCount ? 'red' : 'success'}>{publishErrorCount} 个阻断项</Tag>
+          <Tag color={publishWarningCount ? 'orange' : 'default'}>{publishWarningCount} 个警告</Tag>
+          <Tag color="blue">{publishChecks.filter((item) => item.level === 'suggestion').length} 个建议</Tag>
+        </div>
+        <div className="designer-check-list">
+          {publishChecks.map((item) => (
+            <div className={`designer-check-item designer-check-${item.level}`} key={item.title}>
+              <span>{item.level === 'error' ? <AlertOutlined /> : item.level === 'warning' ? <WarningOutlined /> : <CheckCircleOutlined />}</span>
+              <div>
+                <strong>{item.title}</strong>
+                <small>{item.detail}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Modal>
+
+      <Modal
+        centered
+        footer={null}
+        onCancel={() => setVersionPanelOpen(false)}
+        open={versionPanelOpen}
+        title="草稿与已发布版本"
+      >
+        <div className="designer-version-panel">
+          <div><span>已发布版本</span><strong>v0.1 · 2026-05-24 10:20</strong></div>
+          <div><span>当前草稿</span><strong>{hasUnsavedChanges ? '存在未发布修改' : '无差异'}</strong></div>
+          <div><span>变更摘要</span><strong>字段顺序、业务分组、预览/发布检查规则</strong></div>
+          <Space wrap>
+            <Button onClick={saveDraft} icon={<SaveOutlined />}>保存草稿</Button>
+            <Button danger onClick={() => { setHasUnsavedChanges(false); setVersionPanelOpen(false); message.success('已回滚到上一发布版本'); }}>回滚上一版</Button>
+            <Button type="primary" onClick={() => { setVersionPanelOpen(false); setPublishCheckOpen(true); }}>发布当前草稿</Button>
+          </Space>
+        </div>
+      </Modal>
 
       <Modal
         centered

@@ -1,6 +1,6 @@
 # API Reference
 
-Last updated: 2026-05-23
+Last updated: 2026-05-24
 
 Source of truth: `backend/app/main.py` and `backend/app/api/*`.
 
@@ -34,6 +34,23 @@ Default token expiration is controlled by `ACCESS_TOKEN_EXPIRE_MINUTES`; the cur
 | `POST` | `/auth/login` |
 | `POST` | `/auth/logout` |
 | `GET` | `/auth/me` |
+
+## Authorization
+
+Current backend authorization boundaries:
+
+| Surface | Access rule |
+| --- | --- |
+| `/admin/*` | admin-only through `require_admin` |
+| `/applications` | returns only applications visible to the current user's roles |
+| `/applications/{app_id}` | rejects inaccessible or unpublished apps for non-admin users |
+| `/applications/{app_id}/menus` | rejects inaccessible apps |
+| `/forms` runtime reads | returns/checks forms the current user can view |
+| `/forms/{form_id}/records` | checks `view/create/edit/delete` form permissions |
+| `/forms` configuration endpoints | admin-only |
+
+Permission implementation notes are in
+`docs/architecture/permission-system.md`.
 
 ## Mounted API Modules
 
@@ -116,6 +133,8 @@ curl -X POST http://localhost:8000/api/v1/forms \
   -d "{\"name\":\"Service Ticket\",\"code\":\"service_ticket\",\"application_id\":1}"
 ```
 
+This is an admin-only configuration API.
+
 Add a form field:
 
 ```bash
@@ -124,6 +143,8 @@ curl -X POST http://localhost:8000/api/v1/forms/1/fields \
   -H "Content-Type: application/json" \
   -d "{\"field_name\":\"customer_name\",\"label\":\"Customer Name\",\"field_type\":\"string\",\"required\":true}"
 ```
+
+This is an admin-only configuration API.
 
 Create a dynamic record:
 
@@ -134,12 +155,16 @@ curl -X POST http://localhost:8000/api/v1/forms/1/records \
   -d "{\"data\":{\"customer_name\":\"Acme\",\"priority\":\"high\"}}"
 ```
 
+The caller must have `create` permission for the form.
+
 List dynamic records with pagination and text search:
 
 ```bash
 curl "http://localhost:8000/api/v1/forms/1/records?page=1&page_size=20&search=Acme" \
   -H "Authorization: Bearer <token>"
 ```
+
+The caller must have `view` permission for the form.
 
 Search local knowledge base:
 

@@ -1,6 +1,6 @@
 # Backend Development Guide
 
-Last updated: 2026-05-23
+Last updated: 2026-05-24
 
 Source of truth: `backend/app/main.py`, `backend/app/api/*`,
 `backend/app/models/*`, `backend/alembic/versions/*`, and
@@ -145,10 +145,45 @@ upload pipeline, or knowledge tables.
 
 - JWTs are passed as Bearer tokens.
 - `SECRET_KEY`, CORS, and `DEMO_AUTH_OPTIONAL` must be production-hardened.
+- Use `require_admin` for admin/configuration-only APIs.
+- Use `app.core.permissions.has_permission` or `require_permission` for generic
+  resource/action authorization.
+- Use `app.core.permissions.has_form_permission` for platform form runtime
+  record access.
+- Frontend menu or button visibility is never the final security boundary.
 - SQL values must be parameterized.
 - Model-driven table/column names must pass allowlists and identifier checks.
 - Graph free-query endpoints must remain read-only and use Cypher guardrails.
 - Do not log secrets, tokens, or connection strings.
+
+## Permission Enforcement
+
+Current implementation details are documented in
+`docs/architecture/permission-system.md`.
+
+Backend permission boundaries currently include:
+
+| Surface | Current enforcement |
+| --- | --- |
+| `/api/v1/admin/*` | `require_admin` |
+| `/api/v1/applications` | application list filtered by current user roles |
+| `/api/v1/applications/{app_id}` | rejects inaccessible apps |
+| `/api/v1/applications/{app_id}/menus` | rejects inaccessible apps |
+| Platform form configuration APIs | `require_admin` |
+| Platform form runtime records | `view/create/edit/delete` form permission checks |
+
+When adding a new route, decide explicitly whether it is:
+
+```text
+public health/info
+authenticated runtime
+generic RBAC protected
+form permission protected
+admin-only configuration
+```
+
+Do not add a state-changing endpoint with only `get_current_user` unless every
+authenticated user is intentionally allowed to perform that action.
 
 ## Tests
 

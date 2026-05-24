@@ -3,11 +3,13 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 
-router = APIRouter()
+from app.api.deps import require_admin
+
+router = APIRouter(dependencies=[Depends(require_admin)])
 
 
 # ── Schemas ───────────────────────────────────────────────

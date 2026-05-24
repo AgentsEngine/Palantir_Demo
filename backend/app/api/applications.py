@@ -108,6 +108,26 @@ async def _role_names_for_user(db: AsyncSession, user: dict) -> list[str]:
         return _mock_role_names(user)
 
 
+async def _user_can_access_application(db: AsyncSession, user: dict, app_id: int) -> bool:
+    if user.get("is_admin"):
+        return True
+    role_names = await _role_names_for_user(db, user)
+    if not role_names:
+        return False
+    from app.models.relational import ApplicationRole, Role
+
+    allowed_role_id = await db.scalar(
+        select(Role.id)
+        .join(ApplicationRole, ApplicationRole.role_id == Role.id)
+        .where(
+            ApplicationRole.application_id == app_id,
+            Role.name.in_(role_names),
+        )
+        .limit(1)
+    )
+    return allowed_role_id is not None
+
+
 def _menu_tree(items: list[dict]) -> list[dict]:
     nodes: dict[int, dict] = {}
     roots: list[dict] = []
@@ -307,6 +327,8 @@ async def list_application_menus(app_id: int, user: dict = Depends(get_current_u
         app = await session.get(Application, app_id)
         if not app or app.status != "published":
             raise HTTPException(404, "Application not found")
+        if not await _user_can_access_application(session, user, app_id):
+            raise HTTPException(403, "Application access denied")
         platform_nodes = (await session.execute(
             select(ApplicationMenuNode)
             .where(ApplicationMenuNode.application_id == app_id, ApplicationMenuNode.visible.is_(True))
@@ -354,6 +376,10 @@ async def get_application(app_id: int, user: dict = Depends(get_current_user), d
         app = await session.get(Application, app_id)
         if not app:
             raise HTTPException(404, "Application not found")
+        if not user.get("is_admin") and app.status != "published":
+            raise HTTPException(404, "Application not found")
+        if not await _user_can_access_application(session, user, app_id):
+            raise HTTPException(403, "Application access denied")
         return {"data": await _application_to_dict(session, app, include_bindings=True)}
 
     result = await safe_db_call(_query)

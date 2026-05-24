@@ -1,6 +1,6 @@
 # ManuFoundry Documentation
 
-Last updated: 2026-05-23
+Last updated: 2026-05-24
 
 This directory is split into three kinds of documents:
 
@@ -18,6 +18,7 @@ Read these first when you want the current system truth:
 4. [Testing](operations/testing.md)
 5. [Platform Database Landing Plan](architecture/platform-database.md)
 6. [Knowledge Base](architecture/knowledge-base.md)
+7. [Permission System](architecture/permission-system.md)
 
 ## Current Implementation Docs
 
@@ -26,6 +27,7 @@ Read these first when you want the current system truth:
 | [Architecture Overview](architecture/overview.md) | Current full-system architecture, Palantir mapping, module layout, data flow, deployment shape. |
 | [API Reference](development/api-reference.md) | Current FastAPI route map and example requests. |
 | [Platform Database Landing Plan](architecture/platform-database.md) | Current low-code forms/application/menu persistence design and rollout notes. |
+| [Permission System](architecture/permission-system.md) | Current authentication, RBAC, application visibility, admin guards, and platform form permission enforcement. |
 | [Knowledge Base](architecture/knowledge-base.md) | Current local knowledge/RAG MVP and future persistence boundary. |
 | [Graph Database Integration](architecture/graph-database-integration.md) | Current graph sync and quality impact graph integration. |
 | [Knowledge Base Workflow](business/knowledge-base-workflow.md) | User workflow for knowledge upload, review, binding, and workbench use. |
@@ -76,6 +78,7 @@ These documents explain the product direction inspired by Palantir Foundry, AIP,
 | Production frontend port | inherited development port | host `80` to container `80` |
 | AI stack | Prophet/LangChain active | currently optional/future; active AI APIs are implemented directly |
 | Forms platform | "next phase persistence" | `/api/v1/forms` and migration `0006_platform_forms.py` exist |
+| Permissions | frontend/menu-only visibility | backend admin guards, application access checks, and platform form runtime permission checks exist |
 | Knowledge base | frontend-only concept | `/api/v1/knowledge` exists as a local TF-IDF RAG MVP |
 | Time-series storage | TimescaleDB active | `sensor_readings` is currently a normal relational table |
 

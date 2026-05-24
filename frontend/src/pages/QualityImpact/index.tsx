@@ -226,13 +226,19 @@ const typeIcon: Record<string, JSX.Element> = {
   QualityEvent: <WarningOutlined />,
   Defect: <SafetyCertificateOutlined />,
   InspectionBatch: <CheckCircleOutlined />,
+  Inspection: <CheckCircleOutlined />,
   MaterialBatch: <ApiOutlined />,
+  Material: <ApiOutlined />,
   Supplier: <ShareAltOutlined />,
   WorkOrder: <ControlOutlined />,
   Equipment: <ToolOutlined />,
   CustomerOrder: <SendOutlined />,
+  SalesOrder: <SendOutlined />,
   CAPA: <FileProtectOutlined />,
   KnowledgeCard: <FileProtectOutlined />,
+  Operation: <ControlOutlined />,
+  ProductBatch: <ApiOutlined />,
+  InventoryLot: <PauseCircleOutlined />,
 };
 
 const objectTypeLabel: Record<string, string> = {
@@ -245,6 +251,12 @@ const objectTypeLabel: Record<string, string> = {
   Equipment: '设备',
   CustomerOrder: '客户订单',
   CAPA: 'CAPA',
+  Operation: '工序',
+  ProductBatch: '产品批次',
+  InventoryLot: '库存批次',
+  Material: '物料',
+  Inspection: '检验批次',
+  SalesOrder: '客户订单',
 };
 
 const relationLabel: Record<string, string> = {
@@ -257,6 +269,11 @@ const relationLabel: Record<string, string> = {
   AFFECTS_ORDER: '影响',
   TRIGGERS: '触发',
   EVIDENCE_FOR: '证据',
+  RUNS_OPERATION: '工序',
+  PRODUCES_BATCH: '产出',
+  STORED_AS: '库存',
+  REINSPECTS: '复检',
+  MAY_CAUSE: '可能导致',
 };
 
 const typeStage: Record<string, number> = {
@@ -273,6 +290,9 @@ const typeStage: Record<string, number> = {
   CustomerOrder: 86,
   SalesOrder: 86,
   KnowledgeItem: 90,
+  ProductBatch: 78,
+  InventoryLot: 36,
+  Operation: 60,
 };
 
 function overflowNodeStyle(index: number): CSSProperties {
@@ -551,13 +571,12 @@ function decorateNodesForContext(nextNodes: ImpactNode[], context: GraphContext,
   });
 }
 
-const partFilters = ['全部', '物料批次', '工单', '供应商', '设备'];
+const partFilters = ['全部', '焊锡膏', '电控模块', '待判定'];
 
 const objectQuickEntries = [
-  { objectType: 'MaterialBatch', objectId: 'MB-7781 / 焊锡膏 S12', title: '物料批次 MB-7781', hint: '供应 / 库存 / 工单 / 订单' },
-  { objectType: 'WorkOrder', objectId: 'WO-260521-017', title: '工单 WO-260521-017', hint: '用料 / 设备 / 质量 / 交付' },
-  { objectType: 'Supplier', objectId: '北辰电子材料', title: '供应商 北辰电子材料', hint: '来料批次 / 整改 / 风险' },
-  { objectType: 'Equipment', objectId: 'SMT-03 回流焊', title: '设备 SMT-03 回流焊', hint: '工序 / 维护 / 缺陷关联' },
+  { objectType: 'MaterialBatch', objectId: 'MB-7781 / 焊锡膏 S12', title: 'MB-7781 / 焊锡膏 S12', hint: '供应商 / 检验 / 库存 / 工单' },
+  { objectType: 'InventoryLot', objectId: 'INV-7781-A / 待判定库存', title: 'INV-7781-A / 待判定库存', hint: '物料批次 / 冻结状态 / 复检' },
+  { objectType: 'ProductBatch', objectId: 'PB-260521-A / 电控模块 V2', title: 'PB-260521-A / 电控模块 V2', hint: '工单 / 工序 / 订单 / 异常' },
 ];
 
 const graphViewOptions = [
@@ -970,7 +989,7 @@ export default function QualityImpactWorkbench() {
               ))}
             </div>
             <Space direction="vertical" size={10} style={{ width: '100%' }}>
-              <div className="quality-object-entry-title">料号 / 对象追踪</div>
+              <div className="quality-object-entry-title">料号</div>
               {objectQuickEntries.map((item) => (
                 <button
                   key={`${item.objectType}-${item.objectId}`}
@@ -986,46 +1005,6 @@ export default function QualityImpactWorkbench() {
                   <Progress percent={graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 100 : 36} size="small" strokeColor="#2d7891" />
                 </button>
               ))}
-              <div className="quality-object-entry-title">关联异常 / 待办</div>
-              {events.map((item) => (
-                <button
-                  key={item.id}
-                  className={`quality-event-card ${item.id === event.id ? 'active' : ''}`}
-                  onClick={() => loadEvent(item.id)}
-                >
-                  <span>
-                    <Badge color={normalizeRisk(item.severity)} />
-                    <strong>{item.title}</strong>
-                  </span>
-                  <small>{item.id}</small>
-                  <em>{item.source}</em>
-                  <Progress percent={item.risk_score} size="small" strokeColor={item.risk_score > 85 ? '#c83f49' : '#d48806'} />
-                </button>
-              ))}
-              <button
-                className={`quality-event-card ${graphContext.objectType === 'CAPA' && graphContext.objectId === 'CAPA-072' ? 'active' : ''}`}
-                onClick={() => openObjectGraph({ objectType: 'CAPA', objectId: 'CAPA-072', title: 'CAPA-072' })}
-              >
-                <span>
-                  <Badge color="orange" />
-                  <strong>待生成 CAPA 草稿</strong>
-                </span>
-                <small>CAPA-TASK-072</small>
-                <em>质量经理 / 待确认</em>
-                <Progress percent={64} size="small" strokeColor="#d48806" />
-              </button>
-              <button
-                className={`quality-event-card ${graphContext.objectType === 'Supplier' && graphContext.objectId === '北辰电子材料' ? 'active' : ''}`}
-                onClick={() => openObjectGraph({ objectType: 'Supplier', objectId: '北辰电子材料', title: '供应商 北辰电子材料' })}
-              >
-                <span>
-                  <Badge color="gold" />
-                  <strong>供应商风险复核</strong>
-                </span>
-                <small>SUP-RISK-023</small>
-                <em>采购 / 待跟进</em>
-                <Progress percent={48} size="small" strokeColor="#faad14" />
-              </button>
             </Space>
           </Card>
         </aside>

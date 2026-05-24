@@ -26,6 +26,10 @@ QUALITY_BUSINESS_ID_MAP = {
     "equipment-smt-03": "equipment-smt-03",
     "order-so-8821": "customer-order-so-8821",
     "capa-072": "capa-072",
+    "operation-reflow-01": "operation-reflow-01",
+    "product-batch-pb-260521-a": "product-batch-pb-260521-a",
+    "inventory-lot-inv-7781-a": "inventory-lot-inv-7781-a",
+    "inspection-recheck-091": "inspection-batch-recheck-260521-091",
 }
 
 QUALITY_EDGE_REL_MAP = {
@@ -37,6 +41,14 @@ QUALITY_EDGE_REL_MAP = {
     "r6": ("USES_EQUIPMENT", "workorder-260521-017", "equipment-smt-03"),
     "r7": ("AFFECTS_ORDER", "workorder-260521-017", "order-so-8821"),
     "r8": ("TRIGGERS", "event-qe-001", "capa-072"),
+    "r9": ("RUNS_OPERATION", "workorder-260521-017", "operation-reflow-01"),
+    "r10": ("USES_EQUIPMENT", "operation-reflow-01", "equipment-smt-03"),
+    "r11": ("MAY_CAUSE", "operation-reflow-01", "defect-001"),
+    "r12": ("PRODUCES_BATCH", "workorder-260521-017", "product-batch-pb-260521-a"),
+    "r13": ("AFFECTS_ORDER", "product-batch-pb-260521-a", "order-so-8821"),
+    "r14": ("STORED_AS", "material-batch-mb-7781", "inventory-lot-inv-7781-a"),
+    "r15": ("REINSPECTS", "capa-072", "inspection-recheck-091"),
+    "r16": ("REINSPECTS", "inspection-recheck-091", "product-batch-pb-260521-a"),
 }
 
 
