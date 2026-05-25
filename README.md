@@ -1,59 +1,46 @@
-# ManuFoundry
+# ManuFoundry / Palantir Demo
 
-ManuFoundry is a manufacturing low-code workbench for building operational applications on top of factory data, semantic assets, workflow, graph exploration, and AI-assisted knowledge operations.
+一个面向制造业场景的低代码数据工作台原型。项目目标是把生产、质量、设备、供应链等业务数据组织成可配置的应用、表单、菜单、权限、知识库和图谱探索能力。
 
-This repository is currently a full-stack product prototype rather than a static demo. It includes a React workbench, FastAPI service layer, PostgreSQL relational model, Neo4j graph capabilities, Redis-backed infrastructure, Alembic migrations, seed data, and product documentation.
+当前项目仍处于开发演示阶段，不是可直接商用的完整平台。README 以 2026-05-25 当前代码状态为准。
 
-Last aligned for the active development branch on 2026-05-25.
+## 当前已经包含的内容
 
-## What It Does
+- 登录、用户信息、账号中心和应用工作台外壳。
+- 系统管理：用户、角色、权限、组织、应用、菜单、语义资产。
+- 低代码表单：表单定义、字段、布局、动作、权限、动态记录。
+- 制造业演示数据：工厂、车间、产线、设备、传感器、工单、质检、SPC、客户、供应商、物料和订单。
+- 知识库能力：文档上传、Markdown 内容、分块、抽取任务、实体/关系抽取结果持久化。
+- 本体与图谱：本体管理、图谱查询、质量事件影响链路等可视化能力。
+- 业务模块：生产看板、预测性维护、质量分析、供应链风险、报表、规则、工作流、通知、模板市场。
+- AI 相关服务：AI 助手接口、知识摄取、抽取策略、Provider 抽象、提示词和工具层雏形。
 
-- Manufacturing application workspace with login, account center, application switching, and role-aware navigation.
-- Low-code application and menu management for composing business workspaces.
-- Dynamic forms, form permissions, workflow bindings, list/form layouts, and configurable actions.
-- Identity and access management with users, roles, role permissions, organization units, and user-organization memberships.
-- Semantic asset center for models, fields, relationships, aliases, business terms, and knowledge-base metadata.
-- Knowledge base APIs for document ingestion, extraction jobs, extracted entities, chunk search, and AI-ready context.
-- Ontology and graph exploration backed by Neo4j-aware services, with graceful degradation when graph services are unavailable.
-- Manufacturing demo domains for production, maintenance, quality, supply chain, reports, rules, notifications, and analytics.
-- AI service layer with provider abstraction, safety policies, prompt contracts, memory scaffolding, tools, and knowledge ingestion helpers.
+## 技术栈
 
-## Current Product Areas
-
-| Area | Highlights |
+| 层 | 技术 |
 | --- | --- |
-| Workspace | Authenticated shell, app switcher, account center, global navigation |
-| System Admin | Users, roles, permissions, organizations, apps, menus, semantic assets |
-| Low-Code Forms | Dynamic form metadata, fields, layouts, actions, permissions, records |
-| Knowledge Base | Upload/ingest flows, extraction persistence, entity review, chunk search |
-| Ontology | Model/field/relation visualization and graph-driven exploration |
-| Manufacturing Demo | Production, equipment, quality, materials, orders, inspections, SPC |
-| AI Platform | Assistant APIs, ingestion, orchestration contracts, provider abstraction |
+| 前端 | React 18, TypeScript, Vite, Ant Design, ECharts, Cytoscape, ReactFlow, Zustand |
+| 后端 | FastAPI, SQLAlchemy 2, Alembic, Pydantic |
+| 数据库 | PostgreSQL, SQLite fallback |
+| 图数据库 | Neo4j 5 Community |
+| 缓存 | Redis |
+| 部署 | Docker Compose |
+| 测试 | pytest, TypeScript build |
 
-For the full documentation index, see [docs/README.md](docs/README.md).
-
-## Tech Stack
-
-- Frontend: React 18, TypeScript, Vite, Ant Design, Zustand, ECharts, Cytoscape, ReactFlow.
-- Backend: FastAPI, SQLAlchemy 2, Alembic, Pydantic, async PostgreSQL access.
-- Data stores: PostgreSQL, Neo4j, Redis, and SQLite for local demo fallback/bootstrap.
-- Deployment: Docker Compose base stack plus production overlay.
-- Testing: pytest for backend service/API behavior, TypeScript build checks for frontend.
-
-## Repository Layout
+## 目录结构
 
 ```text
-backend/              FastAPI app, migrations, models, tests, service layer
-frontend/             React workbench and Vite build
-data/seed/            Manufacturing seed data
-docker/               Compose files, Dockerfiles, nginx config
-docs/                 Architecture, business, development, and operations docs
-scripts/              Seed and operational helper scripts
+backend/      FastAPI 后端、模型、迁移、测试和服务层
+frontend/     React 前端工作台
+data/seed/    制造业演示种子数据
+docker/       Docker Compose、Dockerfile、nginx 配置
+docs/         架构、业务、开发和运维文档
+scripts/      数据初始化和辅助脚本
 ```
 
-## Local Development
+## 本地启动
 
-Backend:
+### 后端
 
 ```bash
 cd backend
@@ -61,7 +48,7 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Frontend:
+### 前端
 
 ```bash
 cd frontend
@@ -69,120 +56,127 @@ npm install
 npm run dev
 ```
 
-Local URLs:
+默认地址：
 
-- Frontend: `http://localhost:3000`
-- Backend API docs: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/health`
+- 前端：`http://localhost:3000`
+- 后端接口文档：`http://localhost:8000/docs`
+- 健康检查：`http://localhost:8000/health`
 
-Default demo login:
+默认演示账号：
 
-- Username: `admin`
-- Password: `admin123`
+- 用户名：`admin`
+- 密码：`admin123`
 
-## Docker Development Stack
+## Docker 启动
+
+开发模式：
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-Development ports:
+开发端口：
 
-- Frontend Vite server: `http://localhost:3000`
-- Backend: `http://localhost:8000`
-- PostgreSQL: `localhost:5432`
-- Neo4j Browser: `http://localhost:7474`
-- Redis: `localhost:6379`
+- 前端：`http://localhost:3000`
+- 后端：`http://localhost:8000`
+- PostgreSQL：`localhost:5432`
+- Neo4j Browser：`http://localhost:7474`
+- Redis：`localhost:6379`
 
-## Production-Style Stack
+生产风格模式：
 
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --build
 ```
 
-Production-style ports:
+生产风格端口：
 
-- Frontend: host port `80`, served by nginx from the frontend container.
-- Backend: host port `8000`.
+- 前端：`http://localhost`，宿主机端口 `80`
+- 后端：`http://localhost:8000`
 
-The production overlay builds the static frontend with `frontend/Dockerfile`, serves it with nginx, and proxies `/api/` to the backend service.
+生产风格模式要求提供 `SECRET_KEY`，并使用 `DEMO_AUTH_OPTIONAL=false`。
 
-## Database And Migrations
+## 数据库迁移
 
-Run migrations from the backend environment:
+在后端环境中执行：
 
 ```bash
 cd backend
 alembic upgrade head
 ```
 
-The current migration stream includes SaaS tenant isolation, large-list indexes, identity seed data, demo organization units, application-role bindings, and knowledge extraction persistence.
+当前迁移包含：
 
-Important data families:
+- 应用、菜单和角色绑定表。
+- 表单平台、动态记录和工作流绑定。
+- 租户字段和核心列表索引。
+- 演示管理员、用户、角色、权限、组织和应用角色数据。
+- 知识库文档、分块、抽取任务、抽取实体和抽取关系持久化。
 
-- `users`, `roles`, `user_roles`, `role_permissions`
-- `org_units`, `user_org_memberships`
-- `applications`, `application_roles`, `application_menu_nodes`
-- `forms`, `form_fields`, `form_layouts`, `form_actions`, `form_permissions`, `dynamic_records`
-- knowledge extraction and semantic asset tables
-- manufacturing seed tables such as equipment, sensors, inspections, SPC points, orders, materials, suppliers, and work orders
+## 主要 API 前缀
 
-## API Prefixes
+所有业务接口挂在 `/api/v1` 下。
 
-All business APIs are mounted under `/api/v1`.
-
-| Area | Prefix |
+| 模块 | 前缀 |
 | --- | --- |
-| Auth | `/api/v1/auth` |
-| Admin | `/api/v1/admin` |
-| Applications | `/api/v1/applications` |
-| Data sources | `/api/v1/data-sources` |
-| Knowledge | `/api/v1/knowledge` |
-| Ontology | `/api/v1/ontology` |
-| Graph | `/api/v1/graph` |
-| Pipelines | `/api/v1/pipelines` |
-| Analytics | `/api/v1/analytics` |
-| Maintenance | `/api/v1/maintenance` |
-| Quality | `/api/v1/quality` |
-| Supply chain | `/api/v1/supply-chain` |
-| AI assistant | `/api/v1/ai` |
-| Reports | `/api/v1/reports` |
-| Model-driven | `/api/v1/model-driven` |
-| Rules | `/api/v1/rules` |
-| Notifications | `/api/v1/notifications` |
-| Templates | `/api/v1/templates` |
-| Config import/export | `/api/v1/config` |
-| Scheduler | `/api/v1/scheduler` |
-| Search | `/api/v1/search` |
-| AI builder | `/api/v1/ai-builder` |
+| 认证 | `/api/v1/auth` |
+| 系统管理 | `/api/v1/admin` |
+| 应用管理 | `/api/v1/applications` |
+| 表单平台 | `/api/v1/forms` |
+| 语义资产 | `/api/v1/semantic-assets` |
+| 知识库 | `/api/v1/knowledge` |
+| 数据源 | `/api/v1/data-sources` |
+| 本体 | `/api/v1/ontology` |
+| 图谱 | `/api/v1/graph` |
+| 数据管道 | `/api/v1/pipelines` |
+| 生产总览 | `/api/v1/dashboard` |
+| 分析 | `/api/v1/analytics` |
+| 维护 | `/api/v1/maintenance` |
+| 质量 | `/api/v1/quality` |
+| 供应链 | `/api/v1/supply-chain` |
+| AI 助手 | `/api/v1/ai` |
+| 报表 | `/api/v1/reports` |
+| 模型驱动 | `/api/v1/model-driven` |
+| 规则 | `/api/v1/rules` |
+| 工作流 | `/api/v1/workflow` |
+| 通知 | `/api/v1/notifications` |
+| 模板 | `/api/v1/templates` |
+| 配置导入导出 | `/api/v1/config` |
+| 定时任务 | `/api/v1/scheduler` |
+| 搜索 | `/api/v1/search` |
+| AI Builder | `/api/v1/ai-builder` |
 
-## Verification
+## 验证命令
 
-Frontend:
+前端构建：
 
 ```bash
 cd frontend
 npm run build
 ```
 
-Backend:
+后端测试：
 
 ```bash
 cd backend
 python -m pytest
 ```
 
-Focused checks used frequently during active development:
+常用的重点测试：
 
 ```bash
 cd backend
 python -m pytest tests/test_ai_agent_services.py tests/test_ai_knowledge_api.py tests/test_knowledge_ingestion.py tests/test_knowledge_extraction.py tests/test_security.py tests/test_forms_platform.py
 ```
 
-## Notes For Active Development
+## 开发注意事项
 
-- Production mode requires a real `SECRET_KEY` and `DEMO_AUTH_OPTIONAL=false`.
-- The production frontend should listen on host port `80`; the frontend container serves nginx on container port `80`.
-- Neo4j-backed graph features should degrade safely when Neo4j is unavailable.
-- Local runtime artifacts such as archives and `runtime-logs/` are not part of the repository.
-- This branch is still evolving quickly; prefer migrations and seed scripts over manual database edits whenever a dataset needs to survive redeploys.
+- `runtime-logs/`、临时 tar 包、本地数据库快照等运行产物不要提交。
+- 生产环境不要使用默认密码，部署后应立即修改管理员密码。
+- Neo4j 不可用时，图谱相关功能应降级，不应影响基础业务 API。
+- 服务器生产前端约定监听宿主机 `80` 端口，容器内 nginx 监听 `80`。
+- 数据结构变化优先通过 Alembic 迁移和 seed 脚本固化，少做手工数据库修改。
+
+## 文档
+
+更多细节见 [docs/README.md](docs/README.md)。
