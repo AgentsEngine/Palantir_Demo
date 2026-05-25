@@ -1,8 +1,14 @@
 # AI Capability Map
 
-> Version: v0.1  
-> Date: 2026-05-20  
-> Scope: ManuFoundry AI capabilities for Q&A, assistance, proactive operations, and agentic execution.
+Last updated: 2026-05-25
+
+Status: roadmap/design. This document defines AI capability direction and risk
+levels; implemented API entry points are called out separately.
+
+Version: v0.1
+
+Scope: ManuFoundry AI capabilities for Q&A, assistance, proactive operations,
+and agentic execution.
 
 ## 1. Purpose
 

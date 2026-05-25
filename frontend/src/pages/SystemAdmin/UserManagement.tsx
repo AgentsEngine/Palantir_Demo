@@ -10,10 +10,20 @@ import {
   Switch,
   Table,
   Tag,
+  Tooltip,
   Typography,
+  Upload,
   message,
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
+import type { UploadProps } from 'antd';
 import {
   adminCreateUser,
   adminDeleteUser,
@@ -63,6 +73,45 @@ const orgTypeLabel: Record<string, string> = {
   factory: '工厂',
   department: '部门',
   team: '班组',
+};
+
+const csvEscape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+const parseCsv = (text: string) => {
+  const rows: string[][] = [];
+  let field = '';
+  let row: string[] = [];
+  let quoted = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    const next = text[i + 1];
+    if (quoted) {
+      if (char === '"' && next === '"') {
+        field += '"';
+        i += 1;
+      } else if (char === '"') {
+        quoted = false;
+      } else {
+        field += char;
+      }
+    } else if (char === '"') {
+      quoted = true;
+    } else if (char === ',') {
+      row.push(field);
+      field = '';
+    } else if (char === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else if (char !== '\r') {
+      field += char;
+    }
+  }
+  if (field || row.length) rows.push([...row, field]);
+  const [headers = [], ...records] = rows.filter((items) => items.some(Boolean));
+  return records.map((items) => Object.fromEntries(headers.map((header, index) => [header.trim(), items[index]?.trim() || ''])));
 };
 
 export default function UserManagement() {
@@ -148,6 +197,52 @@ export default function UserManagement() {
     }
   };
 
+  const exportUsers = () => {
+    const headers = ['username', 'display_name', 'email', 'is_active', 'is_admin', 'role_ids', 'org_unit_ids'];
+    const lines = [
+      headers.join(','),
+      ...users.map((user) => headers.map((header) => {
+        if (header === 'role_ids') return csvEscape(user.roles?.map((role) => role.id).join('|'));
+        if (header === 'org_unit_ids') return csvEscape(user.org_units?.map((org) => org.id).join('|'));
+        return csvEscape(user[header as keyof UserItem]);
+      }).join(',')),
+    ];
+    const blob = new Blob([`\uFEFF${lines.join('\n')}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `users-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importUsers: UploadProps['beforeUpload'] = async (file) => {
+    try {
+      const text = await file.text();
+      const rawRows = file.name.toLowerCase().endsWith('.json') ? JSON.parse(text) : parseCsv(text);
+      const rows = Array.isArray(rawRows) ? rawRows : [];
+      if (!rows.length) {
+        message.warning('没有可导入的数据');
+        return Upload.LIST_IGNORE;
+      }
+      await Promise.all(rows.map((row: any) => adminCreateUser({
+        username: row.username,
+        display_name: row.display_name || row.name || row.username,
+        email: row.email,
+        password: row.password || 'ChangeMe123!',
+        is_active: row.is_active === undefined ? true : String(row.is_active).toLowerCase() !== 'false',
+        is_admin: String(row.is_admin).toLowerCase() === 'true',
+        role_ids: String(row.role_ids || '').split('|').filter(Boolean).map(Number),
+        org_unit_ids: String(row.org_unit_ids || '').split('|').filter(Boolean).map(Number),
+      })));
+      message.success(`已导入 ${rows.length} 个用户`);
+      fetchData();
+    } catch {
+      message.error('导入用户失败，请检查文件格式');
+    }
+    return Upload.LIST_IGNORE;
+  };
+
   const columns = [
     { title: '账号', dataIndex: 'username', width: 120 },
     { title: '姓名', dataIndex: 'display_name', width: 160 },
@@ -206,7 +301,22 @@ export default function UserManagement() {
           <Typography.Title level={5} style={{ margin: 0 }}>用户管理</Typography.Title>
           <Typography.Text type="secondary">账号在这里绑定角色和组织，角色控制功能，组织用于后续数据范围。</Typography.Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建用户</Button>
+        <Space size={6}>
+          <Tooltip title="导入用户">
+            <Upload accept=".csv,.json" showUploadList={false} beforeUpload={importUsers}>
+              <Button aria-label="导入用户" icon={<UploadOutlined />} />
+            </Upload>
+          </Tooltip>
+          <Tooltip title="导出用户">
+            <Button aria-label="导出用户" icon={<DownloadOutlined />} onClick={exportUsers} />
+          </Tooltip>
+          <Tooltip title="刷新">
+            <Button aria-label="刷新" icon={<ReloadOutlined />} loading={loading} onClick={fetchData} />
+          </Tooltip>
+          <Tooltip title="新建用户">
+            <Button type="primary" aria-label="新建用户" icon={<PlusOutlined />} onClick={openCreate} />
+          </Tooltip>
+        </Space>
       </div>
 
       <Table dataSource={users} columns={columns} rowKey="id" loading={loading} size="small" />

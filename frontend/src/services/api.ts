@@ -68,6 +68,12 @@ export const getShortestPath = (srcId: number, tgtId: number) =>
 export const getSubgraph = (entityId: number, depth?: number) =>
   api.get(`/graph/subgraph/${entityId}`, { params: { depth } });
 export const getGraphStats = () => api.get('/graph/stats');
+export const listGraphAssetNodes = (params?: { search?: string; entity_type?: string }) =>
+  api.get('/graph/assets/nodes', { params });
+export const listGraphAssetRelationships = (params?: { search?: string; relation_type?: string }) =>
+  api.get('/graph/assets/relationships', { params });
+export const getGraphAssetQuality = () => api.get('/graph/assets/quality');
+export const listGraphAssetEvidence = () => api.get('/graph/assets/evidence');
 
 // Graph — new endpoints (Phase 2)
 export const getGraphEntity = (label: string, entityId: number) =>
@@ -125,6 +131,35 @@ export const uploadKnowledgeAsset = (
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
+export const createKnowledgeExtractionJob = (
+  file: File,
+  params?: {
+    domain?: string;
+    prompt_name?: string;
+    model_name?: string;
+    permission_scope?: string;
+    owner_user_id?: string;
+  },
+) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  Object.entries(params ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      formData.append(key, String(value));
+    }
+  });
+  return api.post('/knowledge/extraction-jobs', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+export const getKnowledgeExtractionJob = (jobId: string) =>
+  api.get(`/knowledge/extraction-jobs/${jobId}`);
+export const approveKnowledgeExtractionJob = (jobId: string, approvedResult?: Record<string, unknown>) =>
+  api.post(`/knowledge/extraction-jobs/${jobId}/approve`, { approved_result: approvedResult });
+export const commitKnowledgeExtractionJobToGraph = (jobId: string) =>
+  api.post(`/knowledge/extraction-jobs/${jobId}/commit-to-graph`);
+export const exportKnowledgeExtractionJob = (jobId: string, format: string) =>
+  api.get(`/knowledge/extraction-jobs/${jobId}/export`, { params: { format }, responseType: 'blob' });
 export const searchKnowledge = (data: {
   query: string;
   limit?: number;

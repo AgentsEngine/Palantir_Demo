@@ -13,7 +13,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import current_tenant_id, current_user_id, get_current_user, get_db
+from app.core.audit import write_audit_log
 from app.config import settings
 from app.core.logging import get_logger
 from app.core.security import create_access_token, hash_password, verify_password
@@ -209,18 +210,53 @@ async def login(body: LoginRequest, response: Response, db: AsyncSession = Depen
     db_result = await _db_login(db, body)
     if db_result is not None:
         _set_auth_cookie(response, db_result["token"])
+        await write_audit_log(
+            action="login_success",
+            resource_type="auth",
+            user_id=db_result["user"].get("id"),
+            tenant_id=db_result["user"].get("tenant_id"),
+            new_values={"username": body.username, "source": "database"},
+        )
         return db_result
     if settings.IS_PRODUCTION:
+        await write_audit_log(
+            action="login_failed",
+            resource_type="auth",
+            new_values={"username": body.username, "reason": "invalid_credentials"},
+        )
         raise HTTPException(401, "Invalid credentials")
-    result = _mock_login(body)
+    try:
+        result = _mock_login(body)
+    except HTTPException:
+        await write_audit_log(
+            action="login_failed",
+            resource_type="auth",
+            new_values={"username": body.username, "reason": "invalid_credentials"},
+            tenant_id=1,
+        )
+        raise
     _set_auth_cookie(response, result["token"])
+    await write_audit_log(
+        action="login_success",
+        resource_type="auth",
+        user_id=result["user"].get("id"),
+        tenant_id=result["user"].get("tenant_id"),
+        new_values={"username": body.username, "source": "mock"},
+    )
     return result
 
 
 @router.post("/logout")
-async def logout(response: Response):
+async def logout(response: Response, user: dict = Depends(get_current_user)):
     """登出（前端清除 token 即可，JWT 无状态）."""
     response.delete_cookie("access_token", path="/")
+    await write_audit_log(
+        action="logout",
+        resource_type="auth",
+        user_id=current_user_id(user),
+        tenant_id=current_tenant_id(user),
+        new_values={"username": user.get("sub")},
+    )
     return {"ok": True}
 
 

@@ -941,3 +941,73 @@ class ScheduledJob(TimestampMixin, Base):
     config: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_run: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class KnowledgeDocument(TimestampMixin, Base):
+    __tablename__ = "knowledge_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    document_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    source_file_name: Mapped[str] = mapped_column(String(500))
+    source_type: Mapped[str] = mapped_column(String(50))
+    title: Mapped[str] = mapped_column(String(300))
+    markdown_content: Mapped[str] = mapped_column(Text)
+    permission_scope: Mapped[str] = mapped_column(String(50), default="enterprise")
+    owner_user_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    source_path: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="indexed")
+
+
+class KnowledgeChunk(TimestampMixin, Base):
+    __tablename__ = "knowledge_chunks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    chunk_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    document_id: Mapped[str] = mapped_column(String(100), index=True)
+    title: Mapped[str] = mapped_column(String(300))
+    chunk_text: Mapped[str] = mapped_column(Text)
+    embedding: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    source_location: Mapped[str] = mapped_column(String(200), default="section:1")
+    permission_scope: Mapped[str] = mapped_column(String(50), default="enterprise")
+    status: Mapped[str] = mapped_column(String(50), default="indexed")
+
+
+class KnowledgeIngestionJob(TimestampMixin, Base):
+    __tablename__ = "knowledge_ingestion_jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    job_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    asset_id: Mapped[str] = mapped_column(String(100), index=True)
+    document_id: Mapped[str] = mapped_column(String(100), index=True)
+    status: Mapped[str] = mapped_column(String(50), default="running")
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+class KnowledgeExtractionResult(TimestampMixin, Base):
+    __tablename__ = "knowledge_extraction_results"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    job_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    document_id: Mapped[str] = mapped_column(String(100), index=True)
+    domain: Mapped[str] = mapped_column(String(100), default="manufacturing")
+    prompt_name: Mapped[str] = mapped_column(String(200), default="manufacturing_ontology_v1")
+    model_name: Mapped[str] = mapped_column(String(200), default="mock-chat")
+    status: Mapped[str] = mapped_column(String(50), default="completed")
+    result: Mapped[dict] = mapped_column(JSON, default=dict)
+    approved_result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    quality_report: Mapped[dict] = mapped_column(JSON, default=dict)
+    committed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class KnowledgeObjectLink(TimestampMixin, Base):
+    __tablename__ = "knowledge_object_links"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    document_id: Mapped[str] = mapped_column(String(100), index=True)
+    job_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    object_type: Mapped[str] = mapped_column(String(100))
+    object_id: Mapped[str] = mapped_column(String(200))
+    object_name: Mapped[str] = mapped_column(String(300))
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    source_location: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="candidate")

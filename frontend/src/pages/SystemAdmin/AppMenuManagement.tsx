@@ -33,6 +33,7 @@ import {
   List,
   Popconfirm,
   Row,
+  Segmented,
   Select,
   Space,
   Switch,
@@ -558,6 +559,36 @@ function mapPlatformFormToRecord(form: PlatformForm): FormRecord {
   };
 }
 
+function mergeFormRecords(existingForms: FormRecord[], incomingForms: FormRecord[]): FormRecord[] {
+  const orderedIds: string[] = [];
+  const byId = new Map<string, FormRecord>();
+  const idByCode = new Map<string, string>();
+
+  const upsert = (form: FormRecord) => {
+    const existingId = idByCode.get(form.code);
+    const targetId = existingId ?? form.id;
+    const merged = { ...byId.get(targetId), ...form };
+
+    if (existingId && existingId !== form.id) {
+      const existingIndex = orderedIds.indexOf(existingId);
+      if (existingIndex >= 0) orderedIds[existingIndex] = form.id;
+      byId.delete(existingId);
+    } else if (!byId.has(form.id)) {
+      orderedIds.push(form.id);
+    }
+
+    byId.set(form.id, merged);
+    idByCode.set(form.code, form.id);
+  };
+
+  existingForms.forEach(upsert);
+  incomingForms.forEach(upsert);
+
+  return orderedIds
+    .map((id) => byId.get(id))
+    .filter((form): form is FormRecord => Boolean(form));
+}
+
 function mapPlatformMenuNodesToTree(nodes: PlatformMenuNode[]): MenuNode[] {
   const byParent = new Map<number | null, PlatformMenuNode[]>();
   nodes.forEach((node) => {
@@ -686,7 +717,8 @@ export default function AppMenuManagement() {
         if (apiApps.length) setApplications(apiApps);
         if (apiRoles.length) setRoles(apiRoles);
         if (platformForms.length) {
-          setForms(platformForms.map(mapPlatformFormToRecord));
+          const mappedPlatformForms = platformForms.map(mapPlatformFormToRecord);
+          setForms((prev) => mergeFormRecords(prev, mappedPlatformForms));
           setSelectedFormId(String(platformForms[0].id));
         }
         if (ontologyObjects.length) {
@@ -1766,6 +1798,7 @@ function AssemblyWorkspace({
   const selectedApp = apps.find((item) => item.id === selectedAppId) ?? apps[0];
   const currentAppForms = forms.filter((form) => boundFormIds.has(form.id));
   const otherForms = forms.filter((form) => !boundFormIds.has(form.id));
+  const formCountLabel = `全部 ${forms.length} / 已绑定 ${currentAppForms.length}`;
   const [mouseDraggingFormId, setMouseDraggingFormId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -1852,12 +1885,14 @@ function AssemblyWorkspace({
         </Col>
 
         <Col xs={24} xl={5}>
-          <Card title="表单" className="assembly-column-card" extra={<Tag>{configs.length} 已绑定</Tag>}>
+          <Card title="表单" className="assembly-column-card" extra={<Tag>{formCountLabel}</Tag>}>
             <div className="assembly-form-list">
               <div className="assembly-form-section-title">当前应用表单</div>
               {currentAppForms.map(renderFormCard)}
+              {!currentAppForms.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无已绑定表单" />}
               <div className="assembly-form-section-title">其他可用表单</div>
               {otherForms.map(renderFormCard)}
+              {!otherForms.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无其他可用表单" />}
               {false && forms.map((form) => {
                 const config = configs.find((item) => item.formId === form.id);
                 const bound = boundFormIds.has(form.id);
@@ -1972,106 +2007,123 @@ function AssemblyWorkspace({
                         </Form.Item>
                       </div>
                       <div className="node-config-card wide permission-rule-panel">
-                        <div className="permission-rule-head">
-                          <div>
-                            <Typography.Text strong>访问权限规则</Typography.Text>
-                            <Typography.Text type="secondary">
-                              每条规则定义一批角色或用户可以执行的操作，可叠加多条规则形成通配授权。
-                            </Typography.Text>
-                          </div>
-                          <Form.List name="permissionRules">
-                            {(fields, { add, remove }) => (
-                              <>
+                        <Form.List name="permissionRules">
+                          {(fields, { add, remove }) => (
+                            <>
+                              <div className="permission-rule-head">
+                                <div className="permission-rule-title">
+                                  <span className="permission-rule-icon">
+                                    <SafetyCertificateOutlined />
+                                  </span>
+                                  <div>
+                                    <Typography.Text strong>访问权限规则</Typography.Text>
+                                    <Typography.Text type="secondary">
+                                      每条规则定义一批角色或用户可以执行的操作，可叠加多条规则形成通配授权。
+                                    </Typography.Text>
+                                  </div>
+                                </div>
                                 <Button
                                   size="small"
+                                  type="primary"
+                                  ghost
                                   icon={<PlusOutlined />}
                                   onClick={() => add({ subjectType: 'roles', roleIds: [], userKeys: [], actions: ['view'], effect: 'allow' })}
                                 >
                                   新增规则
                                 </Button>
-                                <div className="permission-rule-list">
-                                  {fields.map((field, index) => (
-                                    <div className="permission-rule-row" key={field.key}>
-                                      <div className="permission-rule-row-head">
-                                        <span className="permission-rule-index">规则 {index + 1}</span>
-                                        <Space size={6}>
-                                          <Form.Item name={[field.name, 'effect']} noStyle>
-                                            <Select
-                                              className="permission-rule-effect"
-                                              options={[
-                                                { label: '允许', value: 'allow' },
-                                                { label: '拒绝', value: 'deny' },
-                                              ]}
-                                            />
-                                          </Form.Item>
-                                          <Button danger size="small" icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
-                                        </Space>
+                              </div>
+                              <div className="permission-rule-list">
+                                {fields.length === 0 ? (
+                                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无自定义规则" />
+                                ) : fields.map((field, index) => (
+                                  <div className="permission-rule-row" key={field.key}>
+                                    <div className="permission-rule-row-head">
+                                      <div className="permission-rule-index">
+                                        <span>{String(index + 1).padStart(2, '0')}</span>
+                                        <Typography.Text strong>授权规则</Typography.Text>
                                       </div>
-                                      <div className="permission-rule-fields">
-                                        <label>
-                                          <span>授权对象</span>
-                                          <Form.Item name={[field.name, 'subjectType']} noStyle>
-                                            <Select
-                                              options={[
-                                                { label: '应用默认角色', value: 'app_roles' },
-                                                { label: '指定角色', value: 'roles' },
-                                                { label: '指定用户', value: 'users' },
-                                              ]}
-                                            />
-                                          </Form.Item>
-                                        </label>
-                                        <label className="wide">
-                                          <span>对象范围</span>
-                                          <Form.Item noStyle shouldUpdate>
-                                            {({ getFieldValue }) => {
-                                              const subjectType = getFieldValue(['permissionRules', field.name, 'subjectType']);
-                                              if (subjectType === 'users') {
-                                                return (
-                                                  <Form.Item name={[field.name, 'userKeys']} noStyle>
-                                                    <Select mode="tags" placeholder="输入用户账号或邮箱" />
-                                                  </Form.Item>
-                                                );
-                                              }
-                                              if (subjectType === 'roles') {
-                                                return (
-                                                  <Form.Item name={[field.name, 'roleIds']} noStyle>
-                                                    <Select
-                                                      mode="multiple"
-                                                      placeholder="选择角色"
-                                                      options={roles.map((role) => ({ label: `${role.label} / ${role.name}`, value: role.id }))}
-                                                    />
-                                                  </Form.Item>
-                                                );
-                                              }
-                                              return <div className="permission-rule-inherit">跟随当前应用可见角色</div>;
-                                            }}
-                                          </Form.Item>
-                                        </label>
-                                        <label className="wide">
-                                          <span>可执行操作</span>
-                                          <Form.Item name={[field.name, 'actions']} noStyle>
-                                            <Select
-                                              mode="multiple"
-                                              placeholder="操作权限"
-                                              options={[
-                                                { label: '查看', value: 'view' },
-                                                { label: '新增', value: 'create' },
-                                                { label: '编辑', value: 'edit' },
-                                                { label: '导出', value: 'export' },
-                                                { label: '审批', value: 'approve' },
-                                                { label: '删除', value: 'delete' },
-                                              ]}
-                                            />
-                                          </Form.Item>
-                                        </label>
-                                      </div>
+                                      <Space size={6} className="permission-rule-actions">
+                                        <Button danger type="text" size="small" icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
+                                      </Space>
                                     </div>
-                                  ))}
-                                </div>
-                              </>
-                            )}
-                          </Form.List>
-                        </div>
+                                    <div className="permission-rule-decision">
+                                      <span>规则结果</span>
+                                      <Form.Item name={[field.name, 'effect']} noStyle>
+                                        <Segmented
+                                          block
+                                          className="permission-rule-effect"
+                                          size="small"
+                                          options={[
+                                            { label: '允许访问', value: 'allow' },
+                                            { label: '拒绝访问', value: 'deny' },
+                                          ]}
+                                        />
+                                      </Form.Item>
+                                    </div>
+                                    <div className="permission-rule-fields">
+                                      <label className="permission-rule-field">
+                                        <span>授权对象</span>
+                                        <Form.Item name={[field.name, 'subjectType']} noStyle>
+                                          <Select
+                                            options={[
+                                              { label: '应用默认角色', value: 'app_roles' },
+                                              { label: '指定角色', value: 'roles' },
+                                              { label: '指定用户', value: 'users' },
+                                            ]}
+                                          />
+                                        </Form.Item>
+                                      </label>
+                                      <label className="permission-rule-field permission-rule-field-wide">
+                                        <span>对象范围</span>
+                                        <Form.Item noStyle shouldUpdate>
+                                          {({ getFieldValue }) => {
+                                            const subjectType = getFieldValue(['permissionRules', field.name, 'subjectType']);
+                                            if (subjectType === 'users') {
+                                              return (
+                                                <Form.Item name={[field.name, 'userKeys']} noStyle>
+                                                  <Select mode="tags" placeholder="输入用户账号或邮箱" />
+                                                </Form.Item>
+                                              );
+                                            }
+                                            if (subjectType === 'roles') {
+                                              return (
+                                                <Form.Item name={[field.name, 'roleIds']} noStyle>
+                                                  <Select
+                                                    mode="multiple"
+                                                    placeholder="选择角色"
+                                                    options={roles.map((role) => ({ label: `${role.label} / ${role.name}`, value: role.id }))}
+                                                  />
+                                                </Form.Item>
+                                              );
+                                            }
+                                            return <div className="permission-rule-inherit">跟随当前应用可见角色</div>;
+                                          }}
+                                        </Form.Item>
+                                      </label>
+                                      <label className="permission-rule-field permission-rule-field-wide">
+                                        <span>可执行操作</span>
+                                        <Form.Item name={[field.name, 'actions']} noStyle>
+                                          <Select
+                                            mode="multiple"
+                                            placeholder="操作权限"
+                                            options={[
+                                              { label: '查看', value: 'view' },
+                                              { label: '新增', value: 'create' },
+                                              { label: '编辑', value: 'edit' },
+                                              { label: '导出', value: 'export' },
+                                              { label: '审批', value: 'approve' },
+                                              { label: '删除', value: 'delete' },
+                                            ]}
+                                          />
+                                        </Form.Item>
+                                      </label>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </Form.List>
                       </div>
                     </div>
                     <Space.Compact block>

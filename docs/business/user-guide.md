@@ -1,6 +1,6 @@
 # User Guide And Demo Walkthrough
 
-Last updated: 2026-05-23
+Last updated: 2026-05-25
 
 This guide reflects the current application shell and implemented product
 surfaces. Palantir-inspired future ideas live in `docs/architecture/*` reference
@@ -81,9 +81,9 @@ surface. It currently demonstrates local RAG behavior:
 - Use quality impact workflows to show evidence cards from SOP/CAPA/supplier
   reports/equipment logs.
 
-Current boundary: the knowledge base uses static demo documents and local
-TF-IDF retrieval. It is not yet a persistent document management system or
-external vector-store integration.
+Current boundary: the knowledge base uses static demo documents, upload
+simulation, Markdown/card metadata, and local TF-IDF retrieval. It is not yet a
+persistent document management system or external vector-store integration.
 
 ## Recommended Demo Scenarios
 

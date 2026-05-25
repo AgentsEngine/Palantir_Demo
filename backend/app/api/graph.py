@@ -304,6 +304,67 @@ async def execute_cypher(body: CypherQuery):
     }
 
 
+@router.get("/assets/nodes")
+async def graph_asset_nodes(
+    search: str | None = Query(None),
+    entity_type: str | None = Query(None),
+):
+    """Backend graph-center node assets produced by reviewed knowledge extraction."""
+    from app.services.ai.ontology_extraction import list_graph_asset_nodes
+
+    nodes = await list_graph_asset_nodes(search=search, entity_type=entity_type)
+    return {"data": nodes, "total": len(nodes)}
+
+
+@router.get("/assets/relationships")
+async def graph_asset_relationships(
+    search: str | None = Query(None),
+    relation_type: str | None = Query(None),
+):
+    """Backend graph-center relationship assets produced by reviewed knowledge extraction."""
+    from app.services.ai.ontology_extraction import list_graph_asset_relationships
+
+    relationships = await list_graph_asset_relationships(search=search, relation_type=relation_type)
+    return {"data": relationships, "total": len(relationships)}
+
+
+@router.get("/assets/nodes/{node_id}")
+async def graph_asset_node_detail(node_id: str):
+    from app.services.ai.ontology_extraction import get_graph_asset_node, list_graph_asset_evidence
+
+    node = await get_graph_asset_node(node_id)
+    if not node:
+        raise HTTPException(status_code=404, detail="Graph asset node not found")
+    evidence = [item for item in await list_graph_asset_evidence() if item.get("asset_id") == node_id]
+    return {"data": {**node, "evidence": evidence}}
+
+
+@router.get("/assets/relationships/{relationship_id}")
+async def graph_asset_relationship_detail(relationship_id: str):
+    from app.services.ai.ontology_extraction import get_graph_asset_relationship, list_graph_asset_evidence
+
+    relationship = await get_graph_asset_relationship(relationship_id)
+    if not relationship:
+        raise HTTPException(status_code=404, detail="Graph asset relationship not found")
+    evidence = [item for item in await list_graph_asset_evidence() if item.get("asset_id") == relationship_id]
+    return {"data": {**relationship, "evidence": evidence}}
+
+
+@router.get("/assets/quality")
+async def graph_asset_quality():
+    from app.services.ai.ontology_extraction import get_graph_asset_quality
+
+    return {"data": await get_graph_asset_quality()}
+
+
+@router.get("/assets/evidence")
+async def graph_asset_evidence():
+    from app.services.ai.ontology_extraction import list_graph_asset_evidence
+
+    evidence = await list_graph_asset_evidence()
+    return {"data": evidence, "total": len(evidence)}
+
+
 @router.get("/neighbors/{entity_id}")
 async def get_neighbors(
     entity_id: int,

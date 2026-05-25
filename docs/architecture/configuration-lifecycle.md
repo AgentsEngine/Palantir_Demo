@@ -1,7 +1,12 @@
 # Configuration Lifecycle Design Notes
 
-> Updated: 2026-05-23
-> Scope: Application Management, Form Management, Application Assembly
+Last updated: 2026-05-25
+
+Status: design. This document defines recommended lifecycle rules for
+configurable assets. Current implementation details should be verified against
+the relevant API and UI modules.
+
+Scope: Application Management, Form Management, Application Assembly
 
 ## 1. Positioning
 

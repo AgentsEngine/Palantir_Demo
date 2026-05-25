@@ -11,7 +11,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Any
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
 from pydantic import BaseModel
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -22,6 +22,14 @@ from app.services.ai.knowledge_ingestion import (
     JOBS as INGESTION_JOBS,
     ingest_asset,
     search_ingested_knowledge,
+)
+from app.services.ai.ontology_extraction import (
+    approve_extraction_job,
+    commit_extraction_to_graph,
+    create_extraction_job,
+    export_extraction,
+    get_extraction_job,
+    persist_ingestion_result,
 )
 
 router = APIRouter()
@@ -37,6 +45,10 @@ class KnowledgeSearchBody(BaseModel):
 class BindingCandidateBody(BaseModel):
     text: str
     limit: int = 8
+
+
+class ExtractionApproveBody(BaseModel):
+    approved_result: dict[str, Any] | None = None
 
 
 KNOWLEDGE_SPACES = [
@@ -507,9 +519,75 @@ async def upload_knowledge_asset(
         owner_user_id=owner_user_id,
         permission_scope=permission_scope,
     )
+    await persist_ingestion_result(result)
     if result["job"]["status"] == "failed":
         return {"data": result, "ok": False}
     return {"data": result, "ok": True}
+
+
+@router.post("/extraction-jobs")
+async def create_knowledge_extraction_job(
+    file: UploadFile = File(...),
+    domain: str = Form("manufacturing"),
+    prompt_name: str = Form("manufacturing_ontology_v1"),
+    model_name: str = Form("mock-chat"),
+    permission_scope: str = Form("enterprise"),
+    owner_user_id: str = Form("demo-user"),
+):
+    content = await file.read()
+    try:
+        result = await create_extraction_job(
+            file_name=file.filename or "uploaded-asset",
+            content=content,
+            domain=domain,
+            prompt_name=prompt_name,
+            model_name=model_name,
+            owner_user_id=owner_user_id,
+            permission_scope=permission_scope,
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"data": result, "ok": True}
+
+
+@router.get("/extraction-jobs/{job_id}")
+async def get_knowledge_extraction_job(job_id: str):
+    job = await get_extraction_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Knowledge extraction job not found")
+    return {"data": job}
+
+
+@router.post("/extraction-jobs/{job_id}/approve")
+async def approve_knowledge_extraction_job(job_id: str, body: ExtractionApproveBody | None = None):
+    job = await approve_extraction_job(job_id, body.approved_result if body else None)
+    if not job:
+        raise HTTPException(status_code=404, detail="Knowledge extraction job not found")
+    return {"data": job, "ok": job["status"] != "blocked"}
+
+
+@router.post("/extraction-jobs/{job_id}/commit-to-graph")
+async def commit_knowledge_extraction_job_to_graph(job_id: str):
+    try:
+        result = await commit_extraction_to_graph(job_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if not result:
+        raise HTTPException(status_code=404, detail="Knowledge extraction job not found")
+    return {"data": result, "ok": True}
+
+
+@router.get("/extraction-jobs/{job_id}/export")
+async def export_knowledge_extraction_job(job_id: str, format: str = "json"):
+    job = await get_extraction_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Knowledge extraction job not found")
+    try:
+        media_type, suffix, content = export_extraction(job, format)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    headers = {"Content-Disposition": f'attachment; filename="{job_id}.{suffix}"'}
+    return Response(content=content, media_type=media_type, headers=headers)
 
 
 @router.get("/ingestion-jobs/{job_id}")

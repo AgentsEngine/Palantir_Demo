@@ -1,6 +1,6 @@
 # Knowledge Base Architecture
 
-Last updated: 2026-05-23
+Last updated: 2026-05-25
 
 Source of truth:
 
@@ -8,6 +8,10 @@ Source of truth:
 - `frontend/src/pages/SystemAdmin/SemanticAssetCenter.tsx`
 - `frontend/src/pages/QualityImpact/index.tsx`
 - `frontend/src/services/api.ts`
+
+Status: current API MVP plus target architecture notes. Sections labeled
+**Target** describe planned persistent/vector storage, not current runtime
+infrastructure.
 
 ## Product Position
 
@@ -26,7 +30,7 @@ The intended chain is:
   -> 质量异常等工作台自动调用
 ```
 
-For retrieval-backed AI, the technical ingestion chain is:
+For retrieval-backed AI, the target technical ingestion chain is:
 
 ```text
 raw file
@@ -104,7 +108,18 @@ Internal retrieval can still use chunks or embeddings:
 source document -> Markdown -> internal chunk/index/embedding -> retrieval candidate
 ```
 
-The current implementation is pgvector-ready but demo-backed:
+Current implementation:
+
+```text
+demo arrays
+  -> upload simulation
+  -> ingestion-job status
+  -> normalized Markdown response
+  -> chunk/card metadata
+  -> TF-IDF retrieval
+```
+
+Target vector implementation:
 
 ```text
 original file
@@ -114,11 +129,11 @@ original file
   -> vector-shaped search result
 ```
 
-When PostgreSQL + pgvector is enabled, the in-memory chunk and embedding store
+When PostgreSQL + pgvector is enabled, the in-memory/demo chunk and embedding store
 should be replaced by persistent `knowledge_documents`, `knowledge_chunks`, and
 `knowledge_embeddings` tables without changing the public API shape.
 
-Recommended vector-row shape:
+Target vector-row shape:
 
 | Field | Purpose |
 | --- | --- |
@@ -275,6 +290,10 @@ Backend endpoints under `/api/v1/knowledge`:
 | `GET` | `/spaces` | List personal/team/department/enterprise spaces |
 | `GET` | `/sources` | List knowledge source categories |
 | `GET` | `/documents` | List original source documents |
+| `POST` | `/assets/upload` | Simulate knowledge asset upload and start a demo ingestion job |
+| `GET` | `/ingestion-jobs/{job_id}` | Get demo ingestion job status |
+| `GET` | `/documents/{document_id}` | Get one source document |
+| `GET` | `/documents/{document_id}/markdown` | Return normalized Markdown for a document |
 | `GET` | `/documents/{document_id}/chunks` | Internal evidence chunks for compatibility |
 | `GET` | `/cards` | List knowledge cards |
 | `GET` | `/cards/{card_id}` | Get one knowledge card |

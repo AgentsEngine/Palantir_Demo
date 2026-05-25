@@ -1,6 +1,6 @@
 # API Reference
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25
 
 Source of truth: `backend/app/main.py` and `backend/app/api/*`.
 
@@ -57,24 +57,24 @@ Permission implementation notes are in
 | Module | Prefix | Main endpoints |
 | --- | --- | --- |
 | Auth | `/auth` | `/login`, `/logout`, `/me` |
-| Admin | `/admin` | `/users`, `/roles`, `/audit-logs`, `/applications` |
-| Workflow | `/workflow` | `/definitions`, `/instances`, `/notifications`, `/stats` |
+| Admin | `/admin` | `/users`, `/org-units`, `/roles`, `/audit-logs`, `/applications` |
+| Workflow | `/workflow` | `/definitions`, `/instances`, `/instances/{inst_id}/act`, `/instances/{inst_id}/cancel`, `/notifications`, `/stats` |
 | Applications | `/applications` | `/`, `/{app_id}`, `/{app_id}/menus` |
 | Forms | `/forms` | `/`, `/{form_id}`, `/{form_id}/fields`, `/{form_id}/layouts`, `/{form_id}/actions`, `/{form_id}/permissions`, `/{form_id}/workflow-bindings`, `/{form_id}/records`, `/applications/{application_id}/forms`, `/applications/{application_id}/menu-nodes` |
 | Data sources | `/data-sources` | `/`, `/{source_id}`, `/{source_id}/test`, `/{source_id}/sync`, `/{source_id}/status`, `/{source_id}/preview` |
-| Ontology | `/ontology` | `/entities`, `/entities/{entity_type}`, `/relations`, `/timeline/{entity_id}` |
-| Graph | `/graph` | `/query`, `/neighbors/{entity_id}`, `/path`, `/subgraph/{entity_id}`, `/stats`, `/impact-analysis/{entity_id}`, `/trace/{entity_id}` |
+| Ontology | `/ontology` | `/entities`, `/entities/{entity_type}`, `/entities/{entity_type}/instances`, `/entities/{entity_type}/instances/{entity_id}/relationships`, `/relations`, `/timeline/{entity_id}` |
+| Graph | `/graph` | `/query`, `/neighbors/{entity_id}`, `/path`, `/subgraph/{entity_id}`, `/stats`, `/sync/quality-demo`, `/impact-analysis-by-object`, `/entity/{label}/{entity_id}`, `/entity/{label}/{entity_id}/relationships`, `/impact-analysis/{entity_id}`, `/trace/{entity_id}`, `/analytics/centrality` |
 | Pipelines | `/pipelines` | `/`, `/{pipeline_id}`, `/{pipeline_id}/run`, `/{pipeline_id}/runs` |
-| Semantic assets | `/semantic-assets` | `/data-assets`, `/ontology-objects`, `/ontology-relations`, `/page-contracts` |
-| Knowledge base | `/knowledge` | `/sources`, `/spaces`, `/documents`, `/documents/{document_id}/chunks`, `/cards`, `/cards/{card_id}`, `/related-cards`, `/binding-candidates`, `/ocr-pipeline`, `/related`, `/search` |
+| Semantic assets | `/semantic-assets` | `/data-assets`, `/ontology-objects`, `/ontology-relations`, `/page-contracts`, `/page-contracts/by-route` |
+| Knowledge base | `/knowledge` | `/sources`, `/spaces`, `/documents`, `/assets/upload`, `/ingestion-jobs/{job_id}`, `/documents/{document_id}`, `/documents/{document_id}/markdown`, `/documents/{document_id}/chunks`, `/cards`, `/cards/{card_id}`, `/related-cards`, `/binding-candidates`, `/ocr-pipeline`, `/related`, `/search` |
 | Analytics | `/analytics` | `/overview`, `/aggregate`, `/timeseries`, `/distribution` |
 | Maintenance | `/maintenance` | `/equipment-health`, `/equipment/{equipment_id}/health`, `/predictions`, `/work-orders` |
-| Quality | `/quality` | `/spc/{parameter}`, `/defects`, `/defects/pareto`, `/traceability/{entity_id}`, `/inspections`, `/capa` |
+| Quality | `/quality` | `/spc/{parameter}`, `/defects`, `/defects/pareto`, `/traceability/{entity_id}`, `/inspections`, `/events`, `/events/{event_id}/impact`, `/events/{event_id}/ai-suggestion`, `/events/{event_id}/actions`, `/capa` |
 | Supply chain | `/supply-chain` | `/suppliers`, `/inventory`, `/shipments`, `/risk-assessment`, `/analytics` |
-| AI assistant | `/ai` | `/chat`, `/sessions`, `/analyze` |
+| AI assistant | `/ai` | `/chat`, `/agent`, `/drafts/save`, `/provider/test`, `/settings`, `/settings/test`, `/audit`, `/sessions`, `/analyze` |
 | Dashboard | `/dashboard` | `/overview`, `/oee`, `/production`, `/alerts` |
 | Reports | `/reports` | `/`, `/{report_id}`, `/{report_id}/snapshot`, `/{report_id}/snapshots` |
-| Model-driven | `/model-driven` | `/models`, `/pages`, `/data/{model_name}`, `/menus` |
+| Model-driven | `/model-driven` | `/models`, `/models/{model_id}/fields`, `/models/import-from-ontology`, `/models/{model_id}/versions`, `/models/{model_id}/publish`, `/models/{model_id}/impact`, `/pages`, `/pages/generate`, `/data/{model_name}`, `/data/{model_name}/options`, `/data/{model_name}/{record_id}/children/{child_table}`, `/menus` |
 | Rules | `/rules` | `/`, `/{rule_id}`, `/validate`, `/triggers`, `/evaluate-triggers` |
 | Notifications | `/notifications` | `/`, `/{notification_id}/read`, `/read-all`, `/unread-count` |
 | Templates | `/templates` | `/`, `/{template_id}`, `/{template_id}/instantiate` |
@@ -176,10 +176,11 @@ curl -X POST http://localhost:8000/api/v1/knowledge/search \
 ```
 
 Knowledge API note: the current backend uses static demo sources/documents and
-local TF-IDF retrieval. It also exposes knowledge spaces, cards, binding
-candidate suggestions, and an OCR pipeline description for the current
-knowledge-center workflow. It is a runnable RAG-shaped MVP, not a persistent
-vector database integration.
+local TF-IDF retrieval. It also exposes knowledge spaces, cards, upload
+simulation, ingestion-job status, document detail/Markdown, binding candidate
+suggestions, and an OCR pipeline description for the current knowledge-center
+workflow. It is a runnable RAG-shaped MVP, not a persistent vector database
+integration.
 
 ## Frontend API Client
 

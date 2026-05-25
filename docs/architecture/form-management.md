@@ -1,7 +1,12 @@
 # Form Management Design Notes
 
-> Updated: 2026-05-23
-> Scope: System Admin / Form Management
+Last updated: 2026-05-25
+
+Status: design plus current implementation notes. Form metadata and runtime
+records are implemented under `/api/v1/forms`; physical table generation is a
+future reviewed workflow.
+
+Scope: System Admin / Form Management
 
 ## 1. Positioning
 

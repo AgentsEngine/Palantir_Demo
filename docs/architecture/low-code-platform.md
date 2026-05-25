@@ -1,6 +1,9 @@
 # Low-Code Platform Architecture
 
-Last updated: 2026-05-21
+Last updated: 2026-05-25
+
+Status: current implementation plus design notes. For the canonical endpoint
+list, use `docs/development/api-reference.md`.
 
 This document explains the low-code layer: applications, forms, menu assembly, actions, permissions, workflow bindings, and dynamic records.
 

@@ -1,7 +1,13 @@
 # Application Management Design Notes
 
-> Updated: 2026-05-19
-> Scope: System Admin / Application Management
+Last updated: 2026-05-25
+
+Status: design. This document defines product boundaries and recommended UI
+behavior for application management; verify implemented behavior against
+`frontend/src/pages/SystemAdmin`, `frontend/src/pages/AppPrograms`, and
+`backend/app/api/applications.py`.
+
+Scope: System Admin / Application Management
 
 ## 1. Positioning
 

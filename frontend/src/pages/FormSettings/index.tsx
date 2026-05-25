@@ -70,6 +70,7 @@ import ProfessionalFlowDesigner, {
   createDefaultFlowConfig,
   validateFlowDesignerConfig,
   type FlowDesignerConfig,
+  type FlowDesignerEdge,
   type FlowDesignerNode,
 } from './ProfessionalFlowDesigner';
 import './style.css';
@@ -616,6 +617,98 @@ function makeProfessionalFlowConfig(config: DesignerConfig): FlowDesignerConfig 
   });
 }
 
+function normalizeProfessionalFlowConfig(
+  source: Partial<FlowDesignerConfig> & Record<string, unknown>,
+  fallback: FlowDesignerConfig,
+): FlowDesignerConfig {
+  const categoryByType = (type: string): FlowDesignerNode['category'] => {
+    if (type.includes('Gateway')) return 'gateway';
+    if (type.includes('Task')) return 'task';
+    if (type.includes('Process') || type.includes('Activity')) return 'subprocess';
+    if (type.includes('Object') || type.includes('Message')) return 'data';
+    if (type.includes('Boundary') || type.includes('compensation')) return 'boundary';
+    return 'event';
+  };
+  const bpmnByType: Record<string, string> = {
+    startEvent: 'bpmn:StartEvent',
+    endEvent: 'bpmn:EndEvent',
+    userTask: 'bpmn:UserTask',
+    serviceTask: 'bpmn:ServiceTask',
+    manualTask: 'bpmn:ManualTask',
+    ccTask: 'bpmn:SendTask',
+    exclusiveGateway: 'bpmn:ExclusiveGateway',
+    parallelGateway: 'bpmn:ParallelGateway',
+    joinGateway: 'bpmn:ParallelGateway',
+  };
+  const executableTypes = new Set(['startEvent', 'endEvent', 'userTask', 'serviceTask', 'manualTask', 'ccTask', 'exclusiveGateway', 'parallelGateway', 'joinGateway']);
+  const rawNodes = Array.isArray(source.nodes) ? source.nodes : fallback.nodes;
+  const nodes = rawNodes
+    .filter(Boolean)
+    .map((raw, index) => {
+      const node = raw as Partial<FlowDesignerNode> & { data?: Record<string, unknown>; assigneeType?: string };
+      const fallbackNode = fallback.nodes[index] || fallback.nodes[0];
+      const type = String(node.type || node.data?.type || fallbackNode?.type || 'manualTask');
+      const x = Number(node.x);
+      const y = Number(node.y);
+      return {
+        id: String(node.id || `flow-node-${index + 1}`),
+        type,
+        category: node.category || categoryByType(type),
+        label: String(node.label || node.data?.label || fallbackNode?.label || `节点 ${index + 1}`),
+        description: String(node.description || node.data?.description || fallbackNode?.description || ''),
+        executable: typeof node.executable === 'boolean' ? node.executable : executableTypes.has(type),
+        x: Number.isFinite(x) ? x : 420,
+        y: Number.isFinite(y) ? y : 90 + index * 120,
+        assigneeSource: node.assigneeSource || (node.assigneeType as FlowDesignerNode['assigneeSource']) || fallbackNode?.assigneeSource,
+        assigneeValue: node.assigneeValue || fallbackNode?.assigneeValue,
+        approvalMode: node.approvalMode || fallbackNode?.approvalMode,
+        slaHours: node.slaHours ?? fallbackNode?.slaHours,
+        notificationEnabled: node.notificationEnabled ?? fallbackNode?.notificationEnabled,
+        errorPolicy: node.errorPolicy || fallbackNode?.errorPolicy,
+        retryTimes: node.retryTimes ?? fallbackNode?.retryTimes,
+        bpmnType: node.bpmnType || bpmnByType[type] || fallbackNode?.bpmnType,
+        fieldPermissions: node.fieldPermissions || fallbackNode?.fieldPermissions,
+      } satisfies FlowDesignerNode;
+    });
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  const rawEdges = Array.isArray(source.edges) ? source.edges : fallback.edges;
+  const edges = rawEdges
+    .filter(Boolean)
+    .map((raw, index) => {
+      const edge = raw as Partial<FlowDesignerEdge> & { fromId?: string; toId?: string };
+      return {
+        id: String(edge.id || `flow-edge-${index + 1}`),
+        source: String(edge.source || edge.fromId || ''),
+        sourceSide: edge.sourceSide || 'bottom',
+        target: String(edge.target || edge.toId || ''),
+        targetSide: edge.targetSide || 'top',
+        label: String(edge.label || ''),
+        condition: edge.condition,
+        priority: Number.isFinite(Number(edge.priority)) ? Number(edge.priority) : index + 1,
+        isDefault: Boolean(edge.isDefault),
+      } satisfies FlowDesignerEdge;
+    })
+    .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
+  const rawStateMapping = (source.stateMapping || {}) as Partial<FlowDesignerConfig['stateMapping']> & Record<string, unknown>;
+  return {
+    ...fallback,
+    ...source,
+    nodes,
+    edges,
+    triggerBindings: Array.isArray(source.triggerBindings) && source.triggerBindings.length ? source.triggerBindings : fallback.triggerBindings,
+    stateMapping: {
+      statusField: String(rawStateMapping.statusField || rawStateMapping.processStatus || fallback.stateMapping.statusField),
+      currentNodeField: String(rawStateMapping.currentNodeField || rawStateMapping.currentNode || fallback.stateMapping.currentNodeField),
+      currentAssigneeField: String(rawStateMapping.currentAssigneeField || rawStateMapping.currentHandler || fallback.stateMapping.currentAssigneeField),
+      completedAtField: String(rawStateMapping.completedAtField || rawStateMapping.completedAt || fallback.stateMapping.completedAtField),
+    },
+    advancedModeConfig: {
+      ...fallback.advancedModeConfig,
+      ...((source.advancedModeConfig || {}) as Partial<FlowDesignerConfig['advancedModeConfig']>),
+    },
+  };
+}
+
 function getWorkflowDesignerMeta(form?: PlatformForm | null): WorkflowDesignerMeta {
   const config = form?.config || {};
   const meta = config.workflowDesigner;
@@ -1039,16 +1132,16 @@ export default function FormSettingsPage() {
         const definition = definitionResponse.data as WorkflowDefinitionPayload;
         if (definition.config?.nodes && definition.config?.edges) {
           const defaultFlow = makeProfessionalFlowConfig(baseConfig);
-          const nextConfig = {
-            ...defaultFlow,
+          const nextConfig = normalizeProfessionalFlowConfig({
             ...definition.config,
             version: definition.version ? `v${definition.version}` : String(definition.config.version || defaultFlow.version),
-          } as FlowDesignerConfig;
+          }, defaultFlow);
           setProfessionalFlowConfig(nextConfig);
           setVersion(nextConfig.version);
           setHasUnsavedChanges(false);
         }
-      } catch {
+      } catch (error) {
+        console.warn('workflow designer load failed', error);
         if (!cancelled) {
           message.warning('未能加载后端流程草稿，当前使用本地默认配置');
         }

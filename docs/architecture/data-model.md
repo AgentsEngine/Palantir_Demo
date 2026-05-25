@@ -1,6 +1,6 @@
 # Data Model And Ontology Notes
 
-Last updated: 2026-05-23
+Last updated: 2026-05-25
 
 Source of truth: `backend/app/models/relational.py`,
 `backend/app/models/graph_models.py`, and `backend/alembic/versions/*`.
@@ -144,9 +144,14 @@ API MVP backed by in-code demo arrays in `backend/app/api/knowledge.py`.
 
 Current API concepts:
 
+- knowledge space;
 - knowledge source;
 - document;
+- upload/ingestion job status;
+- normalized Markdown;
 - chunk;
+- card;
+- binding candidate;
 - linked business object;
 - related evidence;
 - search result.
@@ -157,7 +162,7 @@ Current retrieval method:
 - cosine similarity;
 - no external embedding model;
 - no vector database;
-- no upload/indexing pipeline.
+- upload/indexing is currently a demo/API simulation, not durable storage.
 
 When persistent knowledge storage is added, introduce explicit tables or a
 document store and update this section.

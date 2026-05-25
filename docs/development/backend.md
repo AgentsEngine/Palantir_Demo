@@ -1,6 +1,6 @@
 # Backend Development Guide
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25
 
 Source of truth: `backend/app/main.py`, `backend/app/api/*`,
 `backend/app/models/*`, `backend/alembic/versions/*`, and
@@ -126,6 +126,10 @@ admin-controlled capability, not current behavior.
 - `GET /knowledge/sources`
 - `GET /knowledge/spaces`
 - `GET /knowledge/documents`
+- `POST /knowledge/assets/upload`
+- `GET /knowledge/ingestion-jobs/{job_id}`
+- `GET /knowledge/documents/{document_id}`
+- `GET /knowledge/documents/{document_id}/markdown`
 - `GET /knowledge/documents/{document_id}/chunks`
 - `GET /knowledge/cards`
 - `GET /knowledge/cards/{card_id}`
@@ -137,9 +141,10 @@ admin-controlled capability, not current behavior.
 
 The current implementation uses in-code demo documents and scikit-learn
 TF-IDF/cosine similarity. It also models spaces, knowledge cards, binding
-candidates, and OCR/publishing workflow metadata. It preserves a future RAG API
-shape but does not yet use an embedding service, vector database, persisted
-upload pipeline, or knowledge tables.
+candidates, upload simulation, ingestion-job status, document Markdown, and
+OCR/publishing workflow metadata. It preserves a future RAG API shape but does
+not yet use an embedding service, vector database, persisted upload pipeline,
+or knowledge tables.
 
 ## Security Conventions
 

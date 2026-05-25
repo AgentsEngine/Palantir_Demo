@@ -1,8 +1,16 @@
 # AI Agent Skill/Tool Contract
 
-> Version: v0.1  
-> Date: 2026-05-23  
-> Scope: ManuFoundry system AI Agent architecture, skill/tool contracts, staged delivery path, risk policy, confirmation strategy, and migration from demo mock skills to real backend skills.
+Last updated: 2026-05-25
+
+Status: roadmap/design. This document defines the intended AI skill/tool
+contract and staged migration path. Current API entry points are listed in the
+baseline section.
+
+Version: v0.1
+
+Scope: ManuFoundry system AI Agent architecture, skill/tool contracts, staged
+delivery path, risk policy, confirmation strategy, and migration from demo mock
+skills to real backend skills.
 
 ## 1. Purpose
 
@@ -25,7 +33,7 @@ Current AI entry points:
 | --- | --- | --- |
 | Chat assistant | `backend/app/api/ai_assistant.py` | Intent-like keyword routing with DB/mock fallback for OEE, equipment, production, quality, and supply-chain answers. |
 | AI Builder | `backend/app/api/ai_builder.py` | Keyword-based model and page suggestions. |
-| Knowledge base | `backend/app/api/knowledge.py` | Local TF-IDF retrieval over demo knowledge sources, documents, and chunks. |
+| Knowledge base | `backend/app/api/knowledge.py` | Local TF-IDF retrieval over demo spaces, sources, documents, Markdown, chunks, cards, upload simulation, and binding candidates. |
 | Frontend assistant | `frontend/src/pages/AIAssistant/index.tsx`, `frontend/src/components/AiChatWidget` | UI entry points for asking AI questions. |
 
 Near-term work should preserve these APIs where possible and move orchestration behind them. Routers should remain thin; business logic belongs in `backend/app/services/ai/*` and existing domain services.

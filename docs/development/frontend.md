@@ -1,6 +1,6 @@
 # Frontend Development Guide
 
-Last updated: 2026-05-23
+Last updated: 2026-05-25
 
 Source of truth: `frontend/src/App.tsx`, `frontend/src/services/api.ts`,
 `frontend/src/config/menus.ts`, and `frontend/package.json`.
@@ -32,6 +32,9 @@ npm run build
 
 The development server listens on port `3000`. Requests under `/api` are
 proxied to `VITE_API_PROXY_TARGET`, defaulting to `http://localhost:8000`.
+When the local sandbox blocks Vite dependency pre-bundling, use
+`node local-static-server.mjs` to serve `frontend/dist` with a lightweight
+`/api` proxy to `127.0.0.1:8000`.
 
 ## Application Shell
 
@@ -113,8 +116,9 @@ Implemented client groups include:
 - Platform forms: forms, fields, layouts, actions, permissions, workflow
   bindings, dynamic records, and application menu nodes.
 - Workflow, notifications, templates, rules, scheduler, search.
-- Knowledge base: spaces, sources, documents, chunks, cards, related evidence,
-  binding candidates, OCR workflow metadata, and local RAG search.
+- Knowledge base: spaces, sources, documents, upload simulation, ingestion jobs,
+  Markdown, chunks, cards, related evidence, binding candidates, OCR workflow
+  metadata, and local RAG search.
 
 The knowledge base API is currently a local MVP backed by static documents and
 TF-IDF retrieval on the backend. It is not yet connected to an external vector

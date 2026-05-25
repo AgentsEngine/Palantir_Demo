@@ -85,12 +85,6 @@ export default function AccountMenu({ user, onNavigate, onLogout }: AccountMenuP
               onClick: () => onNavigate('/account-center?section=data-ontology'),
             },
             {
-              key: 'palantir-config',
-              label: '运营闭环配置',
-              icon: <AppstoreOutlined />,
-              onClick: () => onNavigate('/account-center?section=palantir-config'),
-            },
-            {
               key: 'identity-access',
               label: '用户与权限',
               icon: <SafetyCertificateOutlined />,

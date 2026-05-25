@@ -23,13 +23,14 @@ SAFE_RELS = [
     "CONTAINS", "PRODUCES", "REQUIRES", "SUPPLIES",
     "INSPECTS", "MAINTAINS", "FEEDS", "ASSIGNED_TO",
     "STORED_IN", "SHIPS_TO", "FULFILLS", "FOUND_IN",
+    "RELATED_TO",
 ]
 
 BUSINESS_GRAPH_LABELS = [
     "QualityEvent", "Defect", "InspectionBatch", "MaterialBatch",
     "Supplier", "WorkOrder", "Equipment", "CustomerOrder", "CAPA",
     "KnowledgeCard", "Operation", "ProductBatch", "InventoryLot",
-    "Sensor", "TimeSeriesWindow",
+    "Sensor", "TimeSeriesWindow", "Material", "Product", "Customer",
 ]
 
 BUSINESS_LABEL_ALIASES = {
@@ -44,7 +45,7 @@ BUSINESS_GRAPH_RELS = [
     "USES_BATCH", "USES_EQUIPMENT", "AFFECTS_ORDER", "TRIGGERS",
     "EVIDENCE_FOR", "RUNS_OPERATION", "PRODUCES_BATCH",
     "STORED_AS", "REINSPECTS", "MAY_CAUSE", "MEASURED_BY",
-    "HAS_TS_ANOMALY", "CORRELATES_WITH",
+    "HAS_TS_ANOMALY", "CORRELATES_WITH", "RELATED_TO",
 ]
 
 

@@ -65,8 +65,7 @@
 
 .professional-flow-node-group,
 .professional-flow-props,
-.professional-flow-props section,
-.professional-flow-checks {
+.professional-flow-props section {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -367,8 +366,7 @@
   transform: translateY(-50%);
 }
 
-.professional-flow-props section,
-.professional-flow-checks {
+.professional-flow-props section {
   padding-top: 10px;
   border-top: 1px solid #edf1f5;
 }
@@ -419,48 +417,6 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-}
-
-.professional-flow-check {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid #dce3ea;
-  border-radius: 8px;
-  background: #fbfcfd;
-}
-
-.professional-flow-check-error {
-  border-color: #f1b5b5;
-  background: #fff7f7;
-  color: #b42318;
-}
-
-.professional-flow-check-warning {
-  border-color: #f3d19b;
-  background: #fffaf0;
-  color: #8a5a00;
-}
-
-.professional-flow-check-suggestion {
-  color: #2f6678;
-}
-
-.professional-flow-check span {
-  min-width: 0;
-}
-
-.professional-flow-check strong,
-.professional-flow-check small {
-  display: block;
-}
-
-.professional-flow-check small {
-  margin-top: 2px;
-  color: #667085;
-  font-size: 11px;
-  line-height: 1.45;
 }
 
 .content-surface:has(.form-designer-page) {

@@ -3,7 +3,6 @@ import {
   ApartmentOutlined,
   ApiOutlined,
   BranchesOutlined,
-  CheckCircleOutlined,
   ClockCircleOutlined,
   CloseCircleOutlined,
   CopyOutlined,
@@ -1162,18 +1161,6 @@ export default function ProfessionalFlowDesigner({
           {selection.type === 'canvas' && <Button size="small" icon={<PlusOutlined />} onClick={() => addNode(nodeGroups[1].items[0])}>审批</Button>}
         </div>
         {renderProperties()}
-        <section className="professional-flow-checks">
-          <div className="professional-flow-section-title">发布校验</div>
-          {validation.map((item) => (
-            <div className={`professional-flow-check professional-flow-check-${item.level}`} key={item.title}>
-              {item.level === 'error' ? <CloseCircleOutlined /> : item.level === 'warning' ? <ClockCircleOutlined /> : <CheckCircleOutlined />}
-              <span>
-                <strong>{item.title}</strong>
-                <small>{item.detail}</small>
-              </span>
-            </div>
-          ))}
-        </section>
       </aside>
     </div>
   );

@@ -1,6 +1,10 @@
 # SaaS Productization Phase 1
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25
+
+Status: roadmap/productization. This document defines a target SaaS production
+boundary; it is not a statement that every production guard is already enforced
+in code.
 
 This document defines the first production boundary for ManuFoundry as a public SaaS product. The goal is not to finish every manufacturing module. The first ready path is:
 

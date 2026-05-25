@@ -33,7 +33,7 @@ def _now() -> str:
 
 def _source_type(file_name: str) -> str:
     suffix = Path(file_name).suffix.lower()
-    if suffix in {".md", ".markdown"}:
+    if suffix in {".md", ".markdown", ".txt"}:
         return "markdown"
     if suffix in {".xlsx", ".xls"}:
         return "excel"
@@ -217,4 +217,3 @@ def search_ingested_knowledge(query: str, limit: int = 5, permission_scope: str 
             "score": cosine_score(query_embedding, chunk["embedding"]),
         })
     return sorted(candidates, key=lambda item: item["score"], reverse=True)[: max(1, min(limit, 20))]
-

@@ -1,7 +1,13 @@
 # 我的工作台与通知中心设计
 
-> 更新日期：2026-05-20
-> 目标：明确“我的工作台”和“小铃铛通知中心”的边界，先完成前端 demo，再逐步接入后端数据模型。
+Last updated: 2026-05-25
+
+Status: design. This document defines the intended boundary between the
+workspace and notification center; verify current implementation against
+`frontend/src/pages/Workspace`, `frontend/src/components/GlobalSearch`, and
+notification APIs.
+
+目标：明确“我的工作台”和“小铃铛通知中心”的边界，先完成前端 demo，再逐步接入后端数据模型。
 
 ## 1. 产品定位
 

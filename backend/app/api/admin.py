@@ -1,11 +1,12 @@
 """Admin API — User/Role/Permission CRUD."""
 
 import json
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.api.deps import current_tenant_id, require_admin
 
@@ -561,6 +562,10 @@ async def delete_role(role_id: int, user_ctx: dict = Depends(require_admin)):
 async def list_audit_logs(
     resource_type: Optional[str] = None,
     action: Optional[str] = None,
+    user_id: Optional[int] = None,
+    keyword: Optional[str] = None,
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: dict = Depends(require_admin),
@@ -570,13 +575,43 @@ async def list_audit_logs(
         from sqlalchemy import func as sa_func
         from app.models.relational import AuditLog
         tenant_id = current_tenant_id(user)
-        q = select(AuditLog).where(AuditLog.tenant_id == tenant_id).order_by(AuditLog.timestamp.desc())
+        filters = [AuditLog.tenant_id == tenant_id]
         if resource_type:
-            q = q.where(AuditLog.resource_type == resource_type)
+            filters.append(AuditLog.resource_type == resource_type)
         if action:
-            q = q.where(AuditLog.action == action)
+            filters.append(AuditLog.action == action)
+        if user_id is not None:
+            filters.append(AuditLog.user_id == user_id)
+        if start_time:
+            filters.append(AuditLog.timestamp >= start_time)
+        if end_time:
+            filters.append(AuditLog.timestamp <= end_time)
+        if keyword:
+            pattern = f"%{keyword.strip()}%"
+            filters.append(or_(
+                AuditLog.action.ilike(pattern),
+                AuditLog.resource_type.ilike(pattern),
+                AuditLog.old_values.ilike(pattern),
+                AuditLog.new_values.ilike(pattern),
+            ))
+
+        q = select(AuditLog).where(*filters).order_by(AuditLog.timestamp.desc())
         count_q = select(sa_func.count()).select_from(q.subquery())
         total = await db.scalar(count_q)
+        summary_q = (
+            select(AuditLog.resource_type, sa_func.count())
+            .where(*filters)
+            .group_by(AuditLog.resource_type)
+        )
+        summary_result = await db.execute(summary_q)
+        resource_counts = {row[0] or "unknown": row[1] for row in summary_result.fetchall()}
+        action_q = (
+            select(AuditLog.action, sa_func.count())
+            .where(*filters)
+            .group_by(AuditLog.action)
+        )
+        action_result = await db.execute(action_q)
+        action_counts = {row[0] or "unknown": row[1] for row in action_result.fetchall()}
         q = q.offset((page - 1) * page_size).limit(page_size)
         result = await db.execute(q)
         logs = result.scalars().all()
@@ -591,7 +626,11 @@ async def list_audit_logs(
                 for l in logs
             ],
             "total": total, "page": page, "page_size": page_size,
+            "summary": {
+                "resource_counts": resource_counts,
+                "action_counts": action_counts,
+            },
         }
 
     result = await _try_db(_query)
-    return result or {"data": [], "total": 0, "page": page, "page_size": page_size}
+    return result or {"data": [], "total": 0, "page": page, "page_size": page_size, "summary": {"resource_counts": {}, "action_counts": {}}}

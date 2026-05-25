@@ -1,6 +1,6 @@
 # ManuFoundry Architecture Overview
 
-Last updated: 2026-05-23
+Last updated: 2026-05-25
 
 This is the current high-level architecture document. It describes what the codebase implements now, and it separates that from Palantir-inspired reference direction.
 
@@ -217,7 +217,7 @@ Implemented now:
 
 - Workbench shell, app switcher, dynamic menus, workspace, system admin surfaces.
 - Backend APIs for applications, forms platform, workflow, rules, reports, notifications, scheduler, search, templates, AI builder.
-- Local knowledge base APIs with static demo documents and TF-IDF retrieval.
+- Local knowledge base APIs with static demo documents, upload simulation, Markdown, cards, binding candidates, OCR workflow metadata, and TF-IDF retrieval.
 - Forms metadata persistence and JSON dynamic records.
 - Docker development and production-style compose files.
 - Backend test coverage across security, workflow, rules, notifications, forms, config import/export, templates, scheduler/search/AI builder, graph safety, and model-driven safety.

@@ -1,71 +1,79 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ApartmentOutlined,
   BranchesOutlined,
+  CheckCircleOutlined,
   DatabaseOutlined,
+  DownloadOutlined,
   FileSearchOutlined,
-  FormOutlined,
   InboxOutlined,
   NodeIndexOutlined,
-  PlusOutlined,
   ReloadOutlined,
   RobotOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Empty, Input, List, Row, Select, Space, Table, Tabs, Tag, Tree, Typography, Upload, message } from 'antd';
 import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Empty,
+  Form,
+  Input,
+  List,
+  Progress,
+  Row,
+  Segmented,
+  Select,
+  Space,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
+  Upload,
+  message,
+} from 'antd';
+import cytoscape from 'cytoscape';
+import dagre from 'cytoscape-dagre';
+import {
+  approveKnowledgeExtractionJob,
+  commitKnowledgeExtractionJobToGraph,
+  createKnowledgeExtractionJob,
+  exportKnowledgeExtractionJob,
+  getGraphAssetQuality,
   getKnowledgeOcrPipeline,
   getRelatedKnowledgeCards,
-  listKnowledgeChunks,
+  listGraphAssetEvidence,
+  listGraphAssetNodes,
+  listGraphAssetRelationships,
   listKnowledgeCards,
+  listKnowledgeChunks,
   listKnowledgeDocuments,
-  listKnowledgeSpaces,
   listKnowledgeSources,
+  listKnowledgeSpaces,
   listSemanticDataAssets,
   listSemanticOntologyObjects,
   listSemanticOntologyRelations,
-  listSemanticPageContracts,
   searchKnowledge,
-  suggestKnowledgeBindings,
   uploadKnowledgeAsset,
-} from '@/services/api';
+} from '../../services/api';
 
-type DataField = {
-  name: string;
-  label: string;
-  type: string;
-  primary_key: boolean;
-  searchable: boolean;
-  visible: boolean;
-  quality: string;
-};
-
-type DataTable = {
-  id: number;
-  name: string;
-  label: string;
-  rows: number;
-  quality_score: number;
-  fields: DataField[];
-};
+cytoscape.use(dagre);
 
 type DataAsset = {
   id: number;
   name: string;
   type: string;
-  status: string;
   owner: string;
+  status: string;
   freshness: string;
-  tables: DataTable[];
-};
-
-type OntologyField = {
-  name: string;
-  label: string;
-  type: string;
-  source_field: string;
-  list: boolean;
-  form: boolean;
-  search: boolean;
+  tables: Array<{
+    id: string;
+    name: string;
+    label: string;
+    rows: number;
+    quality_score: number;
+    fields: Array<{ name: string; label: string; type: string; primary_key?: boolean; searchable?: boolean; visible?: boolean; quality?: string }>;
+  }>;
 };
 
 type OntologyObject = {
@@ -74,412 +82,267 @@ type OntologyObject = {
   code: string;
   source: string;
   description: string;
-  fields: OntologyField[];
+  fields: Array<{ name: string; label: string; type: string; source_field?: string; list?: boolean; form?: boolean; search?: boolean }>;
 };
 
 type OntologyRelation = {
-  id: number;
+  id: string;
   source: string;
+  target: string;
   label: string;
   type: string;
-  target: string;
-  graph: boolean;
-  description: string;
+  graph?: boolean;
+  description?: string;
 };
 
-type PageContract = {
-  route: string;
-  title: string;
-  entity: string;
-  description: string;
-  components: string[];
-  actions: string[];
-};
-
-type KnowledgeSource = {
-  id: string;
+type ExtractionEntity = {
+  candidate_id: string;
   name: string;
-  type: string;
-  owner: string;
-  status: string;
-  document_count: number;
-  description: string;
-};
-
-type LinkedObject = {
-  type: string;
-  id: string;
-  name: string;
-};
-
-type KnowledgeDocument = {
-  id: string;
-  source_id: string;
-  title: string;
-  doc_type: string;
-  status: string;
-  updated_at: string;
-  summary: string;
-  linked_objects: LinkedObject[];
-};
-
-type KnowledgeChunk = {
-  id: string;
-  document_id: string;
-  document_title?: string;
-  source_ref: string;
-  chunk_text: string;
-  score?: number;
-  linked_objects?: LinkedObject[];
-};
-
-type KnowledgeSpace = {
-  id: string;
-  name: string;
-  scope: string;
-  owner_role: string;
-  review_required: boolean;
-  description: string;
-};
-
-type EvidenceRef = {
-  document_id: string;
-  source_ref: string;
-  document_title?: string;
-  document_type?: string;
-  source_name?: string;
-};
-
-type KnowledgeCard = {
-  id: string;
-  space_id: string;
-  space_name?: string;
-  title: string;
-  status: string;
-  owner: string;
-  reviewer: string;
-  updated_at: string;
-  scenario: string;
-  guidance: string[];
-  risk_notes: string[];
-  evidence_refs: EvidenceRef[];
-  linked_objects: LinkedObject[];
-  backlinks: string[];
-};
-
-type BindingCandidate = {
-  text: string;
-  object_type: string;
-  object_id: string;
-  object_name: string;
+  entity_type: string;
+  description?: string;
   confidence: number;
-  match_type: string;
-  alias: string[];
+  source_location?: string;
 };
 
-type OcrPipelineStep = {
-  key: string;
-  title: string;
-  owner: string;
-  description: string;
+type ExtractionRelation = {
+  candidate_id: string;
+  source_name: string;
+  source_type: string;
+  target_name: string;
+  target_type: string;
+  relation_type: string;
+  confidence: number;
+  source_location?: string;
 };
 
-type KnowledgeUploadSummary = {
-  fileName: string;
+type ExtractionJob = {
+  job_id: string;
+  document_id: string;
+  domain: string;
+  prompt_name: string;
+  model_name: string;
   status: string;
-  documentTitle?: string;
-  chunkCount: number;
-  markdownPreview?: string;
-  permissionScope: string;
+  result: {
+    entities: ExtractionEntity[];
+    relations: ExtractionRelation[];
+    logic_rules: Array<Record<string, unknown>>;
+    actions: Array<Record<string, unknown>>;
+  };
+  quality_report: {
+    blocking: boolean;
+    counts: Record<string, number>;
+    items: Array<{ severity: 'FATAL' | 'ERROR' | 'WARNING' | 'INFO'; code: string; message: string; target?: string }>;
+  };
 };
 
-type KnowledgeChatMessage = {
+type GraphAssetNode = {
   id: string;
-  role: 'assistant' | 'user';
-  content: string;
+  name: string;
+  type: string;
+  confidence: number;
+  source_document_id?: string;
+  source_location?: string;
+  knowledge_job_id?: string;
+  review_status?: string;
+  publish_status?: string;
+  binding_status?: string;
 };
 
-const uploadedKnowledgeSource: KnowledgeSource = {
-  id: 'uploaded',
-  name: '上传资料',
-  type: 'Uploaded',
-  owner: '当前用户',
-  status: 'active',
-  document_count: 0,
-  description: '通过知识库页面上传并解析的 Markdown、Excel、PDF 或图片。',
+type GraphAssetRelationship = {
+  id: string;
+  source?: string;
+  target?: string;
+  source_name: string;
+  target_name: string;
+  relation_type: string;
+  confidence: number;
+  source_document_id?: string;
+  source_location?: string;
+  knowledge_job_id?: string;
+  publish_status?: string;
 };
 
-const fallbackKnowledgeSources: KnowledgeSource[] = [
+type GraphAssetEvidence = {
+  id: string;
+  asset_type: string;
+  asset_name: string;
+  source_document_id?: string;
+  source_location?: string;
+  confidence: number;
+  knowledge_job_id?: string;
+};
+
+type KnowledgeSpace = { id: string; name: string; description?: string };
+type KnowledgeSource = { id: string; name: string; source_type?: string; status?: string };
+type KnowledgeDocument = { id: string; title: string; source_id?: string; summary?: string; updated_at?: string };
+type KnowledgeCard = { id: string; title: string; scenario?: string; owner?: string; updated_at?: string };
+type KnowledgeChunk = { id: string; document_title?: string; chunk_text: string; source_ref?: string };
+
+const severityColors: Record<string, string> = {
+  FATAL: 'red',
+  ERROR: 'volcano',
+  WARNING: 'gold',
+  INFO: 'blue',
+};
+
+const graphTypeColors: Record<string, string> = {
+  Supplier: '#2f54eb',
+  MaterialBatch: '#1677ff',
+  Material: '#1677ff',
+  Defect: '#c83f49',
+  CAPA: '#a43d3d',
+  KnowledgeCard: '#2f5f73',
+  Equipment: '#2f7d5b',
+  WorkOrder: '#5b4ca3',
+  CustomerOrder: '#d46b08',
+  Product: '#13a8a8',
+  default: '#5d6972',
+};
+
+const fallbackAssets: DataAsset[] = [
   {
-    id: 'sop',
-    name: '质量 SOP',
-    type: 'SOP',
-    owner: '质量体系',
-    status: 'active',
-    document_count: 2,
-    description: '沉淀检验、冻结、复检和放行规则。',
+    id: 1,
+    name: 'Manufacturing PostgreSQL',
+    type: 'postgresql',
+    owner: '平台管理员',
+    status: 'connected',
+    freshness: '5 分钟前',
+    tables: [
+      {
+        id: 'equipment',
+        name: 'equipment',
+        label: '设备主数据',
+        rows: 128,
+        quality_score: 98,
+        fields: [
+          { name: 'equipment_id', label: '设备ID', type: 'string', primary_key: true, searchable: true, visible: true, quality: 'good' },
+          { name: 'name', label: '设备名称', type: 'string', searchable: true, visible: true, quality: 'good' },
+          { name: 'line_id', label: '产线ID', type: 'string', visible: true, quality: 'good' },
+          { name: 'status', label: '状态', type: 'enum', searchable: true, visible: true, quality: 'good' },
+        ],
+      },
+      {
+        id: 'work_orders',
+        name: 'work_orders',
+        label: '维修/生产工单',
+        rows: 246,
+        quality_score: 94,
+        fields: [
+          { name: 'work_order_id', label: '工单ID', type: 'string', primary_key: true, searchable: true, visible: true, quality: 'good' },
+          { name: 'equipment_id', label: '设备ID', type: 'string', searchable: true, visible: true, quality: 'good' },
+          { name: 'status', label: '状态', type: 'enum', searchable: true, visible: true, quality: 'warning' },
+        ],
+      },
+    ],
   },
-  {
-    id: 'capa',
-    name: '历史 CAPA',
-    type: 'CAPA',
-    owner: '质量经理',
-    status: 'active',
-    document_count: 2,
-    description: '复用历史异常处置经验和纠正预防动作。',
-  },
-  {
-    id: 'supplier',
-    name: '供应商报告',
-    type: 'SupplierReport',
-    owner: '采购质量',
-    status: 'active',
-    document_count: 1,
-    description: '供应商整改、来料波动和批次风险说明。',
-  },
+];
+
+const fallbackObjects: OntologyObject[] = [
   {
     id: 'equipment',
-    name: '设备日志',
-    type: 'EquipmentLog',
-    owner: '生产设备',
-    status: 'active',
-    document_count: 1,
-    description: '设备点检、维护和工艺参数变化记录。',
-  },
-];
-
-const fallbackKnowledgeDocuments: KnowledgeDocument[] = [
-  {
-    id: 'doc-sop-rework',
-    source_id: 'sop',
-    title: 'SOP-QA-014 焊点虚焊复检与冻结流程',
-    doc_type: 'SOP',
-    status: 'approved',
-    updated_at: '2026-05-18',
-    summary: '规定 AOI 连续缺陷、批次冻结、抽样复检和 CAPA 触发条件。',
-    linked_objects: [
-      { type: 'Defect', id: 'D-SOLDER-VOID', name: '焊点虚焊' },
-      { type: 'QualityEvent', id: 'QE-20260521-001', name: '电控模块焊点异常' },
+    name: '设备',
+    code: 'Equipment',
+    source: 'equipment',
+    description: '制造现场可维护、可监控、可关联工单和质量事件的设备对象。',
+    fields: [
+      { name: 'equipment_id', label: '设备ID', type: 'string', source_field: 'equipment_id', list: true, form: true, search: true },
+      { name: 'name', label: '设备名称', type: 'string', source_field: 'name', list: true, form: true, search: true },
+      { name: 'status', label: '状态', type: 'enum', source_field: 'status', list: true, form: true, search: true },
     ],
   },
   {
-    id: 'doc-capa-072',
-    source_id: 'capa',
-    title: 'CAPA-072 电控模块 V2 虚焊历史处置',
-    doc_type: 'CAPA',
-    status: 'closed',
-    updated_at: '2026-04-29',
-    summary: '历史处置中通过冻结同批次、复检 BGA 区域、校准回流炉曲线完成闭环。',
-    linked_objects: [
-      { type: 'CAPA', id: 'CAPA-072', name: '电控模块 V2 虚焊 CAPA' },
-      { type: 'MaterialBatch', id: 'MB-7781', name: '焊锡膏 S12' },
-    ],
-  },
-  {
-    id: 'doc-supplier-beichen',
-    source_id: 'supplier',
-    title: '北辰电子材料 5 月来料整改报告',
-    doc_type: 'SupplierReport',
-    status: 'reviewing',
-    updated_at: '2026-05-20',
-    summary: '供应商承认 S12 焊锡膏储运温控波动，建议同仓批次隔离并提高来料抽检。',
-    linked_objects: [
-      { type: 'Supplier', id: 'SUP-BEICHEN', name: '北辰电子材料' },
-      { type: 'MaterialBatch', id: 'MB-7781', name: '焊锡膏 S12' },
-    ],
-  },
-  {
-    id: 'doc-equipment-smt03',
-    source_id: 'equipment',
-    title: 'SMT-03 回流炉温区维护日志',
-    doc_type: 'EquipmentLog',
-    status: 'active',
-    updated_at: '2026-05-21',
-    summary: '温区 4 与温区 5 曾出现短时偏低，建议复核曲线并关联同班次工单。',
-    linked_objects: [
-      { type: 'Equipment', id: 'SMT-03', name: 'SMT-03 回流炉' },
-      { type: 'WorkOrder', id: 'WO-260521-017', name: '电控模块 V2 工单' },
+    id: 'defect',
+    name: '缺陷',
+    code: 'Defect',
+    source: 'quality_defects',
+    description: '质量异常、缺陷类型、严重度和证据来源的统一语义对象。',
+    fields: [
+      { name: 'defect_id', label: '缺陷ID', type: 'string', source_field: 'defect_id', list: true, form: true, search: true },
+      { name: 'severity', label: '严重度', type: 'enum', source_field: 'severity', list: true, form: true, search: true },
     ],
   },
 ];
 
-const fallbackKnowledgeChunks: KnowledgeChunk[] = [
-  {
-    id: 'chunk-sop-rework-1',
-    document_id: 'doc-sop-rework',
-    document_title: 'SOP-QA-014 焊点虚焊复检与冻结流程',
-    source_ref: 'SOP-QA-014 / 3.2',
-    chunk_text: 'AOI 连续发现同类焊点虚焊且缺陷率超过管控线时，应冻结同批物料与在制品，并发起质量经理复核。',
-    score: 0.94,
-    linked_objects: fallbackKnowledgeDocuments[0].linked_objects,
-  },
-  {
-    id: 'chunk-sop-rework-2',
-    document_id: 'doc-sop-rework',
-    document_title: 'SOP-QA-014 焊点虚焊复检与冻结流程',
-    source_ref: 'SOP-QA-014 / 4.1',
-    chunk_text: '复检范围优先覆盖 BGA 区域、同批次焊锡膏、同班次工单和同设备生产记录。',
-    score: 0.88,
-    linked_objects: fallbackKnowledgeDocuments[0].linked_objects,
-  },
-  {
-    id: 'chunk-capa-072-1',
-    document_id: 'doc-capa-072',
-    document_title: 'CAPA-072 电控模块 V2 虚焊历史处置',
-    source_ref: 'CAPA-072 / Root Cause',
-    chunk_text: '上次虚焊异常与焊锡膏储存温度波动、回流炉温区偏低共同相关，处置动作包括冻结批次、复检和设备校准。',
-    score: 0.91,
-    linked_objects: fallbackKnowledgeDocuments[1].linked_objects,
-  },
-  {
-    id: 'chunk-supplier-1',
-    document_id: 'doc-supplier-beichen',
-    document_title: '北辰电子材料 5 月来料整改报告',
-    source_ref: 'SUP-BEICHEN / 2026-05',
-    chunk_text: '供应商建议对 S12 焊锡膏同仓储批次进行隔离，待复验通过后再释放。',
-    score: 0.83,
-    linked_objects: fallbackKnowledgeDocuments[2].linked_objects,
-  },
-  {
-    id: 'chunk-equipment-1',
-    document_id: 'doc-equipment-smt03',
-    document_title: 'SMT-03 回流炉温区维护日志',
-    source_ref: 'SMT-03 / 2026-05-21 09:12',
-    chunk_text: '温区 4 出现 6 分钟短时偏低，建议把同时间窗口工单纳入影响分析。',
-    score: 0.78,
-    linked_objects: fallbackKnowledgeDocuments[3].linked_objects,
-  },
+const fallbackRelations: OntologyRelation[] = [
+  { id: 'equipment-workorder', source: 'equipment', target: 'work_order', label: '产生工单', type: 'GENERATES', graph: true, description: '设备异常或计划维护触发工单。' },
+  { id: 'defect-equipment', source: 'defect', target: 'equipment', label: '关联设备', type: 'RELATED_TO', graph: true, description: '缺陷可追溯到相关设备或工序。' },
 ];
 
-const fallbackKnowledgeSpaces: KnowledgeSpace[] = [
-  { id: 'personal', name: '个人知识库', scope: 'private', owner_role: '当前用户', review_required: false, description: '个人笔记和临时资料，默认不进入工作台引用。' },
-  { id: 'team-quality', name: '质量团队知识库', scope: 'team', owner_role: '质量工程师', review_required: true, description: '团队复用的异常经验和项目资料。' },
-  { id: 'dept-quality', name: '质量部门知识库', scope: 'department', owner_role: '质量经理', review_required: true, description: '审核后的 SOP、CAPA 和处置策略。' },
-  { id: 'enterprise', name: '企业知识库', scope: 'enterprise', owner_role: '平台管理员 / 业务专家', review_required: true, description: '跨部门可复用的正式知识。' },
+const fallbackGraphNodes: GraphAssetNode[] = [
+  { id: 'demo-ent-supplier-beichen', name: '北辰电子材料', type: 'Supplier', confidence: 0.96, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:供应商信息', knowledge_job_id: 'demo-job-supplier-8d', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
+  { id: 'demo-ent-material-mb7781', name: 'MB-7781 焊锡膏 S12', type: 'MaterialBatch', confidence: 0.94, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D3 围堵措施', knowledge_job_id: 'demo-job-supplier-8d', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
+  { id: 'demo-ent-defect-void', name: 'BGA 焊点虚焊', type: 'Defect', confidence: 0.91, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D2 问题描述', knowledge_job_id: 'demo-job-supplier-8d', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
+  { id: 'demo-ent-capa-072', name: 'CAPA-072 批次冻结与复检', type: 'CAPA', confidence: 0.88, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D5/D6 纠正措施', knowledge_job_id: 'demo-job-supplier-8d', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
+  { id: 'demo-ent-sop-q14', name: 'SOP-QA-014 焊点虚焊复检流程', type: 'KnowledgeCard', confidence: 0.92, source_document_id: 'demo-doc-quality-sop', source_location: 'SOP:3.2-4.1', knowledge_job_id: 'demo-job-quality-sop', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
+  { id: 'demo-ent-equipment-smt03', name: 'SMT-03 回流炉', type: 'Equipment', confidence: 0.93, source_document_id: 'demo-doc-equipment-log', source_location: '设备日志:09:12', knowledge_job_id: 'demo-job-equipment-log', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
+  { id: 'demo-ent-workorder-017', name: 'WO-260521-017 电控模块工单', type: 'WorkOrder', confidence: 0.9, source_document_id: 'demo-doc-workorder-exception', source_location: '工单异常记录:line 6', knowledge_job_id: 'demo-job-workorder-exception', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
+  { id: 'demo-ent-customer-order-8821', name: 'SO-8821 客户订单', type: 'CustomerOrder', confidence: 0.8, source_document_id: 'demo-doc-workorder-exception', source_location: '工单异常记录:line 12', knowledge_job_id: 'demo-job-workorder-exception', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
 ];
 
-const fallbackKnowledgeCards: KnowledgeCard[] = [
-  {
-    id: 'card-solder-void',
-    space_id: 'dept-quality',
-    space_name: '质量部门知识库',
-    title: '焊点虚焊处理策略',
-    status: 'published',
-    owner: '质量经理',
-    reviewer: '质量体系负责人',
-    updated_at: '2026-05-21 10:20',
-    scenario: 'AOI 连续发现 BGA 区域焊点虚焊，缺陷率超过管控线。',
-    guidance: ['冻结同批次物料和在制品', '发起 BGA 区域复检', '检查回流炉温区曲线和焊锡膏储运记录', '重复出现时生成 CAPA'],
-    risk_notes: ['供应商温控证明未补齐前，不建议释放同仓储批次。'],
-    evidence_refs: [
-      { document_id: 'doc-sop-rework', source_ref: 'SOP-QA-014 / 3.2-4.1', document_title: 'SOP-QA-014 焊点虚焊复检与冻结流程' },
-      { document_id: 'doc-capa-072', source_ref: 'CAPA-072 / Root Cause', document_title: 'CAPA-072 电控模块 V2 虚焊历史处置' },
-    ],
-    linked_objects: [
-      { type: 'Defect', id: 'D-SOLDER-VOID', name: '焊点虚焊' },
-      { type: 'MaterialBatch', id: 'MB-7781', name: '焊锡膏 S12' },
-      { type: 'Equipment', id: 'SMT-03', name: 'SMT-03 回流炉' },
-    ],
-    backlinks: ['card-supplier-risk', 'card-reflow-check'],
-  },
-  {
-    id: 'card-supplier-risk',
-    space_id: 'dept-quality',
-    space_name: '质量部门知识库',
-    title: '供应商批次风险判断',
-    status: 'published',
-    owner: 'SQE 主管',
-    reviewer: '采购质量经理',
-    updated_at: '2026-05-20 15:35',
-    scenario: '供应商报告、来料记录或批次追溯显示温控、运输或仓储证据缺口。',
-    guidance: ['隔离同批次和同仓储风险物料', '通知采购和 SQE 补充供应商 8D / 温控证明', '提高后续来料抽检比例'],
-    risk_notes: ['供应商报告处于 reviewing 状态时，只能作为处置参考。'],
-    evidence_refs: [
-      { document_id: 'doc-supplier-beichen', source_ref: '北辰电子材料 5 月来料整改报告', document_title: '北辰电子材料 5 月来料整改报告' },
-    ],
-    linked_objects: [
-      { type: 'Supplier', id: 'SUP-BEICHEN', name: '北辰电子材料' },
-      { type: 'MaterialBatch', id: 'MB-7781', name: '焊锡膏 S12' },
-    ],
-    backlinks: ['card-solder-void'],
-  },
-  {
-    id: 'card-reflow-check',
-    space_id: 'team-quality',
-    space_name: '质量团队知识库',
-    title: '回流焊温区异常排查',
-    status: 'reviewing',
-    owner: '设备工程师',
-    reviewer: '设备主管',
-    updated_at: '2026-05-21 09:50',
-    scenario: '质量异常前后设备日志出现温区偏移、未停机报警或维护备注。',
-    guidance: ['拉取异常前后 30 分钟温控曲线', '比对同班次工单和首件复检记录', '必要时创建设备检查任务'],
-    risk_notes: ['轻微偏移未触发停机时，也要与缺陷率和物料批次共同判断。'],
-    evidence_refs: [
-      { document_id: 'doc-equipment-smt03', source_ref: 'SMT-03 / 2026-05-21 09:12', document_title: 'SMT-03 回流炉温区维护日志' },
-    ],
-    linked_objects: [
-      { type: 'Equipment', id: 'SMT-03', name: 'SMT-03 回流炉' },
-      { type: 'WorkOrder', id: 'WO-260521-017', name: '电控模块 V2 工单' },
-    ],
-    backlinks: ['card-solder-void'],
-  },
+const fallbackGraphRelationships: GraphAssetRelationship[] = [
+  { id: 'demo-rel-supplier-material', source_name: '北辰电子材料', target_name: 'MB-7781 焊锡膏 S12', relation_type: 'SUPPLIES', confidence: 0.93, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:供应商信息', knowledge_job_id: 'demo-job-supplier-8d', publish_status: 'published' },
+  { id: 'demo-rel-material-defect', source_name: 'MB-7781 焊锡膏 S12', target_name: 'BGA 焊点虚焊', relation_type: 'MAY_CAUSE', confidence: 0.82, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D4 根因分析', knowledge_job_id: 'demo-job-supplier-8d', publish_status: 'published' },
+  { id: 'demo-rel-defect-capa', source_name: 'BGA 焊点虚焊', target_name: 'CAPA-072 批次冻结与复检', relation_type: 'TRIGGERS', confidence: 0.89, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D5/D6 纠正措施', knowledge_job_id: 'demo-job-supplier-8d', publish_status: 'published' },
+  { id: 'demo-rel-sop-defect', source_name: 'SOP-QA-014 焊点虚焊复检流程', target_name: 'BGA 焊点虚焊', relation_type: 'EVIDENCE_FOR', confidence: 0.87, source_document_id: 'demo-doc-quality-sop', source_location: 'SOP:3.2', knowledge_job_id: 'demo-job-quality-sop', publish_status: 'published' },
+  { id: 'demo-rel-workorder-equipment', source_name: 'WO-260521-017 电控模块工单', target_name: 'SMT-03 回流炉', relation_type: 'USES_EQUIPMENT', confidence: 0.87, source_document_id: 'demo-doc-workorder-exception', source_location: '工单异常记录:line 6', knowledge_job_id: 'demo-job-workorder-exception', publish_status: 'published' },
+  { id: 'demo-rel-product-order', source_name: 'PB-260521-A 电控模块产品批', target_name: 'SO-8821 客户订单', relation_type: 'AFFECTS_ORDER', confidence: 0.8, source_document_id: 'demo-doc-workorder-exception', source_location: '工单异常记录:line 12', knowledge_job_id: 'demo-job-workorder-exception', publish_status: 'published' },
 ];
 
-const fallbackBindingCandidates: BindingCandidate[] = [
-  { text: '北辰电子材料', object_type: 'Supplier', object_id: 'SUP-BEICHEN', object_name: '北辰电子材料', confidence: 0.96, match_type: 'exact', alias: ['北辰材料', 'Beichen'] },
-  { text: 'MB-7781', object_type: 'MaterialBatch', object_id: 'MB-7781', object_name: '焊锡膏 S12', confidence: 0.94, match_type: 'batch_code', alias: ['S12 锡膏'] },
-  { text: 'SMT-03', object_type: 'Equipment', object_id: 'SMT-03', object_name: 'SMT-03 回流炉', confidence: 0.91, match_type: 'equipment_code', alias: ['三号回流炉'] },
-  { text: '焊点虚焊', object_type: 'Defect', object_id: 'D-SOLDER-VOID', object_name: '焊点虚焊', confidence: 0.88, match_type: 'semantic', alias: ['空焊', 'BGA 焊接不良'] },
+const fallbackGraphEvidence: GraphAssetEvidence[] = [
+  ...fallbackGraphNodes.map((node) => ({ id: `${node.id}:evidence`, asset_type: 'node', asset_name: node.name, source_document_id: node.source_document_id, source_location: node.source_location, confidence: node.confidence, knowledge_job_id: node.knowledge_job_id })),
+  ...fallbackGraphRelationships.map((rel) => ({ id: `${rel.id}:evidence`, asset_type: 'relationship', asset_name: `${rel.source_name} -> ${rel.target_name}`, source_document_id: rel.source_document_id, source_location: rel.source_location, confidence: rel.confidence, knowledge_job_id: rel.knowledge_job_id })),
 ];
 
-const fallbackOcrPipeline: OcrPipelineStep[] = [
-  { key: 'upload', title: '资料上传', owner: '上传者', description: '接入 PDF、图片、扫描件、Excel 或外部系统附件。' },
-  { key: 'ocr', title: 'OCR 与版面识别', owner: '系统', description: '提取文字、表格、页眉页脚和签名区，标记低置信字段。' },
-  { key: 'match', title: '主数据匹配', owner: '数据管理员', description: '与 ERP、MES、QMS、设备台账和本体对象匹配。' },
-  { key: 'review', title: '审核发布', owner: '业务负责人', description: '确认知识条目、对象绑定、权限范围后发布。' },
-];
+const fallbackGraphQuality = {
+  summary: {
+    nodes: fallbackGraphNodes.length,
+    relationships: fallbackGraphRelationships.length,
+    missing_evidence: 0,
+    low_confidence: 0,
+    unbound_nodes: fallbackGraphNodes.length,
+  },
+  items: fallbackGraphNodes.map((node) => ({ severity: 'INFO', code: 'UNBOUND_MASTER_DATA', target: node.name, asset_id: node.id })),
+};
+
+function confidencePercent(value: number) {
+  return Math.round((Number(value) || 0) * 100);
+}
+
+function boolTag(value?: boolean) {
+  return value ? <Tag color="success">是</Tag> : <Tag>否</Tag>;
+}
 
 export default function SemanticAssetCenter() {
-  const [assets, setAssets] = useState<DataAsset[]>([]);
-  const [objects, setObjects] = useState<OntologyObject[]>([]);
-  const [relations, setRelations] = useState<OntologyRelation[]>([]);
-  const [pages, setPages] = useState<PageContract[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<number>();
-  const [selectedObjectId, setSelectedObjectId] = useState<string>();
+  const [assets, setAssets] = useState<DataAsset[]>(fallbackAssets);
+  const [objects, setObjects] = useState<OntologyObject[]>(fallbackObjects);
+  const [relations, setRelations] = useState<OntologyRelation[]>(fallbackRelations);
+  const [selectedAssetId, setSelectedAssetId] = useState<number>(fallbackAssets[0].id);
+  const [selectedObjectId, setSelectedObjectId] = useState<string>(fallbackObjects[0].id);
   const [loading, setLoading] = useState(false);
 
-  const selectedAsset = useMemo(
-    () => assets.find((item) => item.id === selectedAssetId) ?? assets[0],
-    [assets, selectedAssetId],
-  );
-  const selectedObject = useMemo(
-    () => objects.find((item) => item.id === selectedObjectId) ?? objects[0],
-    [objects, selectedObjectId],
-  );
-  const objectRelations = relations.filter(
-    (item) => item.source === selectedObject?.id || item.target === selectedObject?.id,
-  );
+  const selectedAsset = useMemo(() => assets.find((item) => item.id === selectedAssetId) ?? assets[0], [assets, selectedAssetId]);
+  const selectedObject = useMemo(() => objects.find((item) => item.id === selectedObjectId) ?? objects[0], [objects, selectedObjectId]);
+  const objectRelations = relations.filter((item) => item.source === selectedObject?.id || item.target === selectedObject?.id);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [assetRes, objectRes, relationRes, pageRes] = await Promise.all([
+      const [assetRes, objectRes, relationRes] = await Promise.all([
         listSemanticDataAssets(),
         listSemanticOntologyObjects(),
         listSemanticOntologyRelations(),
-        listSemanticPageContracts(),
       ]);
-      const nextAssets = assetRes.data?.data ?? [];
-      const nextObjects = objectRes.data?.data ?? [];
+      const nextAssets = assetRes.data?.data?.length ? assetRes.data.data : fallbackAssets;
+      const nextObjects = objectRes.data?.data?.length ? objectRes.data.data : fallbackObjects;
       setAssets(nextAssets);
       setObjects(nextObjects);
-      setRelations(relationRes.data?.data ?? []);
-      setPages(pageRes.data?.data ?? []);
+      setRelations(relationRes.data?.data?.length ? relationRes.data.data : fallbackRelations);
       setSelectedAssetId((prev) => prev ?? nextAssets[0]?.id);
       setSelectedObjectId((prev) => prev ?? nextObjects[0]?.id);
     } catch {
-      message.error('读取语义资产失败');
+      setAssets(fallbackAssets);
+      setObjects(fallbackObjects);
+      setRelations(fallbackRelations);
     } finally {
       setLoading(false);
     }
@@ -497,54 +360,25 @@ export default function SemanticAssetCenter() {
             loading={loading}
             dataSource={assets}
             renderItem={(item) => (
-              <List.Item
-                className={item.id === selectedAsset?.id ? 'semantic-list-item active' : 'semantic-list-item'}
-                onClick={() => setSelectedAssetId(item.id)}
-              >
-                <List.Item.Meta
-                  avatar={<DatabaseOutlined />}
-                  title={<Space><span>{item.name}</span><Tag color="success">{item.status}</Tag></Space>}
-                  description={`${item.type} / ${item.owner} / ${item.freshness}`}
-                />
+              <List.Item className={item.id === selectedAsset?.id ? 'semantic-list-item active' : 'semantic-list-item'} onClick={() => setSelectedAssetId(item.id)}>
+                <List.Item.Meta avatar={<DatabaseOutlined />} title={<Space><span>{item.name}</span><Tag color="success">{item.status}</Tag></Space>} description={`${item.type} / ${item.owner} / ${item.freshness}`} />
               </List.Item>
             )}
           />
         </Card>
       </Col>
       <Col xs={24} lg={17}>
-        <Card
-          title={selectedAsset?.name ?? '数据资产'}
-          extra={<Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>}
-        >
+        <Card title={selectedAsset?.name ?? '数据资产'} extra={<Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>}>
           <Table
             rowKey="id"
             dataSource={selectedAsset?.tables ?? []}
             pagination={false}
             columns={[
-              { title: '数据表/数据集', dataIndex: 'label', render: (text, record: DataTable) => <Space direction="vertical" size={0}><strong>{text}</strong><Typography.Text type="secondary">{record.name}</Typography.Text></Space> },
+              { title: '数据表/数据集', dataIndex: 'label', render: (text, record: any) => <Space direction="vertical" size={0}><strong>{text}</strong><Typography.Text type="secondary">{record.name}</Typography.Text></Space> },
               { title: '记录数', dataIndex: 'rows', width: 110 },
               { title: '质量分', dataIndex: 'quality_score', width: 110, render: (score: number) => <Tag color={score >= 95 ? 'success' : 'warning'}>{score}</Tag> },
-              { title: '字段', dataIndex: 'fields', render: (fields: DataField[]) => <Space wrap>{fields.slice(0, 5).map((field) => <Tag key={field.name}>{field.label}</Tag>)}</Space> },
+              { title: '字段', dataIndex: 'fields', render: (fields: any[]) => <Space wrap>{fields.slice(0, 5).map((field) => <Tag key={field.name}>{field.label}</Tag>)}</Space> },
             ]}
-            expandable={{
-              expandedRowRender: (record) => (
-                <Table
-                  size="small"
-                  rowKey="name"
-                  dataSource={record.fields}
-                  pagination={false}
-                  columns={[
-                    { title: '字段', dataIndex: 'label' },
-                    { title: '源字段', dataIndex: 'name' },
-                    { title: '类型', dataIndex: 'type', render: (type: string) => <Tag>{type}</Tag> },
-                    { title: '主键', dataIndex: 'primary_key', render: (v: boolean) => v ? <Tag color="blue">是</Tag> : '-' },
-                    { title: '可搜索', dataIndex: 'searchable', render: (v: boolean) => v ? '是' : '否' },
-                    { title: '展示', dataIndex: 'visible', render: (v: boolean) => v ? '是' : '否' },
-                    { title: '质量', dataIndex: 'quality', render: (v: string) => <Tag color={v === 'good' ? 'success' : 'warning'}>{v}</Tag> },
-                  ]}
-                />
-              ),
-            }}
           />
         </Card>
       </Col>
@@ -555,24 +389,12 @@ export default function SemanticAssetCenter() {
     <Row gutter={[16, 16]}>
       <Col xs={24} lg={7}>
         <Card className="semantic-side-card" title="本体对象" extra={<Tag>{objects.length}</Tag>}>
-          <Select
-            value={selectedObject?.id}
-            style={{ width: '100%', marginBottom: 12 }}
-            options={objects.map((item) => ({ label: `${item.name} / ${item.code}`, value: item.id }))}
-            onChange={setSelectedObjectId}
-          />
+          <Select value={selectedObject?.id} style={{ width: '100%', marginBottom: 12 }} options={objects.map((item) => ({ label: `${item.name} / ${item.code}`, value: item.id }))} onChange={setSelectedObjectId} />
           <List
             dataSource={objects}
             renderItem={(item) => (
-              <List.Item
-                className={item.id === selectedObject?.id ? 'semantic-list-item active' : 'semantic-list-item'}
-                onClick={() => setSelectedObjectId(item.id)}
-              >
-                <List.Item.Meta
-                  avatar={<ApartmentOutlined />}
-                  title={item.name}
-                  description={`${item.code} -> ${item.source}`}
-                />
+              <List.Item className={item.id === selectedObject?.id ? 'semantic-list-item active' : 'semantic-list-item'} onClick={() => setSelectedObjectId(item.id)}>
+                <List.Item.Meta avatar={<ApartmentOutlined />} title={item.name} description={`${item.code} -> ${item.source}`} />
               </List.Item>
             )}
           />
@@ -581,10 +403,7 @@ export default function SemanticAssetCenter() {
       <Col xs={24} lg={17}>
         {selectedObject ? (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
-            <Card
-              title={<Space><NodeIndexOutlined />{selectedObject.name}<Tag>{selectedObject.code}</Tag></Space>}
-              extra={<Tag color="processing">绑定数据集：{selectedObject.source}</Tag>}
-            >
+            <Card title={<Space><NodeIndexOutlined />{selectedObject.name}<Tag>{selectedObject.code}</Tag></Space>} extra={<Tag color="processing">绑定数据集：{selectedObject.source}</Tag>}>
               <Typography.Paragraph>{selectedObject.description}</Typography.Paragraph>
               <Table
                 size="small"
@@ -617,6 +436,9 @@ export default function SemanticAssetCenter() {
                 ]}
               />
             </Card>
+            <Card title="来自抽取任务的本体建议" size="small">
+              <Alert showIcon type="info" message="抽取工作台发现未匹配的实体类型或关系类型时，会在这里形成建议，管理员确认后再进入正式本体。" />
+            </Card>
           </Space>
         ) : (
           <Empty />
@@ -625,34 +447,15 @@ export default function SemanticAssetCenter() {
     </Row>
   );
 
-  const pageView = (
-    <Card title={<Space><FormOutlined />页面配置合同</Space>}>
-      <Table
-        rowKey="route"
-        dataSource={pages}
-        pagination={false}
-        columns={[
-          { title: '页面', dataIndex: 'title', render: (text, record: PageContract) => <Space direction="vertical" size={0}><strong>{text}</strong><Typography.Text type="secondary">{record.route}</Typography.Text></Space> },
-          { title: '绑定对象', dataIndex: 'entity', render: (entity: string) => <Tag color="processing">{entity}</Tag> },
-          { title: '主要组件', dataIndex: 'components', render: (items: string[]) => <Space wrap>{items.map((item) => <Tag key={item}>{item}</Tag>)}</Space> },
-          { title: '页面动作', dataIndex: 'actions', render: (items: string[]) => <Space wrap>{items.map((item) => <Tag color="blue" key={item}>{item}</Tag>)}</Space> },
-          { title: '说明', dataIndex: 'description' },
-        ]}
-      />
-    </Card>
-  );
-
   return (
     <div className="semantic-center semantic-asset-center">
       <section className="semantic-center-header">
         <div>
           <Typography.Title level={4}>语义资产中心</Typography.Title>
-          <Typography.Text type="secondary">
-            统一管理结构化数据资产、本体对象、页面合同和非结构化知识库。
-          </Typography.Text>
+          <Typography.Text type="secondary">统一管理数据资产、本体建模、文档知识抽取和后台知识图谱发布。</Typography.Text>
         </div>
         <Space>
-          <Tag icon={<FileSearchOutlined />}>Demo Contract</Tag>
+          <Tag icon={<FileSearchOutlined />}>Graph Governance</Tag>
           <Button icon={<ReloadOutlined />} onClick={load}>重新读取</Button>
         </Space>
       </section>
@@ -660,15 +463,676 @@ export default function SemanticAssetCenter() {
         items={[
           { key: 'data', label: '数据资产中心', children: dataAssetView },
           { key: 'ontology', label: '本体建模中心', children: ontologyView },
-          { key: 'pages', label: '页面配置中心', children: pageView },
+          { key: 'extraction', label: '知识抽取工作台', children: <KnowledgeExtractionWorkbench /> },
+          { key: 'graph-assets', label: '知识图谱中心', children: <KnowledgeGraphCenterV2 /> },
         ]}
       />
     </div>
   );
 }
 
-function boolTag(value: boolean) {
-  return value ? <Tag color="success">是</Tag> : <Tag>否</Tag>;
+function KnowledgeGraphCenter() {
+  const [nodes, setNodes] = useState<GraphAssetNode[]>([]);
+  const [relationships, setRelationships] = useState<GraphAssetRelationship[]>([]);
+  const [evidence, setEvidence] = useState<GraphAssetEvidence[]>([]);
+  const [quality, setQuality] = useState<any>(null);
+  const [search, setSearch] = useState('');
+  const [entityType, setEntityType] = useState<string | undefined>();
+  const [loading, setLoading] = useState(false);
+
+  const loadGraphAssets = async () => {
+    setLoading(true);
+    try {
+      const [nodeRes, relRes, evidenceRes, qualityRes] = await Promise.all([
+        listGraphAssetNodes({ search: search || undefined, entity_type: entityType }),
+        listGraphAssetRelationships({ search: search || undefined }),
+        listGraphAssetEvidence(),
+        getGraphAssetQuality(),
+      ]);
+      setNodes(nodeRes.data?.data ?? []);
+      setRelationships(relRes.data?.data ?? []);
+      setEvidence(evidenceRes.data?.data ?? []);
+      setQuality(qualityRes.data?.data ?? null);
+    } catch {
+      setNodes(fallbackGraphNodes);
+      setRelationships(fallbackGraphRelationships);
+      setEvidence(fallbackGraphEvidence);
+      setQuality(fallbackGraphQuality);
+      message.warning('后端图谱接口暂不可用，已展示本地演示案例');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadGraphAssets();
+  }, []);
+
+  const entityTypeOptions = Array.from(new Set(nodes.map((item) => item.type).filter(Boolean))).map((type) => ({ value: type, label: type }));
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={6}><GraphMetric title="已发布节点" value={nodes.length} /></Col>
+        <Col xs={24} md={6}><GraphMetric title="已发布关系" value={relationships.length} /></Col>
+        <Col xs={24} md={6}><GraphMetric title="证据链" value={evidence.length} /></Col>
+        <Col xs={24} md={6}><GraphMetric title="待绑定主数据" value={quality?.summary?.unbound_nodes ?? 0} /></Col>
+      </Row>
+      <Card>
+        <Space wrap style={{ marginBottom: 16 }}>
+          <Input.Search allowClear placeholder="搜索节点、关系或来源任务" value={search} onChange={(event) => setSearch(event.target.value)} onSearch={loadGraphAssets} style={{ width: 280 }} />
+          <Select allowClear placeholder="实体类型" value={entityType} options={entityTypeOptions} onChange={setEntityType} style={{ width: 180 }} />
+          <Button icon={<ReloadOutlined />} loading={loading} onClick={loadGraphAssets}>刷新图谱资产</Button>
+          <Tag color="processing">后台治理视图</Tag>
+        </Space>
+        <Tabs
+          items={[
+            {
+              key: 'nodes',
+              label: `节点 (${nodes.length})`,
+              children: (
+                <Table
+                  size="small"
+                  rowKey="id"
+                  loading={loading}
+                  dataSource={nodes}
+                  pagination={{ pageSize: 8 }}
+                  columns={[
+                    { title: '名称', dataIndex: 'name', ellipsis: true },
+                    { title: '类型', dataIndex: 'type', width: 140, render: (value) => <Tag color="blue">{value}</Tag> },
+                    { title: '绑定状态', dataIndex: 'binding_status', width: 120, render: (value) => <Tag color={value === 'bound' ? 'success' : 'gold'}>{value || 'unbound'}</Tag> },
+                    { title: '发布', dataIndex: 'publish_status', width: 110, render: (value) => <Tag color={value === 'published' ? 'green' : 'default'}>{value}</Tag> },
+                    { title: '置信度', dataIndex: 'confidence', width: 140, render: (value: number) => <Progress size="small" percent={confidencePercent(value)} /> },
+                    { title: '证据', dataIndex: 'source_location', width: 120 },
+                    { title: '抽取任务', dataIndex: 'knowledge_job_id', width: 180, ellipsis: true },
+                  ]}
+                />
+              ),
+            },
+            {
+              key: 'relationships',
+              label: `关系 (${relationships.length})`,
+              children: (
+                <Table
+                  size="small"
+                  rowKey="id"
+                  loading={loading}
+                  dataSource={relationships}
+                  pagination={{ pageSize: 8 }}
+                  columns={[
+                    { title: '起点', dataIndex: 'source_name', ellipsis: true },
+                    { title: '关系', dataIndex: 'relation_type', width: 130, render: (value) => <Tag color="purple">{value}</Tag> },
+                    { title: '终点', dataIndex: 'target_name', ellipsis: true },
+                    { title: '发布', dataIndex: 'publish_status', width: 110, render: (value) => <Tag color={value === 'published' ? 'green' : 'default'}>{value}</Tag> },
+                    { title: '置信度', dataIndex: 'confidence', width: 140, render: (value: number) => <Progress size="small" percent={confidencePercent(value)} /> },
+                    { title: '证据', dataIndex: 'source_location', width: 120 },
+                  ]}
+                />
+              ),
+            },
+            {
+              key: 'evidence',
+              label: `证据 (${evidence.length})`,
+              children: (
+                <Table
+                  size="small"
+                  rowKey="id"
+                  loading={loading}
+                  dataSource={evidence}
+                  pagination={{ pageSize: 8 }}
+                  columns={[
+                    { title: '对象', dataIndex: 'asset_name', ellipsis: true },
+                    { title: '类型', dataIndex: 'asset_type', width: 130, render: (value) => <Tag>{value}</Tag> },
+                    { title: '来源文档', dataIndex: 'source_document_id', width: 180, ellipsis: true },
+                    { title: '位置', dataIndex: 'source_location', width: 120 },
+                    { title: '置信度', dataIndex: 'confidence', width: 140, render: (value: number) => <Progress size="small" percent={confidencePercent(value)} /> },
+                    { title: '抽取任务', dataIndex: 'knowledge_job_id', width: 180, ellipsis: true },
+                  ]}
+                />
+              ),
+            },
+            {
+              key: 'quality',
+              label: `质量问题 (${quality?.items?.length ?? 0})`,
+              children: (
+                <Table
+                  size="small"
+                  rowKey={(record: any) => `${record.code}-${record.asset_id}-${record.target}`}
+                  loading={loading}
+                  dataSource={quality?.items ?? []}
+                  pagination={{ pageSize: 8 }}
+                  columns={[
+                    { title: '级别', dataIndex: 'severity', width: 110, render: (value) => <Tag color={severityColors[value] || 'default'}>{value}</Tag> },
+                    { title: '代码', dataIndex: 'code', width: 220 },
+                    { title: '对象', dataIndex: 'target', ellipsis: true },
+                    { title: '资产ID', dataIndex: 'asset_id', width: 180, ellipsis: true },
+                  ]}
+                />
+              ),
+            },
+          ]}
+        />
+      </Card>
+    </Space>
+  );
+}
+
+function KnowledgeGraphCenterV2() {
+  const [nodes, setNodes] = useState<GraphAssetNode[]>([]);
+  const [relationships, setRelationships] = useState<GraphAssetRelationship[]>([]);
+  const [evidence, setEvidence] = useState<GraphAssetEvidence[]>([]);
+  const [quality, setQuality] = useState<any>(null);
+  const [search, setSearch] = useState('');
+  const [entityType, setEntityType] = useState<string | undefined>();
+  const [publishStatus, setPublishStatus] = useState<string | undefined>();
+  const [bindingStatus, setBindingStatus] = useState<string | undefined>();
+  const [hideIsolated, setHideIsolated] = useState(false);
+  const [neighborFocus, setNeighborFocus] = useState(true);
+  const [relationshipLabels, setRelationshipLabels] = useState(true);
+  const [layoutMode, setLayoutMode] = useState('治理视图');
+  const [selected, setSelected] = useState<{ kind: 'node'; data: GraphAssetNode } | { kind: 'relationship'; data: GraphAssetRelationship } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const cyContainerRef = useRef<HTMLDivElement>(null);
+  const cyRef = useRef<cytoscape.Core | null>(null);
+
+  const loadGraphAssets = async () => {
+    setLoading(true);
+    try {
+      const [nodeRes, relRes, evidenceRes, qualityRes] = await Promise.all([
+        listGraphAssetNodes({ search: search || undefined, entity_type: entityType }),
+        listGraphAssetRelationships({ search: search || undefined }),
+        listGraphAssetEvidence(),
+        getGraphAssetQuality(),
+      ]);
+      setNodes(nodeRes.data?.data ?? []);
+      setRelationships(relRes.data?.data ?? []);
+      setEvidence(evidenceRes.data?.data ?? []);
+      setQuality(qualityRes.data?.data ?? null);
+    } catch {
+      setNodes(fallbackGraphNodes);
+      setRelationships(fallbackGraphRelationships);
+      setEvidence(fallbackGraphEvidence);
+      setQuality(fallbackGraphQuality);
+      message.warning('后端图谱接口暂不可用，已展示本地演示案例');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadGraphAssets();
+  }, []);
+
+  const entityTypeOptions = Array.from(new Set(nodes.map((item) => item.type).filter(Boolean))).map((type) => ({ value: type, label: type }));
+  const baseVisibleNodes = useMemo(() => nodes.filter((node) => {
+    const matchedSearch = !search || `${node.name} ${node.type} ${node.knowledge_job_id ?? ''}`.toLowerCase().includes(search.toLowerCase());
+    const matchedType = !entityType || node.type === entityType;
+    const matchedPublish = !publishStatus || node.publish_status === publishStatus;
+    const matchedBinding = !bindingStatus || (node.binding_status || 'unbound') === bindingStatus;
+    return matchedSearch && matchedType && matchedPublish && matchedBinding;
+  }), [bindingStatus, entityType, nodes, publishStatus, search]);
+  const baseVisibleNodeNames = useMemo(() => new Set(baseVisibleNodes.map((node) => node.name)), [baseVisibleNodes]);
+  const baseVisibleRelationships = useMemo(() => relationships.filter((rel) => {
+    const matchedSearch = !search || `${rel.source_name} ${rel.target_name} ${rel.relation_type} ${rel.knowledge_job_id ?? ''}`.toLowerCase().includes(search.toLowerCase());
+    return matchedSearch && baseVisibleNodeNames.has(rel.source_name) && baseVisibleNodeNames.has(rel.target_name);
+  }), [baseVisibleNodeNames, relationships, search]);
+  const connectedNodeNames = useMemo(() => new Set(baseVisibleRelationships.flatMap((rel) => [rel.source_name, rel.target_name])), [baseVisibleRelationships]);
+  const visibleNodes = useMemo(() => (hideIsolated ? baseVisibleNodes.filter((node) => connectedNodeNames.has(node.name)) : baseVisibleNodes), [baseVisibleNodes, connectedNodeNames, hideIsolated]);
+  const visibleNodeNames = useMemo(() => new Set(visibleNodes.map((node) => node.name)), [visibleNodes]);
+  const visibleRelationships = useMemo(() => baseVisibleRelationships.filter((rel) => visibleNodeNames.has(rel.source_name) && visibleNodeNames.has(rel.target_name)), [baseVisibleRelationships, visibleNodeNames]);
+  const selectedEvidence = useMemo(() => {
+    if (!selected) return evidence.slice(0, 6);
+    const name = selected.kind === 'node' ? selected.data.name : `${selected.data.source_name} -> ${selected.data.target_name}`;
+    return evidence.filter((item) => item.asset_name === name || item.asset_name.includes(name)).slice(0, 6);
+  }, [evidence, selected]);
+
+  const zoomGraph = (delta: number) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.animate({ zoom: Math.min(2.2, Math.max(0.35, cy.zoom() + delta)), center: { eles: cy.elements() } }, { duration: 180 });
+  };
+
+  const resetGraphView = () => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.elements().removeClass('faded focused');
+    cy.elements().unselect();
+    setSelected(null);
+    cy.layout(getGraphAssetLayout(layoutMode)).run();
+    window.setTimeout(() => cy.fit(undefined, 36), 220);
+  };
+
+  useEffect(() => {
+    if (!cyContainerRef.current) return;
+    if (cyRef.current) {
+      cyRef.current.destroy();
+      cyRef.current = null;
+    }
+    if (!visibleNodes.length) return;
+
+    const edgeElements = visibleRelationships.map((rel) => {
+      const source = visibleNodes.find((node) => node.name === rel.source_name);
+      const target = visibleNodes.find((node) => node.name === rel.target_name);
+      if (!source || !target) return null;
+      return { group: 'edges' as const, data: { id: rel.id, source: source.id, target: target.id, label: rel.relation_type } };
+    }).filter(Boolean) as cytoscape.ElementDefinition[];
+
+    const cy = cytoscape({
+      container: cyContainerRef.current,
+      elements: [
+        ...visibleNodes.map((node) => ({
+          group: 'nodes' as const,
+          data: { id: node.id, label: node.name, color: graphTypeColors[node.type] || graphTypeColors.default },
+        })),
+        ...edgeElements,
+      ],
+      style: [
+        { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: '#172026', 'font-size': 11, 'font-weight': 700, 'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': 8, 'text-wrap': 'wrap', 'text-max-width': '110px', width: 56, height: 56, 'border-width': 4, 'border-color': '#fff' } },
+        { selector: 'node:selected', style: { 'border-color': '#172026', 'border-width': 5 } },
+        { selector: 'edge', style: { width: 2, 'line-color': '#b9c5ce', 'target-arrow-color': '#b9c5ce', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', label: relationshipLabels ? 'data(label)' : '', 'font-size': 10, color: '#52616b', 'text-background-color': '#fff', 'text-background-opacity': 0.9, 'text-background-padding': '3px', 'text-rotation': 'autorotate' } },
+        { selector: 'edge:selected', style: { width: 4, 'line-color': '#2f5f73', 'target-arrow-color': '#2f5f73' } },
+        { selector: '.faded', style: { opacity: 0.16 } },
+        { selector: '.focused', style: { opacity: 1 } },
+        { selector: 'node.focused', style: { 'border-color': '#172026', 'border-width': 5 } },
+        { selector: 'edge.focused', style: { width: 4, 'line-color': '#2f5f73', 'target-arrow-color': '#2f5f73' } },
+      ] as unknown as cytoscape.StylesheetCSS[],
+      layout: getGraphAssetLayout(layoutMode),
+      minZoom: 0.35,
+      maxZoom: 2.2,
+      wheelSensitivity: 0.25,
+    });
+
+    const focusElements = (target: cytoscape.SingularElementReturnValue) => {
+      cy.elements().removeClass('faded focused');
+      if (!neighborFocus) return;
+      const focused = target.isNode()
+        ? target.closedNeighborhood()
+        : (target as any).connectedNodes().add(target);
+      cy.elements().not(focused).addClass('faded');
+      focused.addClass('focused');
+      cy.animate({ fit: { eles: focused, padding: 90 } }, { duration: 240 });
+    };
+
+    cy.on('tap', 'node', (event) => {
+      const node = visibleNodes.find((item) => item.id === event.target.id());
+      if (node) {
+        setSelected({ kind: 'node', data: node });
+        focusElements(event.target);
+      }
+    });
+    cy.on('tap', 'edge', (event) => {
+      const rel = visibleRelationships.find((item) => item.id === event.target.id());
+      if (rel) {
+        setSelected({ kind: 'relationship', data: rel });
+        focusElements(event.target);
+      }
+    });
+    cy.on('tap', (event) => {
+      if (event.target === cy) {
+        setSelected(null);
+        cy.elements().removeClass('faded focused');
+      }
+    });
+
+    cyRef.current = cy;
+    return () => {
+      cy.destroy();
+      cyRef.current = null;
+    };
+  }, [layoutMode, neighborFocus, relationshipLabels, visibleNodes, visibleRelationships]);
+
+  return (
+    <Space className="graph-asset-workbench" direction="vertical" size={16} style={{ width: '100%' }}>
+      <div className="graph-asset-stage">
+        <aside className="graph-asset-filter-panel">
+          <Typography.Text strong>图谱筛选</Typography.Text>
+          <Input.Search allowClear placeholder="搜索节点、关系或任务" value={search} onChange={(event) => setSearch(event.target.value)} onSearch={loadGraphAssets} />
+          <Select allowClear placeholder="实体类型" value={entityType} options={entityTypeOptions} onChange={setEntityType} />
+          <Select allowClear placeholder="发布状态" value={publishStatus} onChange={setPublishStatus} options={[{ value: 'published', label: 'published' }, { value: 'draft', label: 'draft' }, { value: 'review', label: 'review' }]} />
+          <Select allowClear placeholder="绑定状态" value={bindingStatus} onChange={setBindingStatus} options={[{ value: 'bound', label: '已绑定主数据' }, { value: 'unbound', label: '未绑定' }, { value: 'multi_candidate', label: '多候选待确认' }]} />
+          <Button icon={<ReloadOutlined />} loading={loading} onClick={loadGraphAssets}>刷新图谱资产</Button>
+          <div className="graph-asset-legend">
+            {Array.from(new Set(nodes.map((node) => node.type))).slice(0, 8).map((type) => <span key={type}><i style={{ background: graphTypeColors[type] || graphTypeColors.default }} />{type}</span>)}
+          </div>
+        </aside>
+        <main className="graph-asset-canvas-panel">
+          <div className="graph-asset-toolbar">
+            <Space wrap><Tag color="processing">后台治理视图</Tag><Tag>{visibleNodes.length} 节点</Tag><Tag>{visibleRelationships.length} 关系</Tag></Space>
+            <Space wrap>
+              <span className="graph-asset-stat">正式节点 <strong>{nodes.length}</strong></span>
+              <span className="graph-asset-stat">正式关系 <strong>{relationships.length}</strong></span>
+              <span className="graph-asset-stat">证据 <strong>{evidence.length}</strong></span>
+              <span className="graph-asset-stat warning">待绑定 <strong>{quality?.summary?.unbound_nodes ?? 0}</strong></span>
+              <Segmented value={layoutMode} onChange={(value) => setLayoutMode(String(value))} options={['治理视图', '关系视图', '类型视图', '证据视图']} />
+            </Space>
+          </div>
+          <div className="graph-asset-actions">
+            <Button size="small" onClick={() => zoomGraph(0.18)}>放大</Button>
+            <Button size="small" onClick={() => zoomGraph(-0.18)}>缩小</Button>
+            <Button size="small" icon={<NodeIndexOutlined />} onClick={() => cyRef.current?.fit(undefined, 32)}>适配画布</Button>
+            <Button size="small" onClick={() => cyRef.current?.layout(getGraphAssetLayout(layoutMode)).run()}>重新布局</Button>
+            <Button size="small" type={neighborFocus ? 'primary' : 'default'} onClick={() => setNeighborFocus((value) => !value)}>邻居高亮</Button>
+            <Button size="small" type={hideIsolated ? 'primary' : 'default'} onClick={() => setHideIsolated((value) => !value)}>隐藏孤立点</Button>
+            <Button size="small" type={relationshipLabels ? 'primary' : 'default'} onClick={() => setRelationshipLabels((value) => !value)}>关系标签</Button>
+            <Button size="small" onClick={resetGraphView}>清除选择</Button>
+          </div>
+          <div className="graph-asset-canvas" ref={cyContainerRef}>{!visibleNodes.length && <Empty description="没有符合筛选条件的图谱资产" />}</div>
+        </main>
+        <aside className="graph-asset-detail-panel">
+          <Typography.Text strong>{selected?.kind === 'relationship' ? '关系详情' : '节点详情'}</Typography.Text>
+          {selected ? <GraphAssetDetail selected={selected} evidence={selectedEvidence} /> : <Empty description="点击画布中的节点或关系查看详情" />}
+        </aside>
+      </div>
+      <Card className="graph-asset-governance" title="图谱资产治理">
+        <Tabs
+          items={[
+            { key: 'nodes', label: `节点 (${visibleNodes.length})`, children: <GraphNodesTable nodes={visibleNodes} loading={loading} onSelect={(data) => setSelected({ kind: 'node', data })} /> },
+            { key: 'relationships', label: `关系 (${visibleRelationships.length})`, children: <GraphRelationshipsTable relationships={visibleRelationships} loading={loading} onSelect={(data) => setSelected({ kind: 'relationship', data })} /> },
+            { key: 'evidence', label: `证据 (${evidence.length})`, children: <GraphEvidenceTable evidence={evidence} loading={loading} /> },
+            { key: 'quality', label: `质量问题 (${quality?.items?.length ?? 0})`, children: <GraphQualityTable quality={quality} loading={loading} /> },
+          ]}
+        />
+      </Card>
+    </Space>
+  );
+}
+
+function getGraphAssetLayout(layoutMode: string): cytoscape.LayoutOptions {
+  if (layoutMode === '关系视图') return { name: 'dagre', rankDir: 'LR', fit: true, padding: 36, spacingFactor: 1.15 } as cytoscape.LayoutOptions;
+  if (layoutMode === '类型视图') return { name: 'concentric', fit: true, padding: 42, minNodeSpacing: 38 } as cytoscape.LayoutOptions;
+  if (layoutMode === '证据视图') return { name: 'breadthfirst', directed: true, fit: true, padding: 42, spacingFactor: 1.1 } as cytoscape.LayoutOptions;
+  return { name: 'dagre', rankDir: 'TB', fit: true, padding: 36, spacingFactor: 1.05 } as cytoscape.LayoutOptions;
+}
+
+function GraphNodesTable({ nodes, loading, onSelect }: { nodes: GraphAssetNode[]; loading: boolean; onSelect: (node: GraphAssetNode) => void }) {
+  return (
+    <Table size="small" rowKey="id" loading={loading} dataSource={nodes} pagination={{ pageSize: 8 }} onRow={(record) => ({ onClick: () => onSelect(record) })} columns={[
+      { title: '名称', dataIndex: 'name', ellipsis: true },
+      { title: '类型', dataIndex: 'type', width: 140, render: (value) => <Tag color="blue">{value}</Tag> },
+      { title: '绑定状态', dataIndex: 'binding_status', width: 120, render: (value) => <Tag color={value === 'bound' ? 'success' : 'gold'}>{value || 'unbound'}</Tag> },
+      { title: '发布', dataIndex: 'publish_status', width: 110, render: (value) => <Tag color={value === 'published' ? 'green' : 'default'}>{value}</Tag> },
+      { title: '置信度', dataIndex: 'confidence', width: 140, render: (value: number) => <Progress size="small" percent={confidencePercent(value)} /> },
+      { title: '证据', dataIndex: 'source_location', width: 120 },
+      { title: '抽取任务', dataIndex: 'knowledge_job_id', width: 180, ellipsis: true },
+    ]} />
+  );
+}
+
+function GraphRelationshipsTable({ relationships, loading, onSelect }: { relationships: GraphAssetRelationship[]; loading: boolean; onSelect: (relationship: GraphAssetRelationship) => void }) {
+  return (
+    <Table size="small" rowKey="id" loading={loading} dataSource={relationships} pagination={{ pageSize: 8 }} onRow={(record) => ({ onClick: () => onSelect(record) })} columns={[
+      { title: '起点', dataIndex: 'source_name', ellipsis: true },
+      { title: '关系', dataIndex: 'relation_type', width: 130, render: (value) => <Tag color="purple">{value}</Tag> },
+      { title: '终点', dataIndex: 'target_name', ellipsis: true },
+      { title: '发布', dataIndex: 'publish_status', width: 110, render: (value) => <Tag color={value === 'published' ? 'green' : 'default'}>{value}</Tag> },
+      { title: '置信度', dataIndex: 'confidence', width: 140, render: (value: number) => <Progress size="small" percent={confidencePercent(value)} /> },
+      { title: '证据', dataIndex: 'source_location', width: 120 },
+    ]} />
+  );
+}
+
+function GraphEvidenceTable({ evidence, loading }: { evidence: GraphAssetEvidence[]; loading: boolean }) {
+  return (
+    <Table size="small" rowKey="id" loading={loading} dataSource={evidence} pagination={{ pageSize: 8 }} columns={[
+      { title: '对象', dataIndex: 'asset_name', ellipsis: true },
+      { title: '类型', dataIndex: 'asset_type', width: 130, render: (value) => <Tag>{value}</Tag> },
+      { title: '来源文档', dataIndex: 'source_document_id', width: 180, ellipsis: true },
+      { title: '位置', dataIndex: 'source_location', width: 120 },
+      { title: '置信度', dataIndex: 'confidence', width: 140, render: (value: number) => <Progress size="small" percent={confidencePercent(value)} /> },
+      { title: '抽取任务', dataIndex: 'knowledge_job_id', width: 180, ellipsis: true },
+    ]} />
+  );
+}
+
+function GraphQualityTable({ quality, loading }: { quality: any; loading: boolean }) {
+  return (
+    <Table size="small" rowKey={(record: any) => `${record.code}-${record.asset_id}-${record.target}`} loading={loading} dataSource={quality?.items ?? []} pagination={{ pageSize: 8 }} columns={[
+      { title: '级别', dataIndex: 'severity', width: 110, render: (value) => <Tag color={severityColors[value] || 'default'}>{value}</Tag> },
+      { title: '代码', dataIndex: 'code', width: 220 },
+      { title: '对象', dataIndex: 'target', ellipsis: true },
+      { title: '资产 ID', dataIndex: 'asset_id', width: 180, ellipsis: true },
+    ]} />
+  );
+}
+
+function GraphAssetDetail({ selected, evidence }: { selected: { kind: 'node'; data: GraphAssetNode } | { kind: 'relationship'; data: GraphAssetRelationship }; evidence: GraphAssetEvidence[] }) {
+  if (selected.kind === 'relationship') {
+    const rel = selected.data;
+    return (
+      <Space direction="vertical" size={12} style={{ width: '100%', marginTop: 12 }}>
+        <Space wrap><Tag color="purple">{rel.relation_type}</Tag><Tag color={rel.publish_status === 'published' ? 'green' : 'default'}>{rel.publish_status || 'draft'}</Tag></Space>
+        <Typography.Title level={5}>{rel.source_name} {'->'} {rel.target_name}</Typography.Title>
+        <GraphAssetKv rows={[['置信度', `${confidencePercent(rel.confidence)}%`], ['来源文档', rel.source_document_id || '-'], ['证据位置', rel.source_location || '-'], ['抽取任务', rel.knowledge_job_id || '-']]} />
+        <GraphAssetEvidenceList evidence={evidence} />
+      </Space>
+    );
+  }
+
+  const node = selected.data;
+  return (
+    <Space direction="vertical" size={12} style={{ width: '100%', marginTop: 12 }}>
+      <Space wrap><Tag color="blue">{node.type}</Tag><Tag color={node.publish_status === 'published' ? 'green' : 'default'}>{node.publish_status || 'draft'}</Tag><Tag color={node.binding_status === 'bound' ? 'success' : 'gold'}>{node.binding_status || 'unbound'}</Tag></Space>
+      <Typography.Title level={5}>{node.name}</Typography.Title>
+      <Typography.Paragraph type="secondary">{node.source_location || node.source_document_id || '暂无来源位置'}</Typography.Paragraph>
+      <Progress percent={confidencePercent(node.confidence)} />
+      <GraphAssetKv rows={[['审核状态', node.review_status || '-'], ['来源文档', node.source_document_id || '-'], ['抽取任务', node.knowledge_job_id || '-']]} />
+      <GraphAssetEvidenceList evidence={evidence} />
+    </Space>
+  );
+}
+
+function GraphAssetKv({ rows }: { rows: Array<[string, string]> }) {
+  return <Table size="small" pagination={false} showHeader={false} rowKey="0" dataSource={rows.map(([key, value]) => ({ key, value }))} columns={[{ dataIndex: 'key', width: 90 }, { dataIndex: 'value' }]} />;
+}
+
+function GraphAssetEvidenceList({ evidence }: { evidence: GraphAssetEvidence[] }) {
+  return (
+    <div className="graph-asset-evidence-list">
+      <Typography.Text type="secondary">来源证据</Typography.Text>
+      {evidence.length ? evidence.map((item) => (
+        <div key={item.id} className="graph-asset-evidence-item">
+          <strong>{item.source_document_id || '未知文档'}</strong>
+          <small>{item.source_location || '未标注位置'} / {confidencePercent(item.confidence)}%</small>
+        </div>
+      )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无匹配证据" />}
+    </div>
+  );
+}
+
+function GraphMetric({ title, value }: { title: string; value: number }) {
+  return (
+    <Card size="small">
+      <Space direction="vertical" size={4}>
+        <Typography.Text type="secondary">{title}</Typography.Text>
+        <Typography.Title level={3} style={{ margin: 0 }}>{value}</Typography.Title>
+      </Space>
+    </Card>
+  );
+}
+
+function KnowledgeExtractionWorkbench() {
+  const [form] = Form.useForm();
+  const [fileList, setFileList] = useState<any[]>([]);
+  const [extracting, setExtracting] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const [job, setJob] = useState<ExtractionJob | null>(null);
+
+  const runExtraction = async () => {
+    const file = fileList[0]?.originFileObj as File | undefined;
+    if (!file) {
+      message.warning('请先选择一个文档');
+      return;
+    }
+    const values = await form.validateFields();
+    setExtracting(true);
+    try {
+      const response = await createKnowledgeExtractionJob(file, values);
+      setJob(response.data?.data?.job);
+      message.success('抽取任务已完成，请先审核候选结果');
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail ?? '抽取任务创建失败');
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const approveJob = async () => {
+    if (!job) return;
+    try {
+      const response = await approveKnowledgeExtractionJob(job.job_id);
+      setJob(response.data?.data);
+      message.success('候选结果已审核确认');
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail ?? '审核确认失败');
+    }
+  };
+
+  const commitJob = async () => {
+    if (!job) return;
+    setCommitting(true);
+    try {
+      const response = await commitKnowledgeExtractionJobToGraph(job.job_id);
+      setJob(response.data?.data?.job);
+      message.success('已写入图谱中心');
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail ?? '写入图谱失败');
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  const exportJob = async (format: string) => {
+    if (!job) return;
+    const response = await exportKnowledgeExtractionJob(job.job_id, format);
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${job.job_id}.${format === 'turtle' ? 'ttl' : format}`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="semantic-center">
+      <Card>
+        <Row gutter={[24, 16]}>
+          <Col xs={24} lg={10}>
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <div>
+                <Typography.Title level={4}>知识抽取工作台</Typography.Title>
+                <Typography.Text type="secondary">把文档抽成候选实体、关系、规则和动作，审核后发布到知识图谱中心。</Typography.Text>
+              </div>
+              <Upload.Dragger accept=".md,.markdown,.txt,.pdf,.xlsx,.xls" maxCount={1} fileList={fileList} beforeUpload={() => false} onChange={({ fileList: next }) => setFileList(next)}>
+                <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+                <p className="ant-upload-text">选择或拖入文档</p>
+                <p className="ant-upload-hint">支持 Markdown、TXT、PDF、Excel。图片/OCR 后续接入。</p>
+              </Upload.Dragger>
+            </Space>
+          </Col>
+          <Col xs={24} lg={14}>
+            <Form form={form} layout="vertical" initialValues={{ domain: 'manufacturing', prompt_name: 'manufacturing_ontology_v1', model_name: 'mock-chat', permission_scope: 'enterprise', owner_user_id: 'demo-user' }}>
+              <Row gutter={12}>
+                <Col xs={24} md={12}>
+                  <Form.Item label="业务领域" name="domain" rules={[{ required: true }]}>
+                    <Select options={[
+                      { value: 'manufacturing', label: '制造业' },
+                      { value: 'quality', label: '质量管理' },
+                      { value: 'supply_chain', label: '供应链' },
+                      { value: 'maintenance', label: '设备维护' },
+                    ]} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item label="Prompt 模板" name="prompt_name" rules={[{ required: true }]}>
+                    <Select options={[
+                      { value: 'manufacturing_ontology_v1', label: '制造业本体抽取 v1' },
+                      { value: 'quality_event_v1', label: '质量事件抽取 v1' },
+                      { value: 'supplier_8d_v1', label: '供应商 8D 抽取 v1' },
+                    ]} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item label="模型" name="model_name" rules={[{ required: true }]}>
+                    <Select options={[
+                      { value: 'mock-chat', label: '本地 mock-chat' },
+                      { value: 'glm-4-flash', label: 'GLM-4-Flash' },
+                      { value: 'qwen-plus', label: 'Qwen Plus' },
+                      { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                    ]} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item label="知识范围" name="permission_scope" rules={[{ required: true }]}>
+                    <Select options={[
+                      { value: 'enterprise', label: '企业' },
+                      { value: 'department', label: '部门' },
+                      { value: 'team-quality', label: '质量团队' },
+                      { value: 'personal', label: '个人' },
+                    ]} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item label="上传人" name="owner_user_id"><Input /></Form.Item>
+              <Button type="primary" icon={<FileSearchOutlined />} loading={extracting} onClick={runExtraction}>开始抽取</Button>
+            </Form>
+          </Col>
+        </Row>
+      </Card>
+
+      {!job ? (
+        <Card style={{ marginTop: 16 }}><Empty description="上传文档并开始抽取后，这里会显示候选实体、关系和质量报告" /></Card>
+      ) : (
+        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 16 }}>
+          <Card
+            title={<Space wrap><span>抽取任务</span><Tag color={job.status === 'committed' ? 'green' : job.status === 'blocked' ? 'red' : 'blue'}>{job.status}</Tag><Typography.Text code>{job.job_id}</Typography.Text></Space>}
+            extra={<Space wrap>
+              <Button icon={<CheckCircleOutlined />} onClick={approveJob}>审核确认</Button>
+              <Button type="primary" loading={committing} disabled={job.quality_report.blocking} onClick={commitJob}>写入图谱中心</Button>
+              {['json', 'csv', 'yaml', 'turtle'].map((format) => <Button key={format} icon={<DownloadOutlined />} onClick={() => exportJob(format)}>{format === 'turtle' ? 'RDF' : format.toUpperCase()}</Button>)}
+            </Space>}
+          >
+            <Alert type={job.quality_report.blocking ? 'error' : 'success'} showIcon message={job.quality_report.blocking ? '存在 FATAL 问题，暂不能写入图谱' : '抽取完成，可以审核并写入图谱中心'} style={{ marginBottom: 12 }} />
+            <Row gutter={12}>
+              {['FATAL', 'ERROR', 'WARNING', 'INFO'].map((severity) => (
+                <Col xs={12} md={6} key={severity}>
+                  <Card size="small"><Space><Tag color={severityColors[severity]}>{severity}</Tag><Typography.Text strong>{job.quality_report.counts?.[severity] ?? 0}</Typography.Text></Space></Card>
+                </Col>
+              ))}
+            </Row>
+          </Card>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={14}>
+              <Card title={`候选实体 (${job.result.entities.length})`} size="small">
+                <Table size="small" rowKey="candidate_id" dataSource={job.result.entities} pagination={{ pageSize: 6 }} columns={[
+                  { title: '名称', dataIndex: 'name', ellipsis: true },
+                  { title: '类型', dataIndex: 'entity_type', width: 130, render: (value) => <Tag color="blue">{value}</Tag> },
+                  { title: '置信度', dataIndex: 'confidence', width: 140, render: (value: number) => <Progress size="small" percent={confidencePercent(value)} /> },
+                  { title: '证据', dataIndex: 'source_location', width: 110 },
+                ]} />
+              </Card>
+            </Col>
+            <Col xs={24} lg={10}>
+              <Card title={`候选关系 (${job.result.relations.length})`} size="small">
+                <Table size="small" rowKey="candidate_id" dataSource={job.result.relations} pagination={{ pageSize: 6 }} columns={[
+                  { title: '来源', dataIndex: 'source_name', ellipsis: true },
+                  { title: '关系', dataIndex: 'relation_type', width: 110, render: (value) => <Tag>{value}</Tag> },
+                  { title: '目标', dataIndex: 'target_name', ellipsis: true },
+                ]} />
+              </Card>
+            </Col>
+          </Row>
+          <Card title="质量报告" size="small">
+            <Table size="small" rowKey={(record) => `${record.severity}-${record.code}-${record.target}`} dataSource={job.quality_report.items} pagination={false} columns={[
+              { title: '级别', dataIndex: 'severity', width: 110, render: (value) => <Tag color={severityColors[value]}>{value}</Tag> },
+              { title: '代码', dataIndex: 'code', width: 220 },
+              { title: '对象', dataIndex: 'target', width: 220 },
+              { title: '说明', dataIndex: 'message' },
+            ]} />
+          </Card>
+        </Space>
+      )}
+    </div>
+  );
 }
 
 export function KnowledgeCenter() {
@@ -676,240 +1140,71 @@ export function KnowledgeCenter() {
   const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [cards, setCards] = useState<KnowledgeCard[]>([]);
-  const [bindingCandidates, setBindingCandidates] = useState<BindingCandidate[]>([]);
-  const [ocrPipeline, setOcrPipeline] = useState<OcrPipelineStep[]>([]);
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string>();
-  const [selectedSourceId, setSelectedSourceId] = useState<string>();
-  const [selectedCardId, setSelectedCardId] = useState<string>();
-  const [query, setQuery] = useState('焊点虚焊以前怎么处理');
-  const [searching, setSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<{ answer: string; results: KnowledgeChunk[] } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [uploadScope, setUploadScope] = useState('enterprise');
+  const [chunks, setChunks] = useState<KnowledgeChunk[]>([]);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string>();
+  const [query, setQuery] = useState('供应商 8D 报告里有哪些整改措施？');
+  const [answer, setAnswer] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [lastUpload, setLastUpload] = useState<KnowledgeUploadSummary | null>(null);
-  const [chatMessages, setChatMessages] = useState<KnowledgeChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: '可以在这里询问知识库，也可以把 Markdown、Excel、PDF 或图片拖进来入库。',
-    },
-  ]);
+  const [searching, setSearching] = useState(false);
 
-  const selectedSpace = spaces.find((item) => item.id === selectedSpaceId) ?? spaces[0];
-  const selectedSource = sources.find((item) => item.id === selectedSourceId) ?? sources[0];
-  const visibleCards = selectedSpace?.id
-    ? cards.filter((item) => item.space_id === selectedSpace.id)
-    : cards;
-  const selectedCard = cards.find((item) => item.id === selectedCardId) ?? visibleCards[0] ?? cards[0];
-  const sourceDocuments = selectedSourceId
-    ? documents.filter((item) => item.source_id === selectedSourceId)
-    : documents;
-  const directoryTreeData = spaces.map((space) => {
-    const spaceCards = cards.filter((card) => card.space_id === space.id);
-    return {
-      key: `space:${space.id}`,
-      title: (
-        <span className="knowledge-tree-node">
-          <strong>{space.name}</strong>
-          <small>{spaceCards.length} 篇</small>
-        </span>
-      ),
-      children: spaceCards.map((card) => ({
-        key: `card:${card.id}`,
-        title: (
-          <span className="knowledge-tree-node document">
-            <strong>{card.title}</strong>
-            <small>{card.updated_at}</small>
-          </span>
-        ),
-      })),
-    };
-  });
-  const selectedDirectoryKeys = selectedCard ? [`card:${selectedCard.id}`] : selectedSpace ? [`space:${selectedSpace.id}`] : [];
-
-  const applyFallback = () => {
-    setSpaces(fallbackKnowledgeSpaces);
-    setSources(fallbackKnowledgeSources);
-    setDocuments(fallbackKnowledgeDocuments);
-    setCards(fallbackKnowledgeCards);
-    setOcrPipeline(fallbackOcrPipeline);
-    setBindingCandidates(fallbackBindingCandidates);
-    setSelectedSpaceId((prev) => prev ?? fallbackKnowledgeSpaces[2]?.id);
-    setSelectedSourceId((prev) => prev ?? fallbackKnowledgeSources[0]?.id);
-    setSelectedCardId((prev) => prev ?? fallbackKnowledgeCards[0]?.id);
-  };
-
-  const runFallbackSearch = () => {
-    const keywordBoost = query.includes('虚焊') || query.includes('焊点') ? 0.06 : 0;
-    const results = fallbackKnowledgeChunks
-      .map((item, index) => ({
-        ...item,
-        score: Math.max(0.52, (item.score ?? 0.7) - index * 0.02 + keywordBoost),
-      }))
-      .slice(0, 4);
-    setSearchResult({
-      answer: '基于本地演示知识库，建议先冻结同批次物料与在制品，再结合历史 CAPA、供应商整改报告和设备日志确认影响范围。',
-      results,
-    });
-  };
-
-  const load = async () => {
-    setLoading(true);
+  const loadKnowledge = async () => {
     try {
-      const [spaceRes, sourceRes, documentRes, cardRes, ocrRes] = await Promise.all([
+      const [spaceRes, sourceRes, documentRes, cardRes] = await Promise.all([
         listKnowledgeSpaces(),
         listKnowledgeSources(),
         listKnowledgeDocuments(),
         listKnowledgeCards(),
-        getKnowledgeOcrPipeline(),
+        getKnowledgeOcrPipeline().catch(() => null),
       ]);
-      const nextSpaces = spaceRes.data?.data ?? [];
-      const nextSources = sourceRes.data?.data ?? [];
       const nextDocuments = documentRes.data?.data ?? [];
-      const nextCards = cardRes.data?.data ?? [];
-      const nextOcr = ocrRes.data?.data ?? [];
-      if (nextSources.length && nextDocuments.length && nextCards.length) {
-        setSpaces(nextSpaces.length ? nextSpaces : fallbackKnowledgeSpaces);
-        setSources(nextSources);
-        setDocuments(nextDocuments);
-        setCards(nextCards);
-        setOcrPipeline(nextOcr.length ? nextOcr : fallbackOcrPipeline);
-        setSelectedSpaceId((prev) => prev ?? nextCards[0]?.space_id ?? nextSpaces[0]?.id);
-        setSelectedSourceId((prev) => prev ?? nextSources[0]?.id);
-        setSelectedCardId((prev) => prev ?? nextCards[0]?.id);
-      } else {
-        applyFallback();
-      }
+      setSpaces(spaceRes.data?.data ?? []);
+      setSources(sourceRes.data?.data ?? []);
+      setDocuments(nextDocuments);
+      setCards(cardRes.data?.data ?? []);
+      setSelectedDocumentId((prev) => prev ?? nextDocuments[0]?.id ?? nextDocuments[0]?.document_id);
     } catch {
-      applyFallback();
-      message.warning('已使用本地知识库演示数据');
-    } finally {
-      setLoading(false);
+      setSpaces([{ id: 'manufacturing', name: '制造业知识库', description: 'SOP、8D、设备日志和质量记录。' }]);
+      setSources([{ id: 'uploaded', name: '上传资料', status: 'ready' }]);
+      setDocuments([]);
+      setCards([]);
     }
   };
 
   useEffect(() => {
-    load();
+    loadKnowledge();
   }, []);
 
   useEffect(() => {
-    if (!selectedCard) {
-      setBindingCandidates([]);
+    if (!selectedDocumentId) {
+      setChunks([]);
       return;
     }
-    const bindingText = [
-      selectedCard.title,
-      selectedCard.scenario,
-      ...selectedCard.linked_objects.map((obj) => `${obj.type} ${obj.id} ${obj.name}`),
-    ].join(' ');
-    suggestKnowledgeBindings({ text: bindingText, limit: 8 })
-      .then((res) => {
-        const nextCandidates = res.data?.data ?? [];
-        setBindingCandidates(nextCandidates.length ? nextCandidates : fallbackBindingCandidates);
-      })
-      .catch(() => setBindingCandidates(fallbackBindingCandidates));
-  }, [selectedCard?.id]);
+    listKnowledgeChunks(selectedDocumentId)
+      .then((res) => setChunks(res.data?.data ?? []))
+      .catch(() => setChunks([]));
+  }, [selectedDocumentId]);
 
   const runSearch = async () => {
-    if (!query.trim()) {
-      message.warning('请输入检索问题');
-      return;
-    }
-    const currentQuery = query.trim();
-    setChatMessages((prev) => [
-      ...prev,
-      { id: `user-${Date.now()}`, role: 'user', content: currentQuery },
-    ]);
     setSearching(true);
     try {
-      const res = await searchKnowledge({ query: currentQuery, limit: 5 });
-      const nextResult = res.data?.data ?? null;
-      if (nextResult?.results?.length) {
-        setSearchResult(nextResult);
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            content: `${nextResult.answer} 已找到 ${nextResult.results.length} 条引用来源。`,
-          },
-        ]);
-      } else {
-        runFallbackSearch();
-        setChatMessages((prev) => [
-          ...prev,
-          { id: `assistant-${Date.now()}`, role: 'assistant', content: '没有检索到正式入库结果，先展示本地演示知识作为参考。' },
-        ]);
-      }
+      const res = await searchKnowledge({ query, limit: 5 });
+      setAnswer(res.data?.data?.answer ?? '已完成检索。');
     } catch {
-      runFallbackSearch();
-      setChatMessages((prev) => [
-        ...prev,
-        { id: `assistant-${Date.now()}`, role: 'assistant', content: '知识库检索暂时不可用，已切换到本地演示结果。' },
-      ]);
-      message.warning('已使用本地演示知识库检索');
+      setAnswer('知识检索服务暂不可用，请稍后重试。');
     } finally {
       setSearching(false);
     }
   };
 
-  const handleKnowledgeUpload = async (options: any) => {
-    const file = options.file as File;
+  const handleUpload = async (options: any) => {
     setUploading(true);
     try {
-      const res = await uploadKnowledgeAsset(file, {
-        permission_scope: uploadScope,
-        owner_user_id: 'demo-user',
-      });
-      const payload = res.data?.data;
-      if (!res.data?.ok || !payload?.document) {
-        throw new Error(payload?.job?.error || 'Knowledge upload failed');
-      }
-
-      const uploadedDocument: KnowledgeDocument = {
-        id: payload.document.document_id,
-        source_id: 'uploaded',
-        title: payload.document.title,
-        doc_type: payload.document.source_type,
-        status: payload.document.status,
-        updated_at: payload.document.updated_at,
-        summary: `Uploaded knowledge asset: ${payload.document.source_file_name}`,
-        linked_objects: [],
-      };
-
-      setSources((prev) => {
-        const hasUploaded = prev.some((item) => item.id === uploadedKnowledgeSource.id);
-        const nextSource = {
-          ...uploadedKnowledgeSource,
-          document_count: documents.filter((item) => item.source_id === 'uploaded').length + 1,
-        };
-        return hasUploaded
-          ? prev.map((item) => (item.id === 'uploaded' ? nextSource : item))
-          : [nextSource, ...prev];
-      });
-      setDocuments((prev) => [uploadedDocument, ...prev.filter((item) => item.id !== uploadedDocument.id)]);
-      setSelectedSourceId('uploaded');
-      setLastUpload({
-        fileName: payload.asset?.source_file_name ?? file.name,
-        status: payload.job?.status ?? uploadedDocument.status,
-        documentTitle: uploadedDocument.title,
-        chunkCount: payload.chunks?.length ?? 0,
-        markdownPreview: payload.document.markdown_content?.slice(0, 180),
-        permissionScope: uploadScope,
-      });
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `upload-${Date.now()}`,
-          role: 'assistant',
-          content: `${payload.document.title} 已解析入库，生成 ${payload.chunks?.length ?? 0} 个知识片段。`,
-        },
-      ]);
-      message.success('知识文档已上传并完成解析');
-      options.onSuccess?.(res.data);
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '知识文档上传失败');
+      await uploadKnowledgeAsset(options.file, { permission_scope: 'enterprise', owner_user_id: 'demo-user' });
+      message.success('资料已入库，可在知识抽取工作台继续发布到图谱');
+      options.onSuccess?.({});
+      loadKnowledge();
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail ?? '上传失败');
       options.onError?.(error);
     } finally {
       setUploading(false);
@@ -918,265 +1213,48 @@ export function KnowledgeCenter() {
 
   return (
     <div className="knowledge-center">
-      <section className="knowledge-workbench">
-        <aside className="knowledge-left-panel">
-          <Card
-            className="knowledge-panel-card knowledge-directory-card"
-            title={<Space><DatabaseOutlined />知识目录</Space>}
-            extra={
-              <Space size={6}>
-                <Button size="small" icon={<PlusOutlined />} onClick={() => message.info('可在这里新增组织、部门、项目或个人目录层级')}>
-                  新增层级
-                </Button>
-                <Button size="small" icon={<ReloadOutlined />} loading={loading} onClick={load}>刷新</Button>
-              </Space>
-            }
-          >
-            <div className="knowledge-tree-tools">
-              <Input.Search size="small" placeholder="搜索文档、标签、空间" />
-              <Select
-                size="small"
-                value={uploadScope}
-                onChange={setUploadScope}
-                options={[
-                  { label: '组织导入视图', value: 'enterprise' },
-                  { label: '质量团队视图', value: 'team-quality' },
-                  { label: '部门知识视图', value: 'dept-quality' },
-                  { label: '个人定义视图', value: 'personal' },
-                ]}
-              />
-            </div>
-            <Tree.DirectoryTree
-              className="knowledge-directory-tree"
-              blockNode
-              defaultExpandAll
-              selectedKeys={selectedDirectoryKeys}
-              treeData={directoryTreeData}
-              onSelect={(keys) => {
-                const key = String(keys[0] ?? '');
-                if (key.startsWith('space:')) {
-                  const spaceId = key.slice('space:'.length);
-                  setSelectedSpaceId(spaceId);
-                  setSelectedCardId(cards.find((card) => card.space_id === spaceId)?.id);
-                }
-                if (key.startsWith('card:')) {
-                  const cardId = key.slice('card:'.length);
-                  const card = cards.find((item) => item.id === cardId);
-                  setSelectedCardId(cardId);
-                  if (card?.space_id) {
-                    setSelectedSpaceId(card.space_id);
-                  }
-                }
-              }}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={7}>
+          <Card title="知识空间" extra={<Tag>{spaces.length}</Tag>}>
+            <List dataSource={spaces} renderItem={(item) => <List.Item><List.Item.Meta avatar={<FileSearchOutlined />} title={item.name} description={item.description} /></List.Item>} />
+          </Card>
+          <Card title="知识来源" style={{ marginTop: 16 }} extra={<Tag>{sources.length}</Tag>}>
+            <List dataSource={sources} renderItem={(item) => <List.Item><List.Item.Meta title={item.name} description={item.status} /></List.Item>} />
+          </Card>
+        </Col>
+        <Col xs={24} lg={10}>
+          <Card title="文档资料" extra={<Button icon={<ReloadOutlined />} onClick={loadKnowledge}>刷新</Button>}>
+            <Upload.Dragger customRequest={handleUpload} showUploadList={false} disabled={uploading}>
+              <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+              <p className="ant-upload-text">上传知识资料</p>
+              <p className="ant-upload-hint">入库后可在知识抽取工作台发起图谱抽取。</p>
+            </Upload.Dragger>
+            <List
+              style={{ marginTop: 16 }}
+              dataSource={documents}
+              locale={{ emptyText: '暂无文档' }}
+              renderItem={(item: any) => (
+                <List.Item className={(item.id ?? item.document_id) === selectedDocumentId ? 'semantic-list-item active' : 'semantic-list-item'} onClick={() => setSelectedDocumentId(item.id ?? item.document_id)}>
+                  <List.Item.Meta title={item.title ?? item.document_title ?? item.file_name} description={item.summary ?? item.updated_at} />
+                </List.Item>
+              )}
             />
           </Card>
-        </aside>
-
-        <main className="knowledge-main-panel">
-          <Card className="knowledge-document-card knowledge-tab-card">
-            {selectedCard ? (
-              <Tabs
-                className="knowledge-main-tabs"
-                items={[
-                  {
-                    key: 'summary',
-                    label: '当前知识条目',
-                    children: (
-                      <Space direction="vertical" size={18} style={{ width: '100%' }}>
-                        <div className="knowledge-document-head">
-                          <div>
-                            <Typography.Text type="secondary">当前知识条目</Typography.Text>
-                            <Typography.Title level={4}>{selectedCard.title}</Typography.Title>
-                          </div>
-                          <Space wrap>
-                            <Tag color="processing">{selectedCard.space_name ?? selectedCard.space_id}</Tag>
-                            <Tag color={selectedCard.status === 'published' ? 'success' : 'warning'}>{selectedCard.status}</Tag>
-                            <Tag>{selectedCard.updated_at}</Tag>
-                          </Space>
-                        </div>
-                        <Typography.Paragraph>{selectedCard.scenario}</Typography.Paragraph>
-                        <div className="knowledge-note-properties">
-                          <div>
-                            <span>tags</span>
-                            <Space wrap>
-                              {selectedCard.linked_objects.slice(0, 4).map((obj) => (
-                                <Tag key={`${obj.type}-${obj.id}`} color="purple">{obj.type}</Tag>
-                              ))}
-                            </Space>
-                          </div>
-                          <div><span>created</span><Typography.Text type="secondary">{selectedCard.updated_at}</Typography.Text></div>
-                          <div><span>owner</span><Typography.Text type="secondary">{selectedCard.owner}</Typography.Text></div>
-                        </div>
-                        <Typography.Title level={5}>处理建议</Typography.Title>
-                        <div className="knowledge-guidance-list">
-                          {selectedCard.guidance.map((item) => <span key={item}>{item}</span>)}
-                        </div>
-                        <Space direction="vertical" size={4}>
-                          <Typography.Text strong>风险提示</Typography.Text>
-                          {selectedCard.risk_notes.map((item) => <Typography.Text type="secondary" key={item}>{item}</Typography.Text>)}
-                        </Space>
-                        <Typography.Title level={5}>关联对象</Typography.Title>
-                        <Space wrap>
-                          {selectedCard.linked_objects.map((obj) => (
-                            <Tag key={`${obj.type}-${obj.id}`} color="blue">{obj.type}: {obj.name}</Tag>
-                          ))}
-                        </Space>
-                      </Space>
-                    ),
-                  },
-                  {
-                    key: 'evidence',
-                    label: '证据来源与对象绑定',
-                    children: (
-                      <div className="knowledge-binding-grid">
-                        <div>
-                          <Typography.Text strong>证据来源</Typography.Text>
-                          <div className="knowledge-chunk-list">
-                            {selectedCard.evidence_refs.map((ref) => (
-                              <Card size="small" key={`${ref.document_id}-${ref.source_ref}`} className="knowledge-chunk-card">
-                                <div className="knowledge-chunk-head">
-                                  <Typography.Text strong>{ref.document_title ?? ref.document_id}</Typography.Text>
-                                  <Tag color="cyan">source</Tag>
-                                </div>
-                                <Typography.Text type="secondary">{ref.source_ref}</Typography.Text>
-                              </Card>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <Typography.Text strong>AI 推荐绑定 / 数据清洗</Typography.Text>
-                          <div className="knowledge-chunk-list">
-                            {bindingCandidates.map((item) => (
-                              <Card size="small" key={`${item.object_type}-${item.object_id}`} className="knowledge-chunk-card">
-                                <div className="knowledge-chunk-head">
-                                  <Typography.Text strong>{item.object_type}: {item.object_name}</Typography.Text>
-                                  <Tag color={item.confidence >= 0.9 ? 'success' : 'warning'}>{Math.round(item.confidence * 100)}%</Tag>
-                                </div>
-                                <Typography.Text type="secondary">
-                                  命中文本：{item.text} / 匹配方式：{item.match_type} / 别名：{item.alias.join('、')}
-                                </Typography.Text>
-                              </Card>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'content',
-                    label: '具体内容展示',
-                    children: (
-                      <div className="knowledge-note-content">
-                        <Typography.Title level={4}>{selectedCard.title}</Typography.Title>
-                        <Typography.Paragraph>{selectedCard.scenario}</Typography.Paragraph>
-                        <Typography.Title level={5}>核心内容</Typography.Title>
-                        <ul>
-                          {selectedCard.guidance.map((item) => <li key={item}>{item}</li>)}
-                        </ul>
-                        <Typography.Title level={5}>风险与约束</Typography.Title>
-                        <ul>
-                          {selectedCard.risk_notes.map((item) => <li key={item}>{item}</li>)}
-                        </ul>
-                        <Typography.Title level={5}>引用证据</Typography.Title>
-                        {selectedCard.evidence_refs.map((ref) => (
-                          <Typography.Paragraph key={`${ref.document_id}-${ref.source_ref}`}>
-                            <Typography.Text strong>{ref.document_title ?? ref.document_id}</Typography.Text>
-                            <br />
-                            <Typography.Text type="secondary">{ref.source_ref}</Typography.Text>
-                          </Typography.Paragraph>
-                        ))}
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-            ) : (
-              <Empty description="请选择知识条目" />
-            )}
-          </Card>
-        </main>
-
-        <aside className="knowledge-rag-panel">
-          <Card className="knowledge-rag-card knowledge-chat-card" title={<Space><RobotOutlined />知识对话</Space>}>
-            <Space className="knowledge-chat-stack" direction="vertical" size={12}>
-              <Upload.Dragger
-                className="knowledge-upload-dragger"
-                accept=".md,.markdown,.xlsx,.xls,.pdf,.png,.jpg,.jpeg"
-                maxCount={1}
-                showUploadList={false}
-                customRequest={handleKnowledgeUpload}
-                disabled={uploading}
-              >
-                <p className="ant-upload-drag-icon"><InboxOutlined /></p>
-                <p className="ant-upload-text">{uploading ? '正在解析入库...' : '拖拽文档到对话里'}</p>
-                <p className="ant-upload-hint">自动生成 Markdown 与可检索片段</p>
-              </Upload.Dragger>
-
-              {lastUpload && (
-                <div className="knowledge-upload-result">
-                  <Space wrap>
-                    <Tag color={lastUpload.status === 'completed' ? 'success' : 'processing'}>{lastUpload.status}</Tag>
-                    <Tag>{lastUpload.permissionScope}</Tag>
-                    <Tag>{lastUpload.chunkCount} chunks</Tag>
-                  </Space>
-                  <Typography.Text strong>{lastUpload.documentTitle ?? lastUpload.fileName}</Typography.Text>
-                  {lastUpload.markdownPreview && <Typography.Text type="secondary">{lastUpload.markdownPreview}</Typography.Text>}
-                </div>
-              )}
-
-              <Select
-                value={selectedSource?.id}
-                options={sources.map((item) => ({ label: item.name, value: item.id }))}
-                onChange={setSelectedSourceId}
-                style={{ width: '100%' }}
-                placeholder="查看原始资料来源"
-              />
-              <div className="knowledge-source-docs">
-                {sourceDocuments.slice(0, 3).map((doc) => (
-                  <Tag key={doc.id}>{doc.title}</Tag>
-                ))}
-              </div>
-
-              <div className="knowledge-chat-thread">
-                {chatMessages.map((item) => (
-                  <div key={item.id} className={`knowledge-chat-message ${item.role}`}>
-                    {item.content}
-                  </div>
-                ))}
-              </div>
-
-              <Input.TextArea
-                className="knowledge-chat-input"
-                value={query}
-                rows={4}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="询问当前知识库，例如：这个 SOP 适用于哪些质量异常？"
-              />
-              <Button className="knowledge-chat-send" block type="primary" icon={<RobotOutlined />} loading={searching} onClick={runSearch}>
-                发送并检索
-              </Button>
-
-              {searchResult ? (
-                <div className="knowledge-result-list">
-                  <Typography.Text type="secondary">{searchResult.answer}</Typography.Text>
-                  {searchResult.results.map((item) => (
-                    <Card size="small" key={item.id} className="knowledge-result-card">
-                      <Space wrap>
-                        <Tag color="processing">{Math.round((item.score ?? 0) * 100)}%</Tag>
-                        <Typography.Text strong>{item.document_title}</Typography.Text>
-                      </Space>
-                      <Typography.Paragraph>{item.chunk_text}</Typography.Paragraph>
-                      <Typography.Text type="secondary">{item.source_ref}</Typography.Text>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="发送问题后查看引用来源" />
-              )}
+        </Col>
+        <Col xs={24} lg={7}>
+          <Card title={<Space><RobotOutlined />知识问答</Space>}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Input.TextArea rows={3} value={query} onChange={(event) => setQuery(event.target.value)} />
+              <Button block type="primary" icon={<RobotOutlined />} loading={searching} onClick={runSearch}>检索知识库</Button>
+              {answer && <Alert type="info" showIcon message={answer} />}
+              <Typography.Text type="secondary">相关片段</Typography.Text>
+              <List dataSource={chunks.slice(0, 3)} locale={{ emptyText: '选择文档后显示片段' }} renderItem={(item) => <List.Item><Typography.Text>{item.chunk_text}</Typography.Text></List.Item>} />
+              <Typography.Text type="secondary">知识卡片</Typography.Text>
+              <List dataSource={cards.slice(0, 3)} locale={{ emptyText: '暂无卡片' }} renderItem={(item) => <List.Item><List.Item.Meta title={item.title} description={item.scenario ?? item.owner} /></List.Item>} />
             </Space>
           </Card>
-        </aside>
-      </section>
+        </Col>
+      </Row>
     </div>
   );
 }
