@@ -1,9 +1,10 @@
 # AI Capability Map
 
-Last updated: 2026-05-25
+Last updated: 2026-05-26
 
-Status: roadmap/design. This document defines AI capability direction and risk
-levels; implemented API entry points are called out separately.
+Status: roadmap/design with implemented scaffolding called out. This document
+defines AI capability direction and risk levels; endpoint-level contracts remain
+in [API Reference](../development/api-reference.md).
 
 Version: v0.1
 
@@ -20,10 +21,18 @@ The project already contains the first AI entry points:
 - Backend AI Builder API: `backend/app/api/ai_builder.py`
 - Frontend AI assistant page: `frontend/src/pages/AIAssistant/index.tsx`
 - Frontend API wrappers: `frontend/src/services/api.ts`
-- Optional model settings: `OPENAI_API_KEY`, `OPENAI_MODEL`
-- GLM-compatible backend settings: `GLM_API_KEY`, `GLM_MODEL`, `GLM_BASE_URL`, and backend-only system prompt / system setting configuration
+- Optional OpenAI-compatible settings: `OPENAI_API_KEY`, `OPENAI_MODEL`
+- Current GLM-compatible backend defaults: `AI_PROVIDER=glm`, `AI_BASE_URL`, `AI_API_KEY`, `AI_CHAT_MODEL`, `AI_REASONING_MODEL`, `AI_EMBEDDING_MODEL`, `AI_VISION_MODEL`
+- Skill/tool registry endpoints: `GET /api/v1/ai/skills`, `GET /api/v1/ai/tools`
+- Observable Agent scaffold: `POST /api/v1/ai/agent-runs`
+- Persisted knowledge Agent runtime: `/api/v1/knowledge/agent/conversations/*`
 
-Current implementation is mostly rule-based and mock-oriented. The long-term direction is to let AI safely read, analyze, recommend, prepare, and, with authorization, execute business actions across model-driven apps, workflow, supply chain, quality, maintenance, graph, reports, and rules.
+Current implementation is still deterministic and scaffold-heavy, but it now has
+GLM-compatible provider defaults, registries, confirmation tokens, audit helpers,
+and persisted knowledge Agent runtime rows. The long-term direction is to let AI
+safely read, analyze, recommend, prepare, and, with authorization, execute
+business actions across model-driven apps, workflow, supply chain, quality,
+maintenance, graph, reports, and rules.
 
 ## 2. Capability Levels
 
@@ -155,9 +164,14 @@ backend/app/services/ai/
   orchestrator.py    # intent, planning, tool routing
   prompts.py         # system and domain prompts
   tools.py           # business tool registry
+  tool_registry.py   # typed tool registry contract
+  skills.py          # skill registry contract
   policies.py        # risk levels and confirmation requirements
   schemas.py         # structured request/response models
   knowledge_ingestion.py # file -> Markdown -> chunks -> embeddings MVP
+  agent_runs.py      # current in-memory general Agent run scaffold
+  confirmations.py   # confirmation tokens for write-like actions
+  audit.py           # AI audit helper
 ```
 
 ### 5.1 LLM Provider And System Settings
@@ -166,13 +180,17 @@ The AI layer should treat GLM and OpenAI-style providers as backend-hosted
 model adapters. Frontend clients must not receive provider API keys, raw system
 prompts, or privileged routing configuration.
 
-Recommended GLM configuration:
+Current GLM-compatible configuration:
 
 | Setting | Purpose | Exposure |
 | --- | --- | --- |
-| `GLM_API_KEY` | Backend credential for GLM requests | Backend secret only |
-| `GLM_MODEL` | Default GLM chat model used by the assistant | Backend config, optionally surfaced as a display name |
-| `GLM_BASE_URL` | Provider endpoint for OpenAI-compatible GLM APIs | Backend config only |
+| `AI_PROVIDER` | Provider selector; current default is `glm` | Backend config, display only if needed |
+| `AI_BASE_URL` | Provider endpoint; current default is `https://open.bigmodel.cn/api/paas/v4` | Backend config only |
+| `AI_API_KEY` | Backend credential for provider requests | Backend secret only |
+| `AI_CHAT_MODEL` | Default chat model; current default is `glm-4-flash` | Backend config, optionally surfaced as a display name |
+| `AI_REASONING_MODEL` | Reasoning model; current default is `glm-4-plus` | Backend config |
+| `AI_EMBEDDING_MODEL` | Embedding model; current default is `embedding-3` | Backend config |
+| `AI_VISION_MODEL` | Vision model; current default is `glm-4v-plus` | Backend config |
 | AI system setting / system prompt | Defines assistant identity, product boundaries, tool-use rules, and safety posture | Backend config only |
 
 System settings belong in backend configuration or an admin-controlled settings
