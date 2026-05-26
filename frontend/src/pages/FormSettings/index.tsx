@@ -1001,6 +1001,8 @@ export default function FormSettingsPage() {
   const [identityOrgUnits, setIdentityOrgUnits] = useState<string[]>([]);
   const permissionRoles = identityRoles.length ? identityRoles : baseConfig.roles;
   const permissionOrgUnits = identityOrgUnits.length ? identityOrgUnits : ['本部门', '所属工厂', '个人创建'];
+  const [selectedPermissionRole, setSelectedPermissionRole] = useState('');
+  const activePermissionRole = selectedPermissionRole || permissionRoles[0] || '未配置角色';
   const previewFlowNodes = useMemo(
     () => professionalFlowConfig.nodes.filter((node) => node.executable || node.type === 'startEvent' || node.type === 'endEvent'),
     [professionalFlowConfig.nodes],
@@ -1041,6 +1043,12 @@ export default function FormSettingsPage() {
         setIdentityOrgUnits([]);
       });
   }, []);
+
+  useEffect(() => {
+    if (permissionRoles.length && !permissionRoles.includes(activePermissionRole)) {
+      setSelectedPermissionRole(permissionRoles[0]);
+    }
+  }, [activePermissionRole, permissionRoles]);
 
   useEffect(() => {
     const nextControls = baseConfig.fields.map(makeFieldControl);
@@ -2687,28 +2695,51 @@ export default function FormSettingsPage() {
             <div className="canvas-board permission-canvas">
               <div className="permission-overview">
                 <div>
-                  <strong>权限设计</strong>
-                  <span>按角色配置动作权限、数据范围和字段级控制。</span>
+                  <strong>{baseConfig.name}权限配置</strong>
+                  <span>当前角色：{activePermissionRole}</span>
                 </div>
-                <Tag color="blue">{baseConfig.name}</Tag>
+                <Space size={8}>
+                  <Tag color="blue">{baseConfig.fields.length} 个字段</Tag>
+                  <Tag color="green">{permissionRoles.length} 个角色</Tag>
+                  <Button size="small" type="primary" icon={<SaveOutlined />}>保存权限</Button>
+                </Space>
               </div>
+
               <div className="permission-workbench">
                 <aside className="permission-role-rail">
-                  <div className="permission-section-title">角色</div>
+                  <div className="permission-rail-head">
+                    <div>
+                      <div className="permission-section-title">角色</div>
+                      <small>从用户与权限同步</small>
+                    </div>
+                    <Tag>{permissionRoles.length}</Tag>
+                  </div>
                   {permissionRoles.map((role, index) => (
-                    <button className={`permission-role-card ${index === 0 ? 'permission-role-active' : ''}`} key={role} type="button">
+                    <button
+                      className={`permission-role-card ${role === activePermissionRole ? 'permission-role-active' : ''}`}
+                      key={role}
+                      type="button"
+                      onClick={() => setSelectedPermissionRole(role)}
+                    >
                       <span className="permission-role-icon"><UserSwitchOutlined /></span>
                       <span>
                         <strong>{role}</strong>
-                        <small>{index === 0 ? '当前选中' : '可切换配置'}</small>
+                        <small>{role === activePermissionRole ? '正在配置' : index === 0 ? '管理员策略' : '点击切换'}</small>
                       </span>
                     </button>
                   ))}
                 </aside>
+
                 <div className="permission-main">
-                  <section className="permission-card">
-                    <div className="permission-section-title">动作权限</div>
-                    <div className="permission-action-grid">
+                  <section className="permission-card permission-action-card">
+                    <div className="permission-card-head">
+                      <div>
+                        <div className="permission-section-title">动作权限</div>
+                        <span>记录级操作</span>
+                      </div>
+                      <Tag color="green">6 / 8 已启用</Tag>
+                    </div>
+                    <div className="permission-action-list">
                       {[
                         ['查看', true, '基础访问'],
                         ['新增', true, '创建记录'],
@@ -2719,26 +2750,23 @@ export default function FormSettingsPage() {
                         ['设置', false, '配置入口'],
                         ['审批', true, '流程处理'],
                       ].map(([name, enabled, desc]) => (
-                        <div className={`permission-action ${enabled ? 'permission-action-on' : 'permission-action-off'}`} key={name as string}>
+                        <button className={`permission-action ${enabled ? 'permission-action-on' : 'permission-action-off'}`} key={name as string} type="button">
+                          <CheckCircleOutlined />
                           <span>{name}</span>
                           <small>{desc}</small>
-                          <CheckCircleOutlined />
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </section>
 
-                  <section className="permission-card permission-scope-card">
-                    <div className="permission-section-title">数据范围</div>
-                    <div className="permission-scope-grid">
-                      <div><span>范围模式</span><strong>主组织 + 个人创建</strong></div>
-                      <div><span>组织来源</span><strong>{permissionOrgUnits.slice(0, 3).join(' / ')}</strong></div>
-                      <div><span>敏感数据</span><strong>脱敏显示</strong></div>
+                  <section className="permission-card permission-field-card">
+                    <div className="permission-card-head">
+                      <div>
+                        <div className="permission-section-title">字段权限</div>
+                        <span>按角色控制字段可见、可编辑和必填</span>
+                      </div>
+                      <Button size="small">批量设置</Button>
                     </div>
-                  </section>
-
-                  <section className="permission-card">
-                    <div className="permission-section-title">字段权限</div>
                     <div className="permission-field-matrix">
                       <div className="permission-field-head">
                         <span>字段</span><span>可见</span><span>可编辑</span><span>必填</span>
@@ -2753,6 +2781,38 @@ export default function FormSettingsPage() {
                       ))}
                     </div>
                   </section>
+
+                  <aside className="permission-side-stack">
+                    <section className="permission-card permission-scope-card">
+                      <div className="permission-card-head">
+                        <div>
+                          <div className="permission-section-title">数据范围</div>
+                          <span>组织维度</span>
+                        </div>
+                        <ApartmentOutlined />
+                      </div>
+                      <div className="permission-scope-grid">
+                        <div><span>范围模式</span><strong>主组织 + 个人创建</strong></div>
+                        <div><span>组织来源</span><strong>{permissionOrgUnits.slice(0, 3).join(' / ')}</strong></div>
+                        <div><span>敏感数据</span><strong>脱敏显示</strong></div>
+                      </div>
+                    </section>
+
+                    <section className="permission-card permission-summary-card">
+                      <div className="permission-card-head">
+                        <div>
+                          <div className="permission-section-title">生效摘要</div>
+                          <span>{activePermissionRole}</span>
+                        </div>
+                        <LockOutlined />
+                      </div>
+                      <div className="permission-summary-list">
+                        <div><strong>应用</strong><span>{baseConfig.appName}</span></div>
+                        <div><strong>表单</strong><span>{baseConfig.name}</span></div>
+                        <div><strong>发布状态</strong><Tag color="orange">草稿</Tag></div>
+                      </div>
+                    </section>
+                  </aside>
                 </div>
               </div>
             </div>

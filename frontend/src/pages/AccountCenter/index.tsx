@@ -601,14 +601,6 @@ function AIPlatformPanelV2() {
 
   return (
     <div className="account-admin-section">
-      <div className="account-section-title">
-        <RobotOutlined />
-        <div>
-          <Title level={4}>AI 设置</Title>
-          <Text type="secondary">Demo 阶段先保存到浏览器本地，后续可迁移到后端配置、权限与审计服务。</Text>
-        </div>
-      </div>
-
       <Form form={form} layout="vertical" initialValues={{ ...defaultSettings, ...savedSettings }} className="ai-platform-form">
         <div className="ai-platform-console">
           <section className="ai-platform-hero">

@@ -2530,9 +2530,10 @@
 .permission-canvas {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 320px;
-  background: #f8fafc;
+  gap: 10px;
+  min-height: auto;
+  padding: 12px;
+  background: #f6f8fa;
 }
 
 .permission-overview {
@@ -2540,7 +2541,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px;
+  padding: 12px 14px;
   border: 1px solid #dce3ea;
   border-radius: 8px;
   background: #ffffff;
@@ -2564,7 +2565,7 @@
 
 .permission-workbench {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
+  grid-template-columns: 220px minmax(0, 1fr);
   gap: 12px;
   min-height: 0;
 }
@@ -2581,6 +2582,23 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px;
+  align-self: start;
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+}
+
+.permission-rail-head,
+.permission-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.permission-rail-head small,
+.permission-card-head span {
+  color: #667085;
+  font-size: 11px;
 }
 
 .permission-section-title {
@@ -2594,7 +2612,7 @@
   align-items: center;
   gap: 9px;
   width: 100%;
-  padding: 10px;
+  padding: 9px;
   border: 1px solid #e4eaf0;
   border-radius: 8px;
   background: #fbfcfd;
@@ -2605,7 +2623,8 @@
 
 .permission-role-active {
   border-color: #2f6678;
-  background: #eef7fa;
+  background: #edf7fa;
+  box-shadow: inset 3px 0 0 #2f6678;
 }
 
 .permission-role-icon {
@@ -2637,19 +2656,34 @@
 
 .permission-main {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.85fr);
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-areas:
+    "actions side"
+    "fields side";
   gap: 12px;
+  align-items: start;
 }
 
 .permission-card {
   padding: 12px;
 }
 
-.permission-card:last-child {
-  grid-column: 1 / -1;
+.permission-action-card {
+  grid-area: actions;
 }
 
-.permission-action-grid {
+.permission-field-card {
+  grid-area: fields;
+}
+
+.permission-side-stack {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.permission-action-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
@@ -2657,31 +2691,32 @@
 }
 
 .permission-action {
-  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-height: 58px;
-  padding: 10px 28px 10px 10px;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 10px;
   border: 1px solid #e4eaf0;
   border-radius: 8px;
   background: #fbfcfd;
+  text-align: left;
+  cursor: pointer;
 }
 
 .permission-action span {
   color: #172026;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .permission-action small {
+  margin-left: auto;
   color: #7a8995;
   font-size: 11px;
 }
 
 .permission-action .anticon {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  flex: 0 0 auto;
 }
 
 .permission-action-on {
@@ -2733,14 +2768,15 @@
   border: 1px solid #e4eaf0;
   border-radius: 8px;
   overflow: hidden;
+  background: #ffffff;
 }
 
 .permission-field-head,
 .permission-field-row {
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) 90px 90px 90px;
+  grid-template-columns: minmax(160px, 1fr) 86px 86px 86px;
   align-items: center;
-  min-height: 36px;
+  min-height: 34px;
   padding: 0 10px;
   border-bottom: 1px solid #edf1f5;
 }
@@ -2753,6 +2789,49 @@
 
 .permission-field-row:last-child {
   border-bottom: 0;
+}
+
+.permission-summary-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.permission-summary-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.permission-summary-list strong {
+  color: #4d5d67;
+  font-size: 12px;
+}
+
+.permission-summary-list span {
+  color: #172026;
+  font-size: 12px;
+  text-align: right;
+}
+
+@media (max-width: 1180px) {
+  .permission-workbench,
+  .permission-main {
+    grid-template-columns: 1fr;
+  }
+
+  .permission-main {
+    grid-template-areas:
+      "actions"
+      "side"
+      "fields";
+  }
 }
 
 .canvas-filter-row {
