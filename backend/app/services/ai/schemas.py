@@ -16,8 +16,8 @@ class AIProviderConfig(BaseModel):
     api_key: str = ""
     organization: str | None = None
     project: str | None = None
-    chat_model: str = "glm-4-flash"
-    reasoning_model: str = "glm-4-plus"
+    chat_model: str = "glm-5.1"
+    reasoning_model: str = "glm-5.1"
     embedding_model: str = "embedding-3"
     vision_model: str = "glm-4v-plus"
     timeout_seconds: int = 30

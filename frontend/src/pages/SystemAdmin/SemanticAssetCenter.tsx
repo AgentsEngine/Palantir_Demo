@@ -47,9 +47,12 @@ import {
   commitKnowledgeExtractionJobToGraph,
   createKnowledgeAgentConversation,
   createKnowledgeExtractionJob,
+  enhanceKnowledgeDocumentOcr,
   exportKnowledgeExtractionJob,
   getGraphAssetQuality,
+  getKnowledgeDocumentOcr,
   getKnowledgeOcrPipeline,
+  KnowledgeOcrBlock,
   getRelatedKnowledgeCards,
   listGraphAssetEvidence,
   listGraphAssetNodes,
@@ -65,6 +68,7 @@ import {
   listSemanticOntologyRelations,
   searchKnowledge,
   sendKnowledgeAgentMessage,
+  saveKnowledgeDocumentOcrCorrections,
   testDataSourceConfig,
   uploadKnowledgeAsset,
 } from '../../services/api';
@@ -186,10 +190,24 @@ type GraphAssetEvidence = {
 
 type KnowledgeSpace = { id: string; name: string; description?: string };
 type KnowledgeSource = { id: string; name: string; source_type?: string; status?: string };
-type KnowledgeDocument = { id: string; title: string; source_id?: string; summary?: string; updated_at?: string };
+type KnowledgeDocument = {
+  id: string;
+  title: string;
+  source_id?: string;
+  summary?: string;
+  updated_at?: string;
+  document_id?: string;
+  document_title?: string;
+  file_name?: string;
+  filename?: string;
+  mime_type?: string;
+  content_type?: string;
+  file_type?: string;
+};
 type KnowledgeCard = { id: string; title: string; scenario?: string; owner?: string; updated_at?: string };
 type KnowledgeChunk = { id: string; document_title?: string; chunk_text: string; source_ref?: string };
 type KnowledgeChatMessage = { id: string; role: 'assistant' | 'user'; content: string };
+type EditableOcrBlock = KnowledgeOcrBlock & { row_id: string; corrected_text: string };
 
 const severityColors: Record<string, string> = {
   FATAL: 'red',
@@ -319,6 +337,15 @@ const fallbackGraphQuality = {
 
 function confidencePercent(value: number) {
   return Math.round((Number(value) || 0) * 100);
+}
+
+function normalizeOcrConfidence(value?: number) {
+  const confidence = Number(value ?? 0);
+  return confidence > 1 ? Math.round(confidence) : Math.round(confidence * 100);
+}
+
+function getOcrBlockId(block: KnowledgeOcrBlock, index: number) {
+  return String(block.block_id ?? block.id ?? `block-${index + 1}`);
 }
 
 function boolTag(value?: boolean) {
@@ -1796,6 +1823,13 @@ export function KnowledgeCenter() {
   const [uploading, setUploading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [mode, setMode] = useState<string | number>('extract');
+  const [ocrBlocks, setOcrBlocks] = useState<EditableOcrBlock[]>([]);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrSaving, setOcrSaving] = useState(false);
+  const [ocrEnhancing, setOcrEnhancing] = useState(false);
+  const [ocrAverageConfidence, setOcrAverageConfidence] = useState<number>();
+  const [ocrLowConfidenceCount, setOcrLowConfidenceCount] = useState(0);
+  const [ocrEnhanced, setOcrEnhanced] = useState(false);
   const chatThreadRef = useRef<HTMLDivElement | null>(null);
 
   const fallbackDocuments = useMemo(() => ([
@@ -1809,6 +1843,35 @@ export function KnowledgeCenter() {
   const selectedTitle = (selectedDocument as any)?.title ?? (selectedDocument as any)?.document_title ?? (selectedDocument as any)?.file_name ?? '04-APS-高级计划与排程';
   const selectedSummary = (selectedDocument as any)?.summary ?? '企业信息化 / 生产制造 / 计划与排程';
   const selectedUpdatedAt = (selectedDocument as any)?.updated_at ?? '2026/04/17';
+  const selectedDocumentName = String(
+    (selectedDocument as any)?.file_name
+      ?? (selectedDocument as any)?.filename
+      ?? (selectedDocument as any)?.title
+      ?? (selectedDocument as any)?.document_title
+      ?? '',
+  ).toLowerCase();
+  const selectedDocumentMime = String(
+    (selectedDocument as any)?.mime_type
+      ?? (selectedDocument as any)?.content_type
+      ?? (selectedDocument as any)?.file_type
+      ?? '',
+  ).toLowerCase();
+  const selectedIsDemoDocument = selectedDocumentId?.startsWith('demo-');
+  const selectedIsOcrDocument = Boolean(
+    selectedDocumentId
+      && !selectedIsDemoDocument
+      && (
+        selectedDocumentMime.includes('pdf')
+        || selectedDocumentMime.startsWith('image/')
+        || /\.(pdf|png|jpe?g|webp|tiff?|bmp)$/i.test(selectedDocumentName)
+      ),
+  );
+  const ocrConfidencePercent = normalizeOcrConfidence(
+    ocrAverageConfidence
+      ?? (ocrBlocks.length
+        ? ocrBlocks.reduce((sum, block) => sum + Number(block.confidence ?? 0), 0) / ocrBlocks.length
+        : 0),
+  );
 
   const extractionEntities = [
     { name: 'APS', type: '系统', confidence: 96, evidence: '系统定位' },
@@ -1858,6 +1921,44 @@ export function KnowledgeCenter() {
     loadKnowledge();
   }, []);
 
+  const loadOcr = async () => {
+    if (!selectedDocumentId || !selectedIsOcrDocument) {
+      setOcrBlocks([]);
+      setOcrAverageConfidence(undefined);
+      setOcrLowConfidenceCount(0);
+      setOcrEnhanced(false);
+      return;
+    }
+    setOcrLoading(true);
+    try {
+      const res = await getKnowledgeDocumentOcr(selectedDocumentId);
+      const payload = (res.data as any)?.data ?? res.data ?? {};
+      const blocks: KnowledgeOcrBlock[] = payload.blocks ?? [];
+      const editableBlocks = blocks.map((block, index) => ({
+        ...block,
+        row_id: getOcrBlockId(block, index),
+        corrected_text: block.corrected_text ?? block.text ?? block.raw_text ?? '',
+      }));
+      setOcrBlocks(editableBlocks);
+      setOcrAverageConfidence(payload.average_confidence ?? payload.avg_confidence);
+      setOcrLowConfidenceCount(
+        payload.low_confidence_count
+          ?? editableBlocks.filter((block) => normalizeOcrConfidence(block.confidence) < 80).length,
+      );
+      setOcrEnhanced(Boolean(payload.enhanced ?? editableBlocks.some((block) => block.enhanced)));
+    } catch (error: any) {
+      setOcrBlocks([]);
+      setOcrAverageConfidence(undefined);
+      setOcrLowConfidenceCount(0);
+      setOcrEnhanced(false);
+      if (error?.response?.status !== 404) {
+        message.error(error?.response?.data?.detail ?? 'OCR result is unavailable');
+      }
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!selectedDocumentId || selectedDocumentId.startsWith('demo-')) {
       setChunks([]);
@@ -1867,6 +1968,12 @@ export function KnowledgeCenter() {
       .then((res) => setChunks(res.data?.data ?? []))
       .catch(() => setChunks([]));
   }, [selectedDocumentId]);
+
+  useEffect(() => {
+    if (mode === 'ocr') {
+      loadOcr();
+    }
+  }, [mode, selectedDocumentId, selectedIsOcrDocument]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1963,6 +2070,40 @@ export function KnowledgeCenter() {
     }
   };
 
+  const updateOcrBlockCorrection = (rowId: string, correctedText: string) => {
+    setOcrBlocks((prev) => prev.map((block) => (
+      block.row_id === rowId ? { ...block, corrected_text: correctedText } : block
+    )));
+  };
+
+  const saveOcrCorrections = async () => {
+    if (!selectedDocumentId) return;
+    setOcrSaving(true);
+    try {
+      await saveKnowledgeDocumentOcrCorrections(selectedDocumentId, ocrBlocks.map(({ row_id, ...block }) => block));
+      message.success('OCR corrections saved');
+      loadOcr();
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail ?? 'Failed to save OCR corrections');
+    } finally {
+      setOcrSaving(false);
+    }
+  };
+
+  const enhanceOcr = async () => {
+    if (!selectedDocumentId) return;
+    setOcrEnhancing(true);
+    try {
+      await enhanceKnowledgeDocumentOcr(selectedDocumentId);
+      message.success('OCR enhancement started');
+      await loadOcr();
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail ?? 'Failed to enhance OCR');
+    } finally {
+      setOcrEnhancing(false);
+    }
+  };
+
   const handleUpload = async (options: any) => {
     setUploading(true);
     try {
@@ -1977,6 +2118,91 @@ export function KnowledgeCenter() {
       setUploading(false);
     }
   };
+
+  const ocrPanel = (
+    <div className="knowledge-ocr-panel">
+      {!selectedIsOcrDocument ? (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="OCR correction is available after selecting an uploaded PDF or image document."
+        />
+      ) : (
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <div className="knowledge-ocr-summary">
+            <Card size="small">
+              <Typography.Text type="secondary">Average confidence</Typography.Text>
+              <Progress percent={ocrConfidencePercent} size="small" status={ocrConfidencePercent < 80 ? 'exception' : 'success'} />
+            </Card>
+            <Card size="small">
+              <Typography.Text type="secondary">Low confidence</Typography.Text>
+              <Typography.Title level={4}>{ocrLowConfidenceCount}</Typography.Title>
+            </Card>
+            <Card size="small">
+              <Typography.Text type="secondary">Enhanced</Typography.Text>
+              <div><Tag color={ocrEnhanced ? 'success' : 'default'}>{ocrEnhanced ? 'Yes' : 'No'}</Tag></div>
+            </Card>
+          </div>
+          <div className="knowledge-ocr-toolbar">
+            <Typography.Text type="secondary">{ocrBlocks.length} OCR blocks</Typography.Text>
+            <Space>
+              <Button loading={ocrLoading} onClick={loadOcr}>Refresh</Button>
+              <Button loading={ocrEnhancing} onClick={enhanceOcr}>Enhance</Button>
+              <Button type="primary" loading={ocrSaving} disabled={!ocrBlocks.length} onClick={saveOcrCorrections}>Save corrections</Button>
+            </Space>
+          </div>
+          <Table
+            className="knowledge-ocr-table"
+            rowKey="row_id"
+            size="small"
+            loading={ocrLoading}
+            dataSource={ocrBlocks}
+            pagination={{ pageSize: 5 }}
+            locale={{ emptyText: 'No OCR blocks found for this document.' }}
+            columns={[
+              {
+                title: 'Block',
+                width: 86,
+                render: (_value, record: EditableOcrBlock, index) => (
+                  <Space direction="vertical" size={2}>
+                    <Tag>{record.block_id ?? record.id ?? index + 1}</Tag>
+                    {(record.page ?? record.page_number) && <Typography.Text type="secondary">p.{record.page ?? record.page_number}</Typography.Text>}
+                  </Space>
+                ),
+              },
+              {
+                title: 'Original text',
+                dataIndex: 'text',
+                render: (_value, record: EditableOcrBlock) => (
+                  <Typography.Paragraph className="knowledge-ocr-original">
+                    {record.text ?? record.raw_text ?? '-'}
+                  </Typography.Paragraph>
+                ),
+              },
+              {
+                title: 'Corrected text',
+                dataIndex: 'corrected_text',
+                render: (_value, record: EditableOcrBlock) => (
+                  <Input.TextArea
+                    autoSize={{ minRows: 2, maxRows: 6 }}
+                    value={record.corrected_text}
+                    onChange={(event) => updateOcrBlockCorrection(record.row_id, event.target.value)}
+                  />
+                ),
+              },
+              {
+                title: 'Confidence',
+                width: 120,
+                render: (_value, record: EditableOcrBlock) => {
+                  const percent = normalizeOcrConfidence(record.confidence);
+                  return <Progress percent={percent} size="small" status={percent < 80 ? 'exception' : 'normal'} />;
+                },
+              },
+            ]}
+          />
+        </Space>
+      )}
+    </div>
+  );
 
   return (
     <div className="knowledge-center">
@@ -2022,7 +2248,7 @@ export function KnowledgeCenter() {
           <Card
             className="knowledge-document-card"
             title={<Space wrap><span>{selectedTitle}</span><Tag color="blue">企业信息化</Tag><Tag color="purple">APS</Tag><Tag>排程</Tag></Space>}
-            extra={<Segmented value={mode} onChange={setMode} options={[{ label: '阅读', value: 'read' }, { label: '问答', value: 'chat' }, { label: '抽取', value: 'extract' }, { label: '发布', value: 'publish' }]} />}
+            extra={<Segmented value={mode} onChange={setMode} options={[{ label: '阅读', value: 'read' }, { label: 'OCR', value: 'ocr', disabled: !selectedIsOcrDocument }, { label: '问答', value: 'chat' }, { label: '抽取', value: 'extract' }, { label: '发布', value: 'publish' }]} />}
           >
             <div className="knowledge-document-head">
               <div>
@@ -2034,7 +2260,7 @@ export function KnowledgeCenter() {
               </div>
               <Button type="primary" icon={<RobotOutlined />} onClick={() => setMode('extract')}>抽取当前文档</Button>
             </div>
-            <article className="knowledge-note-content">
+            {mode === 'ocr' ? ocrPanel : <article className="knowledge-note-content">
               <Typography.Title level={3}>系统定位</Typography.Title>
               <table className="knowledge-doc-table">
                 <tbody>
@@ -2065,7 +2291,7 @@ export function KnowledgeCenter() {
                   {chunks.slice(0, 2).map((item) => <Card className="knowledge-chunk-card" size="small" key={item.id}><Typography.Text>{item.chunk_text}</Typography.Text></Card>)}
                 </>
               )}
-            </article>
+            </article>}
           </Card>
         </main>
 

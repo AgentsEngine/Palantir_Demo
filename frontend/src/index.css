@@ -4088,6 +4088,54 @@ button {
   margin-bottom: 0;
 }
 
+.knowledge-ocr-panel {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 4px 20px;
+  overflow: auto;
+}
+
+.knowledge-ocr-summary {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 150px 130px;
+  gap: 10px;
+}
+
+.knowledge-ocr-summary .ant-card-body {
+  min-height: 76px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+}
+
+.knowledge-ocr-summary h4 {
+  margin: 0 !important;
+  color: var(--mf-primary);
+}
+
+.knowledge-ocr-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(28, 76, 96, 0.1);
+  border-radius: 8px;
+  background: #f8fafb;
+}
+
+.knowledge-ocr-table .ant-table-cell {
+  vertical-align: top;
+}
+
+.knowledge-ocr-original {
+  max-height: 108px;
+  margin: 0 !important;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
 .knowledge-chunk-head {
   display: flex;
   align-items: center;

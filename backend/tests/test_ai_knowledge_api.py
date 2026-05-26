@@ -101,7 +101,7 @@ def test_ai_provider_test_reports_glm_missing_key_without_crashing(client):
         json={
             "provider_config": {
                 "provider": "glm",
-                "chat_model": "glm-4-flash",
+                "chat_model": "glm-5.1",
                 "api_key": "",
             }
         },
@@ -120,7 +120,7 @@ def test_ai_provider_test_accepts_glm_when_key_is_present(client):
         json={
             "provider_config": {
                 "provider": "glm",
-                "chat_model": "glm-4-flash",
+                "chat_model": "glm-5.1",
                 "embedding_model": "embedding-3",
                 "api_key": "test-key",
             }
@@ -131,7 +131,7 @@ def test_ai_provider_test_accepts_glm_when_key_is_present(client):
     data = response.json()
     assert data["ok"] is True
     assert data["provider"] == "glm"
-    assert data["model"] == "glm-4-flash"
+    assert data["model"] == "glm-5.1"
 
 
 def test_saved_ai_settings_default_to_glm_and_report_missing_key(client):
@@ -140,7 +140,7 @@ def test_saved_ai_settings_default_to_glm_and_report_missing_key(client):
     data = settings.json()["data"]
     assert data["provider"] == "glm"
     assert data["baseUrl"] == "https://open.bigmodel.cn/api/paas/v4"
-    assert data["chatModel"] == "glm-4-flash"
+    assert data["chatModel"] == "glm-5.1"
     assert data["embeddingModel"] == "embedding-3"
     assert data["apiKey"] == ""
 
@@ -321,6 +321,48 @@ def test_excel_upload_is_converted_to_markdown_and_searchable(client):
     assert data["query"] == "M-002 critical rule"
     assert any(item["document_id"] == result["document"]["document_id"] for item in data["results"])
     assert all("source_location" in item for item in data["results"])
+
+
+def test_image_upload_ocr_result_and_correction_api(client, monkeypatch, tmp_path):
+    from app.services.ai import knowledge_ingestion
+
+    monkeypatch.setattr(knowledge_ingestion, "save_original_asset", lambda file_name, content: str(tmp_path / file_name))
+    monkeypatch.setattr(
+        knowledge_ingestion,
+        "ocr_extract",
+        lambda file_name, content: {
+            "markdown_content": f"# {file_name}\n\nBad serial",
+            "blocks": [{"id": "ocr-1-1", "page_number": 1, "text": "Bad serial", "confidence": 0.6, "status": "low_confidence"}],
+            "average_confidence": 0.6,
+            "low_confidence_count": 1,
+            "provider": "rapidocr",
+            "enhanced_by_vision": False,
+        },
+    )
+
+    upload = client.post(
+        "/api/v1/knowledge/assets/upload",
+        files={"file": ("label.png", b"fake image", "image/png")},
+    )
+
+    assert upload.status_code == 200
+    result = upload.json()["data"]
+    document_id = result["document"]["document_id"]
+    assert result["document"]["ocr_result"]["blocks"]
+
+    ocr = client.get(f"/api/v1/knowledge/documents/{document_id}/ocr")
+    assert ocr.status_code == 200
+    assert ocr.json()["data"]["average_confidence"] == 0.6
+
+    correction = client.put(
+        f"/api/v1/knowledge/documents/{document_id}/ocr/corrections",
+        json={"blocks": [{"id": "ocr-1-1", "page_number": 1, "text": "Bad serial", "corrected_text": "Good serial SN-7781", "confidence": 0.6}]},
+    )
+    assert correction.status_code == 200
+    assert "Good serial SN-7781" in correction.json()["data"]["markdown_content"]
+
+    markdown = client.get(f"/api/v1/knowledge/documents/{document_id}/markdown")
+    assert "Good serial SN-7781" in markdown.json()["data"]["markdown_content"]
 
 
 def test_knowledge_search_rejects_blank_query(client):

@@ -8,6 +8,89 @@ const api = axios.create({
   withCredentials: true,
 });
 
+export interface ReleaseInfo {
+  version: string;
+  released_at?: string | null;
+  title?: string;
+  summary?: string;
+  highlights?: string[];
+  details?: string[];
+  show_popup?: boolean;
+}
+
+export interface PublicTenantProfile {
+  tenantId?: number;
+  tenantName?: string;
+  productName: string;
+  assistantName: string;
+}
+
+const DEFAULT_PRODUCT_NAME = import.meta.env.VITE_PUBLIC_PRODUCT_NAME || 'ManuFoundry';
+
+export const DEFAULT_PUBLIC_TENANT_PROFILE: PublicTenantProfile = {
+  productName: DEFAULT_PRODUCT_NAME,
+  assistantName: import.meta.env.VITE_PUBLIC_ASSISTANT_NAME || `${DEFAULT_PRODUCT_NAME} AI`,
+};
+
+const normalizePublicTenantProfile = (raw: unknown): PublicTenantProfile => {
+  const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const payload = (data.data && typeof data.data === 'object' ? data.data : data) as Record<string, unknown>;
+  const productName = String(payload.productName ?? payload.product_name ?? DEFAULT_PUBLIC_TENANT_PROFILE.productName);
+  const assistantName = String(payload.assistantName ?? payload.assistant_name ?? `${productName} AI`);
+
+  return {
+    tenantId: typeof payload.tenantId === 'number'
+      ? payload.tenantId
+      : typeof payload.tenant_id === 'number'
+        ? payload.tenant_id
+        : undefined,
+    tenantName: typeof payload.tenantName === 'string'
+      ? payload.tenantName
+      : typeof payload.tenant_name === 'string'
+        ? payload.tenant_name
+        : undefined,
+    productName,
+    assistantName,
+  };
+};
+
+export const getPublicTenantProfile = async (): Promise<PublicTenantProfile> => {
+  try {
+    const res = await axios.get('/tenant/profile/public', {
+      baseURL: apiBaseURL,
+      timeout: 5000,
+      withCredentials: true,
+    });
+    return normalizePublicTenantProfile(res.data);
+  } catch {
+    return DEFAULT_PUBLIC_TENANT_PROFILE;
+  }
+};
+
+export interface KnowledgeOcrBlock {
+  id?: string;
+  block_id?: string;
+  page?: number;
+  page_number?: number;
+  bbox?: number[] | Record<string, unknown> | null;
+  text?: string;
+  raw_text?: string;
+  corrected_text?: string;
+  confidence?: number;
+  enhanced?: boolean;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface KnowledgeOcrResult {
+  document_id?: string;
+  blocks?: KnowledgeOcrBlock[];
+  average_confidence?: number;
+  avg_confidence?: number;
+  low_confidence_count?: number;
+  enhanced?: boolean;
+  status?: string;
+}
+
 // ── Request interceptor: attach Authorization: Bearer <token> ─────
 api.interceptors.request.use((cfg) => {
   const token = localStorage.getItem('mf_token');
@@ -36,6 +119,7 @@ api.interceptors.response.use(
 );
 
 // Dashboard
+export const getCurrentRelease = () => api.get<ReleaseInfo>('/release/current');
 export const getOverview = () => api.get('/dashboard/overview');
 export const getOEE = (lineId?: number) => api.get('/dashboard/oee', { params: { line_id: lineId } });
 export const getProductionStats = (days?: number) => api.get('/dashboard/production', { params: { days } });
@@ -121,6 +205,14 @@ export const getRelatedKnowledge = (params?: { object_type?: string; object_id?:
 export const suggestKnowledgeBindings = (data: { text: string; limit?: number }) =>
   api.post('/knowledge/binding-candidates', data);
 export const getKnowledgeOcrPipeline = () => api.get('/knowledge/ocr-pipeline');
+export const getKnowledgeDocumentOcr = (documentId: string) =>
+  api.get<KnowledgeOcrResult>(`/knowledge/documents/${documentId}/ocr`);
+export const saveKnowledgeDocumentOcrCorrections = (
+  documentId: string,
+  blocks: KnowledgeOcrBlock[],
+) => api.put(`/knowledge/documents/${documentId}/ocr/corrections`, { blocks });
+export const enhanceKnowledgeDocumentOcr = (documentId: string) =>
+  api.post(`/knowledge/documents/${documentId}/ocr/enhance`);
 export const uploadKnowledgeAsset = (
   file: File,
   params?: { permission_scope?: string; owner_user_id?: string },

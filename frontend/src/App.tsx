@@ -38,6 +38,7 @@ import AiChatWidget from './components/AiChatWidget';
 import GlobalSearch from './components/GlobalSearch';
 import { useAuthStore } from './stores/authStore';
 import {
+  getCurrentRelease,
   listApplicationMenus,
   listApplications,
   wfApproveOrReject,
@@ -96,6 +97,18 @@ interface ApplicationInfo {
   status: string;
   is_pinned?: boolean;
 }
+
+interface ReleaseInfo {
+  version: string;
+  released_at?: string | null;
+  title?: string;
+  summary?: string;
+  highlights?: string[];
+  details?: string[];
+  show_popup?: boolean;
+}
+
+const RELEASE_SEEN_STORAGE_KEY = 'mf_seen_release_version';
 
 const businessMenuItems: NonNullable<MenuProps['items']> = [
   { key: '/', icon: <HomeOutlined />, label: '我的工作台' },
@@ -385,6 +398,8 @@ function AppContent() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unread, setUnread] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo | null>(null);
+  const [releaseModalOpen, setReleaseModalOpen] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -488,6 +503,26 @@ function AppContent() {
     const interval = setInterval(loadNotifications, 60000);
     return () => clearInterval(interval);
   }, [loadNotifications]);
+
+  useEffect(() => {
+    getCurrentRelease()
+      .then((res) => {
+        const release = res.data;
+        if (!release?.version || release.show_popup === false) return;
+        const seenVersion = localStorage.getItem(RELEASE_SEEN_STORAGE_KEY);
+        if (seenVersion === release.version) return;
+        setReleaseInfo(release);
+        setReleaseModalOpen(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  const acknowledgeRelease = () => {
+    if (releaseInfo?.version) {
+      localStorage.setItem(RELEASE_SEEN_STORAGE_KEY, releaseInfo.version);
+    }
+    setReleaseModalOpen(false);
+  };
 
   const allMenuItems = useMemo<MenuProps['items']>(() => {
     const appItems = dynamicMenus?.length ? unwrapApplicationMenuRoot(dynamicMenus) : businessMenuItems.slice(1);
@@ -771,6 +806,50 @@ function AppContent() {
       <AiChatWidget pageTitle={runtimeTitle} applicationName={currentApplication?.name} />
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      <Modal
+        title={releaseInfo?.title || '版本更新'}
+        open={releaseModalOpen}
+        onCancel={acknowledgeRelease}
+        footer={[
+          <Button key="ok" type="primary" onClick={acknowledgeRelease}>
+            知道了
+          </Button>,
+        ]}
+      >
+        <Space direction="vertical" size={14} style={{ width: '100%' }}>
+          <div>
+            <Typography.Text type="secondary">当前版本</Typography.Text>
+            <Typography.Title level={4} style={{ margin: '4px 0 0' }}>
+              v{releaseInfo?.version}
+            </Typography.Title>
+            {releaseInfo?.released_at && (
+              <Typography.Text type="secondary">发布时间：{releaseInfo.released_at}</Typography.Text>
+            )}
+          </div>
+          {releaseInfo?.summary && <Typography.Paragraph>{releaseInfo.summary}</Typography.Paragraph>}
+          {!!releaseInfo?.highlights?.length && (
+            <div>
+              <Typography.Text strong>本次优化</Typography.Text>
+              <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+                {releaseInfo.highlights.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {!!releaseInfo?.details?.length && (
+            <div>
+              <Typography.Text strong>更新细节</Typography.Text>
+              <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+                {releaseInfo.details.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Space>
+      </Modal>
     </Layout>
   );
 }

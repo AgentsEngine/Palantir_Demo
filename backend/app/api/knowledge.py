@@ -11,25 +11,41 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from pydantic import BaseModel
-from sqlalchemy import desc, select
+from sqlalchemy import delete, desc, select
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from app.api.deps import current_user_id, get_current_user
+from app.api.deps import current_tenant_id, current_user_id, get_current_user
 from app.core.audit import write_audit_log
 from app.core.db import db_session
-from app.models.relational import AIAgentRun, AIConversation, AIMemoryEntry, AIMessage, AIToolCall
+from app.models.relational import (
+    AIAgentRun,
+    AIConversation,
+    AIMemoryEntry,
+    AIMessage,
+    AIToolCall,
+    KnowledgeChunk,
+    KnowledgeDocument,
+)
 from app.services.ai.knowledge_ingestion import (
     CHUNKS as INGESTED_CHUNKS,
     DOCUMENTS as INGESTED_DOCUMENTS,
     JOBS as INGESTION_JOBS,
     ingest_asset,
+    markdown_to_chunks,
     search_ingested_knowledge,
+    update_ocr_corrections,
 )
+from app.services.ai.ocr_service import ocr_extract
+from app.services.ai.memory import memory_service
+from app.services.ai.runtime import agent_runtime
+from app.services.ai.settings import settings_snapshot, settings_to_provider_config
+from app.services.ai.tenant_profile import load_tenant_profile
 from app.services.ai.ontology_extraction import (
     approve_extraction_job,
     commit_extraction_to_graph,
@@ -70,6 +86,10 @@ class ExtractionApproveBody(BaseModel):
     approved_result: dict[str, Any] | None = None
 
 
+class OcrCorrectionBody(BaseModel):
+    blocks: list[dict[str, Any]]
+
+
 class KnowledgeDirectoryCreateBody(BaseModel):
     name: str
     parent_id: str | None = None
@@ -95,35 +115,35 @@ class KnowledgeDirectoryMoveBody(BaseModel):
 KNOWLEDGE_SPACES = [
     {
         "id": "personal",
-        "name": "个人知识库",
+        "name": "Personal knowledge",
         "scope": "private",
-        "owner_role": "知识上传者",
+        "owner_role": "Knowledge uploader",
         "review_required": False,
-        "description": "个人笔记、临时资料和未发布经验，默认只对本人可见。",
+        "description": "Personal notes, temporary material, and unpublished experience visible to the owner by default.",
     },
     {
         "id": "team-quality",
-        "name": "质量团队知识库",
+        "name": "Quality team knowledge",
         "scope": "team",
-        "owner_role": "质量工程师",
+        "owner_role": "Quality engineer",
         "review_required": True,
-        "description": "团队复用的异常经验、复检策略和项目资料。",
+        "description": "Reusable quality exceptions, inspection strategies, and project material for the team.",
     },
     {
         "id": "dept-quality",
-        "name": "质量部门知识库",
+        "name": "Quality department knowledge",
         "scope": "department",
-        "owner_role": "质量经理",
+        "owner_role": "Quality manager",
         "review_required": True,
-        "description": "部门审核后的 SOP、CAPA、质量问题库和处置策略。",
+        "description": "Reviewed SOPs, CAPA material, quality issue libraries, and handling strategies.",
     },
     {
         "id": "enterprise",
-        "name": "企业知识库",
+        "name": "Enterprise knowledge",
         "scope": "enterprise",
-        "owner_role": "平台管理员 / 业务专家",
+        "owner_role": "Platform admin / business expert",
         "review_required": True,
-        "description": "跨部门可复用的正式知识，进入工作台和 AI 辅助层引用。",
+        "description": "Formal cross-department knowledge available to workbench and AI assistant retrieval.",
     },
 ]
 
@@ -168,39 +188,39 @@ KNOWLEDGE_DIRECTORIES = [
 KNOWLEDGE_SOURCES = [
     {
         "id": "quality-sop",
-        "name": "质量 SOP",
+        "name": "Quality SOP",
         "type": "sop",
-        "owner": "质量管理部",
+        "owner": "Quality Management",
         "status": "indexed",
         "document_count": 2,
-        "description": "质量异常、缺陷复核、批次冻结和 CAPA 编写规范。",
+        "description": "Quality exception handling, defect review, batch isolation, and CAPA guidance.",
     },
     {
         "id": "historical-capa",
-        "name": "历史 CAPA",
+        "name": "Historical CAPA",
         "type": "capa",
-        "owner": "质量工程团队",
+        "owner": "Quality Engineering",
         "status": "indexed",
         "document_count": 2,
-        "description": "过往质量异常闭环、根因分析、纠正预防措施和审批记录。",
+        "description": "Past closed-loop quality events, root-cause analysis, and preventive actions.",
     },
     {
-        "id": "supplier-reports",
-        "name": "供应商整改报告",
+        "id": "supplier-evidence",
+        "name": "Supplier evidence",
         "type": "supplier_report",
-        "owner": "采购与供应商质量",
-        "status": "indexed",
+        "owner": "SQE Team",
+        "status": "reviewing",
         "document_count": 1,
-        "description": "供应商提交的 8D、整改说明、批次说明和交付承诺。",
+        "description": "Supplier 8D reports, batch traceability, and delivery commitments.",
     },
     {
         "id": "equipment-logs",
-        "name": "设备日志",
-        "type": "equipment_log",
-        "owner": "设备工程团队",
+        "name": "Equipment logs",
+        "type": "log",
+        "owner": "Equipment Engineering",
         "status": "indexed",
         "document_count": 1,
-        "description": "设备报警、温区波动、维护备注和工程师复核记录。",
+        "description": "Alarm records, temperature drift, maintenance notes, and engineer reviews.",
     },
 ]
 
@@ -209,66 +229,66 @@ KNOWLEDGE_DOCUMENTS = [
     {
         "id": "doc-sop-qe-001",
         "source_id": "quality-sop",
-        "title": "焊点虚焊异常处置 SOP",
+        "title": "Solder void exception handling SOP",
         "doc_type": "SOP",
         "status": "indexed",
         "updated_at": "2026-05-20 18:30",
-        "summary": "定义 AOI 发现焊点虚焊后的复核、批次隔离、CAPA 和客户影响评估动作。",
+        "summary": "Defines AOI review, batch isolation, CAPA, and customer impact assessment after solder void defects are found.",
         "linked_objects": [
-            {"type": "QualityEvent", "id": "QE-20260521-001", "name": "电控模块焊点虚焊异常"},
-            {"type": "Defect", "id": "defect-001", "name": "焊点虚焊"},
+            {"type": "QualityEvent", "id": "QE-20260521-001", "name": "AOI solder void event"},
+            {"type": "WorkOrder", "id": "workorder-260521-017", "name": "WO-260521-017"},
+            {"type": "Equipment", "id": "equipment-smt-03", "name": "SMT-03 reflow oven"},
         ],
     },
     {
         "id": "doc-capa-052",
         "source_id": "historical-capa",
-        "title": "CAPA-052 焊锡膏储存异常复盘",
+        "title": "CAPA-052 solder paste storage exception review",
         "doc_type": "CAPA",
         "status": "indexed",
-        "updated_at": "2026-04-12 16:10",
-        "summary": "历史 CAPA 记录显示焊锡膏冷藏运输和回温时间异常会显著提高虚焊风险。",
+        "updated_at": "2026-05-18 16:10",
+        "summary": "Historical CAPA shows cold-chain and warm-up time issues can increase solder void risk.",
         "linked_objects": [
-            {"type": "CAPA", "id": "capa-052", "name": "CAPA-052"},
-            {"type": "MaterialBatch", "id": "material-batch-mb-7781", "name": "MB-7781 / 焊锡膏 S12"},
+            {"type": "Supplier", "id": "supplier-s-023", "name": "North Star Electronic Materials"},
+            {"type": "MaterialBatch", "id": "batch-mb-7781", "name": "MB-7781 solder paste"},
         ],
     },
     {
-        "id": "doc-supplier-bc-8d",
-        "source_id": "supplier-reports",
-        "title": "北辰电子材料 8D 整改报告",
+        "id": "doc-supplier-8d-7781",
+        "source_id": "supplier-evidence",
+        "title": "North Star material batch 8D rectification report",
         "doc_type": "SupplierReport",
-        "status": "indexed",
-        "updated_at": "2026-05-18 10:45",
-        "summary": "供应商说明同批次焊锡膏存在冷链温度记录缺口，承诺补充批次追溯和运输温控证明。",
+        "status": "reviewing",
+        "updated_at": "2026-05-19 11:45",
+        "summary": "Supplier report states that MB-7781 lacks complete cold-chain temperature records and needs supplemental traceability evidence.",
         "linked_objects": [
-            {"type": "Supplier", "id": "supplier-s-023", "name": "北辰电子材料"},
-            {"type": "MaterialBatch", "id": "material-batch-mb-7781", "name": "MB-7781 / 焊锡膏 S12"},
+            {"type": "Supplier", "id": "supplier-s-023", "name": "North Star Electronic Materials"},
+            {"type": "MaterialBatch", "id": "batch-mb-7781", "name": "MB-7781 solder paste"},
         ],
     },
     {
-        "id": "doc-equipment-smt-03",
+        "id": "doc-equipment-log-smt03",
         "source_id": "equipment-logs",
-        "title": "SMT-03 回流焊温区 5 波动记录",
+        "title": "SMT-03 reflow oven zone 5 fluctuation record",
         "doc_type": "EquipmentLog",
         "status": "indexed",
         "updated_at": "2026-05-21 09:35",
-        "summary": "设备日志显示温区 5 在异常前 20 分钟有轻微偏移，建议工程师复核温控曲线。",
+        "summary": "Equipment log shows slight drift in zone 5 before the abnormal event; engineer review is recommended.",
         "linked_objects": [
-            {"type": "Equipment", "id": "equipment-smt-03", "name": "SMT-03 回流焊"},
+            {"type": "Equipment", "id": "equipment-smt-03", "name": "SMT-03 reflow oven"},
             {"type": "WorkOrder", "id": "workorder-260521-017", "name": "WO-260521-017"},
         ],
     },
     {
         "id": "doc-customer-risk",
         "source_id": "quality-sop",
-        "title": "客户交付风险沟通规范",
-        "doc_type": "SOP",
+        "title": "Customer delivery risk communication standard",
+        "doc_type": "Guideline",
         "status": "indexed",
-        "updated_at": "2026-05-10 14:00",
-        "summary": "当质量异常影响客户订单时，应先确认替代批次，再由销售或客服发出交付风险说明。",
+        "updated_at": "2026-05-21 14:00",
+        "summary": "When quality exceptions affect customer orders, confirm substitute batches and delivery commitments before external communication.",
         "linked_objects": [
-            {"type": "CustomerOrder", "id": "order-so-8821", "name": "SO-8821 / 华东客户"},
-            {"type": "QualityEvent", "id": "QE-20260521-001", "name": "电控模块焊点虚焊异常"},
+            {"type": "CustomerOrder", "id": "co-202605-889", "name": "Customer order CO-202605-889"},
         ],
     },
 ]
@@ -276,199 +296,138 @@ KNOWLEDGE_DOCUMENTS = [
 
 KNOWLEDGE_CARDS = [
     {
-        "id": "card-solder-void",
-        "space_id": "dept-quality",
-        "title": "焊点虚焊处理策略",
-        "status": "published",
-        "owner": "质量经理",
-        "reviewer": "质量体系负责人",
-        "updated_at": "2026-05-21 10:20",
-        "scenario": "AOI 连续发现 BGA 区域焊点虚焊，缺陷率超过管控线。",
-        "guidance": [
-            "冻结同批次物料和在制品，避免继续投入生产。",
-            "发起 BGA 区域复检，并把同班次工单纳入抽查范围。",
-            "检查回流炉温区曲线和焊锡膏储运记录。",
-            "若缺陷重复出现，生成 CAPA 并进入质量审批。",
-        ],
-        "risk_notes": [
-            "不要在供应商温控证明未补齐前释放同仓储批次。",
-            "客户订单受影响时，先确认替代批次再承诺交期。",
-        ],
-        "evidence_refs": [
-            {"document_id": "doc-sop-qe-001", "source_ref": "焊点虚焊异常处置 SOP / 第 2-3 节"},
-            {"document_id": "doc-capa-052", "source_ref": "CAPA-052 / 根因分析与纠正预防措施"},
-        ],
-        "linked_objects": [
-            {"type": "QualityEvent", "id": "QE-20260521-001", "name": "电控模块焊点虚焊异常"},
-            {"type": "Defect", "id": "defect-001", "name": "焊点虚焊"},
-            {"type": "MaterialBatch", "id": "material-batch-mb-7781", "name": "MB-7781 / 焊锡膏 S12"},
-            {"type": "Equipment", "id": "equipment-smt-03", "name": "SMT-03 回流焊"},
-        ],
-        "backlinks": ["card-supplier-batch-risk", "card-reflow-zone-check"],
-    },
-    {
-        "id": "card-supplier-batch-risk",
-        "space_id": "dept-quality",
-        "title": "供应商批次风险判断",
-        "status": "published",
-        "owner": "SQE 主管",
-        "reviewer": "采购质量经理",
-        "updated_at": "2026-05-20 15:35",
-        "scenario": "供应商报告、来料记录或批次追溯显示温控、运输或仓储证据缺口。",
-        "guidance": [
-            "隔离同批次和同仓储风险物料。",
-            "通知采购和 SQE 补充供应商 8D / 温控证明。",
-            "提高后续来料抽检比例，并与质量事件建立关联。",
-        ],
-        "risk_notes": [
-            "供应商整改报告处于 reviewing 状态时，只能作为处置参考，不能替代正式放行依据。",
-        ],
-        "evidence_refs": [
-            {"document_id": "doc-supplier-bc-8d", "source_ref": "北辰电子材料 8D 整改报告 / D4"},
-            {"document_id": "doc-capa-052", "source_ref": "CAPA-052 / 纠正预防措施"},
-        ],
-        "linked_objects": [
-            {"type": "Supplier", "id": "supplier-s-023", "name": "北辰电子材料"},
-            {"type": "MaterialBatch", "id": "material-batch-mb-7781", "name": "MB-7781 / 焊锡膏 S12"},
-        ],
-        "backlinks": ["card-solder-void"],
-    },
-    {
-        "id": "card-reflow-zone-check",
+        "id": "card-welding-sop",
         "space_id": "team-quality",
-        "title": "回流焊温区异常排查",
-        "status": "reviewing",
-        "owner": "设备工程师",
-        "reviewer": "设备主管",
-        "updated_at": "2026-05-21 09:50",
-        "scenario": "质量异常前后设备日志出现温区偏移、未停机报警或工程师维护备注。",
-        "guidance": [
-            "拉取异常前后 30 分钟温控曲线。",
-            "比对同班次工单和首件复检记录。",
-            "必要时创建设备检查任务并暂停同线同批次继续生产。",
+        "title": "Solder void exception handling SOP",
+        "tags": ["quality", "APS", "solder"],
+        "status": "pending_review",
+        "summary": "Defines review, isolation, CAPA, supplier verification, and customer impact assessment actions.",
+        "owner": "Quality system owner",
+        "reviewer": "Quality manager",
+        "scenario": "AOI finds continuous solder voids above the control threshold.",
+        "steps": [
+            "Freeze same-batch materials and WIP.",
+            "Start BGA area reinspection and include same-shift work orders.",
+            "Check reflow temperature profile and solder paste storage records.",
+            "Generate CAPA draft when repeated defects appear.",
         ],
-        "risk_notes": [
-            "轻微偏移未触发停机时，也要与缺陷率和物料批次共同判断。",
+        "guardrails": [
+            "Do not release same-batch inventory before supplier evidence is complete.",
+            "Confirm substitute batches before committing delivery dates.",
         ],
         "evidence_refs": [
-            {"document_id": "doc-equipment-smt-03", "source_ref": "SMT-03 设备日志 / 09:12-09:35"},
+            {"document_id": "doc-sop-qe-001", "source_ref": "SOP section 2-3"},
+            {"document_id": "doc-capa-052", "source_ref": "CAPA-052 root cause"},
         ],
         "linked_objects": [
-            {"type": "Equipment", "id": "equipment-smt-03", "name": "SMT-03 回流焊"},
-            {"type": "WorkOrder", "id": "workorder-260521-017", "name": "WO-260521-017"},
+            {"type": "QualityEvent", "id": "QE-20260521-001", "name": "AOI solder void event"},
+            {"type": "Equipment", "id": "equipment-smt-03", "name": "SMT-03 reflow oven"},
         ],
-        "backlinks": ["card-solder-void"],
-    },
-]
-
-
-DATA_CLEANING_CANDIDATES = [
-    {
-        "text": "北辰电子材料",
-        "object_type": "Supplier",
-        "object_id": "supplier-s-023",
-        "object_name": "北辰电子材料",
-        "confidence": 0.96,
-        "match_type": "exact",
-        "alias": ["北辰材料", "Beichen", "SUP-BEICHEN"],
+        "created_at": "2026-05-20 18:30",
+        "updated_at": "2026-05-20 18:30",
     },
     {
-        "text": "MB-7781",
-        "object_type": "MaterialBatch",
-        "object_id": "material-batch-mb-7781",
-        "object_name": "MB-7781 / 焊锡膏 S12",
-        "confidence": 0.94,
-        "match_type": "batch_code",
-        "alias": ["焊锡膏 S12", "S12 锡膏"],
-    },
-    {
-        "text": "SMT-03",
-        "object_type": "Equipment",
-        "object_id": "equipment-smt-03",
-        "object_name": "SMT-03 回流焊",
-        "confidence": 0.91,
-        "match_type": "equipment_code",
-        "alias": ["三号回流炉", "SMT03"],
-    },
-    {
-        "text": "焊点虚焊",
-        "object_type": "Defect",
-        "object_id": "defect-001",
-        "object_name": "焊点虚焊",
-        "confidence": 0.88,
-        "match_type": "semantic",
-        "alias": ["空焊", "虚焊", "BGA 焊接不良"],
-    },
-    {
-        "text": "WO-260521-017",
-        "object_type": "WorkOrder",
-        "object_id": "workorder-260521-017",
-        "object_name": "WO-260521-017",
-        "confidence": 0.86,
-        "match_type": "workorder_code",
-        "alias": ["电控模块 V2 工单"],
+        "id": "card-supplier-risk",
+        "space_id": "team-quality",
+        "title": "Supplier batch risk decision",
+        "tags": ["supplier", "8D", "batch"],
+        "status": "indexed",
+        "summary": "Use supplier 8D, traceability gaps, and incoming inspection strategy to judge batch risk.",
+        "owner": "SQE team",
+        "reviewer": "Quality engineer",
+        "scenario": "Supplier evidence shows missing temperature or storage records.",
+        "steps": [
+            "Isolate same-batch and same-storage-risk materials.",
+            "Ask SQE to supplement 8D and temperature evidence.",
+            "Increase subsequent incoming inspection ratio.",
+        ],
+        "guardrails": [
+            "Reviewing supplier evidence is only a reference and cannot replace official release criteria.",
+        ],
+        "evidence_refs": [
+            {"document_id": "doc-capa-052", "source_ref": "CAPA-052 preventive actions"},
+            {"document_id": "doc-supplier-8d-7781", "source_ref": "Supplier 8D report"},
+        ],
+        "linked_objects": [
+            {"type": "Supplier", "id": "supplier-s-023", "name": "North Star Electronic Materials"},
+            {"type": "MaterialBatch", "id": "batch-mb-7781", "name": "MB-7781 solder paste"},
+        ],
+        "created_at": "2026-05-21 10:30",
+        "updated_at": "2026-05-21 10:30",
     },
 ]
 
 
 OCR_PIPELINE_STEPS = [
-    {"key": "upload", "title": "资料上传", "owner": "上传者", "description": "接入 PDF、图片、扫描件、Excel 或外部系统附件。"},
-    {"key": "ocr", "title": "OCR 与版面识别", "owner": "系统", "description": "提取文字、表格、页眉页脚、签名区，并标记低置信度字段。"},
-    {"key": "extract", "title": "实体抽取", "owner": "系统 / AI", "description": "识别供应商、物料批次、设备、工单、缺陷、客户订单等业务实体。"},
-    {"key": "match", "title": "主数据匹配", "owner": "数据管理员", "description": "与 ERP、MES、QMS、设备台账和本体对象匹配，处理别名与重复项。"},
-    {"key": "draft", "title": "知识条目草稿", "owner": "AI + 上传者", "description": "编译成 Obsidian 风格 Markdown 知识条目，保留证据来源。"},
-    {"key": "review", "title": "审核发布", "owner": "业务负责人", "description": "确认内容、对象绑定、权限范围后发布到团队/部门/企业知识库。"},
+    {"key": "upload", "title": "Upload", "owner": "Knowledge owner", "description": "Upload Word, PDF, Markdown, Excel, image, or OCR material."},
+    {"key": "ocr", "title": "OCR and parsing", "owner": "System / AI", "description": "Normalize files into markdown text and structured blocks."},
+    {"key": "extract", "title": "Entity extraction", "owner": "System / AI", "description": "Identify suppliers, batches, equipment, work orders, defects, and customer orders."},
+    {"key": "match", "title": "Master-data matching", "owner": "Data steward", "description": "Match aliases to ERP, MES, QMS, equipment master, and ontology objects."},
+    {"key": "draft", "title": "Draft knowledge card", "owner": "AI + business reviewer", "description": "Create markdown-style knowledge cards for review and publication."},
 ]
 
 
 KNOWLEDGE_CHUNKS = [
     {
-        "id": "chunk-sop-qe-001-1",
+        "chunk_id": "chunk-sop-001",
         "document_id": "doc-sop-qe-001",
-        "source_ref": "焊点虚焊异常处置 SOP / 第 2 节",
-        "chunk_text": "AOI 连续发现焊点虚焊且缺陷率超过 2.0% 管控线时，应立即触发质量异常事件，并由质量经理确认影响范围。",
+        "source_ref": "SOP section 2",
+        "chunk_text": "When AOI continuously finds solder void defects above 2.0%, trigger a quality exception event and confirm the affected scope with the quality manager.",
+        "tags": ["quality", "AOI", "solder"],
     },
     {
-        "id": "chunk-sop-qe-001-2",
+        "chunk_id": "chunk-sop-002",
         "document_id": "doc-sop-qe-001",
-        "source_ref": "焊点虚焊异常处置 SOP / 第 3 节",
-        "chunk_text": "处置顺序建议为：冻结风险物料批次，发起复检，生成 CAPA 草稿，通知采购确认供应商批次风险。",
+        "source_ref": "SOP section 3",
+        "chunk_text": "Recommended handling sequence: freeze risk batches, start reinspection, create CAPA draft, and ask purchasing to verify supplier batch risk.",
+        "tags": ["CAPA", "supplier", "batch"],
     },
     {
-        "id": "chunk-capa-052-1",
+        "chunk_id": "chunk-capa-052-001",
         "document_id": "doc-capa-052",
-        "source_ref": "CAPA-052 / 根因分析",
-        "chunk_text": "历史案例 CAPA-052 显示，焊锡膏冷藏运输温度异常、回温时间不足和开封后暴露时间过长，均会增加焊点虚焊概率。",
+        "source_ref": "CAPA-052 root cause",
+        "chunk_text": "Cold-chain transport temperature exceptions, insufficient warm-up time, and long exposure after opening all increase solder void probability.",
+        "tags": ["CAPA", "cold-chain", "solder paste"],
     },
     {
-        "id": "chunk-capa-052-2",
+        "chunk_id": "chunk-capa-052-002",
         "document_id": "doc-capa-052",
-        "source_ref": "CAPA-052 / 纠正预防措施",
-        "chunk_text": "纠正措施包括补充冷链记录、限制开封后使用时长、增加首件复检频率，并要求供应商提供批次温控证明。",
+        "source_ref": "CAPA-052 preventive actions",
+        "chunk_text": "Corrective actions include supplementing cold-chain records, limiting post-opening use duration, increasing first-piece review frequency, and requesting supplier temperature evidence.",
+        "tags": ["corrective action", "supplier"],
     },
     {
-        "id": "chunk-supplier-bc-1",
-        "document_id": "doc-supplier-bc-8d",
-        "source_ref": "北辰电子材料 8D 整改报告 / D4",
-        "chunk_text": "北辰电子材料承认 MB-7781 批次存在运输温控记录缺口，建议先冻结该批次待判定库存并补充供应商复核。",
+        "chunk_id": "chunk-supplier-8d-001",
+        "document_id": "doc-supplier-8d-7781",
+        "source_ref": "Supplier 8D report",
+        "chunk_text": "The supplier confirms that MB-7781 lacks complete transport temperature records; freeze the batch until additional traceability evidence is provided.",
+        "tags": ["8D", "supplier", "MB-7781"],
     },
     {
-        "id": "chunk-equipment-smt-03-1",
-        "document_id": "doc-equipment-smt-03",
-        "source_ref": "SMT-03 设备日志 / 09:12-09:35",
-        "chunk_text": "SMT-03 回流焊温区 5 在 09:12 后出现轻微偏移，虽然未触发停机，但建议创建设备检查任务并复核温控曲线。",
+        "chunk_id": "chunk-equipment-001",
+        "document_id": "doc-equipment-log-smt03",
+        "source_ref": "Equipment log 09:12",
+        "chunk_text": "SMT-03 reflow oven zone 5 showed slight drift after 09:12. Although no stop alarm was triggered, an equipment inspection task and temperature profile review are recommended.",
+        "tags": ["equipment", "temperature"],
     },
     {
-        "id": "chunk-customer-risk-1",
+        "chunk_id": "chunk-customer-risk-001",
         "document_id": "doc-customer-risk",
-        "source_ref": "客户交付风险沟通规范 / 第 1 节",
-        "chunk_text": "当异常影响客户订单时，应在质量经理确认隔离范围后，由销售确认替代批次和交付承诺，不建议直接承诺原交期。",
+        "source_ref": "Customer communication standard section 1",
+        "chunk_text": "When an exception affects customer orders, sales should confirm substitute batches and delivery commitments after quality confirms the isolation scope.",
+        "tags": ["customer", "delivery"],
     },
 ]
-
-
 def _document_by_id(document_id: str) -> dict[str, Any]:
+    if document_id == "doc-welding-sop":
+        document_id = "doc-sop-qe-001"
     return next(item for item in KNOWLEDGE_DOCUMENTS if item["id"] == document_id)
+
+
+def _canonical_document_id(document_id: str | None) -> str | None:
+    if document_id == "doc-welding-sop":
+        return "doc-sop-qe-001"
+    return document_id
 
 
 def _source_by_id(source_id: str) -> dict[str, Any]:
@@ -616,10 +575,36 @@ def _serialize_run(row: AIAgentRun) -> dict[str, Any]:
     }
 
 
+async def _persist_document_and_chunks(document: dict[str, Any]) -> None:
+    try:
+        async with db_session() as session:
+            row = await session.scalar(select(KnowledgeDocument).where(KnowledgeDocument.document_id == document["document_id"]))
+            if row:
+                row.markdown_content = document["markdown_content"]
+                row.ocr_result = document.get("ocr_result")
+                row.status = document.get("status", row.status)
+            await session.execute(delete(KnowledgeChunk).where(KnowledgeChunk.document_id == document["document_id"]))
+            for chunk in [item for item in INGESTED_CHUNKS.values() if item["document_id"] == document["document_id"]]:
+                session.add(KnowledgeChunk(
+                    chunk_id=chunk["chunk_id"],
+                    document_id=chunk["document_id"],
+                    title=chunk["title"],
+                    chunk_text=chunk["chunk_text"],
+                    embedding=chunk.get("embedding"),
+                    source_location=chunk["source_location"],
+                    permission_scope=chunk["permission_scope"],
+                    status=chunk["status"],
+                ))
+            await session.commit()
+    except Exception:
+        pass
+
+
 def _search_knowledge_payload(
     query: str,
     *,
     limit: int = 5,
+    document_id: str | None = None,
     object_type: str | None = None,
     object_id: str | None = None,
 ) -> list[dict[str, Any]]:
@@ -636,6 +621,9 @@ def _search_knowledge_payload(
         if score <= 0:
             continue
         chunk = KNOWLEDGE_CHUNKS[index]
+        canonical_document_id = _canonical_document_id(document_id)
+        if canonical_document_id and chunk["document_id"] != canonical_document_id:
+            continue
         document = _document_by_id(chunk["document_id"])
         if not _matches_object(document, object_type, object_id):
             continue
@@ -647,6 +635,37 @@ def _search_knowledge_payload(
             break
 
     return results[: max(1, min(limit, 10))]
+
+
+def _document_context_payload(document_id: str | None) -> list[dict[str, Any]]:
+    document_id = _canonical_document_id(document_id)
+    if not document_id:
+        return []
+    try:
+        document = _document_by_id(document_id)
+    except StopIteration:
+        return []
+    chunks = [chunk for chunk in KNOWLEDGE_CHUNKS if chunk["document_id"] == document_id]
+    if chunks:
+        return [_chunk_payload(chunk, 1.0) for chunk in chunks]
+    return [
+        {
+            "document_id": document["id"],
+            "document_title": document["title"],
+            "document_type": document["doc_type"],
+            "document_summary": document["summary"],
+            "snippet": document["summary"],
+            "source_location": document["title"],
+            "linked_objects": document.get("linked_objects", []),
+            "score": 1.0,
+        }
+    ]
+
+
+def _is_identity_question(query: str) -> bool:
+    normalized = query.strip().lower()
+    identity_terms = ["你是谁", "who are you", "介绍自己", "你的身份", "你能做什么"]
+    return any(term in normalized for term in identity_terms)
 
 
 def _knowledge_agent_answer(
@@ -670,6 +689,26 @@ def _knowledge_agent_answer(
     return (
         f"我已记录这次关于《{title}》的追问{history_hint}。当前知识库没有检索到强匹配证据，"
         "建议先补充文档片段或切换到抽取结果页确认候选实体。"
+    )
+
+
+async def _generate_knowledge_agent_answer(
+    *,
+    query: str,
+    title: str,
+    evidence: list[dict[str, Any]],
+    history: list[AIMessage],
+    tenant_profile=None,
+    memory: list[dict[str, Any]] | None = None,
+) -> tuple[str, str, dict[str, Any]]:
+    return await agent_runtime.answer_knowledge(
+        query=query,
+        title=title,
+        evidence=evidence,
+        history=history,
+        tenant_profile=tenant_profile,
+        provider_config=settings_to_provider_config(settings_snapshot()),
+        memory=memory or [],
     )
 
 
@@ -771,7 +810,7 @@ async def create_or_resume_agent_conversation(
 ):
     user_key = _user_key(user)
     document_id = body.document_id or "general"
-    title = body.document_title or "知识助手对话"
+    title = body.document_title or "Knowledge assistant conversation"
     page = body.page or "knowledge-center"
     async with db_session() as session:
         existing = await session.scalar(
@@ -834,7 +873,9 @@ async def list_agent_messages(
     user: dict = Depends(get_current_user),
 ):
     user_key = _user_key(user)
+    tenant_id = current_tenant_id(user)
     async with db_session() as session:
+        tenant_profile = await load_tenant_profile(tenant_id, session=session)
         conversation = await session.scalar(
             select(AIConversation).where(
                 AIConversation.conversation_id == conversation_id,
@@ -864,7 +905,9 @@ async def send_agent_message(
         raise HTTPException(status_code=400, detail="Message content cannot be empty")
 
     user_key = _user_key(user)
+    tenant_id = current_tenant_id(user)
     async with db_session() as session:
+        tenant_profile = await load_tenant_profile(tenant_id, session=session)
         conversation = await session.scalar(
             select(AIConversation).where(
                 AIConversation.conversation_id == conversation_id,
@@ -882,7 +925,23 @@ async def send_agent_message(
                 .limit(12)
             )
         ).scalars().all()
-        evidence = _search_knowledge_payload(content, limit=5)
+        evidence = _search_knowledge_payload(content, limit=5, document_id=conversation.document_id)
+        if not evidence or any(term in content for term in ["document", "content", "contains", "summary", "summarize", "what is"]):
+            by_id = {item.get("id") or item.get("chunk_id") or item.get("source_location"): item for item in evidence}
+            for item in _document_context_payload(conversation.document_id):
+                key = item.get("id") or item.get("chunk_id") or item.get("source_location")
+                by_id.setdefault(key, item)
+            evidence = list(by_id.values())[:5]
+        memory_context = await memory_service.retrieve_context(
+            session,
+            tenant_id=tenant_id,
+            user_key=user_key,
+            conversation_id=conversation_id,
+            page=conversation.page,
+            document_id=conversation.document_id,
+            query=content,
+            limit=6,
+        )
         run_id = f"run-{uuid.uuid4().hex[:12]}"
         user_message = AIMessage(
             message_id=f"msg-{uuid.uuid4().hex[:12]}",
@@ -892,11 +951,13 @@ async def send_agent_message(
             evidence=[],
             status="completed",
         )
-        answer = _knowledge_agent_answer(
+        answer, model_name, usage = await _generate_knowledge_agent_answer(
             query=content,
             title=conversation.title,
             evidence=evidence,
             history=list(reversed(history)),
+            tenant_profile=tenant_profile,
+            memory=memory_context,
         )
         assistant_message = AIMessage(
             message_id=f"msg-{uuid.uuid4().hex[:12]}",
@@ -904,15 +965,15 @@ async def send_agent_message(
             role="assistant",
             content=answer,
             evidence=evidence,
-            model_name="knowledge-agent-v1",
-            usage={"mode": "local_agent_runtime", "history_messages": len(history), "evidence_count": len(evidence)},
+            model_name=model_name,
+            usage=usage,
             status="completed",
         )
         steps = [
             {"id": "step-context", "type": "observe", "status": "completed", "summary": conversation.title},
             {"id": "step-history", "type": "memory", "status": "completed", "message_count": len(history)},
             {"id": "step-knowledge-search", "type": "tool", "tool": "knowledge.search", "status": "completed", "result_count": len(evidence)},
-            {"id": "step-answer", "type": "respond", "status": "completed", "model": "knowledge-agent-v1"},
+            {"id": "step-answer", "type": "respond", "status": "completed", "model": model_name, "mode": usage.get("mode")},
         ]
         run = AIAgentRun(
             run_id=run_id,
@@ -939,14 +1000,16 @@ async def send_agent_message(
             status="completed",
             duration_ms=0,
         )
-        memory = AIMemoryEntry(
-            memory_id=f"mem-{uuid.uuid4().hex[:12]}",
-            conversation_id=conversation_id,
-            scope="conversation",
-            key="last_agent_turn",
-            value={"last_user_message": content, "last_answer": answer, "evidence_count": len(evidence)},
-            summary=answer[:300],
-            status="active",
+        memory = await memory_service.append_turn_memory(
+            session,
+            conversation=conversation,
+            run=run,
+            user_message=user_message,
+            assistant_message=assistant_message,
+            evidence=evidence,
+            tenant_id=tenant_id,
+            user_key=user_key,
+            status="candidate",
         )
         conversation.last_message = content
         conversation.metadata_json = {**(conversation.metadata_json or {}), "last_run_id": run_id}
@@ -996,6 +1059,8 @@ async def list_documents(source_id: str | None = None):
             "status": item["status"],
             "updated_at": item["updated_at"],
             "summary": f"Uploaded knowledge asset: {item['source_file_name']}",
+            "ocr_status": "ready" if item.get("ocr_result") else None,
+            "ocr_result": item.get("ocr_result"),
             "linked_objects": [],
         }
         for item in INGESTED_DOCUMENTS.values()
@@ -1120,6 +1185,49 @@ async def get_document_markdown(document_id: str):
     }
 
 
+@router.get("/documents/{document_id}/ocr")
+async def get_document_ocr(document_id: str):
+    ingested = INGESTED_DOCUMENTS.get(document_id)
+    if not ingested:
+        raise HTTPException(status_code=404, detail="OCR result not found")
+    ocr_result = ingested.get("ocr_result")
+    if not ocr_result:
+        raise HTTPException(status_code=404, detail="OCR result not found")
+    return {"data": {"document_id": document_id, **ocr_result}}
+
+
+@router.put("/documents/{document_id}/ocr/corrections")
+async def save_document_ocr_corrections(document_id: str, body: OcrCorrectionBody):
+    document = update_ocr_corrections(document_id, body.blocks)
+    if not document:
+        raise HTTPException(status_code=404, detail="OCR document not found")
+    await _persist_document_and_chunks(document)
+    return {"data": {"document_id": document_id, **(document.get("ocr_result") or {})}, "ok": True}
+
+
+@router.post("/documents/{document_id}/ocr/enhance")
+async def enhance_document_ocr(document_id: str):
+    document = INGESTED_DOCUMENTS.get(document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="OCR document not found")
+    source_path = document.get("source_path")
+    if not source_path or not Path(source_path).exists():
+        raise HTTPException(status_code=404, detail="Original source file is not available for OCR enhancement")
+    try:
+        content = Path(source_path).read_bytes()
+        ocr_result = ocr_extract(document["source_file_name"], content, force_vision=True)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    document["ocr_result"] = ocr_result
+    document["markdown_content"] = ocr_result["markdown_content"]
+    for chunk_id in [chunk_id for chunk_id, chunk in INGESTED_CHUNKS.items() if chunk["document_id"] == document_id]:
+        INGESTED_CHUNKS.pop(chunk_id, None)
+    for chunk in markdown_to_chunks(document["markdown_content"], document_id, document["permission_scope"]):
+        INGESTED_CHUNKS[chunk["chunk_id"]] = chunk
+    await _persist_document_and_chunks(document)
+    return {"data": {"document_id": document_id, **ocr_result}, "ok": True}
+
+
 @router.get("/documents/{document_id}/chunks")
 async def list_document_chunks(document_id: str):
     if document_id in INGESTED_DOCUMENTS:
@@ -1220,7 +1328,7 @@ async def search_knowledge(body: KnowledgeSearchBody):
     return {
         "data": {
             "query": query,
-            "answer": "已根据本地知识库检索到相关 SOP、历史 CAPA 或供应商证据，MVP 阶段返回候选引用，由业务用户确认后再进入流程。",
+            "answer": "瀹稿弶鐗撮幑顔芥拱閸︽壆鐓＄拠鍡楃氨濡偓缁便垹鍩岄惄绋垮彠 SOP閵嗕礁宸婚崣?CAPA 閹存牔绶垫惔鏂挎櫌鐠囦焦宓侀敍瀛P 闂冭埖顔屾潻鏂挎礀閸婃瑩鈧绱╅悽顭掔礉閻㈠彉绗熼崝锛勬暏閹撮鈥樼拋銈呮倵閸愬秷绻橀崗銉︾ウ缁嬪鈧?",
             "results": _search_knowledge_payload(
                 query,
                 limit=body.limit,

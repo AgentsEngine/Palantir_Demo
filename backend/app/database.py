@@ -131,6 +131,7 @@ async def init_db():
     from app.models.relational import Base
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await _ensure_sqlite_ai_memory_columns(conn)
     logger.info("SQLite schema ensured")
 
     from sqlalchemy import func, select
@@ -232,3 +233,45 @@ async def _seed_sqlite(session: AsyncSession) -> None:
 
     # Build Neo4j graph from seed data
     await _build_graph_from_seed()
+
+
+async def _ensure_sqlite_ai_memory_columns(conn) -> None:
+    """Patch old demo SQLite schemas that predate expanded AI memory metadata."""
+    from sqlalchemy import text
+
+    existing = await conn.execute(text("PRAGMA table_info(ai_memory_entries)"))
+    columns = {row[1] for row in existing.fetchall()}
+    if not columns:
+        return
+
+    definitions = {
+        "tenant_id": "INTEGER",
+        "user_key": "VARCHAR(100)",
+        "page": "VARCHAR(100)",
+        "document_id": "VARCHAR(100)",
+        "run_id": "VARCHAR(100)",
+        "user_message_id": "VARCHAR(100)",
+        "assistant_message_id": "VARCHAR(100)",
+        "source_type": "VARCHAR(80)",
+        "source_id": "VARCHAR(200)",
+        "memory_type": "VARCHAR(80) NOT NULL DEFAULT 'turn_summary'",
+        "content": "TEXT",
+        "tags": "JSON NOT NULL DEFAULT '[]'",
+        "importance_score": "FLOAT NOT NULL DEFAULT 0",
+        "confidence": "FLOAT NOT NULL DEFAULT 0",
+        "visibility": "VARCHAR(50) NOT NULL DEFAULT 'private'",
+        "sensitivity": "VARCHAR(50) NOT NULL DEFAULT 'normal'",
+        "redaction_status": "VARCHAR(50) NOT NULL DEFAULT 'clean'",
+        "expires_at": "DATETIME",
+        "last_accessed_at": "DATETIME",
+        "access_count": "INTEGER NOT NULL DEFAULT 0",
+        "pinned": "BOOLEAN NOT NULL DEFAULT 0",
+        "content_hash": "VARCHAR(128)",
+        "version": "INTEGER NOT NULL DEFAULT 1",
+        "vault_path": "VARCHAR(500)",
+        "exported_at": "DATETIME",
+        "export_checksum": "VARCHAR(128)",
+    }
+    for column_name, definition in definitions.items():
+        if column_name not in columns:
+            await conn.execute(text(f"ALTER TABLE ai_memory_entries ADD COLUMN {column_name} {definition}"))

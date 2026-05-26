@@ -17,6 +17,12 @@ from app.services.ai.orchestrator import run_agent
 from app.services.ai.policies import decide_ai_permission, decide_skill_permission
 from app.services.ai.providers import ProviderConfigurationError
 from app.services.ai.schemas import AIProviderConfig, AgentRequest, ChatMessage, ChatOptions, DraftSaveRequest
+from app.services.ai.settings import (
+    AI_SYSTEM_SETTINGS,
+    DEFAULT_ROLE_POLICIES,
+    mask_settings as _mask_settings,
+    settings_to_provider_config as _settings_to_provider_config,
+)
 from app.services.ai.skills import list_skills
 from app.services.ai.tool_registry import list_tools
 
@@ -47,97 +53,7 @@ class AgentRunConfirmRequest(BaseModel):
     confirmed: bool = True
 
 
-DEFAULT_ROLE_POLICIES = [
-    {
-        "role": "admin",
-        "enabled": True,
-        "capabilities": ["qa", "rag", "business_query", "report", "draft", "save_draft", "workflow", "config"],
-        "domains": ["production", "quality", "maintenance", "supply-chain", "workflow", "low-code"],
-        "agentMode": "save_after_confirm",
-    },
-    {
-        "role": "production_manager",
-        "enabled": True,
-        "capabilities": ["qa", "rag", "business_query", "report", "draft", "save_draft", "workflow"],
-        "domains": ["production", "maintenance", "workflow"],
-        "agentMode": "save_after_confirm",
-    },
-    {
-        "role": "quality_engineer",
-        "enabled": True,
-        "capabilities": ["qa", "rag", "business_query", "report", "draft", "save_draft"],
-        "domains": ["quality"],
-        "agentMode": "save_after_confirm",
-    },
-    {
-        "role": "maintenance_manager",
-        "enabled": True,
-        "capabilities": ["qa", "rag", "business_query", "report", "draft", "save_draft"],
-        "domains": ["maintenance"],
-        "agentMode": "save_after_confirm",
-    },
-    {
-        "role": "supply_chain_manager",
-        "enabled": True,
-        "capabilities": ["qa", "rag", "business_query", "report", "draft", "save_draft"],
-        "domains": ["supply-chain"],
-        "agentMode": "save_after_confirm",
-    },
-    {
-        "role": "viewer",
-        "enabled": True,
-        "capabilities": ["qa", "rag", "report"],
-        "domains": ["production", "quality", "maintenance", "supply-chain"],
-        "agentMode": "readonly",
-    },
-]
-
-
-AI_SYSTEM_SETTINGS = {
-    "aiEnabled": True,
-    "provider": "glm",
-    "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
-    "apiKey": "",
-    "chatModel": "glm-4-flash",
-    "reasoningModel": "glm-4-plus",
-    "embeddingModel": "embedding-3",
-    "visionModel": "glm-4v-plus",
-    "agentMode": "draft",
-    "ragEnabled": True,
-    "guestAccess": "disabled",
-    "rolePolicies": DEFAULT_ROLE_POLICIES,
-    "riskPolicy": {
-        "low": "allow",
-        "medium": "confirm",
-        "high": "confirm_and_audit",
-        "critical": "blocked",
-    },
-    "forbiddenActions": ["auto_order", "delete_data", "change_permission"],
-}
-
 AI_DRAFT_STORE: dict[str, dict] = {}
-
-
-def _settings_to_provider_config(settings_data: dict) -> AIProviderConfig:
-    return AIProviderConfig(
-        provider=settings_data.get("provider") or "glm",
-        base_url=settings_data.get("baseUrl") or settings_data.get("base_url") or "",
-        api_key=settings_data.get("apiKey") or settings_data.get("api_key") or "",
-        organization=settings_data.get("organization") or "",
-        project=settings_data.get("project") or "",
-        chat_model=settings_data.get("chatModel") or settings_data.get("chat_model") or "glm-4-flash",
-        reasoning_model=settings_data.get("reasoningModel") or settings_data.get("reasoning_model") or "glm-4-plus",
-        embedding_model=settings_data.get("embeddingModel") or settings_data.get("embedding_model") or "embedding-3",
-        vision_model=settings_data.get("visionModel") or settings_data.get("vision_model") or "glm-4v-plus",
-        timeout_seconds=int(settings_data.get("timeoutSeconds") or settings_data.get("timeout_seconds") or 30),
-    )
-
-
-def _mask_settings(settings_data: dict) -> dict:
-    masked = {**settings_data}
-    if masked.get("apiKey"):
-        masked["apiKey"] = "********"
-    return masked
 
 
 def _roles_for_demo_user(user: dict) -> list[dict]:
@@ -506,7 +422,11 @@ async def get_ai_settings():
 @router.put("/settings")
 async def update_ai_settings(body: AISettingsRequest):
     """Update backend-owned AI system settings for the demo runtime."""
-    merged = {**AI_SYSTEM_SETTINGS, **body.settings}
+    incoming_settings = {**body.settings}
+    if incoming_settings.get("apiKey") == "********" or incoming_settings.get("api_key") == "********":
+        incoming_settings.pop("apiKey", None)
+        incoming_settings.pop("api_key", None)
+    merged = {**AI_SYSTEM_SETTINGS, **incoming_settings}
     merged.setdefault("guestAccess", "disabled")
     merged.setdefault("rolePolicies", DEFAULT_ROLE_POLICIES)
     merged.setdefault("riskPolicy", {"low": "allow", "medium": "confirm", "high": "confirm_and_audit", "critical": "blocked"})

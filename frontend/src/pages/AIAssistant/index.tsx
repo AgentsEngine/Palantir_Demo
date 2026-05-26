@@ -22,7 +22,13 @@ import {
   DatabaseOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { sendChat, smartAnalyze } from '@/services/api';
+import {
+  DEFAULT_PUBLIC_TENANT_PROFILE,
+  getPublicTenantProfile,
+  sendChat,
+  smartAnalyze,
+  type PublicTenantProfile,
+} from '@/services/api';
 
 const { Text, Title, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -54,26 +60,42 @@ const QUICK_QUERIES = [
   '最近 24 小时质量缺陷统计',
 ];
 
+const buildWelcomeMessage = (assistantName: string) =>
+  `您好！我是 ${assistantName} 助手，可以帮您查询数据、分析生产状况、预测设备风险和提供优化建议。请问有什么可以帮您的？`;
+
 export default function AIAssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
+  const [tenantProfile, setTenantProfile] = useState<PublicTenantProfile>(DEFAULT_PUBLIC_TENANT_PROFILE);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionIdRef = useRef<string>(`session_${Date.now()}`);
+  const assistantDisplayName = tenantProfile.assistantName || `${tenantProfile.productName} AI`;
 
   useEffect(() => {
-    // Welcome message
-    setMessages([
-      {
-        id: 'welcome',
-        role: 'assistant',
-        content:
-          '您好！我是 ManuFoundry AI 助手，可以帮您查询数据、分析生产状况、预测设备风险和提供优化建议。请问有什么可以帮您的？',
-        timestamp: new Date().toLocaleTimeString('zh-CN'),
-        intent: 'general',
-      },
-    ]);
+    let active = true;
+    getPublicTenantProfile().then((profile) => {
+      if (active) setTenantProfile(profile);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length > 1 || (prev.length === 1 && prev[0].id !== 'welcome')) return prev;
+      return [
+        {
+          id: 'welcome',
+          role: 'assistant',
+          content: buildWelcomeMessage(assistantDisplayName),
+          timestamp: new Date().toLocaleTimeString('zh-CN'),
+          intent: 'general',
+        },
+      ];
+    });
+  }, [assistantDisplayName]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

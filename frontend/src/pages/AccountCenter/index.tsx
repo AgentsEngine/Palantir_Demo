@@ -61,8 +61,8 @@ const AI_SETTINGS_STORAGE_KEY = 'mf_ai_assistant_settings';
 const GLM_AI_DEFAULTS = {
   provider: 'glm',
   baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-  chatModel: 'glm-4-flash',
-  reasoningModel: 'glm-4-plus',
+  chatModel: 'glm-5.1',
+  reasoningModel: 'glm-5.1',
   embeddingModel: 'embedding-3',
   visionModel: 'glm-4v-plus',
 };
@@ -549,10 +549,6 @@ function AIPlatformPanelV2() {
   const currentChatModel = watchedSettings.chatModel || defaultSettings.chatModel;
   const currentReasoningModel = watchedSettings.reasoningModel || defaultSettings.reasoningModel;
   const currentEmbeddingModel = watchedSettings.embeddingModel || defaultSettings.embeddingModel;
-  const aiEnabled = watchedSettings.aiEnabled !== false;
-  const hasApiKey = Boolean(watchedSettings.apiKey);
-  const ragEnabled = Boolean(watchedSettings.ragEnabled);
-  const auditEnabled = watchedSettings.auditEnabled !== false;
   const activeDomains = watchedSettings.domains || defaultSettings.domains;
   const activeTools = watchedSettings.tools || defaultSettings.tools;
   const rolePolicies = watchedSettings.rolePolicies || defaultSettings.rolePolicies;
@@ -603,32 +599,6 @@ function AIPlatformPanelV2() {
     <div className="account-admin-section">
       <Form form={form} layout="vertical" initialValues={{ ...defaultSettings, ...savedSettings }} className="ai-platform-form">
         <div className="ai-platform-console">
-          <section className="ai-platform-hero">
-            <div>
-              <Text className="ai-platform-kicker">AI Platform Control Plane</Text>
-              <Title level={4}>统一管理模型接入、Agent 能力、知识检索和安全边界</Title>
-              <Text type="secondary">这里决定平台是否能真正调用模型；知识库中心、页面助手和业务 Agent 都从这里继承配置。</Text>
-            </div>
-            <div className="ai-platform-status-strip">
-              <div className="ai-status-tile">
-                <span>服务状态</span>
-                <Tag color={aiEnabled ? (hasApiKey ? 'green' : 'gold') : 'default'}>{aiEnabled ? (hasApiKey ? '可调用' : '待填写 Key') : '已关闭'}</Tag>
-              </div>
-              <div className="ai-status-tile">
-                <span>Provider</span>
-                <strong>{String(currentProvider).toUpperCase()}</strong>
-              </div>
-              <div className="ai-status-tile">
-                <span>知识增强</span>
-                <Tag color={ragEnabled ? 'blue' : 'default'}>{ragEnabled ? '启用' : '未启用'}</Tag>
-              </div>
-              <div className="ai-status-tile">
-                <span>审计</span>
-                <Tag color={auditEnabled ? 'cyan' : 'default'}>{auditEnabled ? '记录中' : '关闭'}</Tag>
-              </div>
-            </div>
-          </section>
-
           <div className="ai-platform-workbench">
             <aside className="ai-platform-side">
               <Card size="small" title="模型服务接入" className="account-panel-card ai-connection-card">
@@ -669,6 +639,7 @@ function AIPlatformPanelV2() {
                         <div className="ai-tab-grid">
                           <Form.Item name="chatModel" label="默认聊天模型">
                             <Select options={[
+                              { label: 'glm-5.1', value: 'glm-5.1' },
                               { label: 'glm-4-flash', value: 'glm-4-flash' },
                               { label: 'glm-4-plus', value: 'glm-4-plus' },
                               { label: 'gpt-4o-mini', value: 'gpt-4o-mini' },
@@ -679,6 +650,7 @@ function AIPlatformPanelV2() {
                           </Form.Item>
                           <Form.Item name="reasoningModel" label="推理 / Agent 模型">
                             <Select options={[
+                              { label: 'glm-5.1', value: 'glm-5.1' },
                               { label: 'glm-4-plus', value: 'glm-4-plus' },
                               { label: 'glm-4v-plus', value: 'glm-4v-plus' },
                               { label: 'gpt-4o', value: 'gpt-4o' },

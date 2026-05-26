@@ -99,6 +99,7 @@ from app.api import (  # noqa: E402
     pipeline,
     productization,
     quality,
+    release,
     reports,
     rules,
     scheduler,
@@ -106,6 +107,7 @@ from app.api import (  # noqa: E402
     semantic_assets,
     supply_chain,
     templates,
+    tenant,
     workflow,
 )
 
@@ -133,6 +135,7 @@ app.include_router(maintenance.router, prefix="/api/v1/maintenance", tags=["预�
 app.include_router(quality.router, prefix="/api/v1/quality", tags=["质量管理"])
 app.include_router(supply_chain.router, prefix="/api/v1/supply-chain", tags=["供应链"])
 app.include_router(ai_assistant.router, prefix="/api/v1/ai", tags=["AI助手"])
+app.include_router(tenant.router, prefix="/api/v1/tenant", tags=["tenant"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["运营总览"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["报表中心"])
 app.include_router(model_driven.router, prefix="/api/v1/model-driven", tags=["模型驱动"])
@@ -140,6 +143,7 @@ app.include_router(rules.router, prefix="/api/v1/rules", tags=["校验规则"])
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["通知"])
 app.include_router(templates.router, prefix="/api/v1/templates", tags=["模板市场"])
 app.include_router(config_io.router, prefix="/api/v1/config", tags=["配置管理"])
+app.include_router(release.router, prefix="/api/v1/release", tags=["release"])
 
 # Phase 4 — Scheduler, Search, AI Builder
 app.include_router(scheduler.router, prefix="/api/v1/scheduler", tags=["定时任务"])

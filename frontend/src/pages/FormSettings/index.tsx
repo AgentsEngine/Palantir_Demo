@@ -2696,9 +2696,10 @@ export default function FormSettingsPage() {
               <div className="permission-overview">
                 <div>
                   <strong>{baseConfig.name}权限配置</strong>
-                  <span>当前角色：{activePermissionRole}</span>
+                  <span>角色、动作、字段、数据范围集中配置</span>
                 </div>
                 <Space size={8}>
+                  <Tag color="processing">当前：{activePermissionRole}</Tag>
                   <Tag color="blue">{baseConfig.fields.length} 个字段</Tag>
                   <Tag color="green">{permissionRoles.length} 个角色</Tag>
                   <Button size="small" type="primary" icon={<SaveOutlined />}>保存权限</Button>
@@ -2714,6 +2715,7 @@ export default function FormSettingsPage() {
                     </div>
                     <Tag>{permissionRoles.length}</Tag>
                   </div>
+                  <Input size="small" prefix={<SearchOutlined />} placeholder="搜索角色" />
                   {permissionRoles.map((role, index) => (
                     <button
                       className={`permission-role-card ${role === activePermissionRole ? 'permission-role-active' : ''}`}
@@ -2726,6 +2728,7 @@ export default function FormSettingsPage() {
                         <strong>{role}</strong>
                         <small>{role === activePermissionRole ? '正在配置' : index === 0 ? '管理员策略' : '点击切换'}</small>
                       </span>
+                      <Tag color={role === activePermissionRole ? 'blue' : 'default'}>{index === 0 ? '全局' : '业务'}</Tag>
                     </button>
                   ))}
                 </aside>
@@ -2739,7 +2742,10 @@ export default function FormSettingsPage() {
                       </div>
                       <Tag color="green">6 / 8 已启用</Tag>
                     </div>
-                    <div className="permission-action-list">
+                    <div className="permission-action-table">
+                      <div className="permission-action-head">
+                        <span>动作</span><span>说明</span><span>状态</span>
+                      </div>
                       {[
                         ['查看', true, '基础访问'],
                         ['新增', true, '创建记录'],
@@ -2751,33 +2757,10 @@ export default function FormSettingsPage() {
                         ['审批', true, '流程处理'],
                       ].map(([name, enabled, desc]) => (
                         <button className={`permission-action ${enabled ? 'permission-action-on' : 'permission-action-off'}`} key={name as string} type="button">
-                          <CheckCircleOutlined />
                           <span>{name}</span>
                           <small>{desc}</small>
+                          <Tag color={enabled ? 'green' : 'default'}>{enabled ? '允许' : '关闭'}</Tag>
                         </button>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section className="permission-card permission-field-card">
-                    <div className="permission-card-head">
-                      <div>
-                        <div className="permission-section-title">字段权限</div>
-                        <span>按角色控制字段可见、可编辑和必填</span>
-                      </div>
-                      <Button size="small">批量设置</Button>
-                    </div>
-                    <div className="permission-field-matrix">
-                      <div className="permission-field-head">
-                        <span>字段</span><span>可见</span><span>可编辑</span><span>必填</span>
-                      </div>
-                      {baseConfig.fields.map((field, index) => (
-                        <div className="permission-field-row" key={field.key}>
-                          <span>{field.name}</span>
-                          <Tag color="green">可见</Tag>
-                          <Tag color={field.locked ? 'default' : 'blue'}>{field.locked ? '锁定' : index < 2 ? '可编辑' : '只读'}</Tag>
-                          <Tag color={field.required ? 'orange' : 'default'}>{field.required ? '必填' : '可选'}</Tag>
-                        </div>
                       ))}
                     </div>
                   </section>
@@ -2809,10 +2792,33 @@ export default function FormSettingsPage() {
                       <div className="permission-summary-list">
                         <div><strong>应用</strong><span>{baseConfig.appName}</span></div>
                         <div><strong>表单</strong><span>{baseConfig.name}</span></div>
-                        <div><strong>发布状态</strong><Tag color="orange">草稿</Tag></div>
+                        <div><strong>状态</strong><Tag color="orange">草稿</Tag></div>
                       </div>
                     </section>
                   </aside>
+
+                  <section className="permission-card permission-field-card">
+                    <div className="permission-card-head">
+                      <div>
+                        <div className="permission-section-title">字段权限</div>
+                        <span>按角色控制字段可见、可编辑和必填</span>
+                      </div>
+                      <Button size="small">批量设置</Button>
+                    </div>
+                    <div className="permission-field-matrix">
+                      <div className="permission-field-head">
+                        <span>字段</span><span>可见</span><span>可编辑</span><span>必填</span>
+                      </div>
+                      {baseConfig.fields.map((field, index) => (
+                        <div className="permission-field-row" key={field.key}>
+                          <span>{field.name}</span>
+                          <Tag color="green">可见</Tag>
+                          <Tag color={field.locked ? 'default' : 'blue'}>{field.locked ? '锁定' : index < 2 ? '可编辑' : '只读'}</Tag>
+                          <Tag color={field.required ? 'orange' : 'default'}>{field.required ? '必填' : '可选'}</Tag>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
                 </div>
               </div>
             </div>

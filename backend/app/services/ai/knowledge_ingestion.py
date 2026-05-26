@@ -19,6 +19,13 @@ from typing import Any
 import pandas as pd
 
 from .providers import _stable_embedding
+from .ocr_service import (
+    extract_pdf_text,
+    ocr_extract,
+    ocr_markdown_from_blocks,
+    save_original_asset,
+    source_type_for_file,
+)
 
 
 ASSETS: dict[str, dict[str, Any]] = {}
@@ -32,16 +39,7 @@ def _now() -> str:
 
 
 def _source_type(file_name: str) -> str:
-    suffix = Path(file_name).suffix.lower()
-    if suffix in {".md", ".markdown", ".txt"}:
-        return "markdown"
-    if suffix in {".xlsx", ".xls"}:
-        return "excel"
-    if suffix == ".pdf":
-        return "pdf"
-    if suffix in {".png", ".jpg", ".jpeg", ".webp", ".bmp"}:
-        return "image"
-    return "unknown"
+    return source_type_for_file(file_name)
 
 
 def markdown_to_chunks(markdown: str, document_id: str, permission_scope: str = "enterprise") -> list[dict[str, Any]]:
@@ -90,43 +88,68 @@ def parse_excel(file_name: str, content: bytes) -> str:
 
 
 def parse_pdf(file_name: str, content: bytes) -> str:
-    try:
-        from pypdf import PdfReader
-    except Exception as exc:  # pragma: no cover - depends on optional import
-        raise RuntimeError("PDF parser dependency pypdf is not installed") from exc
-
-    reader = PdfReader(io.BytesIO(content))
-    parts = [f"# {file_name}", ""]
-    for page_index, page in enumerate(reader.pages, start=1):
-        text = page.extract_text() or ""
-        if text.strip():
-            parts.extend([f"## Page {page_index}", "", text.strip(), ""])
-    if len(parts) <= 2:
-        raise RuntimeError("No extractable PDF text; OCR/vision is required")
-    return "\n".join(parts)
+    return extract_pdf_text(file_name, content)
 
 
 def parse_image(file_name: str, content: bytes) -> str:
     if not content:
         raise RuntimeError("Image file is empty")
-    return (
-        f"# {file_name}\n\n"
-        "Image OCR/vision extraction placeholder. Configure a vision model such as GLM vision or another provider "
-        "to extract text and visual descriptions from this image."
-    )
+    return ocr_extract(file_name, content)["markdown_content"]
+
+
+def parse_to_markdown_with_metadata(file_name: str, content: bytes) -> tuple[str, str, dict[str, Any]]:
+    source_type = _source_type(file_name)
+    metadata: dict[str, Any] = {}
+    if source_type == "markdown":
+        return source_type, parse_markdown(file_name, content), metadata
+    if source_type == "excel":
+        return source_type, parse_excel(file_name, content), metadata
+    if source_type == "pdf":
+        try:
+            return source_type, parse_pdf(file_name, content), metadata
+        except RuntimeError as exc:
+            if "OCR/vision is required" not in str(exc):
+                raise
+            ocr_result = ocr_extract(file_name, content)
+            metadata["ocr_result"] = ocr_result
+            return source_type, ocr_result["markdown_content"], metadata
+    if source_type == "image":
+        ocr_result = ocr_extract(file_name, content)
+        metadata["ocr_result"] = ocr_result
+        return source_type, ocr_result["markdown_content"], metadata
+    raise RuntimeError(f"Unsupported knowledge file type: {Path(file_name).suffix or 'unknown'}")
 
 
 def parse_to_markdown(file_name: str, content: bytes) -> tuple[str, str]:
-    source_type = _source_type(file_name)
-    if source_type == "markdown":
-        return source_type, parse_markdown(file_name, content)
-    if source_type == "excel":
-        return source_type, parse_excel(file_name, content)
-    if source_type == "pdf":
-        return source_type, parse_pdf(file_name, content)
-    if source_type == "image":
-        return source_type, parse_image(file_name, content)
-    raise RuntimeError(f"Unsupported knowledge file type: {Path(file_name).suffix or 'unknown'}")
+    source_type, markdown, _metadata = parse_to_markdown_with_metadata(file_name, content)
+    return source_type, markdown
+
+
+def update_ocr_corrections(document_id: str, blocks: list[dict[str, Any]]) -> dict[str, Any] | None:
+    document = DOCUMENTS.get(document_id)
+    if not document:
+        return None
+    ocr_result = dict(document.get("ocr_result") or {})
+    existing_by_id = {str(block.get("id") or index): block for index, block in enumerate(ocr_result.get("blocks") or [])}
+    next_blocks = []
+    for index, block in enumerate(blocks):
+        block_id = str(block.get("id") or index)
+        merged = {**existing_by_id.get(block_id, {}), **block}
+        if merged.get("corrected_text"):
+            merged["status"] = "corrected"
+        next_blocks.append(merged)
+    if not next_blocks:
+        next_blocks = ocr_result.get("blocks") or []
+    ocr_result["blocks"] = next_blocks
+    ocr_result["markdown_content"] = ocr_markdown_from_blocks(document["source_file_name"], next_blocks)
+    document["ocr_result"] = ocr_result
+    document["markdown_content"] = ocr_result["markdown_content"]
+    for chunk_id in [chunk_id for chunk_id, chunk in CHUNKS.items() if chunk["document_id"] == document_id]:
+        CHUNKS.pop(chunk_id, None)
+    for chunk in markdown_to_chunks(document["markdown_content"], document_id, document["permission_scope"]):
+        CHUNKS[chunk["chunk_id"]] = chunk
+    document["updated_at"] = _now()
+    return document
 
 
 def ingest_asset(
@@ -160,7 +183,8 @@ def ingest_asset(
     }
 
     try:
-        source_type, markdown = parse_to_markdown(file_name, content)
+        source_path = save_original_asset(file_name, content)
+        source_type, markdown, metadata = parse_to_markdown_with_metadata(file_name, content)
         document = {
             "asset_id": asset_id,
             "document_id": document_id,
@@ -168,8 +192,10 @@ def ingest_asset(
             "source_type": source_type,
             "title": Path(file_name).stem,
             "markdown_content": markdown,
+            "ocr_result": metadata.get("ocr_result"),
             "permission_scope": permission_scope,
             "owner_user_id": owner_user_id,
+            "source_path": source_path,
             "status": "indexed",
             "created_at": created_at,
             "updated_at": _now(),

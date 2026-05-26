@@ -10,6 +10,11 @@ import {
   SendOutlined,
 } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
+import {
+  DEFAULT_PUBLIC_TENANT_PROFILE,
+  getPublicTenantProfile,
+  type PublicTenantProfile,
+} from '@/services/api';
 import './style.css';
 
 type ChatRole = 'assistant' | 'user';
@@ -311,9 +316,11 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [tenantProfile, setTenantProfile] = useState<PublicTenantProfile>(DEFAULT_PUBLIC_TENANT_PROFILE);
   const [floatingPosition, setFloatingPosition] = useState(DEFAULT_FLOATING_POSITION);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number; dragging: boolean } | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const assistantDisplayName = tenantProfile.assistantName || `${tenantProfile.productName} AI`;
 
   const pageContext = useMemo(
     () => buildPageContext(location.pathname, pageTitle),
@@ -321,6 +328,16 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   );
 
   const storageKey = `${STORAGE_PREFIX}${location.pathname}`;
+
+  useEffect(() => {
+    let active = true;
+    getPublicTenantProfile().then((profile) => {
+      if (active) setTenantProfile(profile);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem(POSITION_STORAGE_KEY);
@@ -446,7 +463,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
             <div>
               <Space size={8} align="center">
                 <RobotOutlined />
-                <Typography.Text strong>ManuFoundry AI</Typography.Text>
+                <Typography.Text strong>{assistantDisplayName}</Typography.Text>
               </Space>
               <Typography.Text type="secondary">
                 基于当前页面：{pageContext.title}

@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     APP_NAME: str = "ManuFoundry"
-    APP_VERSION: str = "0.2.0"
+    APP_VERSION: str = "0.3.0"
     APP_MODE: str = "demo"
     DEBUG: bool = True
 
@@ -49,11 +49,12 @@ class Settings(BaseSettings):
     AI_PROVIDER: str = "glm"
     AI_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
     AI_API_KEY: str = ""
-    AI_CHAT_MODEL: str = "glm-4-flash"
-    AI_REASONING_MODEL: str = "glm-4-plus"
+    AI_CHAT_MODEL: str = "glm-5.1"
+    AI_REASONING_MODEL: str = "glm-5.1"
     AI_EMBEDDING_MODEL: str = "embedding-3"
     AI_VISION_MODEL: str = "glm-4v-plus"
     AI_TIMEOUT_SECONDS: int = 30
+    KNOWLEDGE_STORAGE_DIR: str = "storage/knowledge_assets"
 
     @property
     def IS_PRODUCTION(self) -> bool:

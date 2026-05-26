@@ -2530,10 +2530,10 @@
 .permission-canvas {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-height: auto;
-  padding: 12px;
-  background: #f6f8fa;
+  padding: 10px;
+  background: #f5f7f9;
 }
 
 .permission-overview {
@@ -2541,7 +2541,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 14px;
+  padding: 8px 10px;
   border: 1px solid #dce3ea;
   border-radius: 8px;
   background: #ffffff;
@@ -2555,7 +2555,7 @@
 
 .permission-overview strong {
   color: #172026;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .permission-overview span {
@@ -2565,8 +2565,8 @@
 
 .permission-workbench {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 8px;
   min-height: 0;
 }
 
@@ -2580,8 +2580,8 @@
 .permission-role-rail {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
+  gap: 6px;
+  padding: 8px;
   align-self: start;
   max-height: calc(100vh - 260px);
   overflow: auto;
@@ -2610,9 +2610,9 @@
 .permission-role-card {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   width: 100%;
-  padding: 9px;
+  padding: 7px;
   border: 1px solid #e4eaf0;
   border-radius: 8px;
   background: #fbfcfd;
@@ -2631,9 +2631,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   background: #e7f2f6;
   color: #2f6678;
 }
@@ -2660,12 +2660,12 @@
   grid-template-areas:
     "actions side"
     "fields side";
-  gap: 12px;
+  gap: 8px;
   align-items: start;
 }
 
 .permission-card {
-  padding: 12px;
+  padding: 8px;
 }
 
 .permission-action-card {
@@ -2683,24 +2683,43 @@
   gap: 12px;
 }
 
-.permission-action-list {
+.permission-action-table {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
+  border: 1px solid #e4eaf0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.permission-action-head,
+.permission-action {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 72px;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.permission-action-head {
+  background: #f3f6f8;
+  color: #4d5d67;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .permission-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 8px 10px;
-  border: 1px solid #e4eaf0;
-  border-radius: 8px;
-  background: #fbfcfd;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #edf1f5;
+  border-radius: 0;
+  background: #ffffff;
   text-align: left;
   cursor: pointer;
+}
+
+.permission-action:last-child {
+  border-bottom: 0;
 }
 
 .permission-action span {
@@ -2710,7 +2729,6 @@
 }
 
 .permission-action small {
-  margin-left: auto;
   color: #7a8995;
   font-size: 11px;
 }
@@ -2720,8 +2738,7 @@
 }
 
 .permission-action-on {
-  border-color: #cfe6d7;
-  background: #f4fbf6;
+  background: #fbfffc;
 }
 
 .permission-action-on .anticon {
@@ -2739,15 +2756,15 @@
 
 .permission-scope-grid {
   display: grid;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .permission-scope-grid div {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #edf1f5;
   border-radius: 8px;
   background: #fbfcfd;
@@ -2764,7 +2781,7 @@
 }
 
 .permission-field-matrix {
-  margin-top: 10px;
+  margin-top: 8px;
   border: 1px solid #e4eaf0;
   border-radius: 8px;
   overflow: hidden;
@@ -2776,7 +2793,7 @@
   display: grid;
   grid-template-columns: minmax(160px, 1fr) 86px 86px 86px;
   align-items: center;
-  min-height: 34px;
+  min-height: 31px;
   padding: 0 10px;
   border-bottom: 1px solid #edf1f5;
 }
@@ -2793,8 +2810,8 @@
 
 .permission-summary-list {
   display: grid;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .permission-summary-list div {
@@ -2802,8 +2819,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 34px;
-  padding: 8px 10px;
+  min-height: 30px;
+  padding: 6px 8px;
   border: 1px solid #edf1f5;
   border-radius: 8px;
   background: #fbfcfd;

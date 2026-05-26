@@ -35,8 +35,9 @@ from app.services.ai.knowledge_ingestion import (
     DOCUMENTS,
     JOBS,
     markdown_to_chunks,
-    parse_to_markdown,
+    parse_to_markdown_with_metadata,
 )
+from app.services.ai.ocr_service import save_original_asset
 
 logger = get_logger(__name__)
 
@@ -615,8 +616,15 @@ async def persist_ingestion_result(result: dict[str, Any]) -> None:
                         markdown_content=document["markdown_content"],
                         permission_scope=document["permission_scope"],
                         owner_user_id=document.get("owner_user_id"),
+                        source_path=document.get("source_path"),
+                        ocr_result=document.get("ocr_result"),
                         status=document["status"],
                     ))
+                else:
+                    existing_doc.markdown_content = document["markdown_content"]
+                    existing_doc.source_path = document.get("source_path")
+                    existing_doc.ocr_result = document.get("ocr_result")
+                    existing_doc.status = document["status"]
                 for chunk in result.get("chunks") or []:
                     existing_chunk = await session.scalar(
                         select(KnowledgeChunk).where(KnowledgeChunk.chunk_id == chunk["chunk_id"])
@@ -659,7 +667,8 @@ async def create_extraction_job(
     owner_user_id: str = "demo-user",
     permission_scope: str = "enterprise",
 ) -> dict[str, Any]:
-    source_type, markdown = parse_to_markdown(file_name, content)
+    source_path = save_original_asset(file_name, content)
+    source_type, markdown, metadata = parse_to_markdown_with_metadata(file_name, content)
     if source_type not in SUPPORTED_SOURCE_TYPES:
         raise ValueError(f"Unsupported extraction source type: {source_type}")
 
@@ -675,8 +684,10 @@ async def create_extraction_job(
         "source_type": source_type,
         "title": Path(file_name).stem,
         "markdown_content": markdown,
+        "ocr_result": metadata.get("ocr_result"),
         "permission_scope": permission_scope,
         "owner_user_id": owner_user_id,
+        "source_path": source_path,
         "status": "indexed",
         "created_at": _now(),
         "updated_at": _now(),
