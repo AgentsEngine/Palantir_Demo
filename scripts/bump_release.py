@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE_FILE = ROOT / "release.json"
+BACKEND_RELEASE_FILE = ROOT / "backend" / "release.json"
 BACKEND_CONFIG = ROOT / "backend" / "app" / "config.py"
 FRONTEND_PACKAGE = ROOT / "frontend" / "package.json"
 FRONTEND_LOCK = ROOT / "frontend" / "package-lock.json"
@@ -54,6 +55,7 @@ def main() -> None:
         }
     )
     write_json(RELEASE_FILE, release)
+    write_json(BACKEND_RELEASE_FILE, release)
 
     backend_config = BACKEND_CONFIG.read_text(encoding="utf-8")
     backend_config = re.sub(r'APP_VERSION: str = "[^"]+"', f'APP_VERSION: str = "{args.version}"', backend_config)

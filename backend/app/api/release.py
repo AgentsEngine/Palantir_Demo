@@ -11,11 +11,17 @@ from app.config import settings
 router = APIRouter()
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-RELEASE_FILE = PROJECT_ROOT / "release.json"
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+RELEASE_FILES = [
+    PROJECT_ROOT / "release.json",
+    BACKEND_ROOT / "release.json",
+    Path("/app/release.json"),
+]
 
 
 def load_release_info() -> dict[str, Any]:
-    if not RELEASE_FILE.exists():
+    release_path = next((path for path in RELEASE_FILES if path.exists()), None)
+    if release_path is None:
         return {
             "version": settings.APP_VERSION,
             "released_at": None,
@@ -26,7 +32,7 @@ def load_release_info() -> dict[str, Any]:
             "show_popup": False,
         }
 
-    with RELEASE_FILE.open("r", encoding="utf-8") as release_file:
+    with release_path.open("r", encoding="utf-8") as release_file:
         data = json.load(release_file)
 
     data.setdefault("version", settings.APP_VERSION)

@@ -289,7 +289,7 @@ async def chat(body: ChatRequest):
         result = await handler(body.message)
     else:
         result = {
-            "answer": "我是 ManuFoundry AI 助手，可以帮您查询和分析制造数据。您可以问我关于设备健康、OEE、产量、质量、供应链等方面的问题。",
+            "answer": "我是当前平台的 AI 助手，可以帮您查询和分析制造数据。您可以问我关于设备健康、OEE、产量、质量、供应链等方面的问题。",
             "data": None,
         }
 

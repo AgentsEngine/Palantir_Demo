@@ -94,6 +94,10 @@ def should_enhance_with_vision(result: dict[str, Any]) -> bool:
 
 
 def _normalize_bbox(points: Any) -> list[float]:
+    if points is None:
+        return []
+    if hasattr(points, "tolist"):
+        points = points.tolist()
     if not points:
         return []
     if isinstance(points, (list, tuple)) and points and isinstance(points[0], (list, tuple)):
@@ -113,12 +117,32 @@ def _rapidocr_blocks(image: bytes, page_number: int = 1) -> list[dict[str, Any]]
     except Exception as exc:  # pragma: no cover - optional dependency
         raise RuntimeError("OCR dependencies rapidocr and Pillow are not installed") from exc
 
-    image_obj = Image.open(io.BytesIO(image)).convert("RGB")
+    Image.open(io.BytesIO(image)).verify()
     engine = RapidOCR()
-    result = engine(image_obj)
-    raw_items = getattr(result, "boxes", None) or getattr(result, "txts", None)
+    result = engine(image)
     blocks: list[dict[str, Any]] = []
 
+    boxes = getattr(result, "boxes", None)
+    txts = getattr(result, "txts", None)
+    scores = getattr(result, "scores", None)
+    if boxes is not None and txts is not None:
+        for index, (bbox, text, confidence) in enumerate(zip(boxes, txts, scores or []), start=1):
+            if not str(text).strip():
+                continue
+            confidence = float(confidence or 0)
+            blocks.append({
+                "id": f"ocr-{page_number}-{index}",
+                "page_number": page_number,
+                "text": str(text).strip(),
+                "bbox": _normalize_bbox(bbox),
+                "confidence": confidence,
+                "block_type": "text",
+                "status": "low_confidence" if confidence < LOW_CONFIDENCE_THRESHOLD else "recognized",
+                "corrected_text": "",
+            })
+        return blocks
+
+    raw_items: Any = []
     if isinstance(result, tuple) and result:
         raw_items = result[0]
     if hasattr(result, "to_json"):

@@ -1328,7 +1328,7 @@ async def search_knowledge(body: KnowledgeSearchBody):
     return {
         "data": {
             "query": query,
-            "answer": "瀹稿弶鐗撮幑顔芥拱閸︽壆鐓＄拠鍡楃氨濡偓缁便垹鍩岄惄绋垮彠 SOP閵嗕礁宸婚崣?CAPA 閹存牔绶垫惔鏂挎櫌鐠囦焦宓侀敍瀛P 闂冭埖顔屾潻鏂挎礀閸婃瑩鈧绱╅悽顭掔礉閻㈠彉绗熼崝锛勬暏閹撮鈥樼拋銈呮倵閸愬秷绻橀崗銉︾ウ缁嬪鈧?",
+            "answer": "\u5df2\u68c0\u7d22\u5230\u76f8\u5173\u77e5\u8bc6\u8bc1\u636e\u3002\u8bf7\u7ed3\u5408 results \u4e2d\u7684\u6765\u6e90\u3001\u7247\u6bb5\u548c\u5173\u8054\u5bf9\u8c61\u8fdb\u884c\u590d\u6838\u3002",
             "results": _search_knowledge_payload(
                 query,
                 limit=body.limit,
