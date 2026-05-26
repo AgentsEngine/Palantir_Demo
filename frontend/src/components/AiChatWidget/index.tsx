@@ -13,6 +13,7 @@ import { useLocation } from 'react-router-dom';
 import {
   DEFAULT_PUBLIC_TENANT_PROFILE,
   getPublicTenantProfile,
+  sendAgentChat,
   type PublicTenantProfile,
 } from '@/services/api';
 import './style.css';
@@ -53,6 +54,22 @@ interface AiChatWidgetProps {
 interface DemoReply {
   content: string;
   actions?: MockSkillAction[];
+}
+
+interface AgentSkillAction {
+  skill?: string;
+  title?: string;
+  mode?: string;
+  risk_level?: string;
+  requires_confirmation?: boolean;
+  payload?: Record<string, unknown>;
+}
+
+interface AgentChatResponse {
+  answer?: string;
+  actions?: AgentSkillAction[];
+  mode?: string;
+  requires_confirmation?: boolean;
 }
 
 const STORAGE_PREFIX = 'mf_ai_floating_chat:';
@@ -166,6 +183,35 @@ function createAction(skill: string, data: Omit<MockSkillAction, 'id' | 'skill' 
     status: 'draft_created',
     ...data,
   };
+}
+
+function formatActionValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '待补充';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return JSON.stringify(value);
+}
+
+function mapAgentActions(actions?: AgentSkillAction[]): MockSkillAction[] | undefined {
+  if (!actions?.length) return undefined;
+  return actions.map((action) => {
+    const payload = action.payload && typeof action.payload === 'object' ? action.payload : {};
+    return {
+      id: `${action.skill || 'agent-action'}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      skill: action.skill || 'agent.action',
+      title: action.title || '待确认动作',
+      status: 'ready_for_review',
+      summary: action.requires_confirmation
+        ? '该动作需要你确认后才会写入或提交。'
+        : '这是 Agent 基于当前上下文生成的建议动作。',
+      fields: Object.entries(payload).slice(0, 6).map(([label, value]) => ({
+        label,
+        value: formatActionValue(value),
+      })),
+      nextSteps: action.requires_confirmation
+        ? ['复核字段和证据', '确认后再保存草稿或提交流程']
+        : ['按需继续追问或调整建议'],
+    };
+  });
 }
 
 function buildWorkOrderDraft(): MockSkillAction {
@@ -316,6 +362,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sending, setSending] = useState(false);
   const [tenantProfile, setTenantProfile] = useState<PublicTenantProfile>(DEFAULT_PUBLIC_TENANT_PROFILE);
   const [floatingPosition, setFloatingPosition] = useState(DEFAULT_FLOATING_POSITION);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number; dragging: boolean } | null>(null);
@@ -379,17 +426,37 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     localStorage.setItem(storageKey, JSON.stringify(next));
   };
 
-  const sendMessage = (content: string) => {
+  const sendMessage = async (content: string) => {
     const trimmed = content.trim();
-    if (!trimmed) return;
+    if (!trimmed || sending) return;
 
-    const next = [
-      ...messages,
-      createUserMessage(trimmed),
-      createAssistantMessage(generateDemoReply(trimmed, pageContext)),
-    ];
-    persistMessages(next);
+    const userMessage = createUserMessage(trimmed);
+    const pending = [...messages, userMessage];
+    persistMessages(pending);
     setInput('');
+    setSending(true);
+    try {
+      const response = await sendAgentChat({
+        message: trimmed,
+        page: location.pathname,
+        context: {
+          pageTitle: pageContext.title,
+          scope: pageContext.scope,
+          applicationName,
+          route: location.pathname,
+        },
+      });
+      const payload = (response.data ?? {}) as AgentChatResponse;
+      const assistantMessage = createAssistantMessage({
+        content: payload.answer || '我已收到你的问题，但后端没有返回可展示的回答。',
+        actions: mapAgentActions(payload.actions),
+      });
+      persistMessages([...pending, assistantMessage]);
+    } catch {
+      persistMessages([...pending, createAssistantMessage(generateDemoReply(trimmed, pageContext))]);
+    } finally {
+      setSending(false);
+    }
   };
 
   const startNewSession = () => {
@@ -525,11 +592,19 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                 <span>{message.createdAt}</span>
               </div>
             ))}
+            {sending ? (
+              <div className="ai-chat-message assistant">
+                <div className="ai-chat-bubble">
+                  <Typography.Text type="secondary">正在连接 AI Agent...</Typography.Text>
+                </div>
+                <span>{nowText()}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="ai-chat-quick-prompts">
             {pageContext.quickPrompts.map((prompt) => (
-              <Button key={prompt} size="small" onClick={() => sendMessage(prompt)}>
+              <Button key={prompt} size="small" disabled={sending} onClick={() => { void sendMessage(prompt); }}>
                 {prompt}
               </Button>
             ))}
@@ -540,15 +615,16 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
               value={input}
               placeholder="问我当前页面的问题，或让我生成草稿..."
               autoSize={{ minRows: 1, maxRows: 3 }}
+              disabled={sending}
               onChange={(event) => setInput(event.target.value)}
               onPressEnter={(event) => {
                 if (!event.shiftKey) {
                   event.preventDefault();
-                  sendMessage(input);
+                  void sendMessage(input);
                 }
               }}
             />
-            <Button type="primary" icon={<SendOutlined />} onClick={() => sendMessage(input)} />
+            <Button type="primary" icon={<SendOutlined />} loading={sending} onClick={() => { void sendMessage(input); }} />
           </div>
 
           <footer className="ai-chat-footer">

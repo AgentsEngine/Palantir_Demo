@@ -122,6 +122,48 @@ def test_prompt_builder_includes_tenant_context_memory_and_evidence():
     assert "What changed?" in messages[1].content
 
 
+def test_agent_runtime_routes_social_turns_away_from_rag():
+    from app.services.ai.runtime import AgentRuntime
+
+    runtime = AgentRuntime()
+
+    assert runtime.classify_knowledge_intent("你喜欢我吗") == "general"
+    assert runtime.classify_knowledge_intent("你好呀 请问你是谁呀") == "general"
+    assert runtime.classify_knowledge_intent("该文档中都包含什么内容") == "knowledge"
+    assert runtime.classify_knowledge_intent("分析这个 SOP 的风险和 CAPA 关系") == "knowledge"
+
+
+@pytest.mark.asyncio
+async def test_knowledge_answer_social_fallback_stays_conversational():
+    from app.services.ai.runtime import AgentRuntime
+    from app.services.ai.schemas import AIProviderConfig
+    from app.services.ai.tenant_profile import TenantProfile
+
+    profile = TenantProfile(
+        tenant_id=1,
+        slug="demo",
+        display_name="Demo Works",
+        product_name="Demo Platform",
+        assistant_name="Demo Assistant",
+    )
+
+    answer, model_name, usage = await AgentRuntime().answer_knowledge(
+        query="你喜欢我吗",
+        title="焊点虚焊异常处置 SOP",
+        evidence=[],
+        history=[],
+        tenant_profile=profile,
+        provider_config=AIProviderConfig(provider="glm", chat_model="glm-5.1", api_key=""),
+    )
+
+    assert model_name == "knowledge-agent-v1"
+    assert usage["intent"] == "general"
+    assert usage["evidence_count"] == 0
+    assert "当前知识库没有检索到" not in answer
+    assert "补充文档片段" not in answer
+    assert "认真陪你聊" in answer
+
+
 @pytest.mark.asyncio
 async def test_load_tenant_profile_uses_session_tenant_with_safe_fallback():
     from app.services.ai.tenant_profile import load_tenant_profile

@@ -700,6 +700,7 @@ async def _generate_knowledge_agent_answer(
     history: list[AIMessage],
     tenant_profile=None,
     memory: list[dict[str, Any]] | None = None,
+    intent: str | None = None,
 ) -> tuple[str, str, dict[str, Any]]:
     return await agent_runtime.answer_knowledge(
         query=query,
@@ -709,6 +710,7 @@ async def _generate_knowledge_agent_answer(
         tenant_profile=tenant_profile,
         provider_config=settings_to_provider_config(settings_snapshot()),
         memory=memory or [],
+        intent=intent,
     )
 
 
@@ -925,8 +927,11 @@ async def send_agent_message(
                 .limit(12)
             )
         ).scalars().all()
-        evidence = _search_knowledge_payload(content, limit=5, document_id=conversation.document_id)
-        if not evidence or any(term in content for term in ["document", "content", "contains", "summary", "summarize", "what is"]):
+        intent = agent_runtime.classify_knowledge_intent(content)
+        evidence = _search_knowledge_payload(content, limit=5, document_id=conversation.document_id) if intent == "knowledge" else []
+        if intent == "knowledge" and (
+            not evidence or any(term in content for term in ["document", "content", "contains", "summary", "summarize", "what is", "文档", "内容", "包含", "总结", "概括"])
+        ):
             by_id = {item.get("id") or item.get("chunk_id") or item.get("source_location"): item for item in evidence}
             for item in _document_context_payload(conversation.document_id):
                 key = item.get("id") or item.get("chunk_id") or item.get("source_location")
@@ -958,6 +963,7 @@ async def send_agent_message(
             history=list(reversed(history)),
             tenant_profile=tenant_profile,
             memory=memory_context,
+            intent=intent,
         )
         assistant_message = AIMessage(
             message_id=f"msg-{uuid.uuid4().hex[:12]}",
@@ -972,7 +978,13 @@ async def send_agent_message(
         steps = [
             {"id": "step-context", "type": "observe", "status": "completed", "summary": conversation.title},
             {"id": "step-history", "type": "memory", "status": "completed", "message_count": len(history)},
-            {"id": "step-knowledge-search", "type": "tool", "tool": "knowledge.search", "status": "completed", "result_count": len(evidence)},
+            {
+                "id": "step-knowledge-search",
+                "type": "tool",
+                "tool": "knowledge.search",
+                "status": "skipped" if intent == "general" else "completed",
+                "result_count": len(evidence),
+            },
             {"id": "step-answer", "type": "respond", "status": "completed", "model": model_name, "mode": usage.get("mode")},
         ]
         run = AIAgentRun(
