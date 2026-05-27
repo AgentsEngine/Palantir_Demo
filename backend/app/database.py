@@ -133,6 +133,7 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
         await _ensure_sqlite_ai_memory_columns(conn)
         await _ensure_sqlite_system_settings_table(conn)
+        await _ensure_sqlite_knowledge_columns(conn)
     logger.info("SQLite schema ensured")
 
     from sqlalchemy import func, select
@@ -298,3 +299,30 @@ async def _ensure_sqlite_system_settings_table(conn) -> None:
         )
     )
     await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_system_settings_key ON system_settings (key)"))
+
+
+async def _ensure_sqlite_knowledge_columns(conn) -> None:
+    """Patch old demo SQLite schemas with persisted knowledge ingestion fields."""
+    from sqlalchemy import text
+
+    existing = await conn.execute(text("PRAGMA table_info(knowledge_documents)"))
+    document_columns = {row[1] for row in existing.fetchall()}
+    document_definitions = {
+        "ocr_result": "JSON",
+        "owner_user_id": "VARCHAR(100)",
+        "source_path": "VARCHAR(1000)",
+    }
+    for column_name, definition in document_definitions.items():
+        if document_columns and column_name not in document_columns:
+            await conn.execute(text(f"ALTER TABLE knowledge_documents ADD COLUMN {column_name} {definition}"))
+
+    existing = await conn.execute(text("PRAGMA table_info(knowledge_object_links)"))
+    link_columns = {row[1] for row in existing.fetchall()}
+    link_definitions = {
+        "job_id": "VARCHAR(100)",
+        "source_location": "VARCHAR(200)",
+        "status": "VARCHAR(50) NOT NULL DEFAULT 'candidate'",
+    }
+    for column_name, definition in link_definitions.items():
+        if link_columns and column_name not in link_columns:
+            await conn.execute(text(f"ALTER TABLE knowledge_object_links ADD COLUMN {column_name} {definition}"))

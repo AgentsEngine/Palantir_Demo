@@ -18,6 +18,7 @@ def clear_ingested_knowledge():
     from app.services.ai.audit import AI_AUDIT_LOGS
     from app.services.ai.confirmations import CONFIRMATIONS
 
+    _reset_ai_settings_to_defaults()
     for store in (
         knowledge_ingestion.ASSETS,
         knowledge_ingestion.DOCUMENTS,
@@ -29,6 +30,7 @@ def clear_ingested_knowledge():
         store.clear()
     AI_AUDIT_LOGS.clear()
     yield
+    _reset_ai_settings_to_defaults()
     for store in (
         knowledge_ingestion.ASSETS,
         knowledge_ingestion.DOCUMENTS,
@@ -39,6 +41,50 @@ def clear_ingested_knowledge():
     ):
         store.clear()
     AI_AUDIT_LOGS.clear()
+
+
+def _reset_ai_settings_to_defaults():
+    from app.services.ai.settings import (
+        DEFAULT_COMPACTION_POLICY,
+        DEFAULT_CONTEXT_POLICY,
+        DEFAULT_MEMORY_POLICY,
+        DEFAULT_RAG_POLICY,
+        DEFAULT_ROLE_POLICIES,
+        DEFAULT_SAFETY_POLICY,
+        save_persisted_ai_settings,
+    )
+
+    asyncio.run(
+        save_persisted_ai_settings(
+            {
+                "aiEnabled": True,
+                "provider": "glm",
+                "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+                "apiKey": "",
+                "chatModel": "glm-5.1",
+                "reasoningModel": "glm-5.1",
+                "embeddingModel": "embedding-3",
+                "visionModel": "glm-4v-plus",
+                "agentMode": "draft",
+                "ragEnabled": True,
+                "guestAccess": "disabled",
+                "rolePolicies": DEFAULT_ROLE_POLICIES,
+                "riskPolicy": {
+                    "low": "allow",
+                    "medium": "confirm",
+                    "high": "confirm_and_audit",
+                    "critical": "blocked",
+                },
+                "forbiddenActions": ["auto_order", "delete_data", "change_permission"],
+                "contextPolicy": DEFAULT_CONTEXT_POLICY,
+                "ragPolicy": DEFAULT_RAG_POLICY,
+                "memoryPolicy": DEFAULT_MEMORY_POLICY,
+                "compactionPolicy": DEFAULT_COMPACTION_POLICY,
+                "safetyPolicy": DEFAULT_SAFETY_POLICY,
+            },
+            updated_by="test",
+        )
+    )
 
 
 @pytest.fixture()
@@ -143,6 +189,11 @@ def test_saved_ai_settings_default_to_glm_and_can_test_provider(client):
     assert data["chatModel"] == "glm-5.1"
     assert data["embeddingModel"] == "embedding-3"
     assert data["apiKey"] in {"", "********"}
+    assert data["contextPolicy"]["recentMessageLimit"] == 10
+    assert data["memoryPolicy"]["enabled"] is False
+    assert data["compactionPolicy"]["enabled"] is True
+    assert data["ragPolicy"]["topK"] == 5
+    assert data["safetyPolicy"]["blockSecretMemory"] is True
 
     response = client.post("/api/v1/ai/settings/test")
     assert response.status_code == 200
@@ -150,6 +201,27 @@ def test_saved_ai_settings_default_to_glm_and_can_test_provider(client):
     assert payload["provider"] == "glm"
     assert isinstance(payload["ok"], bool)
     assert payload["message"]
+
+
+def test_deepseek_settings_normalize_incompatible_base_url(client):
+    response = client.put(
+        "/api/v1/ai/settings",
+        json={
+            "settings": {
+                "provider": "deepseek",
+                "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+                "chatModel": "deepseek-chat",
+                "reasoningModel": "deepseek-reasoner",
+                "apiKey": "test-key",
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["provider"] == "deepseek"
+    assert data["baseUrl"] == "https://api.deepseek.com"
+    assert data["chatModel"] == "deepseek-chat"
 
 
 def test_agent_endpoint_rejects_guest_by_default(client):
@@ -190,6 +262,131 @@ def test_agent_endpoint_returns_draft_action_with_uploaded_evidence(ai_user_clie
     assert data["steps"]
     assert data["evidence"]
     assert data["evidence"][0]["source_file_name"] == "quality-process.md"
+
+
+def test_agent_endpoint_routes_knowledge_surface_to_rag(ai_user_client):
+    response = ai_user_client.post(
+        "/api/v1/ai/agent",
+        json={
+            "message": "这篇 SOP 讲什么",
+            "context": {
+                "surface": "knowledge",
+                "document_id": "doc-sop-qe-001",
+                "document_title": "焊点虚焊异常处置 SOP",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["mode"] == "qa"
+    assert data["evidence"]
+    assert any(step["id"] == "step-identity" for step in data["steps"])
+    assert any(step["id"] == "step-knowledge-context" for step in data["steps"])
+    assert any(step["id"] == "step-knowledge-search" and step["result_count"] >= 1 for step in data["steps"])
+
+
+def test_agent_context_builder_uses_recent_messages_only(ai_user_client):
+    _ensure_ai_runtime_schema()
+
+    ai_user_client.put("/api/v1/ai/settings", json={"settings": {"contextPolicy": {"recentMessageLimit": 3}}})
+    created = ai_user_client.post(
+        "/api/v1/ai/agent/conversations",
+        json={"title": "Context budget", "page": "/account-center", "context": {"surface": "global"}},
+    )
+    conversation_id = created.json()["data"]["conversation_id"]
+    for index in range(5):
+        response = ai_user_client.post(
+            "/api/v1/ai/agent",
+            json={"message": f"hello {index}", "context": {"conversation_id": conversation_id}},
+        )
+        assert response.status_code == 200
+    final_response = ai_user_client.post(
+        "/api/v1/ai/agent",
+        json={"message": "check context", "context": {"conversation_id": conversation_id}},
+    )
+    assert final_response.status_code == 200
+    context_step = next(step for step in final_response.json()["steps"] if step["id"] == "step-context-builder")
+    assert context_step["sources"]["recent_messages"] == 3
+
+
+def test_memory_compaction_and_user_delete(ai_user_client):
+    _ensure_ai_runtime_schema()
+
+    ai_user_client.put(
+        "/api/v1/ai/settings",
+        json={
+            "settings": {
+                "memoryPolicy": {"enabled": True, "recallLimit": 5},
+                "compactionPolicy": {"enabled": True, "triggerMessageCount": 2, "compactOnClose": True},
+            }
+        },
+    )
+    created = ai_user_client.post(
+        "/api/v1/ai/agent/conversations",
+        json={"title": "Memory test", "page": "/account-center", "context": {"surface": "global"}},
+    )
+    conversation_id = created.json()["data"]["conversation_id"]
+    response = ai_user_client.post(
+        "/api/v1/ai/agent",
+        json={"message": "remember this manufacturing preference", "context": {"conversation_id": conversation_id}},
+    )
+    assert response.status_code == 200
+
+    memories = ai_user_client.get("/api/v1/ai/memories")
+    assert memories.status_code == 200
+    payload = memories.json()["data"]
+    assert payload
+    assert payload[0]["status"] == "active"
+
+    deleted = ai_user_client.delete(f"/api/v1/ai/memories/{payload[0]['memory_id']}")
+    assert deleted.status_code == 200
+    assert deleted.json()["data"]["status"] == "deleted"
+
+
+def test_unified_agent_conversation_persists_messages_and_close(ai_user_client):
+    _ensure_ai_runtime_schema()
+
+    created = ai_user_client.post(
+        "/api/v1/ai/agent/conversations",
+        json={
+            "title": "当前窗口",
+            "page": "/account-center",
+            "document_id": "doc-sop-qe-001",
+            "document_title": "焊点虚焊异常处置 SOP",
+            "context": {"surface": "knowledge", "route": "/account-center"},
+        },
+    )
+    assert created.status_code == 200
+    conversation_id = created.json()["data"]["conversation_id"]
+
+    answered = ai_user_client.post(
+        "/api/v1/ai/agent",
+        json={
+            "message": "这篇 SOP 讲什么",
+            "context": {
+                "surface": "knowledge",
+                "document_id": "doc-sop-qe-001",
+                "document_title": "焊点虚焊异常处置 SOP",
+                "conversation_id": conversation_id,
+            },
+        },
+    )
+    assert answered.status_code == 200
+    payload = answered.json()
+    assert payload["conversation"]["conversation_id"] == conversation_id
+    assert payload["user_message"]["role"] == "user"
+    assert payload["assistant_message"]["role"] == "assistant"
+    assert payload["run"]["conversation_id"] == conversation_id
+    assert payload["run"]["run_id"] == payload["run_id"]
+
+    messages = ai_user_client.get(f"/api/v1/ai/agent/conversations/{conversation_id}/messages")
+    assert messages.status_code == 200
+    assert [item["role"] for item in messages.json()["data"]] == ["user", "assistant"]
+
+    closed = ai_user_client.delete(f"/api/v1/ai/agent/conversations/{conversation_id}")
+    assert closed.status_code == 200
+    assert closed.json()["data"]["status"] == "closed"
 
 
 def test_skill_tool_and_agent_run_lifecycle(ai_user_client):
@@ -321,6 +518,37 @@ def test_excel_upload_is_converted_to_markdown_and_searchable(client):
     assert data["query"] == "M-002 critical rule"
     assert any(item["document_id"] == result["document"]["document_id"] for item in data["results"])
     assert all("source_location" in item for item in data["results"])
+
+
+def test_demo_knowledge_seed_creates_word_excel_pdf_and_searches_database(client):
+    from app.database import init_db
+    from app.services.ai.demo_knowledge_seed import seed_demo_knowledge_assets
+
+    asyncio.run(init_db())
+    result = asyncio.run(seed_demo_knowledge_assets())
+    assert result["chunks"] >= 30
+
+    documents = client.get("/api/v1/knowledge/documents", params={"source_id": "database"})
+    assert documents.status_code == 200
+    payload = documents.json()["data"]
+    source_types = {item["source_type"] for item in payload}
+    assert {"word", "excel", "pdf"}.issubset(source_types)
+
+    markdown = client.get("/api/v1/knowledge/documents/kb-doc-quality-sop-docx/markdown")
+    assert markdown.status_code == 200
+    quality_markdown = markdown.json()["data"]["markdown_content"]
+    assert "QE-20260521-001" in quality_markdown
+    assert "## 5. 标准处置流程" in quality_markdown
+    assert "| 步骤 | 操作 | 时限 | 系统记录 |" in quality_markdown
+
+    search = client.post("/api/v1/knowledge/search", json={"query": "SMT-03 Zone 5 temperature drift WO-260521-017", "limit": 5})
+    assert search.status_code == 200
+    results = search.json()["data"]["results"]
+    assert any(item["document_id"] == "kb-doc-maintenance-log-pdf" for item in results)
+
+    related = client.get("/api/v1/knowledge/related", params={"object_type": "MaterialBatch", "object_id": "MB-7781"})
+    assert related.status_code == 200
+    assert any(item["id"] == "kb-doc-supplier-8d-xlsx" for item in related.json()["data"])
 
 
 def test_image_upload_ocr_result_and_correction_api(client, monkeypatch, tmp_path):

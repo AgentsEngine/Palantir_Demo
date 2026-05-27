@@ -19,6 +19,8 @@ async def lifespan(app: FastAPI):
     try:
         from app.database import init_db
         await init_db()
+        from app.services.ai.demo_knowledge_seed import seed_demo_knowledge_assets
+        await seed_demo_knowledge_assets()
     except Exception as exc:
         logger.warning("DB init skipped: %s", exc)
     yield

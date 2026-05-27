@@ -50,6 +50,7 @@ import {
   enhanceKnowledgeDocumentOcr,
   exportKnowledgeExtractionJob,
   getGraphAssetQuality,
+  getKnowledgeDocumentMarkdown,
   getKnowledgeDocumentOcr,
   getKnowledgeOcrPipeline,
   KnowledgeOcrBlock,
@@ -199,15 +200,52 @@ type KnowledgeDocument = {
   document_id?: string;
   document_title?: string;
   file_name?: string;
+  source_file_name?: string;
   filename?: string;
   mime_type?: string;
   content_type?: string;
   file_type?: string;
+  doc_type?: string;
+  source_type?: string;
+  permission_scope?: string;
+  owner_user_id?: string;
+  linked_objects?: Array<{ type?: string; id?: string; name?: string; object_type?: string; object_id?: string; object_name?: string; confidence?: number; status?: string; source_location?: string }>;
+  markdown_content?: string;
 };
 type KnowledgeCard = { id: string; title: string; scenario?: string; owner?: string; updated_at?: string };
-type KnowledgeChunk = { id: string; document_title?: string; chunk_text: string; source_ref?: string };
+type KnowledgeChunk = { id?: string; chunk_id?: string; title?: string; document_title?: string; chunk_text: string; source_ref?: string; source_location?: string };
 type KnowledgeChatMessage = { id: string; role: 'assistant' | 'user'; content: string };
 type EditableOcrBlock = KnowledgeOcrBlock & { row_id: string; corrected_text: string };
+
+const KNOWLEDGE_ASSET_ORDER = [
+  'kb-doc-quality-sop-docx',
+  'kb-doc-capa-072-docx',
+  'kb-doc-supplier-8d-xlsx',
+  'kb-doc-process-control-xlsx',
+  'kb-doc-maintenance-log-pdf',
+  'kb-doc-customer-risk-pdf',
+];
+
+const KNOWLEDGE_TYPE_LABELS: Record<string, string> = {
+  word: 'Word 文档',
+  docx: 'Word 文档',
+  excel: 'Excel 台账',
+  xlsx: 'Excel 台账',
+  pdf: 'PDF 报告',
+  image: '图片/OCR',
+  markdown: 'Markdown',
+};
+
+const normalizeKnowledgeType = (item: KnowledgeDocument) => String(item.source_type ?? item.file_type ?? 'database').toLowerCase();
+
+const GRAPH_DOCUMENT_ALIASES: Record<string, string> = {
+  'kb-doc-quality-sop-docx': 'demo-doc-quality-sop',
+  'kb-doc-capa-072-docx': 'demo-doc-supplier-8d',
+  'kb-doc-supplier-8d-xlsx': 'demo-doc-supplier-8d',
+  'kb-doc-process-control-xlsx': 'demo-doc-equipment-log',
+  'kb-doc-maintenance-log-pdf': 'demo-doc-equipment-log',
+  'kb-doc-customer-risk-pdf': 'demo-doc-workorder-exception',
+};
 
 const severityColors: Record<string, string> = {
   FATAL: 'red',
@@ -352,7 +390,7 @@ function boolTag(value?: boolean) {
   return value ? <Tag color="success">是</Tag> : <Tag>否</Tag>;
 }
 
-type SemanticAssetCenterView = 'data' | 'ontology' | 'graph-assets';
+type SemanticAssetCenterView = 'data' | 'ontology';
 
 export default function SemanticAssetCenter({ view }: { view?: SemanticAssetCenterView } = {}) {
   const [dataSourceForm] = Form.useForm();
@@ -1111,7 +1149,6 @@ export default function SemanticAssetCenter({ view }: { view?: SemanticAssetCent
   const viewContent = {
     data: dataAssetView,
     ontology: ontologyView,
-    'graph-assets': <KnowledgeGraphCenterV2 />,
   }[view ?? 'data'];
 
   if (view) {
@@ -1127,7 +1164,7 @@ export default function SemanticAssetCenter({ view }: { view?: SemanticAssetCent
       <section className="semantic-center-header">
         <div>
           <Typography.Title level={4}>语义资产中心</Typography.Title>
-          <Typography.Text type="secondary">统一管理数据资产、本体建模、文档知识抽取和后台知识图谱发布。</Typography.Text>
+          <Typography.Text type="secondary">统一管理数据资产、本体建模和文档知识抽取，图谱视图已融入知识库中心。</Typography.Text>
         </div>
         <Space>
           <Tag icon={<FileSearchOutlined />}>Graph Governance</Tag>
@@ -1138,7 +1175,6 @@ export default function SemanticAssetCenter({ view }: { view?: SemanticAssetCent
         items={[
           { key: 'data', label: '数据资产中心', children: dataAssetView },
           { key: 'ontology', label: '本体建模中心', children: ontologyView },
-          { key: 'graph-assets', label: '知识图谱中心', children: <KnowledgeGraphCenterV2 /> },
         ]}
       />
     </div>
@@ -1291,7 +1327,7 @@ function KnowledgeGraphCenter() {
   );
 }
 
-function KnowledgeGraphCenterV2() {
+function KnowledgeGraphCenterV2({ embedded = false, sourceDocumentId }: { embedded?: boolean; sourceDocumentId?: string } = {}) {
   const [nodes, setNodes] = useState<GraphAssetNode[]>([]);
   const [relationships, setRelationships] = useState<GraphAssetRelationship[]>([]);
   const [evidence, setEvidence] = useState<GraphAssetEvidence[]>([]);
@@ -1308,6 +1344,7 @@ function KnowledgeGraphCenterV2() {
   const [loading, setLoading] = useState(false);
   const cyContainerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  const effectiveSourceDocumentId = sourceDocumentId ? (GRAPH_DOCUMENT_ALIASES[sourceDocumentId] ?? sourceDocumentId) : undefined;
 
   const loadGraphAssets = async () => {
     setLoading(true);
@@ -1343,13 +1380,15 @@ function KnowledgeGraphCenterV2() {
     const matchedType = !entityType || node.type === entityType;
     const matchedPublish = !publishStatus || node.publish_status === publishStatus;
     const matchedBinding = !bindingStatus || (node.binding_status || 'unbound') === bindingStatus;
-    return matchedSearch && matchedType && matchedPublish && matchedBinding;
-  }), [bindingStatus, entityType, nodes, publishStatus, search]);
+    const matchedDocument = !embedded || !effectiveSourceDocumentId || node.source_document_id === effectiveSourceDocumentId;
+    return matchedSearch && matchedType && matchedPublish && matchedBinding && matchedDocument;
+  }), [bindingStatus, effectiveSourceDocumentId, embedded, entityType, nodes, publishStatus, search]);
   const baseVisibleNodeNames = useMemo(() => new Set(baseVisibleNodes.map((node) => node.name)), [baseVisibleNodes]);
   const baseVisibleRelationships = useMemo(() => relationships.filter((rel) => {
     const matchedSearch = !search || `${rel.source_name} ${rel.target_name} ${rel.relation_type} ${rel.knowledge_job_id ?? ''}`.toLowerCase().includes(search.toLowerCase());
-    return matchedSearch && baseVisibleNodeNames.has(rel.source_name) && baseVisibleNodeNames.has(rel.target_name);
-  }), [baseVisibleNodeNames, relationships, search]);
+    const matchedDocument = !embedded || !effectiveSourceDocumentId || rel.source_document_id === effectiveSourceDocumentId;
+    return matchedSearch && matchedDocument && baseVisibleNodeNames.has(rel.source_name) && baseVisibleNodeNames.has(rel.target_name);
+  }), [baseVisibleNodeNames, effectiveSourceDocumentId, embedded, relationships, search]);
   const connectedNodeNames = useMemo(() => new Set(baseVisibleRelationships.flatMap((rel) => [rel.source_name, rel.target_name])), [baseVisibleRelationships]);
   const visibleNodes = useMemo(() => (hideIsolated ? baseVisibleNodes.filter((node) => connectedNodeNames.has(node.name)) : baseVisibleNodes), [baseVisibleNodes, connectedNodeNames, hideIsolated]);
   const visibleNodeNames = useMemo(() => new Set(visibleNodes.map((node) => node.name)), [visibleNodes]);
@@ -1456,9 +1495,9 @@ function KnowledgeGraphCenterV2() {
   }, [layoutMode, neighborFocus, relationshipLabels, visibleNodes, visibleRelationships]);
 
   return (
-    <Space className="graph-asset-workbench" direction="vertical" size={16} style={{ width: '100%' }}>
-      <div className="graph-asset-stage">
-        <aside className="graph-asset-filter-panel">
+    <Space className={embedded ? 'graph-asset-workbench embedded' : 'graph-asset-workbench'} direction="vertical" size={16} style={{ width: '100%' }}>
+      <div className={embedded ? 'graph-asset-stage embedded' : 'graph-asset-stage'}>
+        {!embedded && <aside className="graph-asset-filter-panel">
           <Typography.Text strong>图谱筛选</Typography.Text>
           <Input.Search allowClear placeholder="搜索节点、关系或任务" value={search} onChange={(event) => setSearch(event.target.value)} onSearch={loadGraphAssets} />
           <Select allowClear placeholder="实体类型" value={entityType} options={entityTypeOptions} onChange={setEntityType} />
@@ -1468,10 +1507,10 @@ function KnowledgeGraphCenterV2() {
           <div className="graph-asset-legend">
             {Array.from(new Set(nodes.map((node) => node.type))).slice(0, 8).map((type) => <span key={type}><i style={{ background: graphTypeColors[type] || graphTypeColors.default }} />{type}</span>)}
           </div>
-        </aside>
+        </aside>}
         <main className="graph-asset-canvas-panel">
           <div className="graph-asset-toolbar">
-            <Space wrap><Tag color="processing">后台治理视图</Tag><Tag>{visibleNodes.length} 节点</Tag><Tag>{visibleRelationships.length} 关系</Tag></Space>
+            <Space wrap><Tag color="processing">{embedded ? '当前文档图谱' : '后台治理视图'}</Tag><Tag>{visibleNodes.length} 节点</Tag><Tag>{visibleRelationships.length} 关系</Tag></Space>
             <Space wrap>
               <span className="graph-asset-stat">正式节点 <strong>{nodes.length}</strong></span>
               <span className="graph-asset-stat">正式关系 <strong>{relationships.length}</strong></span>
@@ -1497,7 +1536,7 @@ function KnowledgeGraphCenterV2() {
           {selected ? <GraphAssetDetail selected={selected} evidence={selectedEvidence} /> : <Empty description="点击画布中的节点或关系查看详情" />}
         </aside>
       </div>
-      <Card className="graph-asset-governance" title="图谱资产治理">
+      {!embedded && <Card className="graph-asset-governance" title="图谱资产治理">
         <Tabs
           items={[
             { key: 'nodes', label: `节点 (${visibleNodes.length})`, children: <GraphNodesTable nodes={visibleNodes} loading={loading} onSelect={(data) => setSelected({ kind: 'node', data })} /> },
@@ -1506,7 +1545,7 @@ function KnowledgeGraphCenterV2() {
             { key: 'quality', label: `质量问题 (${quality?.items?.length ?? 0})`, children: <GraphQualityTable quality={quality} loading={loading} /> },
           ]}
         />
-      </Card>
+      </Card>}
     </Space>
   );
 }
@@ -1694,7 +1733,7 @@ function KnowledgeExtractionWorkbench() {
             <Space direction="vertical" size={12} style={{ width: '100%' }}>
               <div>
                 <Typography.Title level={4}>知识抽取工作台</Typography.Title>
-                <Typography.Text type="secondary">把文档抽成候选实体、关系、规则和动作，审核后发布到知识图谱中心。</Typography.Text>
+                <Typography.Text type="secondary">把文档抽成候选实体、关系、规则和动作，审核后发布到知识库图谱。</Typography.Text>
               </div>
               <Upload.Dragger accept=".md,.markdown,.txt,.pdf,.xlsx,.xls" maxCount={1} fileList={fileList} beforeUpload={() => false} onChange={({ fileList: next }) => setFileList(next)}>
                 <p className="ant-upload-drag-icon"><InboxOutlined /></p>
@@ -1815,14 +1854,17 @@ export function KnowledgeCenter() {
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [cards, setCards] = useState<KnowledgeCard[]>([]);
   const [chunks, setChunks] = useState<KnowledgeChunk[]>([]);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string>('demo-aps');
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string>('');
+  const [knowledgeSearch, setKnowledgeSearch] = useState('');
+  const [documentMarkdown, setDocumentMarkdown] = useState('');
+  const [markdownLoading, setMarkdownLoading] = useState(false);
   const [draftQuery, setDraftQuery] = useState('从当前文档抽取系统、能力和上下游关系');
   const [chatMessages, setChatMessages] = useState<KnowledgeChatMessage[]>([]);
   const [agentConversationId, setAgentConversationId] = useState<string>();
   const [agentLoading, setAgentLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [mode, setMode] = useState<string | number>('extract');
+  const [mode, setMode] = useState<string | number>('original');
   const [ocrBlocks, setOcrBlocks] = useState<EditableOcrBlock[]>([]);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrSaving, setOcrSaving] = useState(false);
@@ -1832,19 +1874,57 @@ export function KnowledgeCenter() {
   const [ocrEnhanced, setOcrEnhanced] = useState(false);
   const chatThreadRef = useRef<HTMLDivElement | null>(null);
 
-  const fallbackDocuments = useMemo(() => ([
-    { id: 'demo-aps', title: '04-APS-高级计划与排程', summary: '企业信息化 / 生产制造 / 计划与排程', updated_at: '2026/04/17' },
-    { id: 'demo-mes', title: '03-MES-制造执行系统', summary: '企业信息化 / 车间执行 / 质量追溯', updated_at: '2026/04/12' },
-    { id: 'demo-scm', title: '06-SCM-供应链管理', summary: '企业信息化 / 供应协同 / 交付风险', updated_at: '2026/04/09' },
-  ]), []);
-
-  const visibleDocuments = documents.length ? documents : fallbackDocuments;
+  const visibleDocuments = useMemo(() => {
+    const keyword = knowledgeSearch.trim().toLowerCase();
+    const filtered = keyword
+      ? documents.filter((item: any) => [
+        item.title,
+        item.document_title,
+        item.source_file_name,
+        item.file_name,
+        item.summary,
+        item.source_type,
+        item.permission_scope,
+        item.owner_user_id,
+        ...(item.linked_objects ?? []).flatMap((link: any) => [link.type, link.id, link.name, link.object_type, link.object_id, link.object_name]),
+      ].filter(Boolean).join(' ').toLowerCase().includes(keyword))
+      : documents;
+    return [...filtered].sort((a: any, b: any) => {
+      const aId = a.id ?? a.document_id ?? '';
+      const bId = b.id ?? b.document_id ?? '';
+      const aIndex = KNOWLEDGE_ASSET_ORDER.indexOf(aId);
+      const bIndex = KNOWLEDGE_ASSET_ORDER.indexOf(bId);
+      if (aIndex !== bIndex) return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+      return String(b.updated_at ?? '').localeCompare(String(a.updated_at ?? ''));
+    });
+  }, [documents, knowledgeSearch]);
+  const knowledgeGroups = useMemo(() => {
+    const groupOrder = ['word', 'docx', 'excel', 'xlsx', 'pdf', 'image', 'markdown'];
+    const grouped = visibleDocuments.reduce<Record<string, KnowledgeDocument[]>>((acc, item) => {
+      const type = normalizeKnowledgeType(item);
+      const key = ['word', 'docx'].includes(type) ? 'docx' : ['excel', 'xlsx'].includes(type) ? 'xlsx' : type;
+      acc[key] = [...(acc[key] ?? []), item];
+      return acc;
+    }, {});
+    return Object.entries(grouped).sort(([a], [b]) => {
+      const aIndex = groupOrder.indexOf(a);
+      const bIndex = groupOrder.indexOf(b);
+      return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+    });
+  }, [visibleDocuments]);
   const selectedDocument = visibleDocuments.find((item: any) => (item.id ?? item.document_id) === selectedDocumentId) ?? visibleDocuments[0];
-  const selectedTitle = (selectedDocument as any)?.title ?? (selectedDocument as any)?.document_title ?? (selectedDocument as any)?.file_name ?? '04-APS-高级计划与排程';
-  const selectedSummary = (selectedDocument as any)?.summary ?? '企业信息化 / 生产制造 / 计划与排程';
-  const selectedUpdatedAt = (selectedDocument as any)?.updated_at ?? '2026/04/17';
+  const selectedTitle = (selectedDocument as any)?.title ?? (selectedDocument as any)?.document_title ?? (selectedDocument as any)?.file_name ?? '暂无知识文档';
+  const selectedSummary = (selectedDocument as any)?.summary ?? (selectedDocument ? `来源文件：${(selectedDocument as any)?.source_file_name ?? (selectedDocument as any)?.file_name ?? '数据库文档'}` : '上传或完成种子数据后，知识库目录会按数据库内容自动刷新。');
+  const selectedUpdatedAt = (selectedDocument as any)?.updated_at ?? '-';
+  const selectedLinks = ((selectedDocument as any)?.linked_objects ?? []) as Array<{ type?: string; id?: string; name?: string; object_type?: string; object_id?: string; object_name?: string; confidence?: number; status?: string; source_location?: string }>;
+  const selectedRawText = documentMarkdown || (selectedDocument as any)?.markdown_content || '';
+  const selectedSourceType = String((selectedDocument as any)?.source_type ?? (selectedDocument as any)?.doc_type ?? 'database');
+  const selectedDomainTags = selectedDocument
+    ? [selectedSourceType.toUpperCase(), (selectedDocument as any)?.permission_scope ?? 'enterprise', (selectedDocument as any)?.owner_user_id ?? 'knowledge']
+    : ['DATABASE'];
   const selectedDocumentName = String(
     (selectedDocument as any)?.file_name
+      ?? (selectedDocument as any)?.source_file_name
       ?? (selectedDocument as any)?.filename
       ?? (selectedDocument as any)?.title
       ?? (selectedDocument as any)?.document_title
@@ -1854,9 +1934,22 @@ export function KnowledgeCenter() {
     (selectedDocument as any)?.mime_type
       ?? (selectedDocument as any)?.content_type
       ?? (selectedDocument as any)?.file_type
+      ?? (selectedDocument as any)?.source_type
       ?? '',
   ).toLowerCase();
-  const selectedIsDemoDocument = selectedDocumentId?.startsWith('demo-');
+  const selectedIsDemoDocument = false;
+  const indexedDocumentCount = documents.filter((item: any) => (item.status ?? '').toLowerCase() === 'indexed').length;
+  const pendingExtractCount = documents.filter((item: any) => !((item.linked_objects ?? []).length)).length;
+  const publishedDocumentCount = documents.filter((item: any) => (item.linked_objects ?? []).length > 0).length;
+  const documentSourceTags = useMemo(() => {
+    const values = documents.flatMap((item: any) => [
+      item.source_type,
+      item.permission_scope,
+      item.owner_user_id,
+      ...(item.linked_objects ?? []).map((link: any) => `${link.type ?? link.object_type}:${link.id ?? link.object_id}`),
+    ]).filter(Boolean);
+    return Array.from(new Set(values)).slice(0, 8);
+  }, [documents]);
   const selectedIsOcrDocument = Boolean(
     selectedDocumentId
       && !selectedIsDemoDocument
@@ -1898,7 +1991,7 @@ export function KnowledgeCenter() {
       const [spaceRes, sourceRes, documentRes, cardRes] = await Promise.all([
         listKnowledgeSpaces(),
         listKnowledgeSources(),
-        listKnowledgeDocuments(),
+        listKnowledgeDocuments('database'),
         listKnowledgeCards(),
         getKnowledgeOcrPipeline().catch(() => null),
       ]);
@@ -1907,13 +2000,17 @@ export function KnowledgeCenter() {
       setSources(sourceRes.data?.data ?? []);
       setDocuments(nextDocuments);
       setCards(cardRes.data?.data ?? []);
-      setSelectedDocumentId((prev) => prev ?? nextDocuments[0]?.id ?? nextDocuments[0]?.document_id ?? 'demo-aps');
+      setSelectedDocumentId((prev) => (
+        nextDocuments.some((item: any) => (item.id ?? item.document_id) === prev)
+          ? prev
+          : nextDocuments[0]?.id ?? nextDocuments[0]?.document_id ?? ''
+      ));
     } catch {
       setSpaces([{ id: 'manufacturing', name: '制造业知识库', description: 'SOP、8D、设备日志和质量记录。' }]);
       setSources([{ id: 'uploaded', name: '上传资料', status: 'ready' }]);
       setDocuments([]);
       setCards([]);
-      setSelectedDocumentId((prev) => prev ?? 'demo-aps');
+      setSelectedDocumentId((prev) => prev ?? '');
     }
   };
 
@@ -1968,6 +2065,36 @@ export function KnowledgeCenter() {
       .then((res) => setChunks(res.data?.data ?? []))
       .catch(() => setChunks([]));
   }, [selectedDocumentId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadMarkdown = async () => {
+      if (!selectedDocumentId || selectedDocumentId.startsWith('demo-')) {
+        setDocumentMarkdown('');
+        return;
+      }
+      setMarkdownLoading(true);
+      try {
+        const res = await getKnowledgeDocumentMarkdown(selectedDocumentId);
+        const payload = res.data?.data ?? res.data ?? {};
+        if (!cancelled) {
+          setDocumentMarkdown(payload.markdown_content ?? '');
+        }
+      } catch {
+        if (!cancelled) {
+          setDocumentMarkdown((selectedDocument as any)?.markdown_content ?? '');
+        }
+      } finally {
+        if (!cancelled) {
+          setMarkdownLoading(false);
+        }
+      }
+    };
+    loadMarkdown();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDocumentId, selectedDocument]);
 
   useEffect(() => {
     if (mode === 'ocr') {
@@ -2210,88 +2337,100 @@ export function KnowledgeCenter() {
         <aside className="knowledge-left-panel">
           <Card className="knowledge-panel-card knowledge-library-card" title="知识库目录" extra={<Button size="small" icon={<ReloadOutlined />} onClick={loadKnowledge}>刷新</Button>}>
             <div className="knowledge-tree-tools">
-              <Input placeholder="搜索文档、标签或实体" prefix={<FileSearchOutlined />} />
-              <Upload.Dragger className="knowledge-upload-dragger" customRequest={handleUpload} showUploadList={false} disabled={uploading}>
-                <p className="ant-upload-drag-icon"><InboxOutlined /></p>
-                <p className="ant-upload-text">上传知识资料</p>
-                <p className="ant-upload-hint">统一入库，右侧继续抽取和发布</p>
-              </Upload.Dragger>
+              <Input
+                placeholder="搜索文档、标签或实体"
+                prefix={<FileSearchOutlined />}
+                value={knowledgeSearch}
+                onChange={(event) => setKnowledgeSearch(event.target.value)}
+                allowClear
+              />
               <Space wrap size={6}>
-                <Tag color="processing">已索引</Tag>
-                <Tag color="warning">待抽取</Tag>
-                <Tag color="success">已发布</Tag>
+                <Tag color="processing">已索引 {indexedDocumentCount}</Tag>
+                <Tag color="warning">待抽取 {pendingExtractCount}</Tag>
+                <Tag color="success">已发布 {publishedDocumentCount}</Tag>
               </Space>
             </div>
             <div className="knowledge-directory-tree">
-              <div className="knowledge-tree-group">
-                <div className="knowledge-tree-folder"><FileSearchOutlined /> 企业信息化 <Tag>{visibleDocuments.length}</Tag></div>
-                {visibleDocuments.map((item: any, index) => {
-                  const docId = item.id ?? item.document_id;
-                  const active = docId === selectedDocumentId;
-                  return (
-                    <button className={active ? 'knowledge-document-item active' : 'knowledge-document-item'} key={docId} onClick={() => setSelectedDocumentId(docId)}>
-                      <strong>{item.title ?? item.document_title ?? item.file_name}</strong>
-                      <small>{item.summary ?? item.updated_at ?? ['已索引', '待抽取', '已发布'][index % 3]}</small>
-                    </button>
-                  );
-                })}
-              </div>
+              {knowledgeGroups.map(([type, items]) => (
+                <div className="knowledge-tree-group" key={type}>
+                  <div className="knowledge-tree-folder"><FileSearchOutlined /> {KNOWLEDGE_TYPE_LABELS[type] ?? type.toUpperCase()} <Tag>{items.length}</Tag></div>
+                  {items.map((item: any) => {
+                    const docId = item.id ?? item.document_id;
+                    const active = docId === selectedDocumentId;
+                    const linkedCount = (item.linked_objects ?? []).length;
+                    const fileName = item.source_file_name ?? item.file_name ?? item.filename ?? item.updated_at ?? '';
+                    return (
+                      <button className={active ? 'knowledge-document-item active' : 'knowledge-document-item'} key={docId} onClick={() => setSelectedDocumentId(docId)}>
+                        <strong>{item.title ?? item.document_title ?? item.file_name}</strong>
+                        <small>{fileName}{item.status ? ` · ${item.status}` : ''}{linkedCount ? ` · ${linkedCount} 个关联对象` : ''}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+              {!knowledgeGroups.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无入库文档" /> : null}
               <div className="knowledge-source-docs">
-                {(spaces.length ? spaces : [{ id: 'default', name: '制造业知识库' }]).slice(0, 3).map((item) => <Tag key={item.id}>{item.name}</Tag>)}
-                {(sources.length ? sources : [{ id: 'upload', name: '上传资料' }]).slice(0, 3).map((item) => <Tag key={item.id}>{item.name}</Tag>)}
+                {documentSourceTags.map((tag) => <Tag key={String(tag)}>{String(tag)}</Tag>)}
               </div>
             </div>
+            <Upload.Dragger className="knowledge-upload-dragger" customRequest={handleUpload} showUploadList={false} disabled={uploading}>
+              <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+              <p className="ant-upload-text">上传知识资料</p>
+              <p className="ant-upload-hint">统一入库，右侧继续抽取和发布</p>
+            </Upload.Dragger>
           </Card>
         </aside>
 
         <main className="knowledge-main-panel">
           <Card
             className="knowledge-document-card"
-            title={<Space wrap><span>{selectedTitle}</span><Tag color="blue">企业信息化</Tag><Tag color="purple">APS</Tag><Tag>排程</Tag></Space>}
-            extra={<Segmented value={mode} onChange={setMode} options={[{ label: '阅读', value: 'read' }, { label: 'OCR', value: 'ocr', disabled: !selectedIsOcrDocument }, { label: '问答', value: 'chat' }, { label: '抽取', value: 'extract' }, { label: '发布', value: 'publish' }]} />}
+            title={<Space wrap><span>{selectedTitle}</span>{selectedDomainTags.map((tag) => <Tag key={tag}>{tag}</Tag>)}</Space>}
+            extra={<Segmented value={mode} onChange={setMode} options={[{ label: '原文', value: 'original' }, { label: '关联对象', value: 'objects' }, { label: '知识图谱', value: 'graph' }]} />}
           >
             <div className="knowledge-document-head">
               <div>
                 <Typography.Text type="secondary">{selectedSummary}</Typography.Text>
                 <div className="knowledge-note-properties">
                   <div><span>created</span><strong>{selectedUpdatedAt}</strong></div>
-                  <div><span>status</span><strong>待审核 / 已索引</strong></div>
+                  <div><span>status</span><strong>{(selectedDocument as any)?.status ?? 'indexed'}</strong></div>
+                  <div><span>objects</span><strong>{selectedLinks.length} 个关联对象</strong></div>
                 </div>
               </div>
-              <Button type="primary" icon={<RobotOutlined />} onClick={() => setMode('extract')}>抽取当前文档</Button>
+              <Button icon={<ReloadOutlined />} onClick={loadKnowledge}>刷新当前知识</Button>
             </div>
-            {mode === 'ocr' ? ocrPanel : <article className="knowledge-note-content">
-              <Typography.Title level={3}>系统定位</Typography.Title>
-              <table className="knowledge-doc-table">
-                <tbody>
-                  <tr><th>维度</th><th>关系</th></tr>
-                  <tr><td>架构层级</td><td>Ring 2：计划与执行</td></tr>
-                  <tr><td>上级系统</td><td><span className="knowledge-highlight">ERP</span> 企业资源计划</td></tr>
-                  <tr><td>下游去向</td><td><span className="knowledge-highlight">MES</span> 制造执行系统</td></tr>
-                </tbody>
-              </table>
-              <Typography.Title level={4}>APS（高级计划与排程）</Typography.Title>
-              <Typography.Paragraph>
-                <span className="knowledge-highlight strong">APS</span> 基于约束条件进行高级生产计划和排程优化，把长期计划转换为可执行的短期排程。
-              </Typography.Paragraph>
-              <Typography.Title level={4}>核心功能</Typography.Title>
-              <ul>
-                <li><span className="knowledge-highlight">需求计划</span>：需求预测和订单管理</li>
-                <li><span className="knowledge-highlight">生产排程</span>：机器、人员、模具等多约束排程</li>
-                <li><span className="knowledge-highlight">物料计划</span>：考虑物料可用性的排产</li>
-                <li>What-If 模拟：插单、急单影响模拟</li>
-              </ul>
-              <Typography.Title level={4}>与 ERP/MES 的关系</Typography.Title>
-              <div className="knowledge-flow-box">
-                <strong>ERP</strong><span>长期计划</span><strong>APS</strong><span>短期排程优化</span><strong>MES</strong>
+            {mode === 'objects' ? (
+              <div className="knowledge-object-panel">
+                {selectedLinks.length ? selectedLinks.map((item) => {
+                  const type = item.type ?? item.object_type ?? 'Object';
+                  const objectId = item.id ?? item.object_id ?? '-';
+                  const name = item.name ?? item.object_name ?? objectId;
+                  return (
+                    <Card className="knowledge-object-card" size="small" key={`${type}-${objectId}`}>
+                      <div className="knowledge-object-card-head">
+                        <Space wrap><Tag color="blue">{type}</Tag><Typography.Text strong>{name}</Typography.Text></Space>
+                        <Tag color={item.status === 'committed' ? 'success' : 'gold'}>{item.status ?? 'candidate'}</Tag>
+                      </div>
+                      <div className="knowledge-note-properties compact">
+                        <div><span>对象编号</span><strong>{objectId}</strong></div>
+                        <div><span>置信度</span><strong>{item.confidence ? `${confidencePercent(item.confidence)}%` : '-'}</strong></div>
+                        <div><span>证据位置</span><strong>{item.source_location ?? '当前文档'}</strong></div>
+                      </div>
+                    </Card>
+                  );
+                }) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="当前文档暂无已确认关联对象" />}
               </div>
-              {chunks.length > 0 && (
-                <>
-                  <Typography.Title level={4}>相关片段</Typography.Title>
-                  {chunks.slice(0, 2).map((item) => <Card className="knowledge-chunk-card" size="small" key={item.id}><Typography.Text>{item.chunk_text}</Typography.Text></Card>)}
-                </>
-              )}
-            </article>}
+            ) : mode === 'graph' ? (
+              <KnowledgeGraphCenterV2 embedded sourceDocumentId={selectedDocumentId} />
+            ) : (
+              <article className="knowledge-note-content">
+                {markdownLoading ? <Progress percent={70} status="active" showInfo={false} /> : null}
+                {selectedRawText ? (
+                  <pre className="knowledge-original-text">{selectedRawText}</pre>
+                ) : (
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="当前文档暂无可展示原文" />
+                )}
+              </article>
+            )}
           </Card>
         </main>
 

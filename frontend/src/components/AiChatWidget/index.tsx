@@ -1,21 +1,23 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
-import { Button, Input, Space, Tag, Typography } from 'antd';
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from 'react';
+import { Button, Input, Space, Tag, Tooltip, Typography } from 'antd';
 import {
   CheckCircleOutlined,
   CloseOutlined,
   CodeOutlined,
-  DeleteOutlined,
-  FileTextOutlined,
-  RobotOutlined,
+  HistoryOutlined,
+  MessageOutlined,
+  PlusOutlined,
   SendOutlined,
 } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
 import {
-  DEFAULT_PUBLIC_TENANT_PROFILE,
-  getPublicTenantProfile,
+  closeAgentConversation,
+  createAgentConversation,
+  listAgentConversationMessages,
+  listAgentConversations,
   sendAgentChat,
-  type PublicTenantProfile,
 } from '@/services/api';
+import { useAiWorkbench } from './context';
 import './style.css';
 
 type ChatRole = 'assistant' | 'user';
@@ -38,6 +40,38 @@ interface ChatMessage {
   createdAt: string;
   actions?: MockSkillAction[];
   source?: string;
+  contextSources?: Record<string, number | boolean | string>;
+}
+
+interface AgentSession {
+  id: string;
+  title: string;
+  contextKey: string;
+  messages: ChatMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AgentConversationPayload {
+  conversation_id?: string;
+  id?: string;
+  title?: string;
+  page?: string;
+  document_id?: string | null;
+  last_message?: string | null;
+  metadata?: Record<string, unknown>;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+interface AgentMessagePayload {
+  message_id?: string;
+  id?: string;
+  role?: ChatRole;
+  content?: string;
+  created_at?: string | null;
+  model_name?: string | null;
+  usage?: Record<string, unknown> | null;
 }
 
 interface PageContext {
@@ -69,14 +103,16 @@ interface AgentSkillAction {
 interface AgentChatResponse {
   answer?: string;
   actions?: AgentSkillAction[];
+  evidence?: Array<Record<string, unknown>>;
   mode?: string;
   requires_confirmation?: boolean;
   steps?: Array<Record<string, unknown>>;
+  conversation?: AgentConversationPayload;
+  user_message?: AgentMessagePayload;
+  assistant_message?: AgentMessagePayload;
 }
 
-const STORAGE_PREFIX = 'mf_ai_floating_chat:';
-const POSITION_STORAGE_KEY = 'mf_ai_floating_position';
-const DEFAULT_FLOATING_POSITION = { x: 24, y: 24 };
+const nowText = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
 const contextByRoute: Array<{
   test: (pathname: string) => boolean;
@@ -96,7 +132,7 @@ const contextByRoute: Array<{
     context: {
       title: '供应链风险',
       scope: '供应商、库存、物料影响、采购建议',
-      intro: '我会基于供应链页面提供帮助，可以总结供应风险、解释高风险供应商，也可以生成采购申请或物料申请草稿。',
+      intro: '我会基于供应链页面提供帮助，可以总结供应风险、解释高风险供应商，也可以生成采购或物料申请草稿。',
       quickPrompts: ['总结供应风险', '生成采购申请草稿', '生成物料申请草稿', '给出替代供应商建议'],
     },
   },
@@ -138,8 +174,6 @@ const contextByRoute: Array<{
   },
 ];
 
-const nowText = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-
 function buildPageContext(pathname: string, fallbackTitle: string): PageContext {
   const matched = contextByRoute.find((item) => item.test(pathname));
   if (matched) {
@@ -176,6 +210,51 @@ function createUserMessage(content: string): ChatMessage {
     role: 'user',
     content,
     createdAt: nowText(),
+  };
+}
+
+function createAgentSession(contextKey: string, intro: string, title = '当前窗口'): AgentSession {
+  const timestamp = nowText();
+  return {
+    id: `agent-session-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    title,
+    contextKey,
+    messages: [createAssistantMessage(intro)],
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
+
+function formatServerTime(value?: string | null): string {
+  if (!value) return nowText();
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return nowText();
+  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function mapServerMessage(message: AgentMessagePayload): ChatMessage {
+  return {
+    id: message.message_id || message.id || `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    role: message.role === 'user' ? 'user' : 'assistant',
+    content: message.content || '',
+    createdAt: formatServerTime(message.created_at),
+    source: message.role === 'assistant' && message.model_name ? `model: ${message.model_name}` : undefined,
+  };
+}
+
+function mapServerConversation(
+  conversation: AgentConversationPayload,
+  contextKey: string,
+  intro: string,
+): AgentSession {
+  const id = conversation.conversation_id || conversation.id || `agent-session-${Date.now()}`;
+  return {
+    id,
+    title: conversation.title || '当前窗口',
+    contextKey,
+    messages: conversation.last_message ? [] : [createAssistantMessage(intro)],
+    createdAt: formatServerTime(conversation.created_at),
+    updatedAt: formatServerTime(conversation.updated_at),
   };
 }
 
@@ -230,92 +309,218 @@ function getAgentResponseSource(payload: AgentChatResponse): string {
   return 'backend Agent';
 }
 
-function generateUnavailableReply(): AssistantReply {
-  return {
-    content: '当前无法连接后端 AI 服务。请先确认后端服务、登录状态和大模型配置可用后再试。',
-  };
+function getContextSources(payload: AgentChatResponse): Record<string, number | boolean | string> | undefined {
+  const contextStep = [...(payload.steps || [])].reverse().find((step) => step.id === 'step-context-builder');
+  const sources = contextStep?.sources;
+  return sources && typeof sources === 'object' && !Array.isArray(sources)
+    ? sources as Record<string, number | boolean | string>
+    : undefined;
 }
 
 function getStatusLabel(status: MockSkillStatus) {
   return status === 'draft_created' ? '草稿已生成' : '待复核';
 }
 
+function generateUnavailableReply(): AssistantReply {
+  return {
+    content: '当前无法连接后端 AI 服务。请先确认后端服务、登录状态和大模型配置可用后再试。',
+  };
+}
+
 export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidgetProps) {
   const location = useLocation();
+  const { knowledgeContext } = useAiWorkbench();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessions, setSessions] = useState<AgentSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string>();
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [sending, setSending] = useState(false);
-  const [tenantProfile, setTenantProfile] = useState<PublicTenantProfile>(DEFAULT_PUBLIC_TENANT_PROFILE);
-  const [floatingPosition, setFloatingPosition] = useState(DEFAULT_FLOATING_POSITION);
-  const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number; dragging: boolean } | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const assistantDisplayName = tenantProfile.assistantName || `${tenantProfile.productName} AI`;
+  const promptScrollerRef = useRef<HTMLDivElement>(null);
+  const promptDragRef = useRef<{ pointerId: number; startX: number; scrollLeft: number; dragging: boolean } | null>(null);
 
   const pageContext = useMemo(
     () => buildPageContext(location.pathname, pageTitle),
     [location.pathname, pageTitle],
   );
-
-  const storageKey = `${STORAGE_PREFIX}${location.pathname}`;
+  const surface = knowledgeContext ? 'knowledge' : 'global';
+  const contextKey = `${location.pathname}:${knowledgeContext?.documentId || 'global'}`;
+  const intro = knowledgeContext
+    ? `我会基于《${knowledgeContext.documentTitle || '当前文档'}》和你的账号权限回答问题，也可以辅助抽取、发布和检查属性。`
+    : pageContext.intro;
+  const quickPrompts = knowledgeContext
+    ? ['这篇文档讲什么', '抽取系统和能力', '生成发布清单建议', '我能对它做什么']
+    : pageContext.quickPrompts;
+  const activeSession = sessions.find((session) => session.id === activeSessionId) || sessions[0];
+  const messages = activeSession?.messages || [];
 
   useEffect(() => {
     let active = true;
-    getPublicTenantProfile().then((profile) => {
-      if (active) setTenantProfile(profile);
-    });
+    const contextPayload = {
+      surface,
+      route: location.pathname,
+      pageTitle: pageContext.title,
+      documentId: knowledgeContext?.documentId,
+      document_id: knowledgeContext?.documentId,
+      documentTitle: knowledgeContext?.documentTitle,
+      document_title: knowledgeContext?.documentTitle,
+      knowledgeMode: knowledgeContext?.knowledgeMode,
+    };
+    const bootstrapSessions = async () => {
+      try {
+        const response = await listAgentConversations({
+          page: location.pathname,
+          document_id: knowledgeContext?.documentId,
+          surface,
+          limit: 30,
+        });
+        const rows = ((response.data?.data || []) as AgentConversationPayload[])
+          .map((conversation) => mapServerConversation(conversation, contextKey, intro));
+        if (!active) return;
+        if (rows.length) {
+          setSessions(rows);
+          setActiveSessionId(rows[0].id);
+          setHistoryOpen(false);
+          setInput('');
+          return;
+        }
+        const created = await createAgentConversation({
+          title: '当前窗口',
+          page: location.pathname,
+          document_id: knowledgeContext?.documentId,
+          document_title: knowledgeContext?.documentTitle,
+          context: contextPayload,
+        });
+        const session = mapServerConversation(created.data?.data || {}, contextKey, intro);
+        if (!active) return;
+        setSessions([session]);
+        setActiveSessionId(session.id);
+        setHistoryOpen(false);
+        setInput('');
+      } catch {
+        if (!active) return;
+        const nextSession = createAgentSession(contextKey, intro);
+        setSessions([nextSession]);
+        setActiveSessionId(nextSession.id);
+        setHistoryOpen(false);
+        setInput('');
+      }
+    };
+    void bootstrapSessions();
     return () => {
       active = false;
     };
-  }, []);
+  }, [
+    contextKey,
+    intro,
+    knowledgeContext?.documentId,
+    knowledgeContext?.documentTitle,
+    knowledgeContext?.knowledgeMode,
+    location.pathname,
+    pageContext.title,
+    surface,
+  ]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(POSITION_STORAGE_KEY);
-    if (!stored) return;
-    try {
-      const parsed = JSON.parse(stored) as { x: number; y: number };
-      if (Number.isFinite(parsed.x) && Number.isFinite(parsed.y)) {
-        setFloatingPosition({
-          x: Math.max(12, Math.min(parsed.x, window.innerWidth - 96)),
-          y: Math.max(12, Math.min(parsed.y, window.innerHeight - 72)),
-        });
-      }
-    } catch {
-      localStorage.removeItem(POSITION_STORAGE_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as ChatMessage[];
-        setMessages(parsed);
-        return;
-      } catch {
-        localStorage.removeItem(storageKey);
-      }
-    }
-
-    setMessages([createAssistantMessage(pageContext.intro)]);
-  }, [pageContext.intro, storageKey]);
+    if (!activeSession?.id || activeSession.messages.length) return;
+    let active = true;
+    listAgentConversationMessages(activeSession.id)
+      .then((response) => {
+        if (!active) return;
+        const loadedMessages = ((response.data?.data || []) as AgentMessagePayload[]).map(mapServerMessage);
+        setSessionMessages(activeSession.id, loadedMessages.length ? loadedMessages : [createAssistantMessage(intro)]);
+      })
+      .catch(() => {
+        if (active) setSessionMessages(activeSession.id, [createAssistantMessage(intro)]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeSession?.id, activeSession?.messages.length, intro]);
 
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, open]);
+  }, [messages.length, open]);
 
-  const persistMessages = (next: ChatMessage[]) => {
-    setMessages(next);
-    localStorage.setItem(storageKey, JSON.stringify(next));
+  useEffect(() => {
+    document.body.classList.toggle('ai-workbench-open', open);
+    return () => document.body.classList.remove('ai-workbench-open');
+  }, [open]);
+
+  const setSessionMessages = (sessionId: string, nextMessages: ChatMessage[]) => {
+    setSessions((prev) => prev.map((session) => (
+      session.id === sessionId
+        ? { ...session, messages: nextMessages, updatedAt: nowText() }
+        : session
+    )));
+  };
+
+  const startNewSession = async () => {
+    const title = `窗口 ${sessions.length + 1}`;
+    const contextPayload = {
+      surface,
+      route: location.pathname,
+      pageTitle: pageContext.title,
+      documentId: knowledgeContext?.documentId,
+      document_id: knowledgeContext?.documentId,
+      documentTitle: knowledgeContext?.documentTitle,
+      document_title: knowledgeContext?.documentTitle,
+      knowledgeMode: knowledgeContext?.knowledgeMode,
+    };
+    try {
+      const created = await createAgentConversation({
+        title,
+        page: location.pathname,
+        document_id: knowledgeContext?.documentId,
+        document_title: knowledgeContext?.documentTitle,
+        context: contextPayload,
+      });
+      const nextSession = mapServerConversation(created.data?.data || {}, contextKey, intro);
+      nextSession.title = title;
+      setSessions((prev) => [nextSession, ...prev]);
+      setActiveSessionId(nextSession.id);
+      setHistoryOpen(false);
+      setInput('');
+    } catch {
+      const nextSession = createAgentSession(contextKey, intro, title);
+      setSessions((prev) => [...prev, nextSession]);
+      setActiveSessionId(nextSession.id);
+      setHistoryOpen(false);
+      setInput('');
+    }
+  };
+
+  const closeSession = (sessionId: string) => {
+    const targetSession = sessions.find((session) => session.id === sessionId);
+    if (!targetSession) {
+      setOpen(false);
+      return;
+    }
+    if (sessions.length <= 1) {
+      void closeAgentConversation(targetSession.id);
+      setOpen(false);
+      return;
+    }
+    const targetIndex = sessions.findIndex((session) => session.id === targetSession.id);
+    const remaining = sessions.filter((session) => session.id !== targetSession.id);
+    const nextSession = targetSession.id === activeSession?.id
+      ? remaining[Math.max(0, targetIndex - 1)] || remaining[0]
+      : activeSession;
+    void closeAgentConversation(targetSession.id);
+    setSessions(remaining);
+    if (nextSession) setActiveSessionId(nextSession.id);
+    setHistoryOpen(false);
   };
 
   const sendMessage = async (content: string) => {
     const trimmed = content.trim();
-    if (!trimmed || sending) return;
+    if (!trimmed || sending || !activeSession) return;
 
     const userMessage = createUserMessage(trimmed);
     const pending = [...messages, userMessage];
-    persistMessages(pending);
+    const sessionId = activeSession.id;
+    setSessionMessages(sessionId, pending);
     setInput('');
     setSending(true);
     try {
@@ -323,110 +528,95 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
         message: trimmed,
         page: location.pathname,
         context: {
+          surface,
+          route: location.pathname,
           pageTitle: pageContext.title,
           scope: pageContext.scope,
           applicationName,
-          route: location.pathname,
+          documentId: knowledgeContext?.documentId,
+          document_id: knowledgeContext?.documentId,
+          documentTitle: knowledgeContext?.documentTitle,
+          document_title: knowledgeContext?.documentTitle,
+          knowledgeMode: knowledgeContext?.knowledgeMode,
+          conversation_id: sessionId,
+          conversationId: sessionId,
         },
       });
       const payload = (response.data ?? {}) as AgentChatResponse;
+      const persistedUserMessage = payload.user_message ? mapServerMessage(payload.user_message) : userMessage;
       const assistantMessage = createAssistantMessage({
         content: payload.answer || '我已收到你的问题，但后端没有返回可展示的回答。',
         actions: mapAgentActions(payload.actions),
       }, getAgentResponseSource(payload));
-      persistMessages([...pending, assistantMessage]);
+      assistantMessage.contextSources = getContextSources(payload);
+      const persistedAssistantMessage = payload.assistant_message
+        ? { ...mapServerMessage(payload.assistant_message), actions: assistantMessage.actions, source: assistantMessage.source, contextSources: assistantMessage.contextSources }
+        : undefined;
+      setSessionMessages(sessionId, [
+        ...messages,
+        persistedUserMessage,
+        persistedAssistantMessage || assistantMessage,
+      ]);
+      if (payload.conversation) {
+        const updated = mapServerConversation(payload.conversation, contextKey, intro);
+        setSessions((prev) => prev.map((session) => (
+          session.id === sessionId
+            ? { ...session, title: updated.title, updatedAt: updated.updatedAt }
+            : session
+        )));
+      }
     } catch {
-      persistMessages([...pending, createAssistantMessage(generateUnavailableReply(), '无法连接后端 AI 服务')]);
+      setSessionMessages(sessionId, [...pending, createAssistantMessage(generateUnavailableReply(), '无法连接后端 AI 服务')]);
     } finally {
       setSending(false);
     }
   };
 
-  const startNewSession = () => {
-    const next = [createAssistantMessage(pageContext.intro)];
-    persistMessages(next);
-    setInput('');
+  const scrollPromptsWithWheel = (event: WheelEvent<HTMLDivElement>) => {
+    const scroller = promptScrollerRef.current;
+    if (!scroller) return;
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (!delta) return;
+    event.preventDefault();
+    scroller.scrollLeft += delta;
   };
 
-  const startDrag = (event: PointerEvent<HTMLButtonElement>) => {
-    dragRef.current = {
+  const startPromptDrag = (event: PointerEvent<HTMLDivElement>) => {
+    const scroller = promptScrollerRef.current;
+    if (!scroller) return;
+    promptDragRef.current = {
+      pointerId: event.pointerId,
       startX: event.clientX,
-      startY: event.clientY,
-      originX: floatingPosition.x,
-      originY: floatingPosition.y,
+      scrollLeft: scroller.scrollLeft,
       dragging: false,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
+    scroller.setPointerCapture(event.pointerId);
   };
 
-  const dragFloatingButton = (event: PointerEvent<HTMLButtonElement>) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    if (Math.abs(deltaX) + Math.abs(deltaY) > 4) drag.dragging = true;
+  const dragPrompts = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = promptDragRef.current;
+    const scroller = promptScrollerRef.current;
+    if (!drag || !scroller || drag.pointerId !== event.pointerId) return;
+    const distance = event.clientX - drag.startX;
+    if (Math.abs(distance) > 3) drag.dragging = true;
     if (!drag.dragging) return;
-    setFloatingPosition({
-      x: Math.max(12, Math.min(drag.originX - deltaX, window.innerWidth - 96)),
-      y: Math.max(12, Math.min(drag.originY - deltaY, window.innerHeight - 72)),
-    });
+    event.preventDefault();
+    scroller.scrollLeft = drag.scrollLeft - distance;
   };
 
-  const stopDrag = () => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(floatingPosition));
+  const stopPromptDrag = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = promptDragRef.current;
+    const scroller = promptScrollerRef.current;
+    if (drag && scroller && drag.pointerId === event.pointerId) {
+      scroller.releasePointerCapture(event.pointerId);
+    }
     window.setTimeout(() => {
-      dragRef.current = null;
+      promptDragRef.current = null;
     }, 0);
   };
 
-  const toggleOpen = () => {
-    if (dragRef.current?.dragging) return;
-    setOpen((prev) => !prev);
-  };
-
-  return (
-    <>
-      <Button
-        className="ai-floating-button"
-        type="primary"
-        style={{ right: floatingPosition.x, bottom: floatingPosition.y }}
-        onPointerDown={startDrag}
-        onPointerMove={dragFloatingButton}
-        onPointerUp={stopDrag}
-        onPointerCancel={stopDrag}
-        onClick={toggleOpen}
-        aria-label="AI Assistant"
-      >
-        <RobotOutlined />
-        <span>AI</span>
-      </Button>
-
-      {open && (
-        <section
-          className="ai-chat-panel"
-          style={{ right: floatingPosition.x, bottom: floatingPosition.y + 64 }}
-          aria-label="AI chat panel"
-        >
-          <header className="ai-chat-header">
-            <div>
-              <Space size={8} align="center">
-                <RobotOutlined />
-                <Typography.Text strong>{assistantDisplayName}</Typography.Text>
-              </Space>
-              <Typography.Text type="secondary">
-                基于当前页面：{pageContext.title}
-              </Typography.Text>
-            </div>
-            <Button type="text" icon={<CloseOutlined />} onClick={() => setOpen(false)} />
-          </header>
-
-          <div className="ai-chat-context">
-            <Tag color="blue">{applicationName || '当前应用'}</Tag>
-            <span>{pageContext.scope}</span>
-          </div>
-
+  const chatWorkbench = (
+          <div className="ai-workbench-chat">
           <div className="ai-chat-body" ref={bodyRef}>
             {messages.map((message) => (
               <div className={`ai-chat-message ${message.role}`} key={message.id}>
@@ -434,6 +624,13 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                   <Typography.Text>{message.content}</Typography.Text>
                   {message.role === 'assistant' && message.source ? (
                     <span className="ai-chat-source">{message.source}</span>
+                  ) : null}
+                  {message.role === 'assistant' && message.contextSources ? (
+                    <div className="ai-context-source-row">
+                      <Tag>最近消息 {message.contextSources.recent_messages ?? 0}</Tag>
+                      <Tag>记忆 {message.contextSources.memories ?? 0}</Tag>
+                      <Tag>证据 {message.contextSources.evidence ?? 0}</Tag>
+                    </div>
                   ) : null}
                   {message.actions?.length ? (
                     <div className="ai-skill-action-list">
@@ -488,9 +685,25 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
             ) : null}
           </div>
 
-          <div className="ai-chat-quick-prompts">
-            {pageContext.quickPrompts.map((prompt) => (
-              <Button key={prompt} size="small" disabled={sending} onClick={() => { void sendMessage(prompt); }}>
+          <div
+            className="ai-chat-quick-prompts"
+            ref={promptScrollerRef}
+            onWheel={scrollPromptsWithWheel}
+            onPointerDown={startPromptDrag}
+            onPointerMove={dragPrompts}
+            onPointerUp={stopPromptDrag}
+            onPointerCancel={stopPromptDrag}
+          >
+            {quickPrompts.map((prompt) => (
+              <Button
+                key={prompt}
+                size="small"
+                disabled={sending}
+                onClick={() => {
+                  if (promptDragRef.current?.dragging) return;
+                  void sendMessage(prompt);
+                }}
+              >
                 {prompt}
               </Button>
             ))}
@@ -512,15 +725,102 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
             />
             <Button type="primary" icon={<SendOutlined />} loading={sending} onClick={() => { void sendMessage(input); }} />
           </div>
+    </div>
+  );
 
-          <footer className="ai-chat-footer">
-            <Button size="small" icon={<FileTextOutlined />} onClick={startNewSession}>
-              新会话
-            </Button>
-            <Button size="small" icon={<DeleteOutlined />} onClick={startNewSession}>
-              清空当前页历史
-            </Button>
-          </footer>
+  return (
+    <>
+      <Tooltip title={open ? '收起 AI 工作栏' : '打开 AI 工作栏'} placement="left">
+        <Button
+          className="ai-edge-toggle"
+          type="primary"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-label="AI Assistant"
+        >
+          <MessageOutlined />
+          <span>AI</span>
+        </Button>
+      </Tooltip>
+
+      {open && (
+        <section className="ai-chat-panel ai-workbench-panel" aria-label="AI chat panel">
+          <header className="ai-chat-header">
+            <div className="ai-agent-tab-strip" role="tablist" aria-label="AI 对话窗口">
+              {sessions.map((session) => (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={session.id === activeSession?.id}
+                  className={`ai-agent-title-tab ${session.id === activeSession?.id ? 'active' : ''}`}
+                  key={session.id}
+                  onClick={() => {
+                    setActiveSessionId(session.id);
+                    setHistoryOpen(false);
+                  }}
+                >
+                  <MessageOutlined />
+                  <Typography.Text strong>{session.title || '当前窗口'}</Typography.Text>
+                  <span
+                    className="ai-agent-tab-close"
+                    role="button"
+                    tabIndex={0}
+                    aria-label="关闭当前对话窗口"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      closeSession(session.id);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        closeSession(session.id);
+                      }
+                    }}
+                  >
+                    <CloseOutlined />
+                  </span>
+                </button>
+              ))}
+            </div>
+            <Space size={4} className="ai-agent-title-actions">
+              <Tooltip title="新建窗口">
+                <Button type="text" icon={<PlusOutlined />} onClick={() => { void startNewSession(); }} />
+              </Tooltip>
+              <Tooltip title="历史记录">
+                <Button
+                  type="text"
+                  icon={<HistoryOutlined />}
+                  onClick={() => setHistoryOpen((prev) => !prev)}
+                />
+              </Tooltip>
+              <Tooltip title="收起">
+                <Button type="text" icon={<CloseOutlined />} onClick={() => setOpen(false)} />
+              </Tooltip>
+            </Space>
+          </header>
+
+          {historyOpen ? (
+            <div className="ai-session-history">
+              {sessions.map((session) => (
+                <button
+                  type="button"
+                  className={`ai-session-history-item ${session.id === activeSession?.id ? 'active' : ''}`}
+                  key={session.id}
+                  onClick={() => {
+                    setActiveSessionId(session.id);
+                    setHistoryOpen(false);
+                  }}
+                >
+                  <span>{session.title}</span>
+                  <small>
+                    {session.messages.length} 条消息 · {session.updatedAt}
+                  </small>
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {chatWorkbench}
         </section>
       )}
     </>

@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons';
 import AccountMenu from './components/AccountMenu';
 import AiChatWidget from './components/AiChatWidget';
+import { AiWorkbenchProvider } from './components/AiChatWidget/context';
 import GlobalSearch from './components/GlobalSearch';
 import { useAuthStore } from './stores/authStore';
 import {
@@ -688,6 +689,7 @@ function AppContent() {
   const siderWidth = collapsed ? 68 : 236;
 
   return (
+    <AiWorkbenchProvider>
     <Layout className="app-shell density-standard">
       <Sider
         width={236}
@@ -851,6 +853,7 @@ function AppContent() {
         </Space>
       </Modal>
     </Layout>
+    </AiWorkbenchProvider>
   );
 }
 

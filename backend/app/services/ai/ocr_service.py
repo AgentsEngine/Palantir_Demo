@@ -31,6 +31,8 @@ def source_type_for_file(file_name: str) -> str:
     suffix = Path(file_name).suffix.lower()
     if suffix in {".md", ".markdown", ".txt"}:
         return "markdown"
+    if suffix == ".docx":
+        return "word"
     if suffix in {".xlsx", ".xls"}:
         return "excel"
     if suffix == ".pdf":

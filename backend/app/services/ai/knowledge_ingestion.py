@@ -12,9 +12,11 @@ import io
 import math
 import re
 import uuid
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 import pandas as pd
 
@@ -87,6 +89,55 @@ def parse_excel(file_name: str, content: bytes) -> str:
     return "\n".join(parts)
 
 
+def parse_word(file_name: str, content: bytes) -> str:
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            document_xml = archive.read("word/document.xml")
+    except Exception as exc:
+        raise RuntimeError("Invalid or unsupported Word document") from exc
+
+    root = ElementTree.fromstring(document_xml)
+    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    parts = [f"# {file_name}", "", "> Word source converted to Markdown text."]
+    body = root.find("w:body", ns)
+    if body is None:
+        return "\n\n".join(parts)
+
+    for child in body:
+        tag = child.tag.rsplit("}", 1)[-1]
+        if tag == "p":
+            text = "".join(node.text or "" for node in child.findall(".//w:t", ns)).strip()
+            if text:
+                style_el = child.find("w:pPr/w:pStyle", ns)
+                style = style_el.get(f"{{{ns['w']}}}val", "") if style_el is not None else ""
+                if style == "Title":
+                    text = f"# {text}"
+                elif style.startswith("Heading"):
+                    text = f"## {text}"
+                parts.append(text)
+            continue
+        if tag == "tbl":
+            rows: list[list[str]] = []
+            for row in child.findall("w:tr", ns):
+                cells = []
+                for cell in row.findall("w:tc", ns):
+                    cell_text = " ".join(
+                        "".join(node.text or "" for node in paragraph.findall(".//w:t", ns)).strip()
+                        for paragraph in cell.findall("w:p", ns)
+                    ).strip()
+                    cells.append(cell_text)
+                if cells:
+                    rows.append(cells)
+            if rows:
+                max_cols = max(len(row) for row in rows)
+                normalized = [row + [""] * (max_cols - len(row)) for row in rows]
+                parts.append("| " + " | ".join(normalized[0]) + " |")
+                parts.append("| " + " | ".join(["---"] * max_cols) + " |")
+                for row in normalized[1:]:
+                    parts.append("| " + " | ".join(row) + " |")
+    return "\n\n".join(parts)
+
+
 def parse_pdf(file_name: str, content: bytes) -> str:
     return extract_pdf_text(file_name, content)
 
@@ -104,6 +155,8 @@ def parse_to_markdown_with_metadata(file_name: str, content: bytes) -> tuple[str
         return source_type, parse_markdown(file_name, content), metadata
     if source_type == "excel":
         return source_type, parse_excel(file_name, content), metadata
+    if source_type == "word":
+        return source_type, parse_word(file_name, content), metadata
     if source_type == "pdf":
         try:
             return source_type, parse_pdf(file_name, content), metadata

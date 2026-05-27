@@ -18,6 +18,7 @@ from app.core.seed_config import (
     make_insert_sql,
 )
 from app.services.graph_service import graph_service
+from app.services.ai.demo_knowledge_seed import seed_demo_knowledge_assets
 
 SEED_DIR = Path(__file__).resolve().parent.parent / "data" / "seed"
 ADMIN_PASSWORD_HASH = "sha256$240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9"
@@ -449,6 +450,8 @@ async def main():
     await seed_super_admin(engine)
     await seed_demo_users(engine)
     await seed_demo_org_units(engine)
+    knowledge_result = await seed_demo_knowledge_assets()
+    print(f"  UPSERT demo knowledge: {knowledge_result['documents']} new documents, {knowledge_result['chunks']} chunks")
 
     print("\n[3/3] Building Neo4j graph...")
     try:

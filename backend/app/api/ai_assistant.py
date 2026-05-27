@@ -4,19 +4,26 @@ import json
 import random
 import uuid
 from datetime import datetime, timedelta
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy import desc, select
 
-from app.api.deps import get_current_user
+from app.api.deps import current_tenant_id, get_current_user
+from app.core.db import db_session
+from app.models.relational import AIAgentRun, AIConversation, AIMessage, AIToolCall
 from app.services.ai.agent_runs import cancel_agent_run, confirm_agent_run, create_agent_run, get_agent_run
 from app.services.ai.audit import list_ai_audit_logs, record_ai_event
 from app.services.ai.client import get_provider
 from app.services.ai.confirmations import consume_confirmation_token
+from app.services.ai.context_builder import context_builder
+from app.services.ai.memory import memory_service
 from app.services.ai.orchestrator import run_agent
 from app.services.ai.policies import decide_ai_permission, decide_skill_permission
 from app.services.ai.providers import ProviderConfigurationError
-from app.services.ai.schemas import AIProviderConfig, AgentRequest, ChatMessage, ChatOptions, DraftSaveRequest
+from app.services.ai.runtime import agent_runtime
+from app.services.ai.schemas import AIProviderConfig, AgentRequest, AgentResponse, ChatMessage, ChatOptions, DraftSaveRequest
 from app.services.ai.settings import (
     AI_SYSTEM_SETTINGS,
     load_persisted_ai_settings,
@@ -55,6 +62,14 @@ class AgentRunConfirmRequest(BaseModel):
     confirmed: bool = True
 
 
+class AgentConversationRequest(BaseModel):
+    title: str | None = None
+    page: str | None = None
+    document_id: str | None = None
+    document_title: str | None = None
+    context: dict[str, Any] | None = None
+
+
 AI_DRAFT_STORE: dict[str, dict] = {}
 
 
@@ -79,6 +94,69 @@ def _normalize_user(user: dict) -> dict:
     normalized = {**user}
     normalized["roles"] = _roles_for_demo_user(normalized)
     return normalized
+
+
+def _user_key(user: dict[str, Any]) -> str:
+    return str(user.get("sub") or user.get("username") or user.get("uid") or "guest")
+
+
+def _now_iso(value: Any) -> str | None:
+    return value.isoformat() if hasattr(value, "isoformat") else None
+
+
+def _serialize_conversation(row: AIConversation) -> dict[str, Any]:
+    return {
+        "id": row.conversation_id,
+        "conversation_id": row.conversation_id,
+        "user_id": row.user_id,
+        "page": row.page,
+        "document_id": row.document_id,
+        "title": row.title,
+        "status": row.status,
+        "last_message": row.last_message,
+        "metadata": row.metadata_json or {},
+        "created_at": _now_iso(row.created_at),
+        "updated_at": _now_iso(row.updated_at),
+    }
+
+
+def _serialize_message(row: AIMessage) -> dict[str, Any]:
+    return {
+        "id": row.message_id,
+        "message_id": row.message_id,
+        "conversation_id": row.conversation_id,
+        "role": row.role,
+        "content": row.content,
+        "evidence": row.evidence or [],
+        "model_name": row.model_name,
+        "usage": row.usage,
+        "status": row.status,
+        "error": row.error,
+        "created_at": _now_iso(row.created_at),
+        "updated_at": _now_iso(row.updated_at),
+    }
+
+
+def _serialize_run(row: AIAgentRun) -> dict[str, Any]:
+    return {
+        "id": row.run_id,
+        "run_id": row.run_id,
+        "conversation_id": row.conversation_id,
+        "user_message_id": row.user_message_id,
+        "assistant_message_id": row.assistant_message_id,
+        "status": row.status,
+        "mode": row.mode,
+        "input_message": row.input_message,
+        "answer": row.answer,
+        "steps": row.steps or [],
+        "evidence": row.evidence or [],
+        "actions": row.actions or [],
+        "risk_level": row.risk_level,
+        "requires_confirmation": row.requires_confirmation,
+        "confirmation_payload": row.confirmation_payload,
+        "created_at": _now_iso(row.created_at),
+        "updated_at": _now_iso(row.updated_at),
+    }
 
 
 def _raise_for_ai_decision(decision):
@@ -241,7 +319,39 @@ async def _run_agent_for_user(body: AgentRequest, current_user: dict):
     _raise_for_ai_decision(base_decision)
     if body.provider_config is None:
         body.provider_config = _settings_to_provider_config(AI_SYSTEM_SETTINGS)
-    result = await run_agent(body, current_user)
+    context = body.context or {}
+    context["_current_user"] = current_user
+    context["_tenant_id"] = current_tenant_id(current_user)
+    context["_user_key"] = _user_key(current_user)
+    body.context = context
+    if (body.context or {}).get("surface") == "knowledge":
+        result = await _run_knowledge_agent_surface_with_context(body)
+    else:
+        result = await run_agent(body, current_user)
+        conversation_id = (body.context or {}).get("conversation_id") or (body.context or {}).get("conversationId")
+        if conversation_id:
+            async with db_session() as session:
+                runtime_context = await context_builder.build(
+                    session,
+                    request=body,
+                    user=current_user,
+                    settings=AI_SYSTEM_SETTINGS,
+                    conversation_id=str(conversation_id),
+                    page=(body.context or {}).get("route") or body.page,
+                    document_id=(body.context or {}).get("document_id") or (body.context or {}).get("documentId"),
+                    tenant_id=current_tenant_id(current_user),
+                    user_key=_user_key(current_user),
+                    evidence=result.evidence,
+                )
+            result.steps.insert(
+                0,
+                {
+                    "id": "step-context-builder",
+                    "type": "context",
+                    "status": "completed",
+                    "sources": runtime_context.get("context_sources") or {},
+                },
+            )
     result.steps = [
         {
             "id": "step-identity",
@@ -278,6 +388,8 @@ async def _run_agent_for_user(body: AgentRequest, current_user: dict):
                 "audit_required": decision.audit_required,
             }
         )
+    for internal_key in ("_current_user", "_tenant_id", "_user_key"):
+        body.context.pop(internal_key, None)
     run = create_agent_run(body, result, current_user)
     if result.actions:
         _audit_ai_event(
@@ -288,6 +400,224 @@ async def _run_agent_for_user(body: AgentRequest, current_user: dict):
     else:
         _audit_ai_event(current_user, "agent_qa_completed", {"run_id": run["run_id"], "evidence_count": len(result.evidence)})
     return result
+
+
+async def _run_knowledge_agent_surface(body: AgentRequest) -> AgentResponse:
+    from app.api.knowledge import _document_context_payload_async, _generate_knowledge_agent_answer, _search_knowledge_payload_async
+
+    context = body.context or {}
+    document_id = context.get("document_id") or context.get("documentId")
+    document_title = context.get("document_title") or context.get("documentTitle") or context.get("pageTitle") or "当前知识文档"
+    intent = agent_runtime.classify_knowledge_intent(body.message)
+    evidence = await _search_knowledge_payload_async(body.message, limit=5, document_id=document_id) if intent == "knowledge" else []
+    if intent == "knowledge" and not evidence and document_id:
+        evidence = (await _document_context_payload_async(str(document_id)))[:5]
+    answer, model_name, usage = await _generate_knowledge_agent_answer(
+        query=body.message,
+        title=str(document_title),
+        evidence=evidence,
+        history=[],
+        memory=[],
+        intent=intent,
+    )
+    steps = [
+        {
+            "id": "step-knowledge-context",
+            "type": "observe",
+            "status": "completed",
+            "surface": "knowledge",
+            "document_id": document_id,
+            "document_title": document_title,
+        },
+        {
+            "id": "step-knowledge-search",
+            "type": "tool",
+            "tool": "knowledge.search",
+            "status": "skipped" if intent == "general" else "completed",
+            "result_count": len(evidence),
+        },
+        {
+            "id": "step-answer",
+            "type": "respond",
+            "status": "completed" if usage.get("mode") != "ai_provider_failed" else "failed",
+            "model": model_name,
+            "provider": usage.get("provider"),
+            "fallback_reason": usage.get("fallback_reason"),
+        },
+    ]
+    return AgentResponse(answer=answer, evidence=evidence, steps=steps, mode="qa")
+
+
+async def _run_knowledge_agent_surface_with_context(body: AgentRequest) -> AgentResponse:
+    from app.api.knowledge import _document_context_payload_async, _generate_knowledge_agent_answer, _search_knowledge_payload_async
+
+    context = body.context or {}
+    document_id = context.get("document_id") or context.get("documentId")
+    document_title = context.get("document_title") or context.get("documentTitle") or context.get("pageTitle") or "当前知识文档"
+    conversation_id = context.get("conversation_id") or context.get("conversationId")
+    intent = agent_runtime.classify_knowledge_intent(body.message)
+    rag_policy = AI_SYSTEM_SETTINGS.get("ragPolicy") or {}
+    rag_enabled = rag_policy.get("enabled", True)
+    top_k = int(rag_policy.get("topK") or 5)
+    evidence = await _search_knowledge_payload_async(body.message, limit=top_k, document_id=document_id) if intent == "knowledge" and rag_enabled else []
+    if intent == "knowledge" and not evidence and document_id:
+        evidence = (await _document_context_payload_async(str(document_id)))[:top_k]
+    async with db_session() as session:
+        runtime_context = await context_builder.build(
+            session,
+            request=body,
+            user=context.get("_current_user") or {},
+            settings=AI_SYSTEM_SETTINGS,
+            conversation_id=str(conversation_id) if conversation_id else None,
+            page=context.get("route") or body.page,
+            document_id=str(document_id) if document_id else None,
+            tenant_id=int(context.get("_tenant_id") or 1),
+            user_key=context.get("_user_key"),
+            evidence=evidence,
+        )
+    answer, model_name, usage = await _generate_knowledge_agent_answer(
+        query=body.message,
+        title=str(document_title),
+        evidence=evidence,
+        history=[],
+        memory=runtime_context.get("memories") or [],
+        intent=intent,
+    )
+    steps = [
+        {
+            "id": "step-knowledge-context",
+            "type": "observe",
+            "status": "completed",
+            "surface": "knowledge",
+            "document_id": document_id,
+            "document_title": document_title,
+        },
+        {
+            "id": "step-context-builder",
+            "type": "context",
+            "status": "completed",
+            "sources": runtime_context.get("context_sources") or {},
+        },
+        {
+            "id": "step-knowledge-search",
+            "type": "tool",
+            "tool": "knowledge.search",
+            "status": "skipped" if intent == "general" or not rag_enabled else "completed",
+            "result_count": len(evidence),
+        },
+        {
+            "id": "step-answer",
+            "type": "respond",
+            "status": "completed" if usage.get("mode") != "ai_provider_failed" else "failed",
+            "model": model_name,
+            "provider": usage.get("provider"),
+            "fallback_reason": usage.get("fallback_reason"),
+        },
+    ]
+    return AgentResponse(answer=answer, evidence=evidence, steps=steps, mode="qa")
+
+
+async def _persist_agent_turn(body: AgentRequest, result: AgentResponse, current_user: dict) -> dict[str, Any] | None:
+    conversation_id = str((body.context or {}).get("conversation_id") or (body.context or {}).get("conversationId") or "")
+    if not conversation_id:
+        return None
+
+    user_key = _user_key(current_user)
+    async with db_session() as session:
+        conversation = await session.scalar(
+            select(AIConversation).where(
+                AIConversation.conversation_id == conversation_id,
+                AIConversation.user_id == user_key,
+                AIConversation.status == "active",
+            )
+        )
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Agent conversation not found")
+
+        user_message = AIMessage(
+            message_id=f"msg-{uuid.uuid4().hex[:12]}",
+            conversation_id=conversation_id,
+            role="user",
+            content=body.message,
+            evidence=[],
+            status="completed",
+        )
+        assistant_message = AIMessage(
+            message_id=f"msg-{uuid.uuid4().hex[:12]}",
+            conversation_id=conversation_id,
+            role="assistant",
+            content=result.answer,
+            evidence=result.evidence,
+            model_name=next(
+                (
+                    str(step.get("model"))
+                    for step in reversed(result.steps)
+                    if step.get("type") == "respond" and step.get("model")
+                ),
+                None,
+            ),
+            usage={"mode": result.mode},
+            status="completed",
+        )
+        run = AIAgentRun(
+            run_id=result.run_id or f"run-{uuid.uuid4().hex[:12]}",
+            conversation_id=conversation_id,
+            user_message_id=user_message.message_id,
+            assistant_message_id=assistant_message.message_id,
+            status="waiting_confirmation" if result.requires_confirmation else "completed",
+            mode=result.mode,
+            input_message=body.message,
+            answer=result.answer,
+            steps=result.steps,
+            evidence=result.evidence,
+            actions=[action.model_dump() for action in result.actions],
+            risk_level=result.risk_level,
+            requires_confirmation=result.requires_confirmation,
+            confirmation_payload=result.confirmation_payload or None,
+        )
+        records: list[Any] = [user_message, assistant_message, run]
+        if result.evidence or (body.context or {}).get("surface") == "knowledge":
+            records.append(
+                AIToolCall(
+                    call_id=f"call-{uuid.uuid4().hex[:12]}",
+                    run_id=run.run_id,
+                    tool_name="knowledge.search",
+                    skill_name="knowledge.answer_question",
+                    input={
+                        "query": body.message,
+                        "document_id": (body.context or {}).get("document_id") or (body.context or {}).get("documentId"),
+                    },
+                    output={"result_count": len(result.evidence), "results": result.evidence},
+                    status="completed",
+                    duration_ms=0,
+                )
+            )
+        conversation.last_message = body.message
+        conversation.metadata_json = {
+            **(conversation.metadata_json or {}),
+            "last_run_id": run.run_id,
+            "last_surface": (body.context or {}).get("surface") or "global",
+        }
+        session.add_all(records)
+        await memory_service.maybe_compact_conversation(
+            session,
+            conversation=conversation,
+            tenant_id=current_tenant_id(current_user),
+            user_key=user_key,
+            settings=AI_SYSTEM_SETTINGS,
+        )
+        await session.commit()
+        await session.refresh(conversation)
+        await session.refresh(user_message)
+        await session.refresh(assistant_message)
+        await session.refresh(run)
+
+        return {
+            "conversation": _serialize_conversation(conversation),
+            "user_message": _serialize_message(user_message),
+            "assistant_message": _serialize_message(assistant_message),
+            "run": _serialize_run(run),
+        }
 
 
 @router.get("/skills")
@@ -304,6 +634,149 @@ async def get_ai_tools(user: dict = Depends(get_current_user)):
     base_decision = decide_ai_permission(current_user, AI_SYSTEM_SETTINGS, "qa", risk_level="low")
     _raise_for_ai_decision(base_decision)
     return {"data": list_tools()}
+
+
+@router.post("/agent/conversations")
+async def create_agent_conversation(body: AgentConversationRequest, user: dict = Depends(get_current_user)):
+    current_user = _normalize_user(user)
+    user_key = _user_key(current_user)
+    context = body.context or {}
+    page = body.page or str(context.get("route") or context.get("page") or "global")
+    document_id = body.document_id or context.get("document_id") or context.get("documentId")
+    document_title = body.document_title or context.get("document_title") or context.get("documentTitle")
+    title = body.title or document_title or "当前窗口"
+    metadata = {
+        **context,
+        "surface": context.get("surface") or ("knowledge" if document_id else "global"),
+    }
+    async with db_session() as session:
+        record = AIConversation(
+            conversation_id=f"conv-{uuid.uuid4().hex[:12]}",
+            user_id=user_key,
+            page=page,
+            document_id=str(document_id) if document_id else None,
+            title=title,
+            status="active",
+            metadata_json=metadata,
+        )
+        session.add(record)
+        await session.commit()
+        await session.refresh(record)
+        return {"data": _serialize_conversation(record), "ok": True}
+
+
+@router.get("/agent/conversations")
+async def list_agent_conversations(
+    page: str | None = None,
+    document_id: str | None = None,
+    surface: str | None = None,
+    include_closed: bool = False,
+    limit: int = Query(30, ge=1, le=100),
+    user: dict = Depends(get_current_user),
+):
+    current_user = _normalize_user(user)
+    user_key = _user_key(current_user)
+    async with db_session() as session:
+        stmt = select(AIConversation).where(AIConversation.user_id == user_key)
+        if not include_closed:
+            stmt = stmt.where(AIConversation.status == "active")
+        if page:
+            stmt = stmt.where(AIConversation.page == page)
+        if document_id:
+            stmt = stmt.where(AIConversation.document_id == document_id)
+        stmt = stmt.order_by(desc(AIConversation.updated_at)).limit(limit)
+        rows = (await session.execute(stmt)).scalars().all()
+        if surface:
+            rows = [row for row in rows if (row.metadata_json or {}).get("surface") == surface]
+        return {"data": [_serialize_conversation(row) for row in rows], "ok": True}
+
+
+@router.get("/agent/conversations/{conversation_id}/messages")
+async def list_agent_conversation_messages(conversation_id: str, user: dict = Depends(get_current_user)):
+    current_user = _normalize_user(user)
+    user_key = _user_key(current_user)
+    async with db_session() as session:
+        conversation = await session.scalar(
+            select(AIConversation).where(
+                AIConversation.conversation_id == conversation_id,
+                AIConversation.user_id == user_key,
+            )
+        )
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Agent conversation not found")
+        rows = (
+            await session.execute(
+                select(AIMessage)
+                .where(AIMessage.conversation_id == conversation_id)
+                .order_by(AIMessage.id)
+            )
+        ).scalars().all()
+        return {"data": [_serialize_message(row) for row in rows], "ok": True}
+
+
+@router.delete("/agent/conversations/{conversation_id}")
+async def close_agent_conversation(conversation_id: str, user: dict = Depends(get_current_user)):
+    current_user = _normalize_user(user)
+    user_key = _user_key(current_user)
+    async with db_session() as session:
+        conversation = await session.scalar(
+            select(AIConversation).where(
+                AIConversation.conversation_id == conversation_id,
+                AIConversation.user_id == user_key,
+            )
+        )
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Agent conversation not found")
+        conversation.status = "closed"
+        await load_persisted_ai_settings()
+        if (AI_SYSTEM_SETTINGS.get("compactionPolicy") or {}).get("compactOnClose", True):
+            await memory_service.maybe_compact_conversation(
+                session,
+                conversation=conversation,
+                tenant_id=current_tenant_id(current_user),
+                user_key=user_key,
+                settings=AI_SYSTEM_SETTINGS,
+                force=True,
+            )
+        await session.commit()
+        await session.refresh(conversation)
+        return {"data": _serialize_conversation(conversation), "ok": True}
+
+
+@router.get("/memories")
+async def list_ai_memories(
+    include_candidates: bool = True,
+    limit: int = Query(50, ge=1, le=100),
+    user: dict = Depends(get_current_user),
+):
+    current_user = _normalize_user(user)
+    user_key = _user_key(current_user)
+    async with db_session() as session:
+        rows = await memory_service.list_user_memories(
+            session,
+            tenant_id=current_tenant_id(current_user),
+            user_key=user_key,
+            include_candidates=include_candidates,
+            limit=limit,
+        )
+        return {"data": rows, "ok": True}
+
+
+@router.delete("/memories/{memory_id}")
+async def delete_ai_memory(memory_id: str, user: dict = Depends(get_current_user)):
+    current_user = _normalize_user(user)
+    user_key = _user_key(current_user)
+    async with db_session() as session:
+        memory = await memory_service.delete_user_memory(
+            session,
+            memory_id=memory_id,
+            tenant_id=current_tenant_id(current_user),
+            user_key=user_key,
+        )
+        if not memory:
+            raise HTTPException(status_code=404, detail="AI memory not found")
+        await session.commit()
+        return {"data": memory, "ok": True}
 
 
 @router.post("/chat")
@@ -343,7 +816,11 @@ async def agent_chat(body: AgentRequest, user: dict = Depends(get_current_user))
     """Enterprise AI Agent shell: RAG evidence + structured skill actions."""
     current_user = _normalize_user(user)
     result = await _run_agent_for_user(body, current_user)
-    return result.model_dump()
+    payload = result.model_dump()
+    persisted = await _persist_agent_turn(body, result, current_user)
+    if persisted:
+        payload.update(persisted)
+    return payload
 
 
 @router.post("/agent-runs")

@@ -31,6 +31,7 @@ from app.models.relational import (
     AIToolCall,
     KnowledgeChunk,
     KnowledgeDocument,
+    KnowledgeObjectLink,
 )
 from app.services.ai.knowledge_ingestion import (
     CHUNKS as INGESTED_CHUNKS,
@@ -40,7 +41,9 @@ from app.services.ai.knowledge_ingestion import (
     markdown_to_chunks,
     search_ingested_knowledge,
     update_ocr_corrections,
+    cosine_score,
 )
+from app.services.ai.providers import _stable_embedding
 from app.services.ai.ocr_service import ocr_extract
 from app.services.ai.memory import memory_service
 from app.services.ai.runtime import agent_runtime
@@ -56,6 +59,15 @@ from app.services.ai.ontology_extraction import (
 )
 
 router = APIRouter()
+
+DEMO_KNOWLEDGE_DOCUMENT_ORDER = [
+    "kb-doc-quality-sop-docx",
+    "kb-doc-capa-072-docx",
+    "kb-doc-supplier-8d-xlsx",
+    "kb-doc-process-control-xlsx",
+    "kb-doc-maintenance-log-pdf",
+    "kb-doc-customer-risk-pdf",
+]
 
 
 class KnowledgeSearchBody(BaseModel):
@@ -600,6 +612,177 @@ async def _persist_document_and_chunks(document: dict[str, Any]) -> None:
         pass
 
 
+def _db_document_payload(row: KnowledgeDocument, linked_objects: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    return {
+        "id": row.document_id,
+        "document_id": row.document_id,
+        "source_id": "database",
+        "title": row.title,
+        "doc_type": row.source_type,
+        "source_type": row.source_type,
+        "source_file_name": row.source_file_name,
+        "status": row.status,
+        "updated_at": _now_iso(row.updated_at),
+        "summary": f"Database knowledge asset: {row.source_file_name}",
+        "markdown_content": row.markdown_content,
+        "ocr_status": "ready" if row.ocr_result else None,
+        "ocr_result": row.ocr_result,
+        "permission_scope": row.permission_scope,
+        "owner_user_id": row.owner_user_id,
+        "source_path": row.source_path,
+        "linked_objects": linked_objects or [],
+    }
+
+
+def _db_chunk_payload(
+    chunk: KnowledgeChunk,
+    document: KnowledgeDocument | None = None,
+    score: float | None = None,
+) -> dict[str, Any]:
+    payload = {
+        "chunk_id": chunk.chunk_id,
+        "document_id": chunk.document_id,
+        "title": chunk.title,
+        "chunk_text": chunk.chunk_text,
+        "snippet": chunk.chunk_text[:300],
+        "source_location": chunk.source_location,
+        "permission_scope": chunk.permission_scope,
+        "status": chunk.status,
+    }
+    if document:
+        payload.update({
+            "document_title": document.title,
+            "document_type": document.source_type,
+            "source_file_name": document.source_file_name,
+            "source_name": document.source_file_name,
+            "source_type": document.source_type,
+        })
+    if score is not None:
+        payload["score"] = round(float(score), 4)
+    return payload
+
+
+async def _load_document_links(session, document_ids: list[str]) -> dict[str, list[dict[str, Any]]]:
+    if not document_ids:
+        return {}
+    rows = (
+        await session.execute(
+            select(KnowledgeObjectLink).where(KnowledgeObjectLink.document_id.in_(document_ids))
+        )
+    ).scalars().all()
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(row.document_id, []).append({
+            "type": row.object_type,
+            "id": row.object_id,
+            "name": row.object_name,
+            "confidence": row.confidence,
+            "source_location": row.source_location,
+            "status": row.status,
+        })
+    return grouped
+
+
+async def _get_persisted_document(document_id: str) -> dict[str, Any] | None:
+    try:
+        async with db_session() as session:
+            row = await session.scalar(
+                select(KnowledgeDocument).where(KnowledgeDocument.document_id == document_id)
+            )
+            if not row:
+                return None
+            links = await _load_document_links(session, [document_id])
+            return _db_document_payload(row, links.get(document_id, []))
+    except Exception:
+        return None
+
+
+async def _list_persisted_documents(source_id: str | None = None) -> list[dict[str, Any]]:
+    if source_id and source_id not in {"database", "uploaded"}:
+        return []
+    try:
+        async with db_session() as session:
+            rows = (await session.execute(select(KnowledgeDocument))).scalars().all()
+            rows = sorted(
+                rows,
+                key=lambda row: (
+                    DEMO_KNOWLEDGE_DOCUMENT_ORDER.index(row.document_id)
+                    if row.document_id in DEMO_KNOWLEDGE_DOCUMENT_ORDER
+                    else 999,
+                    -(row.updated_at.timestamp() if row.updated_at else 0),
+                ),
+            )
+            links = await _load_document_links(session, [row.document_id for row in rows])
+            return [_db_document_payload(row, links.get(row.document_id, [])) for row in rows]
+    except Exception:
+        return []
+
+
+async def _list_persisted_chunks(document_id: str) -> list[dict[str, Any]]:
+    try:
+        async with db_session() as session:
+            document = await session.scalar(
+                select(KnowledgeDocument).where(KnowledgeDocument.document_id == document_id)
+            )
+            if not document:
+                return []
+            rows = (
+                await session.execute(
+                    select(KnowledgeChunk).where(KnowledgeChunk.document_id == document_id)
+                )
+            ).scalars().all()
+            return [_db_chunk_payload(row, document) for row in rows]
+    except Exception:
+        return []
+
+
+async def _search_persisted_knowledge_payload(
+    query: str,
+    *,
+    limit: int = 5,
+    document_id: str | None = None,
+    object_type: str | None = None,
+    object_id: str | None = None,
+) -> list[dict[str, Any]]:
+    try:
+        async with db_session() as session:
+            allowed_document_ids: set[str] | None = None
+            if object_type or object_id:
+                link_stmt = select(KnowledgeObjectLink)
+                if object_type:
+                    link_stmt = link_stmt.where(KnowledgeObjectLink.object_type == object_type)
+                if object_id:
+                    normalized = f"%{object_id}%"
+                    link_stmt = link_stmt.where(
+                        KnowledgeObjectLink.object_id.ilike(normalized)
+                        | KnowledgeObjectLink.object_name.ilike(normalized)
+                    )
+                allowed_document_ids = {
+                    row.document_id for row in (await session.execute(link_stmt)).scalars().all()
+                }
+                if not allowed_document_ids:
+                    return []
+
+            chunk_stmt = select(KnowledgeChunk, KnowledgeDocument).join(
+                KnowledgeDocument,
+                KnowledgeDocument.document_id == KnowledgeChunk.document_id,
+            )
+            canonical_document_id = _canonical_document_id(document_id)
+            if canonical_document_id:
+                chunk_stmt = chunk_stmt.where(KnowledgeChunk.document_id == canonical_document_id)
+            if allowed_document_ids is not None:
+                chunk_stmt = chunk_stmt.where(KnowledgeChunk.document_id.in_(allowed_document_ids))
+
+            query_embedding = _stable_embedding(query)
+            candidates = []
+            for chunk, document in (await session.execute(chunk_stmt)).all():
+                score = cosine_score(query_embedding, chunk.embedding or _stable_embedding(chunk.chunk_text))
+                candidates.append(_db_chunk_payload(chunk, document, score))
+            return sorted(candidates, key=lambda item: item.get("score", 0), reverse=True)[: max(1, min(limit, 10))]
+    except Exception:
+        return []
+
+
 def _search_knowledge_payload(
     query: str,
     *,
@@ -637,6 +820,36 @@ def _search_knowledge_payload(
     return results[: max(1, min(limit, 10))]
 
 
+async def _search_knowledge_payload_async(
+    query: str,
+    *,
+    limit: int = 5,
+    document_id: str | None = None,
+    object_type: str | None = None,
+    object_id: str | None = None,
+) -> list[dict[str, Any]]:
+    persisted = await _search_persisted_knowledge_payload(
+        query,
+        limit=limit,
+        document_id=document_id,
+        object_type=object_type,
+        object_id=object_id,
+    )
+    memory_and_static = _search_knowledge_payload(
+        query,
+        limit=limit,
+        document_id=document_id,
+        object_type=object_type,
+        object_id=object_id,
+    )
+    by_key: dict[str, dict[str, Any]] = {}
+    for item in [*memory_and_static, *persisted]:
+        key = str(item.get("chunk_id") or item.get("document_id") or item.get("source_location"))
+        if key not in by_key:
+            by_key[key] = item
+    return list(by_key.values())[: max(1, min(limit, 10))]
+
+
 def _document_context_payload(document_id: str | None) -> list[dict[str, Any]]:
     document_id = _canonical_document_id(document_id)
     if not document_id:
@@ -660,6 +873,30 @@ def _document_context_payload(document_id: str | None) -> list[dict[str, Any]]:
             "score": 1.0,
         }
     ]
+
+
+async def _document_context_payload_async(document_id: str | None) -> list[dict[str, Any]]:
+    document_id = _canonical_document_id(document_id)
+    if not document_id:
+        return []
+    persisted_chunks = await _list_persisted_chunks(document_id)
+    if persisted_chunks:
+        for chunk in persisted_chunks:
+            chunk.setdefault("score", 1.0)
+        return persisted_chunks
+    persisted_document = await _get_persisted_document(document_id)
+    if persisted_document:
+        return [{
+            "document_id": persisted_document["document_id"],
+            "document_title": persisted_document["title"],
+            "document_type": persisted_document["source_type"],
+            "document_summary": persisted_document["summary"],
+            "snippet": persisted_document["markdown_content"][:300],
+            "source_location": persisted_document["source_file_name"],
+            "linked_objects": persisted_document.get("linked_objects", []),
+            "score": 1.0,
+        }]
+    return _document_context_payload(document_id)
 
 
 def _is_identity_question(query: str) -> bool:
@@ -929,12 +1166,12 @@ async def send_agent_message(
             )
         ).scalars().all()
         intent = agent_runtime.classify_knowledge_intent(content)
-        evidence = _search_knowledge_payload(content, limit=5, document_id=conversation.document_id) if intent == "knowledge" else []
+        evidence = await _search_knowledge_payload_async(content, limit=5, document_id=conversation.document_id) if intent == "knowledge" else []
         if intent == "knowledge" and (
             not evidence or any(term in content for term in ["document", "content", "contains", "summary", "summarize", "what is", "文档", "内容", "包含", "总结", "概括"])
         ):
             by_id = {item.get("id") or item.get("chunk_id") or item.get("source_location"): item for item in evidence}
-            for item in _document_context_payload(conversation.document_id):
+            for item in await _document_context_payload_async(conversation.document_id):
                 key = item.get("id") or item.get("chunk_id") or item.get("source_location")
                 by_id.setdefault(key, item)
             evidence = list(by_id.values())[:5]
@@ -1060,9 +1297,10 @@ async def send_agent_message(
 
 @router.get("/documents")
 async def list_documents(source_id: str | None = None):
-    documents = KNOWLEDGE_DOCUMENTS
-    if source_id:
+    documents = [] if source_id == "database" else KNOWLEDGE_DOCUMENTS
+    if source_id and source_id != "database":
         documents = [item for item in documents if item["source_id"] == source_id]
+    persisted = await _list_persisted_documents(source_id)
     ingested = [
         {
             "id": item["document_id"],
@@ -1078,7 +1316,9 @@ async def list_documents(source_id: str | None = None):
         }
         for item in INGESTED_DOCUMENTS.values()
     ]
-    return {"data": [*documents, *ingested]}
+    persisted_ids = {item["id"] for item in persisted}
+    ingested = [item for item in ingested if item["id"] not in persisted_ids]
+    return {"data": [*documents, *persisted, *ingested]}
 
 
 @router.post("/assets/upload")
@@ -1169,6 +1409,24 @@ async def export_knowledge_extraction_job(job_id: str, format: str = "json"):
 async def get_ingestion_job(job_id: str):
     job = INGESTION_JOBS.get(job_id)
     if not job:
+        try:
+            from app.models.relational import KnowledgeIngestionJob
+
+            async with db_session() as session:
+                row = await session.scalar(select(KnowledgeIngestionJob).where(KnowledgeIngestionJob.job_id == job_id))
+                if row:
+                    job = {
+                        "job_id": row.job_id,
+                        "asset_id": row.asset_id,
+                        "document_id": row.document_id,
+                        "status": row.status,
+                        "error": row.error,
+                        "created_at": _now_iso(row.created_at),
+                        "updated_at": _now_iso(row.updated_at),
+                    }
+        except Exception:
+            job = None
+    if not job:
         raise HTTPException(status_code=404, detail="Knowledge ingestion job not found")
     return {"data": job}
 
@@ -1178,6 +1436,9 @@ async def get_document(document_id: str):
     ingested = INGESTED_DOCUMENTS.get(document_id)
     if ingested:
         return {"data": ingested}
+    persisted = await _get_persisted_document(document_id)
+    if persisted:
+        return {"data": persisted}
     document = next((item for item in KNOWLEDGE_DOCUMENTS if item["id"] == document_id), None)
     if not document:
         raise HTTPException(status_code=404, detail="Knowledge document not found")
@@ -1188,6 +1449,15 @@ async def get_document(document_id: str):
 async def get_document_markdown(document_id: str):
     ingested = INGESTED_DOCUMENTS.get(document_id)
     if not ingested:
+        persisted = await _get_persisted_document(document_id)
+        if persisted:
+            return {
+                "data": {
+                    "document_id": document_id,
+                    "markdown_content": persisted["markdown_content"],
+                    "source_file_name": persisted["source_file_name"],
+                }
+            }
         raise HTTPException(status_code=404, detail="Markdown document not found")
     return {
         "data": {
@@ -1202,6 +1472,9 @@ async def get_document_markdown(document_id: str):
 async def get_document_ocr(document_id: str):
     ingested = INGESTED_DOCUMENTS.get(document_id)
     if not ingested:
+        persisted = await _get_persisted_document(document_id)
+        if persisted and persisted.get("ocr_result"):
+            return {"data": {"document_id": document_id, **persisted["ocr_result"]}}
         raise HTTPException(status_code=404, detail="OCR result not found")
     ocr_result = ingested.get("ocr_result")
     if not ocr_result:
@@ -1246,6 +1519,9 @@ async def list_document_chunks(document_id: str):
     if document_id in INGESTED_DOCUMENTS:
         chunks = [chunk for chunk in INGESTED_CHUNKS.values() if chunk["document_id"] == document_id]
         return {"data": chunks}
+    persisted = await _list_persisted_chunks(document_id)
+    if persisted:
+        return {"data": persisted}
     if not any(item["id"] == document_id for item in KNOWLEDGE_DOCUMENTS):
         raise HTTPException(status_code=404, detail="Knowledge document not found")
     chunks = [chunk for chunk in KNOWLEDGE_CHUNKS if chunk["document_id"] == document_id]
@@ -1329,7 +1605,48 @@ async def get_related_knowledge(object_type: str | None = None, object_id: str |
             "chunk_text": first_chunk["chunk_text"] if first_chunk else document["summary"],
             "score": 0.88 if object_type or object_id else 0.72,
         })
-    return {"data": related[: max(1, min(limit, 10))]}
+    persisted = []
+    try:
+        async with db_session() as session:
+            link_stmt = select(KnowledgeObjectLink)
+            if object_type:
+                link_stmt = link_stmt.where(KnowledgeObjectLink.object_type == object_type)
+            if object_id:
+                normalized = f"%{object_id}%"
+                link_stmt = link_stmt.where(
+                    KnowledgeObjectLink.object_id.ilike(normalized)
+                    | KnowledgeObjectLink.object_name.ilike(normalized)
+                )
+            links = (await session.execute(link_stmt)).scalars().all()
+            document_ids = list({link.document_id for link in links})
+            if document_ids:
+                documents = (
+                    await session.execute(
+                        select(KnowledgeDocument).where(KnowledgeDocument.document_id.in_(document_ids))
+                    )
+                ).scalars().all()
+                first_chunks = {
+                    chunk.document_id: chunk
+                    for chunk in (
+                        await session.execute(
+                            select(KnowledgeChunk).where(KnowledgeChunk.document_id.in_(document_ids))
+                        )
+                    ).scalars().all()
+                }
+                link_map = await _load_document_links(session, document_ids)
+                for document in documents:
+                    first_chunk = first_chunks.get(document.document_id)
+                    persisted.append({
+                        **_db_document_payload(document, link_map.get(document.document_id, [])),
+                        "source_name": document.source_file_name,
+                        "source_type": document.source_type,
+                        "source_ref": first_chunk.source_location if first_chunk else document.source_file_name,
+                        "chunk_text": first_chunk.chunk_text if first_chunk else document.markdown_content[:500],
+                        "score": 0.9,
+                    })
+    except Exception:
+        persisted = []
+    return {"data": [*persisted, *related][: max(1, min(limit, 10))]}
 
 
 @router.post("/search")
@@ -1342,7 +1659,7 @@ async def search_knowledge(body: KnowledgeSearchBody):
         "data": {
             "query": query,
             "answer": "\u5df2\u68c0\u7d22\u5230\u76f8\u5173\u77e5\u8bc6\u8bc1\u636e\u3002\u8bf7\u7ed3\u5408 results \u4e2d\u7684\u6765\u6e90\u3001\u7247\u6bb5\u548c\u5173\u8054\u5bf9\u8c61\u8fdb\u884c\u590d\u6838\u3002",
-            "results": _search_knowledge_payload(
+            "results": await _search_knowledge_payload_async(
                 query,
                 limit=body.limit,
                 object_type=body.object_type,

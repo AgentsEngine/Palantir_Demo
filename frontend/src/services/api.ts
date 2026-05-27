@@ -196,6 +196,8 @@ export const listKnowledgeDocuments = (sourceId?: string) =>
   api.get('/knowledge/documents', { params: { source_id: sourceId } });
 export const listKnowledgeChunks = (documentId: string) =>
   api.get(`/knowledge/documents/${documentId}/chunks`);
+export const getKnowledgeDocumentMarkdown = (documentId: string) =>
+  api.get(`/knowledge/documents/${documentId}/markdown`);
 export const listKnowledgeCards = (params?: { space_id?: string; status?: string }) =>
   api.get('/knowledge/cards', { params });
 export const getRelatedKnowledgeCards = (params?: { object_type?: string; object_id?: string; limit?: number }) =>
@@ -322,6 +324,18 @@ export const sendChat = (message: string, sessionId?: string) =>
   api.post('/ai/chat', { message, session_id: sessionId });
 export const smartAnalyze = (query: string) => api.post('/ai/analyze', { query });
 export const sendAgentChat = (data: Record<string, unknown>) => api.post('/ai/agent', data);
+export const createAgentConversation = (data: Record<string, unknown>) =>
+  api.post('/ai/agent/conversations', data);
+export const listAgentConversations = (params?: Record<string, unknown>) =>
+  api.get('/ai/agent/conversations', { params });
+export const listAgentConversationMessages = (conversationId: string) =>
+  api.get(`/ai/agent/conversations/${conversationId}/messages`);
+export const closeAgentConversation = (conversationId: string) =>
+  api.delete(`/ai/agent/conversations/${conversationId}`);
+export const listAIMemories = (params?: Record<string, unknown>) =>
+  api.get('/ai/memories', { params });
+export const deleteAIMemory = (memoryId: string) =>
+  api.delete(`/ai/memories/${memoryId}`);
 export const testAIProvider = (providerConfig: Record<string, unknown>) =>
   api.post('/ai/provider/test', { provider_config: providerConfig });
 export const getAISettings = () => api.get('/ai/settings');

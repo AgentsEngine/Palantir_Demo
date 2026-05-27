@@ -5,8 +5,8 @@ import {
   AppstoreOutlined,
   AuditOutlined,
   BellOutlined,
-  BranchesOutlined,
   DatabaseOutlined,
+  DeleteOutlined,
   FileSearchOutlined,
   KeyOutlined,
   NodeIndexOutlined,
@@ -44,7 +44,17 @@ import { useAuthStore } from '../../stores/authStore';
 import AppMenuManagement from '../SystemAdmin/AppMenuManagement';
 import IdentityAccessManagement from '../SystemAdmin/IdentityAccessManagement';
 import SemanticAssetCenter, { KnowledgeCenter } from '../SystemAdmin/SemanticAssetCenter';
-import { adminListUsers, getAISettings, listAuditLogs, testSavedAISettings, updateAISettings } from '../../services/api';
+import {
+  adminListUsers,
+  closeAgentConversation,
+  deleteAIMemory,
+  getAISettings,
+  listAgentConversations,
+  listAIMemories,
+  listAuditLogs,
+  testSavedAISettings,
+  updateAISettings,
+} from '../../services/api';
 
 cytoscape.use(dagre);
 
@@ -71,6 +81,12 @@ const GLM_CODING_PLAN_DEFAULTS = {
   baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
   chatModel: 'GLM-5.1',
   reasoningModel: 'GLM-5.1',
+};
+const DEEPSEEK_AI_DEFAULTS = {
+  provider: 'deepseek',
+  baseUrl: 'https://api.deepseek.com',
+  chatModel: 'deepseek-chat',
+  reasoningModel: 'deepseek-reasoner',
 };
 
 interface AuditLogRecord {
@@ -106,6 +122,17 @@ function normalizeAISettings(settings: Record<string, any>) {
       normalized.visionModel = GLM_AI_DEFAULTS.visionModel;
     }
   }
+  if (normalized.provider === 'deepseek') {
+    if (!normalized.baseUrl || String(normalized.baseUrl).includes('bigmodel.cn') || String(normalized.baseUrl).includes('api.openai.com')) {
+      normalized.baseUrl = DEEPSEEK_AI_DEFAULTS.baseUrl;
+    }
+    if (!normalized.chatModel || String(normalized.chatModel).startsWith('glm-') || String(normalized.chatModel).startsWith('GLM-') || String(normalized.chatModel).startsWith('gpt-')) {
+      normalized.chatModel = DEEPSEEK_AI_DEFAULTS.chatModel;
+    }
+    if (!normalized.reasoningModel || String(normalized.reasoningModel).startsWith('glm-') || String(normalized.reasoningModel).startsWith('GLM-') || String(normalized.reasoningModel).startsWith('gpt-')) {
+      normalized.reasoningModel = DEEPSEEK_AI_DEFAULTS.reasoningModel;
+    }
+  }
   return normalized;
 }
 
@@ -116,8 +143,12 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
   const identityDefaultTab = activeSection === 'roles' ? 'roles' : activeSection === 'orgs' ? 'orgs' : 'users';
   const normalizedSection = ['users', 'roles', 'orgs'].includes(activeSection)
     ? 'identity-access'
+    : activeSection === 'ai-personal'
+      ? 'account'
     : activeSection === 'palantir-config' || activeSection === 'data-ontology'
       ? 'data-assets'
+      : activeSection === 'knowledge-graph'
+        ? 'knowledge'
       : activeSection;
   const roles = user?.roles?.length ? user.roles.map((role: any) => role.label || role.name).join(' / ') : '-';
   const roleLabel = user?.is_admin ? '系统管理员' : user?.roles?.[0]?.label || '业务用户';
@@ -171,12 +202,6 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
         label: '知识库中心',
         icon: <FileSearchOutlined />,
         children: <KnowledgeCenter />,
-      },
-      {
-        key: 'knowledge-graph',
-        label: '知识图谱中心',
-        icon: <BranchesOutlined />,
-        children: <SemanticAssetCenter view="graph-assets" />,
       },
       {
         key: 'identity-access',
@@ -325,6 +350,99 @@ function PreferencePanel() {
           <span><Switch defaultChecked /> <SafetyCertificateOutlined /> 风险与质量预警</span>
           <span><Switch /> <ApiOutlined /> 数据任务运行结果</span>
         </Space>
+      </Card>
+    </div>
+  );
+}
+
+function PersonalAIPanel() {
+  const [memories, setMemories] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const [memoryResponse, conversationResponse] = await Promise.all([
+        listAIMemories({ include_candidates: true, limit: 50 }),
+        listAgentConversations({ include_closed: true, limit: 50 }),
+      ]);
+      setMemories(memoryResponse.data?.data || []);
+      setConversations(conversationResponse.data?.data || []);
+    } catch {
+      message.warning('AI 记忆或历史暂时不可用');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  return (
+    <div className="account-center-grid two-columns">
+      <Card title="我的 AI 记忆" className="account-panel-card">
+        <Table
+          size="small"
+          loading={loading}
+          rowKey="memory_id"
+          dataSource={memories}
+          pagination={{ pageSize: 6 }}
+          columns={[
+            { title: '类型', dataIndex: 'memory_type', width: 110, render: (value) => <Tag>{value || 'summary'}</Tag> },
+            { title: '摘要', dataIndex: 'summary', ellipsis: true },
+            { title: '状态', dataIndex: 'status', width: 90 },
+            {
+              title: '操作',
+              width: 82,
+              render: (_, record: any) => (
+                <Button
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={async () => {
+                    await deleteAIMemory(record.memory_id);
+                    message.success('AI 记忆已删除');
+                    void refresh();
+                  }}
+                />
+              ),
+            },
+          ]}
+        />
+      </Card>
+      <Card title="我的 AI 历史窗口" className="account-panel-card">
+        <Table
+          size="small"
+          loading={loading}
+          rowKey="conversation_id"
+          dataSource={conversations}
+          pagination={{ pageSize: 6 }}
+          columns={[
+            { title: '标题', dataIndex: 'title', ellipsis: true },
+            { title: '页面', dataIndex: 'page', width: 150, ellipsis: true },
+            { title: '状态', dataIndex: 'status', width: 80 },
+            {
+              title: '操作',
+              width: 82,
+              render: (_, record: any) => (
+                <Button
+                  size="small"
+                  danger
+                  disabled={record.status === 'closed'}
+                  onClick={async () => {
+                    await closeAgentConversation(record.conversation_id);
+                    message.success('AI 窗口已关闭');
+                    void refresh();
+                  }}
+                >
+                  关闭
+                </Button>
+              ),
+            },
+          ]}
+        />
       </Card>
     </div>
   );
@@ -489,6 +607,29 @@ function AIPlatformPanelV2() {
     retentionDays: 90,
     dailyLimit: 1000,
     userDailyLimit: 100,
+    contextPolicy: { recentMessageLimit: 10, maxContextTokens: 12000, showContextSources: true },
+    ragPolicy: { enabled: true, topK: 5, maxEvidenceChars: 1200, similarityThreshold: 0.15 },
+    memoryPolicy: {
+      enabled: false,
+      recallLimit: 5,
+      allowedTypes: ['summary', 'fact', 'preference', 'task_state', 'decision'],
+      defaultVisibility: 'private',
+      retentionDays: 90,
+    },
+    compactionPolicy: {
+      enabled: true,
+      triggerMessageCount: 20,
+      triggerTokenCount: 12000,
+      compactOnClose: true,
+      summaryDetail: 'standard',
+    },
+    safetyPolicy: {
+      sensitiveMasking: true,
+      blockSecretMemory: true,
+      highRiskConfirm: true,
+      maxToolSteps: 5,
+      toolTimeoutSeconds: 30,
+    },
   }), []);
 
   useEffect(() => {
@@ -567,6 +708,12 @@ function AIPlatformPanelV2() {
   const applyProviderPreset = (provider: string) => {
     if (provider === 'glm') {
       const nextSettings = { ...form.getFieldsValue(), ...GLM_AI_DEFAULTS };
+      form.setFieldsValue(nextSettings);
+      saveLocalSettings(nextSettings);
+      return;
+    }
+    if (provider === 'deepseek') {
+      const nextSettings = normalizeAISettings({ ...form.getFieldsValue(), ...DEEPSEEK_AI_DEFAULTS });
       form.setFieldsValue(nextSettings);
       saveLocalSettings(nextSettings);
     }
@@ -720,6 +867,54 @@ function AIPlatformPanelV2() {
                       ),
                     },
                     {
+                      key: 'context',
+                      label: '上下文预算',
+                      children: (
+                        <div className="ai-tab-grid">
+                          <Row gutter={12}>
+                            <Col span={8}><Form.Item name={['contextPolicy', 'recentMessageLimit']} label="最近消息条数"><Input type="number" min={2} max={50} /></Form.Item></Col>
+                            <Col span={8}><Form.Item name={['contextPolicy', 'maxContextTokens']} label="最大上下文 Token"><Input type="number" min={1000} max={200000} /></Form.Item></Col>
+                            <Col span={8}><Form.Item name={['contextPolicy', 'showContextSources']} label="显示上下文来源" valuePropName="checked"><Switch /></Form.Item></Col>
+                          </Row>
+                          <div className="ai-model-route">
+                            <span>模型调用只读取最近消息、相关记忆和检索证据，完整 transcript 仅用于审计与回放。</span>
+                          </div>
+                        </div>
+                      ),
+                    },
+                    {
+                      key: 'memory',
+                      label: '记忆与压缩',
+                      children: (
+                        <div className="ai-tab-grid">
+                          <div className="ai-switch-panel">
+                            <Form.Item name={['memoryPolicy', 'enabled']} label="启用长期记忆" valuePropName="checked"><Switch /></Form.Item>
+                            <Form.Item name={['compactionPolicy', 'enabled']} label="启用会话压缩" valuePropName="checked"><Switch /></Form.Item>
+                            <Form.Item name={['compactionPolicy', 'compactOnClose']} label="关闭窗口时压缩" valuePropName="checked"><Switch /></Form.Item>
+                          </div>
+                          <Row gutter={12}>
+                            <Col span={8}><Form.Item name={['memoryPolicy', 'recallLimit']} label="记忆召回条数"><Input type="number" min={0} max={20} /></Form.Item></Col>
+                            <Col span={8}><Form.Item name={['memoryPolicy', 'retentionDays']} label="记忆保留天数"><Input type="number" min={1} max={3650} /></Form.Item></Col>
+                            <Col span={8}><Form.Item name={['memoryPolicy', 'defaultVisibility']} label="默认可见性"><Select options={[{ label: 'private', value: 'private' }, { label: 'team', value: 'team' }, { label: 'tenant', value: 'tenant' }]} /></Form.Item></Col>
+                          </Row>
+                          <Row gutter={12}>
+                            <Col span={8}><Form.Item name={['compactionPolicy', 'triggerMessageCount']} label="压缩触发消息数"><Input type="number" min={2} max={200} /></Form.Item></Col>
+                            <Col span={8}><Form.Item name={['compactionPolicy', 'triggerTokenCount']} label="压缩触发 Token"><Input type="number" min={1000} max={200000} /></Form.Item></Col>
+                            <Col span={8}><Form.Item name={['compactionPolicy', 'summaryDetail']} label="摘要粒度"><Select options={[{ label: '简洁', value: 'compact' }, { label: '标准', value: 'standard' }, { label: '详细', value: 'detailed' }]} /></Form.Item></Col>
+                          </Row>
+                          <Form.Item name={['memoryPolicy', 'allowedTypes']} label="允许记忆类型">
+                            <Select mode="multiple" options={[
+                              { label: 'summary', value: 'summary' },
+                              { label: 'fact', value: 'fact' },
+                              { label: 'preference', value: 'preference' },
+                              { label: 'task_state', value: 'task_state' },
+                              { label: 'decision', value: 'decision' },
+                            ]} />
+                          </Form.Item>
+                        </div>
+                      ),
+                    },
+                    {
                       key: 'capabilities',
                       label: '能力与工具',
                       children: (
@@ -767,6 +962,12 @@ function AIPlatformPanelV2() {
                       children: (
                         <div className="ai-tab-grid">
                           <Form.Item name="ragEnabled" label="启用知识库问答" valuePropName="checked"><Switch /></Form.Item>
+                          <Row gutter={12}>
+                            <Col span={8}><Form.Item name={['ragPolicy', 'enabled']} label="RAG 进入上下文" valuePropName="checked"><Switch /></Form.Item></Col>
+                            <Col span={8}><Form.Item name={['ragPolicy', 'topK']} label="证据 Top K"><Input type="number" min={1} max={20} /></Form.Item></Col>
+                            <Col span={8}><Form.Item name={['ragPolicy', 'maxEvidenceChars']} label="单条证据最大字符"><Input type="number" min={200} max={5000} /></Form.Item></Col>
+                          </Row>
+                          <Form.Item name={['ragPolicy', 'similarityThreshold']} label="相似度阈值"><Input /></Form.Item>
                           <Form.Item name="knowledgeScopes" label="知识范围">
                             <Select mode="multiple" options={[
                               { label: '项目文档', value: 'project_docs' },
@@ -820,6 +1021,13 @@ function AIPlatformPanelV2() {
               <Card size="small" title="安全、审计与额度" className="account-panel-card ai-policy-card">
                 <Form.Item name="highRiskConfirm" label="高风险动作二次确认" valuePropName="checked"><Switch /></Form.Item>
                 <Form.Item name="sensitiveMasking" label="敏感字段脱敏" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item name={['safetyPolicy', 'highRiskConfirm']} label="Agent 高风险确认" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item name={['safetyPolicy', 'sensitiveMasking']} label="上下文敏感信息脱敏" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item name={['safetyPolicy', 'blockSecretMemory']} label="禁止密钥写入记忆" valuePropName="checked"><Switch /></Form.Item>
+                <Row gutter={12}>
+                  <Col span={12}><Form.Item name={['safetyPolicy', 'maxToolSteps']} label="最大工具步数"><Input type="number" min={1} max={20} /></Form.Item></Col>
+                  <Col span={12}><Form.Item name={['safetyPolicy', 'toolTimeoutSeconds']} label="工具超时秒数"><Input type="number" min={5} max={180} /></Form.Item></Col>
+                </Row>
                 <Form.Item name="forbiddenActions" label="禁止动作清单">
                   <Select mode="multiple" options={[
                     { label: '自动下单', value: 'auto_order' },
@@ -899,7 +1107,7 @@ const closedLoopNodes: ClosedLoopNode[] = [
 
 const closedLoopEdges: ClosedLoopEdge[] = [
   { id: 'edge-defect-event', source: 'defect', target: 'quality-event', type: 'TRIGGERS', label: '规则触发', condition: '缺陷率 > 2.0% 且严重度 >= Major', status: 'published', riskLevel: 'critical', evidence: '质量检验规则 / defect_rate_threshold', frontendVisible: true },
-  { id: 'edge-event-batch', source: 'quality-event', target: 'batch', type: 'AFFECTS', label: '影响批次', condition: 'event.material_batch_id = batch.batch_no', status: 'published', riskLevel: 'high', evidence: '知识图谱中心 / 物料批次关系', frontendVisible: true },
+  { id: 'edge-event-batch', source: 'quality-event', target: 'batch', type: 'AFFECTS', label: '影响批次', condition: 'event.material_batch_id = batch.batch_no', status: 'published', riskLevel: 'high', evidence: '知识库图谱 / 物料批次关系', frontendVisible: true },
   { id: 'edge-batch-supplier', source: 'batch', target: 'supplier', type: 'SUPPLIED_BY', label: '供应来源', condition: 'batch.supplier_id = supplier.id', status: 'published', riskLevel: 'medium', evidence: '数据资产中心 / supplier master', frontendVisible: true },
   { id: 'edge-event-workorder', source: 'quality-event', target: 'workorder', type: 'IMPACTS', label: '影响工单', condition: '批次已投产或占用生产计划', status: 'published', riskLevel: 'medium', evidence: 'Graph impact-analysis', frontendVisible: true },
   { id: 'edge-event-ai', source: 'quality-event', target: 'ai-action', type: 'SUGGESTS', label: 'AI 草稿', condition: '人工点击 AI 影响分析', status: 'review', riskLevel: 'high', evidence: 'AI Assistant tool call', frontendVisible: false },

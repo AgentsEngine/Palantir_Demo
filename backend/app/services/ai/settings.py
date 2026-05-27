@@ -66,6 +66,49 @@ DEFAULT_ROLE_POLICIES: list[dict[str, Any]] = [
     },
 ]
 
+DEFAULT_CONTEXT_POLICY: dict[str, Any] = {
+    "recentMessageLimit": 10,
+    "maxContextTokens": 12000,
+    "showContextSources": True,
+}
+
+DEFAULT_RAG_POLICY: dict[str, Any] = {
+    "enabled": True,
+    "topK": 5,
+    "maxEvidenceChars": 1200,
+    "similarityThreshold": 0.15,
+}
+
+DEFAULT_MEMORY_POLICY: dict[str, Any] = {
+    "enabled": False,
+    "recallLimit": 5,
+    "allowedTypes": ["summary", "fact", "preference", "task_state", "decision"],
+    "defaultVisibility": "private",
+    "retentionDays": 90,
+}
+
+DEFAULT_COMPACTION_POLICY: dict[str, Any] = {
+    "enabled": True,
+    "triggerMessageCount": 20,
+    "triggerTokenCount": 12000,
+    "compactOnClose": True,
+    "summaryDetail": "standard",
+}
+
+DEFAULT_SAFETY_POLICY: dict[str, Any] = {
+    "sensitiveMasking": True,
+    "blockSecretMemory": True,
+    "highRiskConfirm": True,
+    "maxToolSteps": 5,
+    "toolTimeoutSeconds": 30,
+}
+
+DEEPSEEK_DEFAULTS: dict[str, str] = {
+    "baseUrl": "https://api.deepseek.com",
+    "chatModel": "deepseek-chat",
+    "reasoningModel": "deepseek-reasoner",
+}
+
 
 AI_SYSTEM_SETTINGS: dict[str, Any] = {
     "aiEnabled": True,
@@ -87,6 +130,11 @@ AI_SYSTEM_SETTINGS: dict[str, Any] = {
         "critical": "blocked",
     },
     "forbiddenActions": ["auto_order", "delete_data", "change_permission"],
+    "contextPolicy": DEFAULT_CONTEXT_POLICY,
+    "ragPolicy": DEFAULT_RAG_POLICY,
+    "memoryPolicy": DEFAULT_MEMORY_POLICY,
+    "compactionPolicy": DEFAULT_COMPACTION_POLICY,
+    "safetyPolicy": DEFAULT_SAFETY_POLICY,
 }
 
 
@@ -146,6 +194,26 @@ def mask_settings(settings_data: dict[str, Any]) -> dict[str, Any]:
     return masked
 
 
+def _merge_nested(defaults: dict[str, Any], value: Any) -> dict[str, Any]:
+    incoming = value if isinstance(value, dict) else {}
+    return {**defaults, **incoming}
+
+
+def _normalize_provider_defaults(settings_data: dict[str, Any]) -> dict[str, Any]:
+    provider = settings_data.get("provider")
+    if provider == "deepseek":
+        base_url = str(settings_data.get("baseUrl") or settings_data.get("base_url") or "")
+        if not base_url or "bigmodel.cn" in base_url or "api.openai.com" in base_url:
+            settings_data["baseUrl"] = DEEPSEEK_DEFAULTS["baseUrl"]
+        chat_model = str(settings_data.get("chatModel") or settings_data.get("chat_model") or "")
+        if not chat_model or chat_model.startswith(("glm-", "GLM-", "gpt-")):
+            settings_data["chatModel"] = DEEPSEEK_DEFAULTS["chatModel"]
+        reasoning_model = str(settings_data.get("reasoningModel") or settings_data.get("reasoning_model") or "")
+        if not reasoning_model or reasoning_model.startswith(("glm-", "GLM-", "gpt-")):
+            settings_data["reasoningModel"] = DEEPSEEK_DEFAULTS["reasoningModel"]
+    return settings_data
+
+
 def merge_ai_settings(incoming: dict[str, Any], *, existing: dict[str, Any] | None = None) -> dict[str, Any]:
     clean_incoming = {**incoming}
     if clean_incoming.get("apiKey") == "********" or clean_incoming.get("api_key") == "********":
@@ -153,10 +221,16 @@ def merge_ai_settings(incoming: dict[str, Any], *, existing: dict[str, Any] | No
         clean_incoming.pop("api_key", None)
 
     merged = {**(existing or AI_SYSTEM_SETTINGS), **clean_incoming}
+    merged = _normalize_provider_defaults(merged)
     merged.setdefault("guestAccess", "disabled")
     merged.setdefault("rolePolicies", DEFAULT_ROLE_POLICIES)
     merged.setdefault("riskPolicy", {"low": "allow", "medium": "confirm", "high": "confirm_and_audit", "critical": "blocked"})
     merged.setdefault("forbiddenActions", ["auto_order", "delete_data", "change_permission"])
+    merged["contextPolicy"] = _merge_nested(DEFAULT_CONTEXT_POLICY, merged.get("contextPolicy"))
+    merged["ragPolicy"] = _merge_nested(DEFAULT_RAG_POLICY, merged.get("ragPolicy"))
+    merged["memoryPolicy"] = _merge_nested(DEFAULT_MEMORY_POLICY, merged.get("memoryPolicy"))
+    merged["compactionPolicy"] = _merge_nested(DEFAULT_COMPACTION_POLICY, merged.get("compactionPolicy"))
+    merged["safetyPolicy"] = _merge_nested(DEFAULT_SAFETY_POLICY, merged.get("safetyPolicy"))
     return merged
 
 
@@ -172,6 +246,9 @@ async def load_persisted_ai_settings() -> dict[str, Any] | None:
             if not record or not isinstance(record.value, dict):
                 return None
             merged = merge_ai_settings(record.value)
+            if record.value != merged:
+                record.value = merged
+                await session.commit()
             AI_SYSTEM_SETTINGS.clear()
             AI_SYSTEM_SETTINGS.update(merged)
             return merged
