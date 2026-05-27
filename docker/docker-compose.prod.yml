@@ -13,6 +13,13 @@ services:
       - DEMO_AUTH_OPTIONAL=false
       # Set SECRET_KEY from the server environment or .env file.
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required in production}
+      - APP_PUBLIC_URL=${APP_PUBLIC_URL:-http://111.229.172.100}
+      - SMTP_HOST=${SMTP_HOST:-localhost}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-no-reply@manufoundry.local}
+      - SMTP_TLS=${SMTP_TLS:-true}
     volumes: !override []   # override dev source mount
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

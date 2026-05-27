@@ -45,6 +45,74 @@ interface ProgramDefinition {
   viewConfig?: ViewConfig;
 }
 
+const lineNames = ['总装 A 线', '总装 B 线', 'SMT-01', 'SMT-02', 'SMT-03', '涂装 C 线', '压铸 D 线', '电控装配线', '终检 E 线', '包装 F 线'];
+const shifts = ['早班', '中班', '夜班'];
+const products = ['电控模块 V2', '伺服驱动器 A1', '智能网关 P8', '工业控制板 C3', '铝壳体 A 型', '传感器组件 S12'];
+const owners = ['李明', '王磊', '周强', '陈晨', '孙浩', '赵敏', '刘洋', '吴越'];
+const stations = ['上料工位', '焊接 OP20', '锁付 OP30', '电检台', '老化房', '终检台', '包装线'];
+const alertSources = ['生产执行', '设备监测', '能源站', '质量系统', '供应链', '仓储物流'];
+const alertTitles = ['产线节拍低于目标', '回流焊温区波动', '空压站压力低', '关键物料到料延迟', 'AOI 连续检出异常', '设备健康分下降', '工单完工延迟', '安全库存低于阈值'];
+
+function pick<T>(items: T[], index: number) {
+  return items[index % items.length];
+}
+
+function makeAlertRows(count = 360): ProgramRow[] {
+  const levels = ['严重', '中等', '提醒'];
+  const statuses = ['待处理', '确认中', '处理中', '已派发', '跟进中', '已关闭'];
+  return Array.from({ length: count }, (_, index) => {
+    const line = pick(lineNames, index);
+    const level = index % 13 === 0 ? '严重' : pick(levels, index);
+    const status = index % 7 === 0 ? '已关闭' : pick(statuses, index + 2);
+    return {
+      key: `ac-${index + 1}`,
+      name: `${line} ${pick(alertTitles, index)}`,
+      source: pick(alertSources, index + 1),
+      level,
+      status,
+      owner: pick(owners, index),
+      occurredAt: `2026-05-${String(1 + (index % 27)).padStart(2, '0')}`,
+    };
+  });
+}
+
+function makeProductionRows(count = 420): ProgramRow[] {
+  return Array.from({ length: count }, (_, index) => {
+    const plan = 760 + ((index * 37) % 1180);
+    const actual = Math.max(0, Math.round(plan * (0.84 + ((index % 15) / 100))));
+    return {
+      key: `po-${index + 1}`,
+      shift: pick(shifts, index),
+      line: pick(lineNames, index),
+      plan,
+      actual,
+      status: actual >= plan * 0.92 ? '正常' : '需关注',
+    };
+  });
+}
+
+function makeLineRows(count = 260): ProgramRow[] {
+  return Array.from({ length: count }, (_, index) => ({
+    key: `ls-${index + 1}`,
+    line: `${pick(lineNames, index)}-${String(1 + (index % 12)).padStart(2, '0')}`,
+    product: pick(products, index + 2),
+    station: pick(stations, index),
+    load: 52 + ((index * 11) % 47),
+  }));
+}
+
+function makePlanRows(count = 380): ProgramRow[] {
+  const statuses = ['草稿', '待确认', '已确认', '需调整'];
+  return Array.from({ length: count }, (_, index) => ({
+    key: `ppe-${index + 1}`,
+    planNo: `PP-2605${String(1 + (index % 27)).padStart(2, '0')}-${String(index + 1).padStart(4, '0')}`,
+    product: pick(products, index),
+    line: pick(lineNames, index + 1),
+    quantity: 420 + ((index * 29) % 1680),
+    status: pick(statuses, index),
+  }));
+}
+
 const programDefinitions: Record<string, ProgramDefinition> = {
   'production-overview': {
     id: 'production-overview',
@@ -652,6 +720,92 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { key: 'rr-3', riskNo: 'SR-2605-052', subject: '包装材料安全库存不足', level: '中', owner: '仓储组' },
     ],
   },
+};
+
+programDefinitions['production-overview'] = {
+  ...programDefinitions['production-overview'],
+  title: '生产总览',
+  subtitle: '面向车间调度的产量、节拍、达成率和异常状态汇总。',
+  owner: '生产运营',
+  metrics: [
+    { label: '今日达成率', value: 94.6, suffix: '%', tone: 'green' },
+    { label: '计划产量', value: 12840, tone: 'blue' },
+    { label: '异常工单', value: 37, tone: 'orange' },
+    { label: '平均节拍', value: 48, suffix: 's', tone: 'blue' },
+  ],
+  focus: ['按班次汇总产量与良率', '对比计划与实际进度', '暴露影响交付的异常点'],
+  columns: [
+    { title: '班次', dataIndex: 'shift' },
+    { title: '产线', dataIndex: 'line' },
+    { title: '计划', dataIndex: 'plan', sorter: (a, b) => Number(a.plan) - Number(b.plan) },
+    { title: '实际', dataIndex: 'actual', sorter: (a, b) => Number(a.actual) - Number(b.actual) },
+    { title: '状态', dataIndex: 'status', render: (value) => <Tag color={value === '正常' ? 'green' : 'orange'}>{value}</Tag> },
+  ],
+  rows: makeProductionRows(),
+};
+
+programDefinitions['line-status'] = {
+  ...programDefinitions['line-status'],
+  title: '产线状态',
+  subtitle: '查看每条产线的运行模式、瓶颈工位和实时负荷。',
+  owner: '车间班组',
+  metrics: [
+    { label: '运行产线', value: 214, tone: 'green' },
+    { label: '待料产线', value: 21, tone: 'orange' },
+    { label: '换型中', value: 18, tone: 'blue' },
+    { label: '停线', value: 7, tone: 'red' },
+  ],
+  focus: ['产线当前工况', '瓶颈工位与节拍差异', '换型和待料影响'],
+  columns: [
+    { title: '产线', dataIndex: 'line' },
+    { title: '当前产品', dataIndex: 'product' },
+    { title: '瓶颈工位', dataIndex: 'station' },
+    { title: '负荷', dataIndex: 'load', render: (value) => <Progress percent={Number(value)} size="small" /> },
+  ],
+  rows: makeLineRows(),
+};
+
+programDefinitions['production-plan-entry'] = {
+  ...programDefinitions['production-plan-entry'],
+  title: '生产计划填报',
+  subtitle: '维护计划产量、产品、班次和确认状态。',
+  owner: '生产计划',
+  metrics: [
+    { label: '待提交计划', value: 46, tone: 'orange' },
+    { label: '已确认计划', value: 238, tone: 'green' },
+    { label: '待调整批次', value: 34, tone: 'red' },
+    { label: '覆盖产线', value: 96, tone: 'blue' },
+  ],
+  focus: ['计划录入和保存草稿', '班次产量确认', '排产调整原因留痕'],
+  columns: [
+    { title: '计划单号', dataIndex: 'planNo', width: 150 },
+    { title: '产品', dataIndex: 'product', width: 150 },
+    { title: '产线', dataIndex: 'line', width: 130 },
+    { title: '计划数量', dataIndex: 'quantity', width: 110, sorter: (a, b) => Number(a.quantity) - Number(b.quantity) },
+    { title: '状态', dataIndex: 'status', width: 100, render: (value) => <Tag color={value === '已确认' ? 'green' : 'orange'}>{value}</Tag> },
+  ],
+  rows: makePlanRows(),
+};
+
+programDefinitions['alert-center'] = {
+  ...programDefinitions['alert-center'],
+  title: '告警中心',
+  subtitle: '聚合设备、质量、交付和库存告警，支持处置优先级排序。',
+  owner: '运营指挥',
+  metrics: [
+    { label: '未关闭告警', value: 308, tone: 'orange' },
+    { label: '严重告警', value: 28, tone: 'red' },
+    { label: '已确认', value: 96, tone: 'blue' },
+    { label: '已关闭', value: 52, tone: 'green' },
+  ],
+  focus: ['告警等级', '责任域分派', '处置时效'],
+  columns: [
+    { title: '告警', dataIndex: 'name' },
+    { title: '来源', dataIndex: 'source' },
+    { title: '等级', dataIndex: 'level', render: (value) => <Tag color={value === '严重' ? 'red' : value === '中等' ? 'orange' : 'blue'}>{value}</Tag> },
+    { title: '状态', dataIndex: 'status' },
+  ],
+  rows: makeAlertRows(),
 };
 
 const fieldLabelMap: Record<string, string> = {
