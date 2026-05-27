@@ -37,6 +37,7 @@ interface ChatMessage {
   content: string;
   createdAt: string;
   actions?: MockSkillAction[];
+  source?: string;
 }
 
 interface PageContext {
@@ -51,7 +52,7 @@ interface AiChatWidgetProps {
   applicationName?: string;
 }
 
-interface DemoReply {
+interface AssistantReply {
   content: string;
   actions?: MockSkillAction[];
 }
@@ -70,6 +71,7 @@ interface AgentChatResponse {
   actions?: AgentSkillAction[];
   mode?: string;
   requires_confirmation?: boolean;
+  steps?: Array<Record<string, unknown>>;
 }
 
 const STORAGE_PREFIX = 'mf_ai_floating_chat:';
@@ -152,18 +154,19 @@ function buildPageContext(pathname: string, fallbackTitle: string): PageContext 
   return {
     title: fallbackTitle || '当前页面',
     scope: '当前页面数据、操作和业务上下文',
-    intro: '我会基于当前页面提供帮助，可以回答问题、总结内容，也可以生成草稿建议。',
-    quickPrompts: ['总结当前页面', '解释关键指标', '生成处理建议', '我能在这里做什么'],
+    intro: '我在。你可以直接聊天，也可以问当前页面里的数据、流程或下一步建议。',
+    quickPrompts: ['随便聊聊', '总结当前页面', '解释关键指标', '生成处理建议'],
   };
 }
 
-function createAssistantMessage(reply: DemoReply | string): ChatMessage {
+function createAssistantMessage(reply: AssistantReply | string, source?: string): ChatMessage {
   return {
     id: `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     role: 'assistant',
     content: typeof reply === 'string' ? reply : reply.content,
     actions: typeof reply === 'string' ? undefined : reply.actions,
     createdAt: nowText(),
+    source,
   };
 }
 
@@ -173,15 +176,6 @@ function createUserMessage(content: string): ChatMessage {
     role: 'user',
     content,
     createdAt: nowText(),
-  };
-}
-
-function createAction(skill: string, data: Omit<MockSkillAction, 'id' | 'skill' | 'status'>): MockSkillAction {
-  return {
-    id: `${skill}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    skill,
-    status: 'draft_created',
-    ...data,
   };
 }
 
@@ -214,142 +208,31 @@ function mapAgentActions(actions?: AgentSkillAction[]): MockSkillAction[] | unde
   });
 }
 
-function buildWorkOrderDraft(): MockSkillAction {
-  return createAction('maintenance.create_work_order_draft', {
-    title: '维修工单草稿',
-    summary: '已根据设备健康分和振动趋势生成待复核工单。',
-    fields: [
-      { label: '设备', value: 'CNC-17 主轴' },
-      { label: '优先级', value: '高' },
-      { label: '建议窗口', value: '48 小时内' },
-      { label: '风险信号', value: '健康分 68，振动升高' },
-    ],
-    nextSteps: ['补充停机窗口', '确认备件库存', '提交维护主管审批'],
-  });
+function getAgentResponseSource(payload: AgentChatResponse): string {
+  const answerStep = [...(payload.steps || [])].reverse().find((step) => step.type === 'respond');
+  const modelConfigStep = [...(payload.steps || [])].reverse().find((step) => step.id === 'step-model-config');
+  const provider = typeof answerStep?.provider === 'string' ? answerStep.provider : '';
+  const model = typeof answerStep?.model === 'string' ? answerStep.model : '';
+  const fallbackReason = typeof answerStep?.fallback_reason === 'string' ? answerStep.fallback_reason : '';
+
+  if (modelConfigStep?.status === 'blocked') {
+    return '未配置大模型';
+  }
+  if (provider || (model && model !== 'local-agent-runtime')) {
+    return [provider && `provider: ${provider}`, model && `model: ${model}`].filter(Boolean).join(' / ');
+  }
+  if (fallbackReason) {
+    return fallbackReason.includes('not configured') ? '未配置大模型' : '大模型连接失败';
+  }
+  if (payload.actions?.length) {
+    return 'backend Agent: draft action generated';
+  }
+  return 'backend Agent';
 }
 
-function buildPurchaseRequestDraft(): MockSkillAction {
-  return createAction('supply.create_purchase_request_draft', {
-    title: '采购申请草稿',
-    summary: '已按安全库存缺口生成采购申请，等待采购员确认价格和交期。',
-    fields: [
-      { label: '物料', value: 'M-0042 关键备件' },
-      { label: '建议数量', value: '200 件' },
-      { label: '需求原因', value: '预计 5 天后低于安全库存' },
-      { label: '推荐供应商', value: '华东精密 / 风险等级低' },
-    ],
-    nextSteps: ['确认预算科目', '拉取最新报价', '提交采购审批'],
-  });
-}
-
-function buildMaterialApplicationDraft(): MockSkillAction {
-  return createAction('material.create_material_application_draft', {
-    title: '物料申请草稿',
-    summary: '已为受影响产线生成领料申请，保留人工确认入口。',
-    fields: [
-      { label: '申请产线', value: '装配二线' },
-      { label: '物料编码', value: 'MAT-2188' },
-      { label: '申请数量', value: '36 套' },
-      { label: '用途', value: '应对批次返修与补料' },
-    ],
-    nextSteps: ['确认批次号', '校验仓库可用量', '发送给仓库复核'],
-  });
-}
-
-function buildCapaDraft(): MockSkillAction {
-  return createAction('quality.create_capa_draft', {
-    title: 'CAPA 草稿',
-    summary: '已把质量异常整理为纠正预防措施草稿，尚未写入后端流程。',
-    fields: [
-      { label: '问题', value: '缺陷率连续 3 班次升高' },
-      { label: '临时措施', value: '隔离相关批次，提高巡检频次' },
-      { label: '疑似根因', value: '物料批次或工艺参数波动' },
-      { label: '责任角色', value: '质量工程师 / 工艺工程师' },
-    ],
-    nextSteps: ['补充 5Why 分析', '关联受影响订单', '提交 CAPA 负责人复核'],
-  });
-}
-
-function buildDraftActions(text: string, context: PageContext): MockSkillAction[] {
-  const actions: MockSkillAction[] = [];
-  const wantsDraft = text.includes('草稿') || text.includes('生成') || text.includes('申请') || text.includes('工单') || text.includes('capa');
-
-  if ((context.title.includes('设备') || text.includes('维修') || text.includes('工单')) && wantsDraft) {
-    actions.push(buildWorkOrderDraft());
-  }
-
-  if ((context.title.includes('供应') || text.includes('采购')) && wantsDraft) {
-    actions.push(buildPurchaseRequestDraft());
-  }
-
-  if ((context.title.includes('供应') || text.includes('物料') || text.includes('领料')) && wantsDraft) {
-    actions.push(buildMaterialApplicationDraft());
-  }
-
-  if ((context.title.includes('质量') || text.includes('capa') || text.includes('缺陷')) && wantsDraft) {
-    actions.push(buildCapaDraft());
-  }
-
-  return actions;
-}
-
-function generateDemoReply(prompt: string, context: PageContext): DemoReply {
-  const text = prompt.toLowerCase();
-  const actions = buildDraftActions(text, context);
-
-  if (actions.length) {
-    return {
-      content: [
-        '已生成 mock skill 调用结果。Demo 只在前端展示草稿卡片，不会提交后端或真实流程。',
-        '',
-        '你可以把这些卡片理解为 Agent Shell 对业务技能的模拟编排结果，后续接入真实服务时再替换为接口返回。',
-      ].join('\n'),
-      actions,
-    };
-  }
-
-  if (context.title.includes('设备')) {
-    if (text.includes('优先级')) {
-      return {
-        content: [
-          '本周维护优先级建议：',
-          '1. CNC-17 主轴：健康分 68，优先安排点检。',
-          '2. 空压机 2#：健康分 81，持续观察油温趋势。',
-          '3. AGV-06：健康分 92，按计划保养即可。',
-        ].join('\n'),
-      };
-    }
-    return {
-      content: '当前设备健康整体稳定，但少数高风险对象需要关注。建议优先查看健康分低于 70 的设备，并把故障概率、预计天数和已有工单一起判断。',
-    };
-  }
-
-  if (context.title.includes('供应')) {
-    return {
-      content: '供应链页面建议重点关注高风险供应商、库存天数不足的物料，以及会影响生产计划的缺口。需要草稿时可以让我生成采购申请或物料申请。',
-    };
-  }
-
-  if (context.title.includes('质量')) {
-    return {
-      content: '质量页面建议先看异常批次、缺陷 Pareto 和影响范围。我可以帮助解释缺陷原因、生成 CAPA 草稿，并列出相关订单或客户影响。',
-    };
-  }
-
-  if (context.title.includes('生产')) {
-    return {
-      content: '生产态势建议先关注 OEE 下降的产线、计划达成率和停机原因。Demo 中我可以生成班次摘要、解释 OEE 变化，并列出需要班组长处理的事项。',
-    };
-  }
-
-  if (text.includes('能做什么')) {
-    return {
-      content: `在“${context.title}”里，我可以做两类事：\n\n1. 问答型：解释页面、指标、数据和流程。\n2. 辅助型：生成摘要、建议、规则或业务单据草稿。\n\n当前上下文范围：${context.scope}。`,
-    };
-  }
-
+function generateUnavailableReply(): AssistantReply {
   return {
-    content: `我会基于“${context.title}”回答。Demo 阶段我会展示问答和 mock skill 调用能力：可以解释当前页面、总结重点、生成处理建议或草稿，但不会直接提交业务动作。`,
+    content: '当前无法连接后端 AI 服务。请先确认后端服务、登录状态和大模型配置可用后再试。',
   };
 }
 
@@ -450,10 +333,10 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
       const assistantMessage = createAssistantMessage({
         content: payload.answer || '我已收到你的问题，但后端没有返回可展示的回答。',
         actions: mapAgentActions(payload.actions),
-      });
+      }, getAgentResponseSource(payload));
       persistMessages([...pending, assistantMessage]);
     } catch {
-      persistMessages([...pending, createAssistantMessage(generateDemoReply(trimmed, pageContext))]);
+      persistMessages([...pending, createAssistantMessage(generateUnavailableReply(), '无法连接后端 AI 服务')]);
     } finally {
       setSending(false);
     }
@@ -549,6 +432,9 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
               <div className={`ai-chat-message ${message.role}`} key={message.id}>
                 <div className="ai-chat-bubble">
                   <Typography.Text>{message.content}</Typography.Text>
+                  {message.role === 'assistant' && message.source ? (
+                    <span className="ai-chat-source">{message.source}</span>
+                  ) : null}
                   {message.actions?.length ? (
                     <div className="ai-skill-action-list">
                       {message.actions.map((action) => (

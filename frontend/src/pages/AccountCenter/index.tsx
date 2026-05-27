@@ -66,6 +66,12 @@ const GLM_AI_DEFAULTS = {
   embeddingModel: 'embedding-3',
   visionModel: 'glm-4v-plus',
 };
+const GLM_CODING_PLAN_DEFAULTS = {
+  ...GLM_AI_DEFAULTS,
+  baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
+  chatModel: 'GLM-5.1',
+  reasoningModel: 'GLM-5.1',
+};
 
 interface AuditLogRecord {
   id: number;
@@ -555,7 +561,7 @@ function AIPlatformPanelV2() {
 
   const handleSave = () => {
     saveLocalSettings(form.getFieldsValue());
-    message.success('AI 设置已保存到本地 Demo 配置');
+    message.success('AI 设置已保存到本地浏览器');
   };
 
   const applyProviderPreset = (provider: string) => {
@@ -566,15 +572,24 @@ function AIPlatformPanelV2() {
     }
   };
 
+  const applyGlmPreset = (preset: 'api' | 'coding') => {
+    const nextSettings = {
+      ...form.getFieldsValue(),
+      ...(preset === 'coding' ? GLM_CODING_PLAN_DEFAULTS : GLM_AI_DEFAULTS),
+    };
+    form.setFieldsValue(nextSettings);
+    saveLocalSettings(nextSettings);
+  };
+
   const handleSaveToBackend = async () => {
     const values = normalizeAISettings(form.getFieldsValue());
     form.setFieldsValue(values);
     saveLocalSettings(values);
     try {
       await updateAISettings(values);
-      message.success('AI settings saved to backend system settings');
+      message.success('AI 设置已保存到数据库');
     } catch {
-      message.warning('Backend AI settings unavailable; saved local demo settings');
+      message.warning('后端 AI 设置暂不可用，已先保存到本地浏览器');
     }
   };
 
@@ -615,6 +630,10 @@ function AIPlatformPanelV2() {
                   ]} onChange={applyProviderPreset} />
                 </Form.Item>
                 <Form.Item name="baseUrl" label="Base URL"><Input placeholder="https://open.bigmodel.cn/api/paas/v4" /></Form.Item>
+                <Space size={[6, 6]} wrap className="ai-provider-presets">
+                  <Button size="small" onClick={() => applyGlmPreset('api')}>GLM 普通 API</Button>
+                  <Button size="small" onClick={() => applyGlmPreset('coding')}>GLM Coding Plan</Button>
+                </Space>
                 <Form.Item name="apiKey" label="API Key"><Input.Password placeholder="由后端密钥库托管；Demo 可先为空" /></Form.Item>
                 <Row gutter={12}>
                   <Col span={12}><Form.Item name="organization" label="Organization"><Input placeholder="可选" /></Form.Item></Col>
@@ -640,6 +659,9 @@ function AIPlatformPanelV2() {
                           <Form.Item name="chatModel" label="默认聊天模型">
                             <Select options={[
                               { label: 'glm-5.1', value: 'glm-5.1' },
+                              { label: 'GLM-5.1 / Coding Plan', value: 'GLM-5.1' },
+                              { label: 'GLM-4.7 / Coding Plan', value: 'GLM-4.7' },
+                              { label: 'GLM-4.5-air / Coding Plan', value: 'GLM-4.5-air' },
                               { label: 'glm-4-flash', value: 'glm-4-flash' },
                               { label: 'glm-4-plus', value: 'glm-4-plus' },
                               { label: 'gpt-4o-mini', value: 'gpt-4o-mini' },
@@ -651,6 +673,9 @@ function AIPlatformPanelV2() {
                           <Form.Item name="reasoningModel" label="推理 / Agent 模型">
                             <Select options={[
                               { label: 'glm-5.1', value: 'glm-5.1' },
+                              { label: 'GLM-5.1 / Coding Plan', value: 'GLM-5.1' },
+                              { label: 'GLM-4.7 / Coding Plan', value: 'GLM-4.7' },
+                              { label: 'GLM-4.5-air / Coding Plan', value: 'GLM-4.5-air' },
                               { label: 'glm-4-plus', value: 'glm-4-plus' },
                               { label: 'glm-4v-plus', value: 'glm-4v-plus' },
                               { label: 'gpt-4o', value: 'gpt-4o' },

@@ -44,7 +44,7 @@ from app.services.ai.knowledge_ingestion import (
 from app.services.ai.ocr_service import ocr_extract
 from app.services.ai.memory import memory_service
 from app.services.ai.runtime import agent_runtime
-from app.services.ai.settings import settings_snapshot, settings_to_provider_config
+from app.services.ai.settings import load_persisted_ai_settings, settings_snapshot, settings_to_provider_config
 from app.services.ai.tenant_profile import load_tenant_profile
 from app.services.ai.ontology_extraction import (
     approve_extraction_job,
@@ -702,6 +702,7 @@ async def _generate_knowledge_agent_answer(
     memory: list[dict[str, Any]] | None = None,
     intent: str | None = None,
 ) -> tuple[str, str, dict[str, Any]]:
+    await load_persisted_ai_settings()
     return await agent_runtime.answer_knowledge(
         query=query,
         title=title,

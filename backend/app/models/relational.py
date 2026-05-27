@@ -27,6 +27,16 @@ class TimestampMixin:
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
+class SystemSetting(TimestampMixin, Base):
+    __tablename__ = "system_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    value: Mapped[dict] = mapped_column(JSON, default=dict)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    updated_by: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+
+
 # ── 工厂族 ──────────────────────────────────────────────
 
 class Factory(TimestampMixin, Base):

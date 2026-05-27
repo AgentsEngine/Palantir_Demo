@@ -132,6 +132,7 @@ async def init_db():
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await _ensure_sqlite_ai_memory_columns(conn)
+        await _ensure_sqlite_system_settings_table(conn)
     logger.info("SQLite schema ensured")
 
     from sqlalchemy import func, select
@@ -275,3 +276,25 @@ async def _ensure_sqlite_ai_memory_columns(conn) -> None:
     for column_name, definition in definitions.items():
         if column_name not in columns:
             await conn.execute(text(f"ALTER TABLE ai_memory_entries ADD COLUMN {column_name} {definition}"))
+
+
+async def _ensure_sqlite_system_settings_table(conn) -> None:
+    """Patch old demo SQLite schemas with platform settings persistence."""
+    from sqlalchemy import text
+
+    await conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS system_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key VARCHAR(120) NOT NULL UNIQUE,
+                value JSON NOT NULL DEFAULT '{}',
+                description TEXT,
+                updated_by VARCHAR(120),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+    )
+    await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_system_settings_key ON system_settings (key)"))

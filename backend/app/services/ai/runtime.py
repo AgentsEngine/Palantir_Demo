@@ -17,6 +17,7 @@ from .tools import choose_draft_actions
 from .client import get_provider
 
 
+EXTERNAL_PROVIDER_NAMES = {"openai-compatible", "openai", "azure-openai", "deepseek", "qwen", "glm"}
 RISK_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 GENERAL_CHAT_TERMS = [
     "你好",
@@ -31,6 +32,11 @@ GENERAL_CHAT_TERMS = [
     "爱我",
     "谢谢",
     "thank",
+    "hello",
+    "hi",
+    "在吗",
+    "聊聊",
+    "随便聊",
 ]
 KNOWLEDGE_TASK_TERMS = [
     "文档",
@@ -66,6 +72,17 @@ def _max_risk(actions) -> str:
     if not actions:
         return "low"
     return max((action.risk_level for action in actions), key=lambda value: RISK_RANK.get(value, 0))
+
+
+def _is_real_model_configured(config) -> bool:
+    return config.provider in EXTERNAL_PROVIDER_NAMES and bool(config.api_key)
+
+
+def _format_provider_failure(exc: Exception) -> str:
+    detail = str(exc)
+    if "余额不足" in detail or "无可用资源包" in detail or '"code":"1113"' in detail:
+        return "大模型连接失败：供应商返回余额不足或无可用资源包，请充值、更换 API Key，或切换到有可用额度的模型资源。"
+    return "大模型连接失败。请检查 AI provider、base URL、API Key、模型名称、账户额度和网络连通性后重试。"
 
 
 class AgentRuntime:
@@ -140,8 +157,25 @@ class AgentRuntime:
                 mode="assisted",
             )
 
-        fallback = self._local_page_answer(request=request, profile=profile, evidence=evidence)
         config = request.provider_config or settings_to_provider_config(settings_snapshot())
+        if not _is_real_model_configured(config):
+            steps.append(
+                {
+                    "id": "step-model-config",
+                    "type": "configure",
+                    "status": "blocked",
+                    "provider": config.provider,
+                    "model": config.chat_model,
+                    "summary": "Large model provider is not configured.",
+                }
+            )
+            return AgentResponse(
+                answer="未配置大模型。请先在 AI 设置或后端环境变量中配置可用的大模型 provider、base URL、API Key 和模型名称。",
+                evidence=evidence,
+                steps=steps,
+                mode="qa",
+            )
+
         try:
             provider = get_provider(config)
             messages = self.prompt_builder.build(
@@ -156,7 +190,8 @@ class AgentRuntime:
                     evidence=evidence,
                     tool_policy={"write_policy": "risk_based_confirmation"},
                     output_contract=(
-                        "用中文自然回答用户当前问题。不要说自己只是 Demo 或 mock。"
+                        "用中文自然回答用户当前问题。"
+                        "回答前必须遵循平台已完成的身份识别、角色权限和风险策略结果；不要越权推测用户不可访问的数据。"
                         "如果问题可以直接回答，就直接回答；涉及企业事实时优先结合页面上下文和证据。"
                         "可以给出建议和草稿思路，但不要声称已经写入、提交或执行业务动作。"
                     ),
@@ -184,32 +219,18 @@ class AgentRuntime:
                 {
                     "id": "step-answer",
                     "type": "respond",
-                    "status": "completed",
-                    "model": "local-agent-runtime",
+                    "status": "failed",
+                    "model": config.chat_model,
+                    "provider": config.provider,
                     "fallback_reason": str(exc),
                 }
             )
             return AgentResponse(
-                answer=fallback,
+                answer=_format_provider_failure(exc),
                 evidence=evidence,
                 steps=steps,
                 mode="qa",
             )
-
-    def _local_page_answer(self, *, request: AgentRequest, profile: TenantProfile, evidence: list[dict[str, Any]]) -> str:
-        page_title = str(request.context.get("pageTitle") or request.context.get("title") or request.page or "当前页面")
-        if evidence:
-            lines = [f"我可以先结合“{page_title}”和检索到的知识证据回答："]
-            for index, item in enumerate(evidence[:3], start=1):
-                snippet = item.get("snippet") or item.get("chunk_text") or item.get("summary") or ""
-                if snippet:
-                    lines.append(f"- {str(snippet)[:180]} [S{index}]")
-            lines.append("如果你希望我继续展开，我可以按概念解释、业务流程或实施建议三个角度讲。")
-            return "\n".join(lines)
-        return (
-            f"我是 {profile.assistant_name}，可以围绕“{page_title}”回答页面问题、解释业务概念或整理下一步建议。"
-            "当前没有检索到可引用的知识证据；如果后端模型已配置成功，我会优先用模型正常回答。"
-        )
 
     async def answer_knowledge(
         self,
@@ -227,15 +248,20 @@ class AgentRuntime:
         config = provider_config or settings_to_provider_config(settings_snapshot())
         resolved_intent = intent or self.classify_knowledge_intent(query)
         scoped_evidence = evidence if resolved_intent == "knowledge" else []
-        fallback = self._local_knowledge_answer(
-            query=query,
-            title=title,
-            evidence=scoped_evidence,
-            history=history,
-            profile=profile,
-            intent=resolved_intent,
-            configured_model=config.chat_model,
-        )
+        if not _is_real_model_configured(config):
+            return (
+                "未配置大模型。请先在 AI 设置或后端环境变量中配置可用的大模型 provider、base URL、API Key 和模型名称。",
+                "unconfigured-ai-provider",
+                {
+                    "mode": "model_not_configured",
+                    "provider": config.provider,
+                    "model": config.chat_model,
+                    "intent": resolved_intent,
+                    "history_messages": len(history),
+                    "evidence_count": len(scoped_evidence),
+                    "memory_count": len(memory or []),
+                },
+            )
         try:
             provider = get_provider(config)
             history_messages = [
@@ -279,10 +305,11 @@ class AgentRuntime:
             )
         except Exception as exc:  # noqa: BLE001 - knowledge chat should degrade gracefully
             return (
-                fallback,
-                "knowledge-agent-v1",
+                _format_provider_failure(exc),
+                config.chat_model,
                 {
-                    "mode": "local_agent_runtime",
+                    "mode": "ai_provider_failed",
+                    "provider": config.provider,
                     "prompt_version": self.prompt_builder.version,
                     "intent": resolved_intent,
                     "fallback_reason": str(exc),

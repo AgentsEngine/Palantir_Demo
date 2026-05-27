@@ -20,6 +20,13 @@ class ProviderConfigurationError(RuntimeError):
     """Raised when a provider is selected but required configuration is missing."""
 
 
+def _http_error_detail(response: httpx.Response) -> str:
+    try:
+        return response.content.decode("utf-8", errors="replace")[:500]
+    except Exception:  # pragma: no cover - httpx response content should decode
+        return response.text[:500]
+
+
 class LLMProvider(ABC):
     def __init__(self, config: AIProviderConfig):
         self.config = config
@@ -103,7 +110,7 @@ class LocalMockProvider(LLMProvider):
                 response = await client.post(self._chat_completions_url(), json=payload, headers=headers)
                 response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            detail = exc.response.text[:500]
+            detail = _http_error_detail(exc.response)
             raise ProviderConfigurationError(f"{self.config.provider} vision request failed: HTTP {exc.response.status_code} {detail}") from exc
         except httpx.HTTPError as exc:
             raise ProviderConfigurationError(f"{self.config.provider} vision request failed: {exc}") from exc
@@ -167,7 +174,7 @@ class OpenAICompatibleProvider(LocalMockProvider):
                 response = await client.post(self._chat_completions_url(), json=payload, headers=headers)
                 response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            detail = exc.response.text[:500]
+            detail = _http_error_detail(exc.response)
             raise ProviderConfigurationError(f"{self.config.provider} request failed: HTTP {exc.response.status_code} {detail}") from exc
         except httpx.HTTPError as exc:
             raise ProviderConfigurationError(f"{self.config.provider} request failed: {exc}") from exc

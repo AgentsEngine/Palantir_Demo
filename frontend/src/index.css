@@ -379,6 +379,18 @@ button {
   word-break: break-word;
 }
 
+.ai-chat-source {
+  margin-top: 7px;
+  display: block;
+  color: var(--mf-muted);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.ai-chat-message.user .ai-chat-source {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .ai-chat-message > span {
   color: var(--mf-faint);
   font-size: 10px;
@@ -5899,6 +5911,10 @@ button {
   border: 1px solid #e5ebef;
   border-radius: 8px;
   background: #f8fbfc;
+}
+
+.ai-provider-presets {
+  margin: -8px 0 14px;
 }
 
 .ai-provider-summary span,

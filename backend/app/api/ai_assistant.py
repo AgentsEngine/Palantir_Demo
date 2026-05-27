@@ -1,4 +1,4 @@
-"""AI Assistant API — with fallback to mock data when DB unavailable."""
+"""AI Assistant API with database fallback for local availability."""
 
 import json
 import random
@@ -19,8 +19,10 @@ from app.services.ai.providers import ProviderConfigurationError
 from app.services.ai.schemas import AIProviderConfig, AgentRequest, ChatMessage, ChatOptions, DraftSaveRequest
 from app.services.ai.settings import (
     AI_SYSTEM_SETTINGS,
-    DEFAULT_ROLE_POLICIES,
+    load_persisted_ai_settings,
     mask_settings as _mask_settings,
+    merge_ai_settings,
+    save_persisted_ai_settings,
     settings_to_provider_config as _settings_to_provider_config,
 )
 from app.services.ai.skills import list_skills
@@ -234,15 +236,48 @@ from app.core.db import safe_db_call as _try_db  # noqa: E402
 
 
 async def _run_agent_for_user(body: AgentRequest, current_user: dict):
+    await load_persisted_ai_settings()
     base_decision = decide_ai_permission(current_user, AI_SYSTEM_SETTINGS, "qa", risk_level="low")
     _raise_for_ai_decision(base_decision)
     if body.provider_config is None:
         body.provider_config = _settings_to_provider_config(AI_SYSTEM_SETTINGS)
-    result = await run_agent(body)
+    result = await run_agent(body, current_user)
+    result.steps = [
+        {
+            "id": "step-identity",
+            "type": "identity",
+            "status": "completed",
+            "user": current_user.get("sub") or current_user.get("username") or "unknown",
+            "roles": [role.get("name") if isinstance(role, dict) else role for role in current_user.get("roles", [])],
+            "is_admin": bool(current_user.get("is_admin")),
+        },
+        {
+            "id": "step-ai-permission",
+            "type": "policy",
+            "status": "completed",
+            "capability": base_decision.capability,
+            "matched_role": base_decision.matched_role,
+            "requires_confirmation": base_decision.requires_confirmation,
+            "audit_required": base_decision.audit_required,
+        },
+        *result.steps,
+    ]
     for action in result.actions:
         decision = decide_skill_permission(current_user, AI_SYSTEM_SETTINGS, action)
         _raise_for_ai_decision(decision)
         action.requires_confirmation = action.requires_confirmation or decision.requires_confirmation
+        result.steps.append(
+            {
+                "id": f"step-skill-policy-{action.skill}",
+                "type": "policy",
+                "status": "completed",
+                "skill": action.skill,
+                "capability": decision.capability,
+                "matched_role": decision.matched_role,
+                "requires_confirmation": decision.requires_confirmation,
+                "audit_required": decision.audit_required,
+            }
+        )
     run = create_agent_run(body, result, current_user)
     if result.actions:
         _audit_ai_event(
@@ -416,29 +451,26 @@ async def test_provider(body: ProviderTestRequest):
 @router.get("/settings")
 async def get_ai_settings():
     """Return backend-owned AI system settings with secret values masked."""
+    await load_persisted_ai_settings()
     return {"data": _mask_settings(AI_SYSTEM_SETTINGS)}
 
 
 @router.put("/settings")
 async def update_ai_settings(body: AISettingsRequest):
     """Update backend-owned AI system settings for the demo runtime."""
-    incoming_settings = {**body.settings}
-    if incoming_settings.get("apiKey") == "********" or incoming_settings.get("api_key") == "********":
-        incoming_settings.pop("apiKey", None)
-        incoming_settings.pop("api_key", None)
-    merged = {**AI_SYSTEM_SETTINGS, **incoming_settings}
-    merged.setdefault("guestAccess", "disabled")
-    merged.setdefault("rolePolicies", DEFAULT_ROLE_POLICIES)
-    merged.setdefault("riskPolicy", {"low": "allow", "medium": "confirm", "high": "confirm_and_audit", "critical": "blocked"})
-    merged.setdefault("forbiddenActions", ["auto_order", "delete_data", "change_permission"])
-    AI_SYSTEM_SETTINGS.clear()
-    AI_SYSTEM_SETTINGS.update(merged)
+    try:
+        merged = await save_persisted_ai_settings(body.settings)
+    except Exception:
+        merged = merge_ai_settings(body.settings)
+        AI_SYSTEM_SETTINGS.clear()
+        AI_SYSTEM_SETTINGS.update(merged)
     return {"data": _mask_settings(AI_SYSTEM_SETTINGS), "ok": True}
 
 
 @router.post("/settings/test")
 async def test_saved_ai_settings():
     """Validate the saved backend AI settings."""
+    await load_persisted_ai_settings()
     provider_config = _settings_to_provider_config(AI_SYSTEM_SETTINGS)
     return await test_provider(ProviderTestRequest(provider_config=provider_config))
 

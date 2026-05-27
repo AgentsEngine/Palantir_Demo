@@ -134,7 +134,7 @@ def test_agent_runtime_routes_social_turns_away_from_rag():
 
 
 @pytest.mark.asyncio
-async def test_knowledge_answer_social_fallback_stays_conversational():
+async def test_knowledge_answer_requires_model_configuration():
     from app.services.ai.runtime import AgentRuntime
     from app.services.ai.schemas import AIProviderConfig
     from app.services.ai.tenant_profile import TenantProfile
@@ -156,12 +156,11 @@ async def test_knowledge_answer_social_fallback_stays_conversational():
         provider_config=AIProviderConfig(provider="glm", chat_model="glm-5.1", api_key=""),
     )
 
-    assert model_name == "knowledge-agent-v1"
+    assert model_name == "unconfigured-ai-provider"
     assert usage["intent"] == "general"
     assert usage["evidence_count"] == 0
-    assert "当前知识库没有检索到" not in answer
-    assert "补充文档片段" not in answer
-    assert "认真陪你聊" in answer
+    assert usage["mode"] == "model_not_configured"
+    assert "未配置大模型" in answer
 
 
 @pytest.mark.asyncio
