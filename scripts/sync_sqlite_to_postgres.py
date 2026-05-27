@@ -67,6 +67,43 @@ def postgres_columns(conn, table: str) -> dict[str, str]:
         return {name: data_type for name, data_type in cur.fetchall()}
 
 
+def postgres_fk_dependencies(conn, tables: set[str]) -> dict[str, set[str]]:
+    dependencies = {table: set() for table in tables}
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            select tc.table_name as child_table, ccu.table_name as parent_table
+            from information_schema.table_constraints tc
+            join information_schema.constraint_column_usage ccu
+              on ccu.constraint_name = tc.constraint_name
+             and ccu.constraint_schema = tc.constraint_schema
+            where tc.constraint_type = 'FOREIGN KEY'
+              and tc.table_schema = 'public'
+            """
+        )
+        for child, parent in cur.fetchall():
+            if child in dependencies and parent in dependencies and child != parent:
+                dependencies[child].add(parent)
+    return dependencies
+
+
+def insertion_order(conn, tables: list[str]) -> list[str]:
+    remaining = set(tables)
+    dependencies = postgres_fk_dependencies(conn, remaining)
+    ordered: list[str] = []
+
+    while remaining:
+        ready = sorted(table for table in remaining if not (dependencies[table] & remaining))
+        if not ready:
+            # Cycles are uncommon in this demo schema. Keep the remaining order stable
+            # and let the database surface any truly invalid relationship.
+            ordered.extend(sorted(remaining))
+            break
+        ordered.extend(ready)
+        remaining.difference_update(ready)
+    return ordered
+
+
 def convert_value(value: Any, data_type: str) -> Any:
     if value is None:
         return None
@@ -130,6 +167,7 @@ def main() -> None:
         source_tables = sqlite_tables(sqlite_conn)
         target_tables = postgres_tables(pg_conn)
         tables = sorted(source_tables & target_tables)
+        ordered_tables = insertion_order(pg_conn, tables)
         skipped = sorted(source_tables - target_tables)
         print(f"common_tables={len(tables)} skipped_source_tables={skipped}")
 
@@ -141,7 +179,7 @@ def main() -> None:
                     cur.execute(sql.SQL("truncate table {} restart identity cascade").format(truncate_tables))
 
             copied_counts: dict[str, int] = {}
-            for table in tables:
+            for table in ordered_tables:
                 src_columns = sqlite_columns(sqlite_conn, table)
                 target_column_types = postgres_columns(pg_conn, table)
                 columns = [col for col in src_columns if col in target_column_types]
@@ -167,7 +205,7 @@ def main() -> None:
                 execute_values(cur, insert_sql, values, page_size=1000)
 
             if not args.dry_run:
-                reset_sequences(pg_conn, tables)
+                reset_sequences(pg_conn, ordered_tables)
                 pg_conn.commit()
 
         for table, count in copied_counts.items():
@@ -182,4 +220,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
