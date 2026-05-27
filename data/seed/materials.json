@@ -1,66 +1,4162 @@
 [
   {
     "id": 1,
-    "name": "45#圆钢",
-    "material_type": "钢材",
-    "specs": "φ80mm",
+    "name": "金属材料-7001",
+    "material_type": "金属材料",
+    "specs": "规格 B-01",
     "unit": "kg",
-    "safety_stock": 5000
+    "safety_stock": 155
   },
   {
     "id": 2,
-    "name": "铝合金锭ADC12",
-    "material_type": "有色金属",
-    "specs": "标准锭",
-    "unit": "kg",
-    "safety_stock": 3000
+    "name": "塑胶件-7002",
+    "material_type": "塑胶件",
+    "specs": "规格 C-02",
+    "unit": "卷",
+    "safety_stock": 190
   },
   {
     "id": 3,
-    "name": "FR-4覆铜板",
-    "material_type": "电子材料",
-    "specs": "1.6mm 4层",
-    "unit": "片",
-    "safety_stock": 500
+    "name": "标准件-7003",
+    "material_type": "标准件",
+    "specs": "规格 D-03",
+    "unit": "箱",
+    "safety_stock": 225
   },
   {
     "id": 4,
-    "name": "BGA芯片",
-    "material_type": "电子元件",
-    "specs": "0.5mm间距",
-    "unit": "个",
-    "safety_stock": 10000
+    "name": "包装材料-7004",
+    "material_type": "包装材料",
+    "specs": "规格 E-04",
+    "unit": "L",
+    "safety_stock": 260
   },
   {
     "id": 5,
-    "name": "液压油46#",
-    "material_type": "油品",
-    "specs": "L-HM46",
-    "unit": "L",
-    "safety_stock": 2000
+    "name": "化学品-7005",
+    "material_type": "化学品",
+    "specs": "规格 F-05",
+    "unit": "件",
+    "safety_stock": 295
   },
   {
     "id": 6,
-    "name": "氟橡胶生胶",
-    "material_type": "橡胶",
-    "specs": "FKM",
+    "name": "线束-7006",
+    "material_type": "线束",
+    "specs": "规格 A-06",
     "unit": "kg",
-    "safety_stock": 500
+    "safety_stock": 330
   },
   {
     "id": 7,
-    "name": "M12连接器针脚",
-    "material_type": "连接器零件",
-    "specs": "镀金",
-    "unit": "个",
-    "safety_stock": 20000
+    "name": "密封材料-7007",
+    "material_type": "密封材料",
+    "specs": "规格 B-07",
+    "unit": "卷",
+    "safety_stock": 365
   },
   {
     "id": 8,
-    "name": "焊锡丝",
-    "material_type": "焊接材料",
-    "specs": "Sn96.5/Ag3.0/Cu0.5 0.5mm",
+    "name": "电子元件-7008",
+    "material_type": "电子元件",
+    "specs": "规格 C-08",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 9,
+    "name": "金属材料-7009",
+    "material_type": "金属材料",
+    "specs": "规格 D-09",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 10,
+    "name": "塑胶件-7010",
+    "material_type": "塑胶件",
+    "specs": "规格 E-10",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 11,
+    "name": "标准件-7011",
+    "material_type": "标准件",
+    "specs": "规格 F-11",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 12,
+    "name": "包装材料-7012",
+    "material_type": "包装材料",
+    "specs": "规格 A-12",
     "unit": "卷",
-    "safety_stock": 200
+    "safety_stock": 540
+  },
+  {
+    "id": 13,
+    "name": "化学品-7013",
+    "material_type": "化学品",
+    "specs": "规格 B-13",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 14,
+    "name": "线束-7014",
+    "material_type": "线束",
+    "specs": "规格 C-14",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 15,
+    "name": "密封材料-7015",
+    "material_type": "密封材料",
+    "specs": "规格 D-15",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 16,
+    "name": "电子元件-7016",
+    "material_type": "电子元件",
+    "specs": "规格 E-16",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 17,
+    "name": "金属材料-7017",
+    "material_type": "金属材料",
+    "specs": "规格 F-17",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 18,
+    "name": "塑胶件-7018",
+    "material_type": "塑胶件",
+    "specs": "规格 A-18",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 19,
+    "name": "标准件-7019",
+    "material_type": "标准件",
+    "specs": "规格 B-19",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 20,
+    "name": "包装材料-7020",
+    "material_type": "包装材料",
+    "specs": "规格 C-00",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 21,
+    "name": "化学品-7021",
+    "material_type": "化学品",
+    "specs": "规格 D-01",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 22,
+    "name": "线束-7022",
+    "material_type": "线束",
+    "specs": "规格 E-02",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 23,
+    "name": "密封材料-7023",
+    "material_type": "密封材料",
+    "specs": "规格 F-03",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 24,
+    "name": "电子元件-7024",
+    "material_type": "电子元件",
+    "specs": "规格 A-04",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 25,
+    "name": "金属材料-7025",
+    "material_type": "金属材料",
+    "specs": "规格 B-05",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 26,
+    "name": "塑胶件-7026",
+    "material_type": "塑胶件",
+    "specs": "规格 C-06",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 27,
+    "name": "标准件-7027",
+    "material_type": "标准件",
+    "specs": "规格 D-07",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 28,
+    "name": "包装材料-7028",
+    "material_type": "包装材料",
+    "specs": "规格 E-08",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 29,
+    "name": "化学品-7029",
+    "material_type": "化学品",
+    "specs": "规格 F-09",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 30,
+    "name": "线束-7030",
+    "material_type": "线束",
+    "specs": "规格 A-10",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 31,
+    "name": "密封材料-7031",
+    "material_type": "密封材料",
+    "specs": "规格 B-11",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 32,
+    "name": "电子元件-7032",
+    "material_type": "电子元件",
+    "specs": "规格 C-12",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 33,
+    "name": "金属材料-7033",
+    "material_type": "金属材料",
+    "specs": "规格 D-13",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 34,
+    "name": "塑胶件-7034",
+    "material_type": "塑胶件",
+    "specs": "规格 E-14",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 35,
+    "name": "标准件-7035",
+    "material_type": "标准件",
+    "specs": "规格 F-15",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 36,
+    "name": "包装材料-7036",
+    "material_type": "包装材料",
+    "specs": "规格 A-16",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 37,
+    "name": "化学品-7037",
+    "material_type": "化学品",
+    "specs": "规格 B-17",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 38,
+    "name": "线束-7038",
+    "material_type": "线束",
+    "specs": "规格 C-18",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 39,
+    "name": "密封材料-7039",
+    "material_type": "密封材料",
+    "specs": "规格 D-19",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 40,
+    "name": "电子元件-7040",
+    "material_type": "电子元件",
+    "specs": "规格 E-00",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 41,
+    "name": "金属材料-7041",
+    "material_type": "金属材料",
+    "specs": "规格 F-01",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 42,
+    "name": "塑胶件-7042",
+    "material_type": "塑胶件",
+    "specs": "规格 A-02",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 43,
+    "name": "标准件-7043",
+    "material_type": "标准件",
+    "specs": "规格 B-03",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 44,
+    "name": "包装材料-7044",
+    "material_type": "包装材料",
+    "specs": "规格 C-04",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 45,
+    "name": "化学品-7045",
+    "material_type": "化学品",
+    "specs": "规格 D-05",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 46,
+    "name": "线束-7046",
+    "material_type": "线束",
+    "specs": "规格 E-06",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 47,
+    "name": "密封材料-7047",
+    "material_type": "密封材料",
+    "specs": "规格 F-07",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 48,
+    "name": "电子元件-7048",
+    "material_type": "电子元件",
+    "specs": "规格 A-08",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 49,
+    "name": "金属材料-7049",
+    "material_type": "金属材料",
+    "specs": "规格 B-09",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 50,
+    "name": "塑胶件-7050",
+    "material_type": "塑胶件",
+    "specs": "规格 C-10",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 51,
+    "name": "标准件-7051",
+    "material_type": "标准件",
+    "specs": "规格 D-11",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 52,
+    "name": "包装材料-7052",
+    "material_type": "包装材料",
+    "specs": "规格 E-12",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 53,
+    "name": "化学品-7053",
+    "material_type": "化学品",
+    "specs": "规格 F-13",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 54,
+    "name": "线束-7054",
+    "material_type": "线束",
+    "specs": "规格 A-14",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 55,
+    "name": "密封材料-7055",
+    "material_type": "密封材料",
+    "specs": "规格 B-15",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 56,
+    "name": "电子元件-7056",
+    "material_type": "电子元件",
+    "specs": "规格 C-16",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 57,
+    "name": "金属材料-7057",
+    "material_type": "金属材料",
+    "specs": "规格 D-17",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 58,
+    "name": "塑胶件-7058",
+    "material_type": "塑胶件",
+    "specs": "规格 E-18",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 59,
+    "name": "标准件-7059",
+    "material_type": "标准件",
+    "specs": "规格 F-19",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 60,
+    "name": "包装材料-7060",
+    "material_type": "包装材料",
+    "specs": "规格 A-00",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 61,
+    "name": "化学品-7061",
+    "material_type": "化学品",
+    "specs": "规格 B-01",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 62,
+    "name": "线束-7062",
+    "material_type": "线束",
+    "specs": "规格 C-02",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 63,
+    "name": "密封材料-7063",
+    "material_type": "密封材料",
+    "specs": "规格 D-03",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 64,
+    "name": "电子元件-7064",
+    "material_type": "电子元件",
+    "specs": "规格 E-04",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 65,
+    "name": "金属材料-7065",
+    "material_type": "金属材料",
+    "specs": "规格 F-05",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 66,
+    "name": "塑胶件-7066",
+    "material_type": "塑胶件",
+    "specs": "规格 A-06",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 67,
+    "name": "标准件-7067",
+    "material_type": "标准件",
+    "specs": "规格 B-07",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 68,
+    "name": "包装材料-7068",
+    "material_type": "包装材料",
+    "specs": "规格 C-08",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 69,
+    "name": "化学品-7069",
+    "material_type": "化学品",
+    "specs": "规格 D-09",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 70,
+    "name": "线束-7070",
+    "material_type": "线束",
+    "specs": "规格 E-10",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 71,
+    "name": "密封材料-7071",
+    "material_type": "密封材料",
+    "specs": "规格 F-11",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 72,
+    "name": "电子元件-7072",
+    "material_type": "电子元件",
+    "specs": "规格 A-12",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 73,
+    "name": "金属材料-7073",
+    "material_type": "金属材料",
+    "specs": "规格 B-13",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 74,
+    "name": "塑胶件-7074",
+    "material_type": "塑胶件",
+    "specs": "规格 C-14",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 75,
+    "name": "标准件-7075",
+    "material_type": "标准件",
+    "specs": "规格 D-15",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 76,
+    "name": "包装材料-7076",
+    "material_type": "包装材料",
+    "specs": "规格 E-16",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 77,
+    "name": "化学品-7077",
+    "material_type": "化学品",
+    "specs": "规格 F-17",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 78,
+    "name": "线束-7078",
+    "material_type": "线束",
+    "specs": "规格 A-18",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 79,
+    "name": "密封材料-7079",
+    "material_type": "密封材料",
+    "specs": "规格 B-19",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 80,
+    "name": "电子元件-7080",
+    "material_type": "电子元件",
+    "specs": "规格 C-00",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 81,
+    "name": "金属材料-7081",
+    "material_type": "金属材料",
+    "specs": "规格 D-01",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 82,
+    "name": "塑胶件-7082",
+    "material_type": "塑胶件",
+    "specs": "规格 E-02",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 83,
+    "name": "标准件-7083",
+    "material_type": "标准件",
+    "specs": "规格 F-03",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 84,
+    "name": "包装材料-7084",
+    "material_type": "包装材料",
+    "specs": "规格 A-04",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 85,
+    "name": "化学品-7085",
+    "material_type": "化学品",
+    "specs": "规格 B-05",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 86,
+    "name": "线束-7086",
+    "material_type": "线束",
+    "specs": "规格 C-06",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 87,
+    "name": "密封材料-7087",
+    "material_type": "密封材料",
+    "specs": "规格 D-07",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 88,
+    "name": "电子元件-7088",
+    "material_type": "电子元件",
+    "specs": "规格 E-08",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 89,
+    "name": "金属材料-7089",
+    "material_type": "金属材料",
+    "specs": "规格 F-09",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 90,
+    "name": "塑胶件-7090",
+    "material_type": "塑胶件",
+    "specs": "规格 A-10",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 91,
+    "name": "标准件-7091",
+    "material_type": "标准件",
+    "specs": "规格 B-11",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 92,
+    "name": "包装材料-7092",
+    "material_type": "包装材料",
+    "specs": "规格 C-12",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 93,
+    "name": "化学品-7093",
+    "material_type": "化学品",
+    "specs": "规格 D-13",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 94,
+    "name": "线束-7094",
+    "material_type": "线束",
+    "specs": "规格 E-14",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 95,
+    "name": "密封材料-7095",
+    "material_type": "密封材料",
+    "specs": "规格 F-15",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 96,
+    "name": "电子元件-7096",
+    "material_type": "电子元件",
+    "specs": "规格 A-16",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 97,
+    "name": "金属材料-7097",
+    "material_type": "金属材料",
+    "specs": "规格 B-17",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 98,
+    "name": "塑胶件-7098",
+    "material_type": "塑胶件",
+    "specs": "规格 C-18",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 99,
+    "name": "标准件-7099",
+    "material_type": "标准件",
+    "specs": "规格 D-19",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 100,
+    "name": "包装材料-7100",
+    "material_type": "包装材料",
+    "specs": "规格 E-00",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 101,
+    "name": "化学品-7101",
+    "material_type": "化学品",
+    "specs": "规格 F-01",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 102,
+    "name": "线束-7102",
+    "material_type": "线束",
+    "specs": "规格 A-02",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 103,
+    "name": "密封材料-7103",
+    "material_type": "密封材料",
+    "specs": "规格 B-03",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 104,
+    "name": "电子元件-7104",
+    "material_type": "电子元件",
+    "specs": "规格 C-04",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 105,
+    "name": "金属材料-7105",
+    "material_type": "金属材料",
+    "specs": "规格 D-05",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 106,
+    "name": "塑胶件-7106",
+    "material_type": "塑胶件",
+    "specs": "规格 E-06",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 107,
+    "name": "标准件-7107",
+    "material_type": "标准件",
+    "specs": "规格 F-07",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 108,
+    "name": "包装材料-7108",
+    "material_type": "包装材料",
+    "specs": "规格 A-08",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 109,
+    "name": "化学品-7109",
+    "material_type": "化学品",
+    "specs": "规格 B-09",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 110,
+    "name": "线束-7110",
+    "material_type": "线束",
+    "specs": "规格 C-10",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 111,
+    "name": "密封材料-7111",
+    "material_type": "密封材料",
+    "specs": "规格 D-11",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 112,
+    "name": "电子元件-7112",
+    "material_type": "电子元件",
+    "specs": "规格 E-12",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 113,
+    "name": "金属材料-7113",
+    "material_type": "金属材料",
+    "specs": "规格 F-13",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 114,
+    "name": "塑胶件-7114",
+    "material_type": "塑胶件",
+    "specs": "规格 A-14",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 115,
+    "name": "标准件-7115",
+    "material_type": "标准件",
+    "specs": "规格 B-15",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 116,
+    "name": "包装材料-7116",
+    "material_type": "包装材料",
+    "specs": "规格 C-16",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 117,
+    "name": "化学品-7117",
+    "material_type": "化学品",
+    "specs": "规格 D-17",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 118,
+    "name": "线束-7118",
+    "material_type": "线束",
+    "specs": "规格 E-18",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 119,
+    "name": "密封材料-7119",
+    "material_type": "密封材料",
+    "specs": "规格 F-19",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 120,
+    "name": "电子元件-7120",
+    "material_type": "电子元件",
+    "specs": "规格 A-00",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 121,
+    "name": "金属材料-7121",
+    "material_type": "金属材料",
+    "specs": "规格 B-01",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 122,
+    "name": "塑胶件-7122",
+    "material_type": "塑胶件",
+    "specs": "规格 C-02",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 123,
+    "name": "标准件-7123",
+    "material_type": "标准件",
+    "specs": "规格 D-03",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 124,
+    "name": "包装材料-7124",
+    "material_type": "包装材料",
+    "specs": "规格 E-04",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 125,
+    "name": "化学品-7125",
+    "material_type": "化学品",
+    "specs": "规格 F-05",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 126,
+    "name": "线束-7126",
+    "material_type": "线束",
+    "specs": "规格 A-06",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 127,
+    "name": "密封材料-7127",
+    "material_type": "密封材料",
+    "specs": "规格 B-07",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 128,
+    "name": "电子元件-7128",
+    "material_type": "电子元件",
+    "specs": "规格 C-08",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 129,
+    "name": "金属材料-7129",
+    "material_type": "金属材料",
+    "specs": "规格 D-09",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 130,
+    "name": "塑胶件-7130",
+    "material_type": "塑胶件",
+    "specs": "规格 E-10",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 131,
+    "name": "标准件-7131",
+    "material_type": "标准件",
+    "specs": "规格 F-11",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 132,
+    "name": "包装材料-7132",
+    "material_type": "包装材料",
+    "specs": "规格 A-12",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 133,
+    "name": "化学品-7133",
+    "material_type": "化学品",
+    "specs": "规格 B-13",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 134,
+    "name": "线束-7134",
+    "material_type": "线束",
+    "specs": "规格 C-14",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 135,
+    "name": "密封材料-7135",
+    "material_type": "密封材料",
+    "specs": "规格 D-15",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 136,
+    "name": "电子元件-7136",
+    "material_type": "电子元件",
+    "specs": "规格 E-16",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 137,
+    "name": "金属材料-7137",
+    "material_type": "金属材料",
+    "specs": "规格 F-17",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 138,
+    "name": "塑胶件-7138",
+    "material_type": "塑胶件",
+    "specs": "规格 A-18",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 139,
+    "name": "标准件-7139",
+    "material_type": "标准件",
+    "specs": "规格 B-19",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 140,
+    "name": "包装材料-7140",
+    "material_type": "包装材料",
+    "specs": "规格 C-00",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 141,
+    "name": "化学品-7141",
+    "material_type": "化学品",
+    "specs": "规格 D-01",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 142,
+    "name": "线束-7142",
+    "material_type": "线束",
+    "specs": "规格 E-02",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 143,
+    "name": "密封材料-7143",
+    "material_type": "密封材料",
+    "specs": "规格 F-03",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 144,
+    "name": "电子元件-7144",
+    "material_type": "电子元件",
+    "specs": "规格 A-04",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 145,
+    "name": "金属材料-7145",
+    "material_type": "金属材料",
+    "specs": "规格 B-05",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 146,
+    "name": "塑胶件-7146",
+    "material_type": "塑胶件",
+    "specs": "规格 C-06",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 147,
+    "name": "标准件-7147",
+    "material_type": "标准件",
+    "specs": "规格 D-07",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 148,
+    "name": "包装材料-7148",
+    "material_type": "包装材料",
+    "specs": "规格 E-08",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 149,
+    "name": "化学品-7149",
+    "material_type": "化学品",
+    "specs": "规格 F-09",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 150,
+    "name": "线束-7150",
+    "material_type": "线束",
+    "specs": "规格 A-10",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 151,
+    "name": "密封材料-7151",
+    "material_type": "密封材料",
+    "specs": "规格 B-11",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 152,
+    "name": "电子元件-7152",
+    "material_type": "电子元件",
+    "specs": "规格 C-12",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 153,
+    "name": "金属材料-7153",
+    "material_type": "金属材料",
+    "specs": "规格 D-13",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 154,
+    "name": "塑胶件-7154",
+    "material_type": "塑胶件",
+    "specs": "规格 E-14",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 155,
+    "name": "标准件-7155",
+    "material_type": "标准件",
+    "specs": "规格 F-15",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 156,
+    "name": "包装材料-7156",
+    "material_type": "包装材料",
+    "specs": "规格 A-16",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 157,
+    "name": "化学品-7157",
+    "material_type": "化学品",
+    "specs": "规格 B-17",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 158,
+    "name": "线束-7158",
+    "material_type": "线束",
+    "specs": "规格 C-18",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 159,
+    "name": "密封材料-7159",
+    "material_type": "密封材料",
+    "specs": "规格 D-19",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 160,
+    "name": "电子元件-7160",
+    "material_type": "电子元件",
+    "specs": "规格 E-00",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 161,
+    "name": "金属材料-7161",
+    "material_type": "金属材料",
+    "specs": "规格 F-01",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 162,
+    "name": "塑胶件-7162",
+    "material_type": "塑胶件",
+    "specs": "规格 A-02",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 163,
+    "name": "标准件-7163",
+    "material_type": "标准件",
+    "specs": "规格 B-03",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 164,
+    "name": "包装材料-7164",
+    "material_type": "包装材料",
+    "specs": "规格 C-04",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 165,
+    "name": "化学品-7165",
+    "material_type": "化学品",
+    "specs": "规格 D-05",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 166,
+    "name": "线束-7166",
+    "material_type": "线束",
+    "specs": "规格 E-06",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 167,
+    "name": "密封材料-7167",
+    "material_type": "密封材料",
+    "specs": "规格 F-07",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 168,
+    "name": "电子元件-7168",
+    "material_type": "电子元件",
+    "specs": "规格 A-08",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 169,
+    "name": "金属材料-7169",
+    "material_type": "金属材料",
+    "specs": "规格 B-09",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 170,
+    "name": "塑胶件-7170",
+    "material_type": "塑胶件",
+    "specs": "规格 C-10",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 171,
+    "name": "标准件-7171",
+    "material_type": "标准件",
+    "specs": "规格 D-11",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 172,
+    "name": "包装材料-7172",
+    "material_type": "包装材料",
+    "specs": "规格 E-12",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 173,
+    "name": "化学品-7173",
+    "material_type": "化学品",
+    "specs": "规格 F-13",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 174,
+    "name": "线束-7174",
+    "material_type": "线束",
+    "specs": "规格 A-14",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 175,
+    "name": "密封材料-7175",
+    "material_type": "密封材料",
+    "specs": "规格 B-15",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 176,
+    "name": "电子元件-7176",
+    "material_type": "电子元件",
+    "specs": "规格 C-16",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 177,
+    "name": "金属材料-7177",
+    "material_type": "金属材料",
+    "specs": "规格 D-17",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 178,
+    "name": "塑胶件-7178",
+    "material_type": "塑胶件",
+    "specs": "规格 E-18",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 179,
+    "name": "标准件-7179",
+    "material_type": "标准件",
+    "specs": "规格 F-19",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 180,
+    "name": "包装材料-7180",
+    "material_type": "包装材料",
+    "specs": "规格 A-00",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 181,
+    "name": "化学品-7181",
+    "material_type": "化学品",
+    "specs": "规格 B-01",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 182,
+    "name": "线束-7182",
+    "material_type": "线束",
+    "specs": "规格 C-02",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 183,
+    "name": "密封材料-7183",
+    "material_type": "密封材料",
+    "specs": "规格 D-03",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 184,
+    "name": "电子元件-7184",
+    "material_type": "电子元件",
+    "specs": "规格 E-04",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 185,
+    "name": "金属材料-7185",
+    "material_type": "金属材料",
+    "specs": "规格 F-05",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 186,
+    "name": "塑胶件-7186",
+    "material_type": "塑胶件",
+    "specs": "规格 A-06",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 187,
+    "name": "标准件-7187",
+    "material_type": "标准件",
+    "specs": "规格 B-07",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 188,
+    "name": "包装材料-7188",
+    "material_type": "包装材料",
+    "specs": "规格 C-08",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 189,
+    "name": "化学品-7189",
+    "material_type": "化学品",
+    "specs": "规格 D-09",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 190,
+    "name": "线束-7190",
+    "material_type": "线束",
+    "specs": "规格 E-10",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 191,
+    "name": "密封材料-7191",
+    "material_type": "密封材料",
+    "specs": "规格 F-11",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 192,
+    "name": "电子元件-7192",
+    "material_type": "电子元件",
+    "specs": "规格 A-12",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 193,
+    "name": "金属材料-7193",
+    "material_type": "金属材料",
+    "specs": "规格 B-13",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 194,
+    "name": "塑胶件-7194",
+    "material_type": "塑胶件",
+    "specs": "规格 C-14",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 195,
+    "name": "标准件-7195",
+    "material_type": "标准件",
+    "specs": "规格 D-15",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 196,
+    "name": "包装材料-7196",
+    "material_type": "包装材料",
+    "specs": "规格 E-16",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 197,
+    "name": "化学品-7197",
+    "material_type": "化学品",
+    "specs": "规格 F-17",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 198,
+    "name": "线束-7198",
+    "material_type": "线束",
+    "specs": "规格 A-18",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 199,
+    "name": "密封材料-7199",
+    "material_type": "密封材料",
+    "specs": "规格 B-19",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 200,
+    "name": "电子元件-7200",
+    "material_type": "电子元件",
+    "specs": "规格 C-00",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 201,
+    "name": "金属材料-7201",
+    "material_type": "金属材料",
+    "specs": "规格 D-01",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 202,
+    "name": "塑胶件-7202",
+    "material_type": "塑胶件",
+    "specs": "规格 E-02",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 203,
+    "name": "标准件-7203",
+    "material_type": "标准件",
+    "specs": "规格 F-03",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 204,
+    "name": "包装材料-7204",
+    "material_type": "包装材料",
+    "specs": "规格 A-04",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 205,
+    "name": "化学品-7205",
+    "material_type": "化学品",
+    "specs": "规格 B-05",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 206,
+    "name": "线束-7206",
+    "material_type": "线束",
+    "specs": "规格 C-06",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 207,
+    "name": "密封材料-7207",
+    "material_type": "密封材料",
+    "specs": "规格 D-07",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 208,
+    "name": "电子元件-7208",
+    "material_type": "电子元件",
+    "specs": "规格 E-08",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 209,
+    "name": "金属材料-7209",
+    "material_type": "金属材料",
+    "specs": "规格 F-09",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 210,
+    "name": "塑胶件-7210",
+    "material_type": "塑胶件",
+    "specs": "规格 A-10",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 211,
+    "name": "标准件-7211",
+    "material_type": "标准件",
+    "specs": "规格 B-11",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 212,
+    "name": "包装材料-7212",
+    "material_type": "包装材料",
+    "specs": "规格 C-12",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 213,
+    "name": "化学品-7213",
+    "material_type": "化学品",
+    "specs": "规格 D-13",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 214,
+    "name": "线束-7214",
+    "material_type": "线束",
+    "specs": "规格 E-14",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 215,
+    "name": "密封材料-7215",
+    "material_type": "密封材料",
+    "specs": "规格 F-15",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 216,
+    "name": "电子元件-7216",
+    "material_type": "电子元件",
+    "specs": "规格 A-16",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 217,
+    "name": "金属材料-7217",
+    "material_type": "金属材料",
+    "specs": "规格 B-17",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 218,
+    "name": "塑胶件-7218",
+    "material_type": "塑胶件",
+    "specs": "规格 C-18",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 219,
+    "name": "标准件-7219",
+    "material_type": "标准件",
+    "specs": "规格 D-19",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 220,
+    "name": "包装材料-7220",
+    "material_type": "包装材料",
+    "specs": "规格 E-00",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 221,
+    "name": "化学品-7221",
+    "material_type": "化学品",
+    "specs": "规格 F-01",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 222,
+    "name": "线束-7222",
+    "material_type": "线束",
+    "specs": "规格 A-02",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 223,
+    "name": "密封材料-7223",
+    "material_type": "密封材料",
+    "specs": "规格 B-03",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 224,
+    "name": "电子元件-7224",
+    "material_type": "电子元件",
+    "specs": "规格 C-04",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 225,
+    "name": "金属材料-7225",
+    "material_type": "金属材料",
+    "specs": "规格 D-05",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 226,
+    "name": "塑胶件-7226",
+    "material_type": "塑胶件",
+    "specs": "规格 E-06",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 227,
+    "name": "标准件-7227",
+    "material_type": "标准件",
+    "specs": "规格 F-07",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 228,
+    "name": "包装材料-7228",
+    "material_type": "包装材料",
+    "specs": "规格 A-08",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 229,
+    "name": "化学品-7229",
+    "material_type": "化学品",
+    "specs": "规格 B-09",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 230,
+    "name": "线束-7230",
+    "material_type": "线束",
+    "specs": "规格 C-10",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 231,
+    "name": "密封材料-7231",
+    "material_type": "密封材料",
+    "specs": "规格 D-11",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 232,
+    "name": "电子元件-7232",
+    "material_type": "电子元件",
+    "specs": "规格 E-12",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 233,
+    "name": "金属材料-7233",
+    "material_type": "金属材料",
+    "specs": "规格 F-13",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 234,
+    "name": "塑胶件-7234",
+    "material_type": "塑胶件",
+    "specs": "规格 A-14",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 235,
+    "name": "标准件-7235",
+    "material_type": "标准件",
+    "specs": "规格 B-15",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 236,
+    "name": "包装材料-7236",
+    "material_type": "包装材料",
+    "specs": "规格 C-16",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 237,
+    "name": "化学品-7237",
+    "material_type": "化学品",
+    "specs": "规格 D-17",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 238,
+    "name": "线束-7238",
+    "material_type": "线束",
+    "specs": "规格 E-18",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 239,
+    "name": "密封材料-7239",
+    "material_type": "密封材料",
+    "specs": "规格 F-19",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 240,
+    "name": "电子元件-7240",
+    "material_type": "电子元件",
+    "specs": "规格 A-00",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 241,
+    "name": "金属材料-7241",
+    "material_type": "金属材料",
+    "specs": "规格 B-01",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 242,
+    "name": "塑胶件-7242",
+    "material_type": "塑胶件",
+    "specs": "规格 C-02",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 243,
+    "name": "标准件-7243",
+    "material_type": "标准件",
+    "specs": "规格 D-03",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 244,
+    "name": "包装材料-7244",
+    "material_type": "包装材料",
+    "specs": "规格 E-04",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 245,
+    "name": "化学品-7245",
+    "material_type": "化学品",
+    "specs": "规格 F-05",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 246,
+    "name": "线束-7246",
+    "material_type": "线束",
+    "specs": "规格 A-06",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 247,
+    "name": "密封材料-7247",
+    "material_type": "密封材料",
+    "specs": "规格 B-07",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 248,
+    "name": "电子元件-7248",
+    "material_type": "电子元件",
+    "specs": "规格 C-08",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 249,
+    "name": "金属材料-7249",
+    "material_type": "金属材料",
+    "specs": "规格 D-09",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 250,
+    "name": "塑胶件-7250",
+    "material_type": "塑胶件",
+    "specs": "规格 E-10",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 251,
+    "name": "标准件-7251",
+    "material_type": "标准件",
+    "specs": "规格 F-11",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 252,
+    "name": "包装材料-7252",
+    "material_type": "包装材料",
+    "specs": "规格 A-12",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 253,
+    "name": "化学品-7253",
+    "material_type": "化学品",
+    "specs": "规格 B-13",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 254,
+    "name": "线束-7254",
+    "material_type": "线束",
+    "specs": "规格 C-14",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 255,
+    "name": "密封材料-7255",
+    "material_type": "密封材料",
+    "specs": "规格 D-15",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 256,
+    "name": "电子元件-7256",
+    "material_type": "电子元件",
+    "specs": "规格 E-16",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 257,
+    "name": "金属材料-7257",
+    "material_type": "金属材料",
+    "specs": "规格 F-17",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 258,
+    "name": "塑胶件-7258",
+    "material_type": "塑胶件",
+    "specs": "规格 A-18",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 259,
+    "name": "标准件-7259",
+    "material_type": "标准件",
+    "specs": "规格 B-19",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 260,
+    "name": "包装材料-7260",
+    "material_type": "包装材料",
+    "specs": "规格 C-00",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 261,
+    "name": "化学品-7261",
+    "material_type": "化学品",
+    "specs": "规格 D-01",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 262,
+    "name": "线束-7262",
+    "material_type": "线束",
+    "specs": "规格 E-02",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 263,
+    "name": "密封材料-7263",
+    "material_type": "密封材料",
+    "specs": "规格 F-03",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 264,
+    "name": "电子元件-7264",
+    "material_type": "电子元件",
+    "specs": "规格 A-04",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 265,
+    "name": "金属材料-7265",
+    "material_type": "金属材料",
+    "specs": "规格 B-05",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 266,
+    "name": "塑胶件-7266",
+    "material_type": "塑胶件",
+    "specs": "规格 C-06",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 267,
+    "name": "标准件-7267",
+    "material_type": "标准件",
+    "specs": "规格 D-07",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 268,
+    "name": "包装材料-7268",
+    "material_type": "包装材料",
+    "specs": "规格 E-08",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 269,
+    "name": "化学品-7269",
+    "material_type": "化学品",
+    "specs": "规格 F-09",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 270,
+    "name": "线束-7270",
+    "material_type": "线束",
+    "specs": "规格 A-10",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 271,
+    "name": "密封材料-7271",
+    "material_type": "密封材料",
+    "specs": "规格 B-11",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 272,
+    "name": "电子元件-7272",
+    "material_type": "电子元件",
+    "specs": "规格 C-12",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 273,
+    "name": "金属材料-7273",
+    "material_type": "金属材料",
+    "specs": "规格 D-13",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 274,
+    "name": "塑胶件-7274",
+    "material_type": "塑胶件",
+    "specs": "规格 E-14",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 275,
+    "name": "标准件-7275",
+    "material_type": "标准件",
+    "specs": "规格 F-15",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 276,
+    "name": "包装材料-7276",
+    "material_type": "包装材料",
+    "specs": "规格 A-16",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 277,
+    "name": "化学品-7277",
+    "material_type": "化学品",
+    "specs": "规格 B-17",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 278,
+    "name": "线束-7278",
+    "material_type": "线束",
+    "specs": "规格 C-18",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 279,
+    "name": "密封材料-7279",
+    "material_type": "密封材料",
+    "specs": "规格 D-19",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 280,
+    "name": "电子元件-7280",
+    "material_type": "电子元件",
+    "specs": "规格 E-00",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 281,
+    "name": "金属材料-7281",
+    "material_type": "金属材料",
+    "specs": "规格 F-01",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 282,
+    "name": "塑胶件-7282",
+    "material_type": "塑胶件",
+    "specs": "规格 A-02",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 283,
+    "name": "标准件-7283",
+    "material_type": "标准件",
+    "specs": "规格 B-03",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 284,
+    "name": "包装材料-7284",
+    "material_type": "包装材料",
+    "specs": "规格 C-04",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 285,
+    "name": "化学品-7285",
+    "material_type": "化学品",
+    "specs": "规格 D-05",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 286,
+    "name": "线束-7286",
+    "material_type": "线束",
+    "specs": "规格 E-06",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 287,
+    "name": "密封材料-7287",
+    "material_type": "密封材料",
+    "specs": "规格 F-07",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 288,
+    "name": "电子元件-7288",
+    "material_type": "电子元件",
+    "specs": "规格 A-08",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 289,
+    "name": "金属材料-7289",
+    "material_type": "金属材料",
+    "specs": "规格 B-09",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 290,
+    "name": "塑胶件-7290",
+    "material_type": "塑胶件",
+    "specs": "规格 C-10",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 291,
+    "name": "标准件-7291",
+    "material_type": "标准件",
+    "specs": "规格 D-11",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 292,
+    "name": "包装材料-7292",
+    "material_type": "包装材料",
+    "specs": "规格 E-12",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 293,
+    "name": "化学品-7293",
+    "material_type": "化学品",
+    "specs": "规格 F-13",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 294,
+    "name": "线束-7294",
+    "material_type": "线束",
+    "specs": "规格 A-14",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 295,
+    "name": "密封材料-7295",
+    "material_type": "密封材料",
+    "specs": "规格 B-15",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 296,
+    "name": "电子元件-7296",
+    "material_type": "电子元件",
+    "specs": "规格 C-16",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 297,
+    "name": "金属材料-7297",
+    "material_type": "金属材料",
+    "specs": "规格 D-17",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 298,
+    "name": "塑胶件-7298",
+    "material_type": "塑胶件",
+    "specs": "规格 E-18",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 299,
+    "name": "标准件-7299",
+    "material_type": "标准件",
+    "specs": "规格 F-19",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 300,
+    "name": "包装材料-7300",
+    "material_type": "包装材料",
+    "specs": "规格 A-00",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 301,
+    "name": "化学品-7301",
+    "material_type": "化学品",
+    "specs": "规格 B-01",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 302,
+    "name": "线束-7302",
+    "material_type": "线束",
+    "specs": "规格 C-02",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 303,
+    "name": "密封材料-7303",
+    "material_type": "密封材料",
+    "specs": "规格 D-03",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 304,
+    "name": "电子元件-7304",
+    "material_type": "电子元件",
+    "specs": "规格 E-04",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 305,
+    "name": "金属材料-7305",
+    "material_type": "金属材料",
+    "specs": "规格 F-05",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 306,
+    "name": "塑胶件-7306",
+    "material_type": "塑胶件",
+    "specs": "规格 A-06",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 307,
+    "name": "标准件-7307",
+    "material_type": "标准件",
+    "specs": "规格 B-07",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 308,
+    "name": "包装材料-7308",
+    "material_type": "包装材料",
+    "specs": "规格 C-08",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 309,
+    "name": "化学品-7309",
+    "material_type": "化学品",
+    "specs": "规格 D-09",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 310,
+    "name": "线束-7310",
+    "material_type": "线束",
+    "specs": "规格 E-10",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 311,
+    "name": "密封材料-7311",
+    "material_type": "密封材料",
+    "specs": "规格 F-11",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 312,
+    "name": "电子元件-7312",
+    "material_type": "电子元件",
+    "specs": "规格 A-12",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 313,
+    "name": "金属材料-7313",
+    "material_type": "金属材料",
+    "specs": "规格 B-13",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 314,
+    "name": "塑胶件-7314",
+    "material_type": "塑胶件",
+    "specs": "规格 C-14",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 315,
+    "name": "标准件-7315",
+    "material_type": "标准件",
+    "specs": "规格 D-15",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 316,
+    "name": "包装材料-7316",
+    "material_type": "包装材料",
+    "specs": "规格 E-16",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 317,
+    "name": "化学品-7317",
+    "material_type": "化学品",
+    "specs": "规格 F-17",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 318,
+    "name": "线束-7318",
+    "material_type": "线束",
+    "specs": "规格 A-18",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 319,
+    "name": "密封材料-7319",
+    "material_type": "密封材料",
+    "specs": "规格 B-19",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 320,
+    "name": "电子元件-7320",
+    "material_type": "电子元件",
+    "specs": "规格 C-00",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 321,
+    "name": "金属材料-7321",
+    "material_type": "金属材料",
+    "specs": "规格 D-01",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 322,
+    "name": "塑胶件-7322",
+    "material_type": "塑胶件",
+    "specs": "规格 E-02",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 323,
+    "name": "标准件-7323",
+    "material_type": "标准件",
+    "specs": "规格 F-03",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 324,
+    "name": "包装材料-7324",
+    "material_type": "包装材料",
+    "specs": "规格 A-04",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 325,
+    "name": "化学品-7325",
+    "material_type": "化学品",
+    "specs": "规格 B-05",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 326,
+    "name": "线束-7326",
+    "material_type": "线束",
+    "specs": "规格 C-06",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 327,
+    "name": "密封材料-7327",
+    "material_type": "密封材料",
+    "specs": "规格 D-07",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 328,
+    "name": "电子元件-7328",
+    "material_type": "电子元件",
+    "specs": "规格 E-08",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 329,
+    "name": "金属材料-7329",
+    "material_type": "金属材料",
+    "specs": "规格 F-09",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 330,
+    "name": "塑胶件-7330",
+    "material_type": "塑胶件",
+    "specs": "规格 A-10",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 331,
+    "name": "标准件-7331",
+    "material_type": "标准件",
+    "specs": "规格 B-11",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 332,
+    "name": "包装材料-7332",
+    "material_type": "包装材料",
+    "specs": "规格 C-12",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 333,
+    "name": "化学品-7333",
+    "material_type": "化学品",
+    "specs": "规格 D-13",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 334,
+    "name": "线束-7334",
+    "material_type": "线束",
+    "specs": "规格 E-14",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 335,
+    "name": "密封材料-7335",
+    "material_type": "密封材料",
+    "specs": "规格 F-15",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 336,
+    "name": "电子元件-7336",
+    "material_type": "电子元件",
+    "specs": "规格 A-16",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 337,
+    "name": "金属材料-7337",
+    "material_type": "金属材料",
+    "specs": "规格 B-17",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 338,
+    "name": "塑胶件-7338",
+    "material_type": "塑胶件",
+    "specs": "规格 C-18",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 339,
+    "name": "标准件-7339",
+    "material_type": "标准件",
+    "specs": "规格 D-19",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 340,
+    "name": "包装材料-7340",
+    "material_type": "包装材料",
+    "specs": "规格 E-00",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 341,
+    "name": "化学品-7341",
+    "material_type": "化学品",
+    "specs": "规格 F-01",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 342,
+    "name": "线束-7342",
+    "material_type": "线束",
+    "specs": "规格 A-02",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 343,
+    "name": "密封材料-7343",
+    "material_type": "密封材料",
+    "specs": "规格 B-03",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 344,
+    "name": "电子元件-7344",
+    "material_type": "电子元件",
+    "specs": "规格 C-04",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 345,
+    "name": "金属材料-7345",
+    "material_type": "金属材料",
+    "specs": "规格 D-05",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 346,
+    "name": "塑胶件-7346",
+    "material_type": "塑胶件",
+    "specs": "规格 E-06",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 347,
+    "name": "标准件-7347",
+    "material_type": "标准件",
+    "specs": "规格 F-07",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 348,
+    "name": "包装材料-7348",
+    "material_type": "包装材料",
+    "specs": "规格 A-08",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 349,
+    "name": "化学品-7349",
+    "material_type": "化学品",
+    "specs": "规格 B-09",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 350,
+    "name": "线束-7350",
+    "material_type": "线束",
+    "specs": "规格 C-10",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 351,
+    "name": "密封材料-7351",
+    "material_type": "密封材料",
+    "specs": "规格 D-11",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 352,
+    "name": "电子元件-7352",
+    "material_type": "电子元件",
+    "specs": "规格 E-12",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 353,
+    "name": "金属材料-7353",
+    "material_type": "金属材料",
+    "specs": "规格 F-13",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 354,
+    "name": "塑胶件-7354",
+    "material_type": "塑胶件",
+    "specs": "规格 A-14",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 355,
+    "name": "标准件-7355",
+    "material_type": "标准件",
+    "specs": "规格 B-15",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 356,
+    "name": "包装材料-7356",
+    "material_type": "包装材料",
+    "specs": "规格 C-16",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 357,
+    "name": "化学品-7357",
+    "material_type": "化学品",
+    "specs": "规格 D-17",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 358,
+    "name": "线束-7358",
+    "material_type": "线束",
+    "specs": "规格 E-18",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 359,
+    "name": "密封材料-7359",
+    "material_type": "密封材料",
+    "specs": "规格 F-19",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 360,
+    "name": "电子元件-7360",
+    "material_type": "电子元件",
+    "specs": "规格 A-00",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 361,
+    "name": "金属材料-7361",
+    "material_type": "金属材料",
+    "specs": "规格 B-01",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 362,
+    "name": "塑胶件-7362",
+    "material_type": "塑胶件",
+    "specs": "规格 C-02",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 363,
+    "name": "标准件-7363",
+    "material_type": "标准件",
+    "specs": "规格 D-03",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 364,
+    "name": "包装材料-7364",
+    "material_type": "包装材料",
+    "specs": "规格 E-04",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 365,
+    "name": "化学品-7365",
+    "material_type": "化学品",
+    "specs": "规格 F-05",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 366,
+    "name": "线束-7366",
+    "material_type": "线束",
+    "specs": "规格 A-06",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 367,
+    "name": "密封材料-7367",
+    "material_type": "密封材料",
+    "specs": "规格 B-07",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 368,
+    "name": "电子元件-7368",
+    "material_type": "电子元件",
+    "specs": "规格 C-08",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 369,
+    "name": "金属材料-7369",
+    "material_type": "金属材料",
+    "specs": "规格 D-09",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 370,
+    "name": "塑胶件-7370",
+    "material_type": "塑胶件",
+    "specs": "规格 E-10",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 371,
+    "name": "标准件-7371",
+    "material_type": "标准件",
+    "specs": "规格 F-11",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 372,
+    "name": "包装材料-7372",
+    "material_type": "包装材料",
+    "specs": "规格 A-12",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 373,
+    "name": "化学品-7373",
+    "material_type": "化学品",
+    "specs": "规格 B-13",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 374,
+    "name": "线束-7374",
+    "material_type": "线束",
+    "specs": "规格 C-14",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 375,
+    "name": "密封材料-7375",
+    "material_type": "密封材料",
+    "specs": "规格 D-15",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 376,
+    "name": "电子元件-7376",
+    "material_type": "电子元件",
+    "specs": "规格 E-16",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 377,
+    "name": "金属材料-7377",
+    "material_type": "金属材料",
+    "specs": "规格 F-17",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 378,
+    "name": "塑胶件-7378",
+    "material_type": "塑胶件",
+    "specs": "规格 A-18",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 379,
+    "name": "标准件-7379",
+    "material_type": "标准件",
+    "specs": "规格 B-19",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 380,
+    "name": "包装材料-7380",
+    "material_type": "包装材料",
+    "specs": "规格 C-00",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 381,
+    "name": "化学品-7381",
+    "material_type": "化学品",
+    "specs": "规格 D-01",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 382,
+    "name": "线束-7382",
+    "material_type": "线束",
+    "specs": "规格 E-02",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 383,
+    "name": "密封材料-7383",
+    "material_type": "密封材料",
+    "specs": "规格 F-03",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 384,
+    "name": "电子元件-7384",
+    "material_type": "电子元件",
+    "specs": "规格 A-04",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 385,
+    "name": "金属材料-7385",
+    "material_type": "金属材料",
+    "specs": "规格 B-05",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 386,
+    "name": "塑胶件-7386",
+    "material_type": "塑胶件",
+    "specs": "规格 C-06",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 387,
+    "name": "标准件-7387",
+    "material_type": "标准件",
+    "specs": "规格 D-07",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 388,
+    "name": "包装材料-7388",
+    "material_type": "包装材料",
+    "specs": "规格 E-08",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 389,
+    "name": "化学品-7389",
+    "material_type": "化学品",
+    "specs": "规格 F-09",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 390,
+    "name": "线束-7390",
+    "material_type": "线束",
+    "specs": "规格 A-10",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 391,
+    "name": "密封材料-7391",
+    "material_type": "密封材料",
+    "specs": "规格 B-11",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 392,
+    "name": "电子元件-7392",
+    "material_type": "电子元件",
+    "specs": "规格 C-12",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 393,
+    "name": "金属材料-7393",
+    "material_type": "金属材料",
+    "specs": "规格 D-13",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 394,
+    "name": "塑胶件-7394",
+    "material_type": "塑胶件",
+    "specs": "规格 E-14",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 395,
+    "name": "标准件-7395",
+    "material_type": "标准件",
+    "specs": "规格 F-15",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 396,
+    "name": "包装材料-7396",
+    "material_type": "包装材料",
+    "specs": "规格 A-16",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 397,
+    "name": "化学品-7397",
+    "material_type": "化学品",
+    "specs": "规格 B-17",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 398,
+    "name": "线束-7398",
+    "material_type": "线束",
+    "specs": "规格 C-18",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 399,
+    "name": "密封材料-7399",
+    "material_type": "密封材料",
+    "specs": "规格 D-19",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 400,
+    "name": "电子元件-7400",
+    "material_type": "电子元件",
+    "specs": "规格 E-00",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 401,
+    "name": "金属材料-7401",
+    "material_type": "金属材料",
+    "specs": "规格 F-01",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 402,
+    "name": "塑胶件-7402",
+    "material_type": "塑胶件",
+    "specs": "规格 A-02",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 403,
+    "name": "标准件-7403",
+    "material_type": "标准件",
+    "specs": "规格 B-03",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 404,
+    "name": "包装材料-7404",
+    "material_type": "包装材料",
+    "specs": "规格 C-04",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 405,
+    "name": "化学品-7405",
+    "material_type": "化学品",
+    "specs": "规格 D-05",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 406,
+    "name": "线束-7406",
+    "material_type": "线束",
+    "specs": "规格 E-06",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 407,
+    "name": "密封材料-7407",
+    "material_type": "密封材料",
+    "specs": "规格 F-07",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 408,
+    "name": "电子元件-7408",
+    "material_type": "电子元件",
+    "specs": "规格 A-08",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 409,
+    "name": "金属材料-7409",
+    "material_type": "金属材料",
+    "specs": "规格 B-09",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 410,
+    "name": "塑胶件-7410",
+    "material_type": "塑胶件",
+    "specs": "规格 C-10",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 411,
+    "name": "标准件-7411",
+    "material_type": "标准件",
+    "specs": "规格 D-11",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 412,
+    "name": "包装材料-7412",
+    "material_type": "包装材料",
+    "specs": "规格 E-12",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 413,
+    "name": "化学品-7413",
+    "material_type": "化学品",
+    "specs": "规格 F-13",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 414,
+    "name": "线束-7414",
+    "material_type": "线束",
+    "specs": "规格 A-14",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 415,
+    "name": "密封材料-7415",
+    "material_type": "密封材料",
+    "specs": "规格 B-15",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 416,
+    "name": "电子元件-7416",
+    "material_type": "电子元件",
+    "specs": "规格 C-16",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 417,
+    "name": "金属材料-7417",
+    "material_type": "金属材料",
+    "specs": "规格 D-17",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 418,
+    "name": "塑胶件-7418",
+    "material_type": "塑胶件",
+    "specs": "规格 E-18",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 419,
+    "name": "标准件-7419",
+    "material_type": "标准件",
+    "specs": "规格 F-19",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 420,
+    "name": "包装材料-7420",
+    "material_type": "包装材料",
+    "specs": "规格 A-00",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 421,
+    "name": "化学品-7421",
+    "material_type": "化学品",
+    "specs": "规格 B-01",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 422,
+    "name": "线束-7422",
+    "material_type": "线束",
+    "specs": "规格 C-02",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 423,
+    "name": "密封材料-7423",
+    "material_type": "密封材料",
+    "specs": "规格 D-03",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 424,
+    "name": "电子元件-7424",
+    "material_type": "电子元件",
+    "specs": "规格 E-04",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 425,
+    "name": "金属材料-7425",
+    "material_type": "金属材料",
+    "specs": "规格 F-05",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 426,
+    "name": "塑胶件-7426",
+    "material_type": "塑胶件",
+    "specs": "规格 A-06",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 427,
+    "name": "标准件-7427",
+    "material_type": "标准件",
+    "specs": "规格 B-07",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 428,
+    "name": "包装材料-7428",
+    "material_type": "包装材料",
+    "specs": "规格 C-08",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 429,
+    "name": "化学品-7429",
+    "material_type": "化学品",
+    "specs": "规格 D-09",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 430,
+    "name": "线束-7430",
+    "material_type": "线束",
+    "specs": "规格 E-10",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 431,
+    "name": "密封材料-7431",
+    "material_type": "密封材料",
+    "specs": "规格 F-11",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 432,
+    "name": "电子元件-7432",
+    "material_type": "电子元件",
+    "specs": "规格 A-12",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 433,
+    "name": "金属材料-7433",
+    "material_type": "金属材料",
+    "specs": "规格 B-13",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 434,
+    "name": "塑胶件-7434",
+    "material_type": "塑胶件",
+    "specs": "规格 C-14",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 435,
+    "name": "标准件-7435",
+    "material_type": "标准件",
+    "specs": "规格 D-15",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 436,
+    "name": "包装材料-7436",
+    "material_type": "包装材料",
+    "specs": "规格 E-16",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 437,
+    "name": "化学品-7437",
+    "material_type": "化学品",
+    "specs": "规格 F-17",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 438,
+    "name": "线束-7438",
+    "material_type": "线束",
+    "specs": "规格 A-18",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 439,
+    "name": "密封材料-7439",
+    "material_type": "密封材料",
+    "specs": "规格 B-19",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 440,
+    "name": "电子元件-7440",
+    "material_type": "电子元件",
+    "specs": "规格 C-00",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 441,
+    "name": "金属材料-7441",
+    "material_type": "金属材料",
+    "specs": "规格 D-01",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 442,
+    "name": "塑胶件-7442",
+    "material_type": "塑胶件",
+    "specs": "规格 E-02",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 443,
+    "name": "标准件-7443",
+    "material_type": "标准件",
+    "specs": "规格 F-03",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 444,
+    "name": "包装材料-7444",
+    "material_type": "包装材料",
+    "specs": "规格 A-04",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 445,
+    "name": "化学品-7445",
+    "material_type": "化学品",
+    "specs": "规格 B-05",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 446,
+    "name": "线束-7446",
+    "material_type": "线束",
+    "specs": "规格 C-06",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 447,
+    "name": "密封材料-7447",
+    "material_type": "密封材料",
+    "specs": "规格 D-07",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 448,
+    "name": "电子元件-7448",
+    "material_type": "电子元件",
+    "specs": "规格 E-08",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 449,
+    "name": "金属材料-7449",
+    "material_type": "金属材料",
+    "specs": "规格 F-09",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 450,
+    "name": "塑胶件-7450",
+    "material_type": "塑胶件",
+    "specs": "规格 A-10",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 451,
+    "name": "标准件-7451",
+    "material_type": "标准件",
+    "specs": "规格 B-11",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 452,
+    "name": "包装材料-7452",
+    "material_type": "包装材料",
+    "specs": "规格 C-12",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 453,
+    "name": "化学品-7453",
+    "material_type": "化学品",
+    "specs": "规格 D-13",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 454,
+    "name": "线束-7454",
+    "material_type": "线束",
+    "specs": "规格 E-14",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 455,
+    "name": "密封材料-7455",
+    "material_type": "密封材料",
+    "specs": "规格 F-15",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 456,
+    "name": "电子元件-7456",
+    "material_type": "电子元件",
+    "specs": "规格 A-16",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 457,
+    "name": "金属材料-7457",
+    "material_type": "金属材料",
+    "specs": "规格 B-17",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 458,
+    "name": "塑胶件-7458",
+    "material_type": "塑胶件",
+    "specs": "规格 C-18",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 459,
+    "name": "标准件-7459",
+    "material_type": "标准件",
+    "specs": "规格 D-19",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 460,
+    "name": "包装材料-7460",
+    "material_type": "包装材料",
+    "specs": "规格 E-00",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 461,
+    "name": "化学品-7461",
+    "material_type": "化学品",
+    "specs": "规格 F-01",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 462,
+    "name": "线束-7462",
+    "material_type": "线束",
+    "specs": "规格 A-02",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 463,
+    "name": "密封材料-7463",
+    "material_type": "密封材料",
+    "specs": "规格 B-03",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 464,
+    "name": "电子元件-7464",
+    "material_type": "电子元件",
+    "specs": "规格 C-04",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 465,
+    "name": "金属材料-7465",
+    "material_type": "金属材料",
+    "specs": "规格 D-05",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 466,
+    "name": "塑胶件-7466",
+    "material_type": "塑胶件",
+    "specs": "规格 E-06",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 467,
+    "name": "标准件-7467",
+    "material_type": "标准件",
+    "specs": "规格 F-07",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 468,
+    "name": "包装材料-7468",
+    "material_type": "包装材料",
+    "specs": "规格 A-08",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 469,
+    "name": "化学品-7469",
+    "material_type": "化学品",
+    "specs": "规格 B-09",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 470,
+    "name": "线束-7470",
+    "material_type": "线束",
+    "specs": "规格 C-10",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 471,
+    "name": "密封材料-7471",
+    "material_type": "密封材料",
+    "specs": "规格 D-11",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 472,
+    "name": "电子元件-7472",
+    "material_type": "电子元件",
+    "specs": "规格 E-12",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 473,
+    "name": "金属材料-7473",
+    "material_type": "金属材料",
+    "specs": "规格 F-13",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 474,
+    "name": "塑胶件-7474",
+    "material_type": "塑胶件",
+    "specs": "规格 A-14",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 475,
+    "name": "标准件-7475",
+    "material_type": "标准件",
+    "specs": "规格 B-15",
+    "unit": "件",
+    "safety_stock": 995
+  },
+  {
+    "id": 476,
+    "name": "包装材料-7476",
+    "material_type": "包装材料",
+    "specs": "规格 C-16",
+    "unit": "kg",
+    "safety_stock": 1030
+  },
+  {
+    "id": 477,
+    "name": "化学品-7477",
+    "material_type": "化学品",
+    "specs": "规格 D-17",
+    "unit": "卷",
+    "safety_stock": 1065
+  },
+  {
+    "id": 478,
+    "name": "线束-7478",
+    "material_type": "线束",
+    "specs": "规格 E-18",
+    "unit": "箱",
+    "safety_stock": 1100
+  },
+  {
+    "id": 479,
+    "name": "密封材料-7479",
+    "material_type": "密封材料",
+    "specs": "规格 F-19",
+    "unit": "L",
+    "safety_stock": 1135
+  },
+  {
+    "id": 480,
+    "name": "电子元件-7480",
+    "material_type": "电子元件",
+    "specs": "规格 A-00",
+    "unit": "件",
+    "safety_stock": 1170
+  },
+  {
+    "id": 481,
+    "name": "金属材料-7481",
+    "material_type": "金属材料",
+    "specs": "规格 B-01",
+    "unit": "kg",
+    "safety_stock": 1205
+  },
+  {
+    "id": 482,
+    "name": "塑胶件-7482",
+    "material_type": "塑胶件",
+    "specs": "规格 C-02",
+    "unit": "卷",
+    "safety_stock": 1240
+  },
+  {
+    "id": 483,
+    "name": "标准件-7483",
+    "material_type": "标准件",
+    "specs": "规格 D-03",
+    "unit": "箱",
+    "safety_stock": 1275
+  },
+  {
+    "id": 484,
+    "name": "包装材料-7484",
+    "material_type": "包装材料",
+    "specs": "规格 E-04",
+    "unit": "L",
+    "safety_stock": 1310
+  },
+  {
+    "id": 485,
+    "name": "化学品-7485",
+    "material_type": "化学品",
+    "specs": "规格 F-05",
+    "unit": "件",
+    "safety_stock": 1345
+  },
+  {
+    "id": 486,
+    "name": "线束-7486",
+    "material_type": "线束",
+    "specs": "规格 A-06",
+    "unit": "kg",
+    "safety_stock": 1380
+  },
+  {
+    "id": 487,
+    "name": "密封材料-7487",
+    "material_type": "密封材料",
+    "specs": "规格 B-07",
+    "unit": "卷",
+    "safety_stock": 1415
+  },
+  {
+    "id": 488,
+    "name": "电子元件-7488",
+    "material_type": "电子元件",
+    "specs": "规格 C-08",
+    "unit": "箱",
+    "safety_stock": 1450
+  },
+  {
+    "id": 489,
+    "name": "金属材料-7489",
+    "material_type": "金属材料",
+    "specs": "规格 D-09",
+    "unit": "L",
+    "safety_stock": 1485
+  },
+  {
+    "id": 490,
+    "name": "塑胶件-7490",
+    "material_type": "塑胶件",
+    "specs": "规格 E-10",
+    "unit": "件",
+    "safety_stock": 1520
+  },
+  {
+    "id": 491,
+    "name": "标准件-7491",
+    "material_type": "标准件",
+    "specs": "规格 F-11",
+    "unit": "kg",
+    "safety_stock": 1555
+  },
+  {
+    "id": 492,
+    "name": "包装材料-7492",
+    "material_type": "包装材料",
+    "specs": "规格 A-12",
+    "unit": "卷",
+    "safety_stock": 1590
+  },
+  {
+    "id": 493,
+    "name": "化学品-7493",
+    "material_type": "化学品",
+    "specs": "规格 B-13",
+    "unit": "箱",
+    "safety_stock": 1625
+  },
+  {
+    "id": 494,
+    "name": "线束-7494",
+    "material_type": "线束",
+    "specs": "规格 C-14",
+    "unit": "L",
+    "safety_stock": 1660
+  },
+  {
+    "id": 495,
+    "name": "密封材料-7495",
+    "material_type": "密封材料",
+    "specs": "规格 D-15",
+    "unit": "件",
+    "safety_stock": 120
+  },
+  {
+    "id": 496,
+    "name": "电子元件-7496",
+    "material_type": "电子元件",
+    "specs": "规格 E-16",
+    "unit": "kg",
+    "safety_stock": 155
+  },
+  {
+    "id": 497,
+    "name": "金属材料-7497",
+    "material_type": "金属材料",
+    "specs": "规格 F-17",
+    "unit": "卷",
+    "safety_stock": 190
+  },
+  {
+    "id": 498,
+    "name": "塑胶件-7498",
+    "material_type": "塑胶件",
+    "specs": "规格 A-18",
+    "unit": "箱",
+    "safety_stock": 225
+  },
+  {
+    "id": 499,
+    "name": "标准件-7499",
+    "material_type": "标准件",
+    "specs": "规格 B-19",
+    "unit": "L",
+    "safety_stock": 260
+  },
+  {
+    "id": 500,
+    "name": "包装材料-7500",
+    "material_type": "包装材料",
+    "specs": "规格 C-00",
+    "unit": "件",
+    "safety_stock": 295
+  },
+  {
+    "id": 501,
+    "name": "化学品-7501",
+    "material_type": "化学品",
+    "specs": "规格 D-01",
+    "unit": "kg",
+    "safety_stock": 330
+  },
+  {
+    "id": 502,
+    "name": "线束-7502",
+    "material_type": "线束",
+    "specs": "规格 E-02",
+    "unit": "卷",
+    "safety_stock": 365
+  },
+  {
+    "id": 503,
+    "name": "密封材料-7503",
+    "material_type": "密封材料",
+    "specs": "规格 F-03",
+    "unit": "箱",
+    "safety_stock": 400
+  },
+  {
+    "id": 504,
+    "name": "电子元件-7504",
+    "material_type": "电子元件",
+    "specs": "规格 A-04",
+    "unit": "L",
+    "safety_stock": 435
+  },
+  {
+    "id": 505,
+    "name": "金属材料-7505",
+    "material_type": "金属材料",
+    "specs": "规格 B-05",
+    "unit": "件",
+    "safety_stock": 470
+  },
+  {
+    "id": 506,
+    "name": "塑胶件-7506",
+    "material_type": "塑胶件",
+    "specs": "规格 C-06",
+    "unit": "kg",
+    "safety_stock": 505
+  },
+  {
+    "id": 507,
+    "name": "标准件-7507",
+    "material_type": "标准件",
+    "specs": "规格 D-07",
+    "unit": "卷",
+    "safety_stock": 540
+  },
+  {
+    "id": 508,
+    "name": "包装材料-7508",
+    "material_type": "包装材料",
+    "specs": "规格 E-08",
+    "unit": "箱",
+    "safety_stock": 575
+  },
+  {
+    "id": 509,
+    "name": "化学品-7509",
+    "material_type": "化学品",
+    "specs": "规格 F-09",
+    "unit": "L",
+    "safety_stock": 610
+  },
+  {
+    "id": 510,
+    "name": "线束-7510",
+    "material_type": "线束",
+    "specs": "规格 A-10",
+    "unit": "件",
+    "safety_stock": 645
+  },
+  {
+    "id": 511,
+    "name": "密封材料-7511",
+    "material_type": "密封材料",
+    "specs": "规格 B-11",
+    "unit": "kg",
+    "safety_stock": 680
+  },
+  {
+    "id": 512,
+    "name": "电子元件-7512",
+    "material_type": "电子元件",
+    "specs": "规格 C-12",
+    "unit": "卷",
+    "safety_stock": 715
+  },
+  {
+    "id": 513,
+    "name": "金属材料-7513",
+    "material_type": "金属材料",
+    "specs": "规格 D-13",
+    "unit": "箱",
+    "safety_stock": 750
+  },
+  {
+    "id": 514,
+    "name": "塑胶件-7514",
+    "material_type": "塑胶件",
+    "specs": "规格 E-14",
+    "unit": "L",
+    "safety_stock": 785
+  },
+  {
+    "id": 515,
+    "name": "标准件-7515",
+    "material_type": "标准件",
+    "specs": "规格 F-15",
+    "unit": "件",
+    "safety_stock": 820
+  },
+  {
+    "id": 516,
+    "name": "包装材料-7516",
+    "material_type": "包装材料",
+    "specs": "规格 A-16",
+    "unit": "kg",
+    "safety_stock": 855
+  },
+  {
+    "id": 517,
+    "name": "化学品-7517",
+    "material_type": "化学品",
+    "specs": "规格 B-17",
+    "unit": "卷",
+    "safety_stock": 890
+  },
+  {
+    "id": 518,
+    "name": "线束-7518",
+    "material_type": "线束",
+    "specs": "规格 C-18",
+    "unit": "箱",
+    "safety_stock": 925
+  },
+  {
+    "id": 519,
+    "name": "密封材料-7519",
+    "material_type": "密封材料",
+    "specs": "规格 D-19",
+    "unit": "L",
+    "safety_stock": 960
+  },
+  {
+    "id": 520,
+    "name": "电子元件-7520",
+    "material_type": "电子元件",
+    "specs": "规格 E-00",
+    "unit": "件",
+    "safety_stock": 995
   }
 ]

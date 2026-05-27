@@ -405,14 +405,22 @@ export const adminUpdateApplicationBindings = (id: number, data: Record<string, 
 
 export const authLogin = (username: string, password: string) =>
   api.post('/auth/login', { username, password });
+export const authLoginWithMfa = (username: string, password: string, mfaCode?: string) =>
+  api.post('/auth/login', { username, password, mfa_code: mfaCode });
 export const authLogout = () => api.post('/auth/logout');
 export const authMe = () => api.get('/auth/me');
+export const getOidcConfig = () => api.get('/auth/oidc/config');
+export const getOidcLoginUrl = (redirectUri?: string) => api.post('/auth/oidc/login-url', { redirect_uri: redirectUri });
+export const completeOidcLogin = (data: Record<string, unknown>) => api.post('/auth/oidc/callback', data);
 
 // Admin (Phase 3)
 export const adminListUsers = () => api.get('/admin/users');
 export const adminCreateUser = (data: Record<string, unknown>) => api.post('/admin/users', data);
 export const adminUpdateUser = (id: number, data: Record<string, unknown>) => api.put(`/admin/users/${id}`, data);
 export const adminDeleteUser = (id: number) => api.delete(`/admin/users/${id}`);
+export const adminUpdateUserSecurity = (id: number, data: Record<string, unknown>) => api.put(`/admin/users/${id}/security`, data);
+export const adminListUserSessions = (id: number) => api.get(`/admin/users/${id}/sessions`);
+export const adminRevokeSession = (sessionId: string) => api.post(`/admin/sessions/${sessionId}/revoke`);
 export const adminListOrgUnits = () => api.get('/admin/org-units');
 export const adminCreateOrgUnit = (data: Record<string, unknown>) => api.post('/admin/org-units', data);
 export const adminUpdateOrgUnit = (id: number, data: Record<string, unknown>) => api.put(`/admin/org-units/${id}`, data);
@@ -421,6 +429,78 @@ export const adminListRoles = () => api.get('/admin/roles');
 export const adminCreateRole = (data: Record<string, unknown>) => api.post('/admin/roles', data);
 export const adminDeleteRole = (id: number) => api.delete(`/admin/roles/${id}`);
 export const adminSetPermissions = (data: Record<string, unknown>) => api.put('/admin/roles/0/permissions', data);
+export const adminListRoleTemplates = () => api.get('/admin/role-templates');
+export const adminGetIamSettings = () => api.get('/admin/iam/settings');
+export const adminUpdateIamSettings = (data: Record<string, unknown>) => api.put('/admin/iam/settings', data);
+export const adminSimulatePermission = (data: Record<string, unknown>) => api.post('/admin/permissions/simulate', data);
+
+// Platform tenant administration
+export type TenantStatus = 'active' | 'suspended' | 'archived';
+
+export interface PlatformTenantDomain {
+  id: number;
+  domain: string;
+  status: string;
+  isPrimary?: boolean;
+}
+
+export interface PlatformTenantUsage {
+  users: number;
+  applications: number;
+  dynamicRecords: number;
+}
+
+export interface PlatformTenantInvite {
+  id: number;
+  email: string;
+  role: string;
+  inviteUrl: string;
+  emailDelivered?: boolean;
+}
+
+export interface PlatformTenantItem {
+  id: number;
+  name: string;
+  slug: string;
+  status: TenantStatus;
+  config?: Record<string, unknown>;
+  limits?: Record<string, unknown>;
+  domains?: PlatformTenantDomain[];
+  usage?: PlatformTenantUsage;
+  suspendedReason?: string | null;
+  adminInvite?: PlatformTenantInvite;
+}
+
+export interface PlatformTenantCreatePayload {
+  name: string;
+  slug: string;
+  domains?: string[];
+  admin_email?: string;
+  config?: Record<string, unknown>;
+  limits?: Record<string, unknown>;
+}
+
+export interface PlatformTenantUpdatePayload {
+  name?: string;
+  status?: TenantStatus;
+  domains?: string[];
+  config?: Record<string, unknown>;
+  limits?: Record<string, unknown>;
+  suspended_reason?: string;
+}
+
+export interface PlatformTenantInvitePayload {
+  email: string;
+  role?: 'admin' | 'member';
+}
+
+export const platformListTenants = () => api.get<{ data: PlatformTenantItem[] }>('/platform/tenants');
+export const platformCreateTenant = (data: PlatformTenantCreatePayload) =>
+  api.post<{ data: PlatformTenantItem }>('/platform/tenants', data);
+export const platformUpdateTenant = (id: number, data: PlatformTenantUpdatePayload) =>
+  api.put<{ data: PlatformTenantItem }>(`/platform/tenants/${id}`, data);
+export const platformCreateTenantInvite = (id: number, data: PlatformTenantInvitePayload) =>
+  api.post<{ data: PlatformTenantInvite }>(`/platform/tenants/${id}/invites`, data);
 
 // Audit Logs
 export const listAuditLogs = (params?: Record<string, unknown>) => api.get('/admin/audit-logs', { params });

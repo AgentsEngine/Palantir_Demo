@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import {
   AppstoreOutlined,
   AuditOutlined,
+  BankOutlined,
   BranchesOutlined,
   DatabaseOutlined,
   FileSearchOutlined,
@@ -74,6 +75,12 @@ export default function AccountMenu({ user, onNavigate, onLogout }: AccountMenuP
               label: 'AI 与平台设置',
               icon: <RobotOutlined />,
               onClick: () => onNavigate('/account-center?section=ai'),
+            },
+            {
+              key: 'tenants',
+              label: '租户管理',
+              icon: <BankOutlined />,
+              onClick: () => onNavigate('/account-center?section=tenants'),
             },
             {
               key: 'app-menu',

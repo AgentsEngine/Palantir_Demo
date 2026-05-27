@@ -260,6 +260,7 @@ export default function DynamicPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterValues, setFilterValues] = useState<Record<string, unknown>>({});
+  const [sortState, setSortState] = useState<{ field?: string; order?: 'asc' | 'desc' }>({});
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Record<string, any> | null>(null);
@@ -289,6 +290,8 @@ export default function DynamicPage() {
           page_size: viewConfig.table.pageSize,
           search: search || undefined,
           filters: structuredFilters.length ? JSON.stringify(structuredFilters) : undefined,
+          sort_field: sortState.field,
+          sort_order: sortState.order,
         });
         const records = unwrapApiList<any>(res);
         setData(records.map((record) => ({ id: record.id, ...(record.data || {}), _status: record.status })));
@@ -300,7 +303,7 @@ export default function DynamicPage() {
       }
     } catch { message.error('加载数据失败'); }
     finally { setLoading(false); }
-  }, [slug, pageConfig, platformForm, page, search, structuredFilters, viewConfig.table.pageSize]);
+  }, [slug, pageConfig, platformForm, page, search, sortState.field, sortState.order, structuredFilters, viewConfig.table.pageSize]);
 
   useEffect(() => {
     (async () => {
@@ -552,6 +555,17 @@ export default function DynamicPage() {
         loading={loading}
         size={viewConfig.table.density === 'compact' ? 'small' : viewConfig.table.density === 'large' ? 'large' : 'middle'}
         scroll={{ x: 'max-content' }}
+        onChange={(_pagination, _filters, sorter: any) => {
+          const activeSorter = Array.isArray(sorter) ? sorter.find((item) => item.order) : sorter;
+          const order = activeSorter?.order === 'ascend'
+            ? 'asc'
+            : activeSorter?.order === 'descend'
+              ? 'desc'
+              : undefined;
+          const field = order ? String(activeSorter?.field || activeSorter?.columnKey || '') : undefined;
+          setSortState(field && order ? { field, order } : {});
+          setPage(1);
+        }}
         pagination={{
           current: page,
           total,

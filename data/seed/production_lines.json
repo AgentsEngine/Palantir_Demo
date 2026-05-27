@@ -1,122 +1,7682 @@
 [
   {
     "id": 1,
-    "name": "CNC加工车间-A线",
+    "name": "苏州SMT车间-001-B线",
     "workshop_id": 1,
-    "capacity": 728,
-    "oee_target": 0.82,
+    "capacity": 505,
+    "oee_target": 0.83,
     "status": "running"
   },
   {
     "id": 2,
-    "name": "CNC加工车间-B线",
-    "workshop_id": 1,
-    "capacity": 1001,
+    "name": "宁波ASSEMBLY车间-002-C线",
+    "workshop_id": 2,
+    "capacity": 590,
     "oee_target": 0.84,
     "status": "running"
   },
   {
     "id": 3,
-    "name": "CNC加工车间-C线",
-    "workshop_id": 1,
-    "capacity": 1885,
-    "oee_target": 0.89,
-    "status": "maintenance"
-  },
-  {
-    "id": 4,
-    "name": "焊接车间-A线",
-    "workshop_id": 2,
-    "capacity": 1709,
-    "oee_target": 0.86,
+    "name": "武汉INSPECTION车间-003-D线",
+    "workshop_id": 3,
+    "capacity": 675,
+    "oee_target": 0.85,
     "status": "running"
   },
   {
+    "id": 4,
+    "name": "成都WAREHOUSE车间-004-A线",
+    "workshop_id": 4,
+    "capacity": 760,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
     "id": 5,
-    "name": "装配车间-A线",
-    "workshop_id": 3,
-    "capacity": 947,
-    "oee_target": 0.84,
-    "status": "maintenance"
+    "name": "合肥SURFACE车间-005-B线",
+    "workshop_id": 5,
+    "capacity": 845,
+    "oee_target": 0.87,
+    "status": "running"
   },
   {
     "id": 6,
-    "name": "质检中心-A线",
-    "workshop_id": 4,
-    "capacity": 1649,
-    "oee_target": 0.84,
-    "status": "maintenance"
+    "name": "无锡TESTING车间-006-C线",
+    "workshop_id": 6,
+    "capacity": 930,
+    "oee_target": 0.88,
+    "status": "running"
   },
   {
     "id": 7,
-    "name": "精密铸造车间-A线",
-    "workshop_id": 5,
-    "capacity": 951,
-    "oee_target": 0.86,
+    "name": "常州PACKAGING车间-007-D线",
+    "workshop_id": 7,
+    "capacity": 1015,
+    "oee_target": 0.89,
     "status": "running"
   },
   {
     "id": 8,
-    "name": "精密铸造车间-B线",
-    "workshop_id": 5,
-    "capacity": 513,
+    "name": "杭州MACHINING车间-008-A线",
+    "workshop_id": 8,
+    "capacity": 1100,
     "oee_target": 0.9,
     "status": "running"
   },
   {
     "id": 9,
-    "name": "表面处理车间-A线",
-    "workshop_id": 6,
-    "capacity": 1365,
-    "oee_target": 0.85,
+    "name": "青岛SMT车间-009-B线",
+    "workshop_id": 9,
+    "capacity": 1185,
+    "oee_target": 0.82,
     "status": "running"
   },
   {
     "id": 10,
-    "name": "表面处理车间-B线",
-    "workshop_id": 6,
-    "capacity": 940,
-    "oee_target": 0.92,
-    "status": "running"
-  },
-  {
-    "id": 11,
-    "name": "表面处理车间-C线",
-    "workshop_id": 6,
-    "capacity": 709,
+    "name": "上海ASSEMBLY车间-010-C线",
+    "workshop_id": 10,
+    "capacity": 1270,
     "oee_target": 0.83,
     "status": "running"
   },
   {
+    "id": 11,
+    "name": "苏州INSPECTION车间-011-D线",
+    "workshop_id": 11,
+    "capacity": 1355,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
     "id": 12,
-    "name": "SMT贴片车间-A线",
-    "workshop_id": 7,
-    "capacity": 1204,
-    "oee_target": 0.88,
+    "name": "宁波WAREHOUSE车间-012-A线",
+    "workshop_id": 12,
+    "capacity": 1440,
+    "oee_target": 0.85,
     "status": "running"
   },
   {
     "id": 13,
-    "name": "SMT贴片车间-B线",
-    "workshop_id": 7,
-    "capacity": 1994,
-    "oee_target": 0.87,
+    "name": "武汉SURFACE车间-013-B线",
+    "workshop_id": 13,
+    "capacity": 1525,
+    "oee_target": 0.86,
     "status": "running"
   },
   {
     "id": 14,
-    "name": "测试老化车间-A线",
-    "workshop_id": 8,
-    "capacity": 661,
+    "name": "成都TESTING车间-014-C线",
+    "workshop_id": 14,
+    "capacity": 1610,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 15,
+    "name": "合肥PACKAGING车间-015-D线",
+    "workshop_id": 15,
+    "capacity": 1695,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 16,
+    "name": "无锡MACHINING车间-016-A线",
+    "workshop_id": 16,
+    "capacity": 1780,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 17,
+    "name": "常州SMT车间-017-B线",
+    "workshop_id": 17,
+    "capacity": 1865,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 18,
+    "name": "杭州ASSEMBLY车间-018-C线",
+    "workshop_id": 18,
+    "capacity": 1950,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 19,
+    "name": "青岛INSPECTION车间-019-D线",
+    "workshop_id": 19,
+    "capacity": 2035,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 20,
+    "name": "上海WAREHOUSE车间-020-A线",
+    "workshop_id": 20,
+    "capacity": 2120,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 21,
+    "name": "苏州SURFACE车间-021-B线",
+    "workshop_id": 21,
+    "capacity": 2205,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 22,
+    "name": "宁波TESTING车间-022-C线",
+    "workshop_id": 22,
+    "capacity": 420,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 23,
+    "name": "武汉PACKAGING车间-023-D线",
+    "workshop_id": 23,
+    "capacity": 505,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 24,
+    "name": "成都MACHINING车间-024-A线",
+    "workshop_id": 24,
+    "capacity": 590,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 25,
+    "name": "合肥SMT车间-025-B线",
+    "workshop_id": 25,
+    "capacity": 675,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 26,
+    "name": "无锡ASSEMBLY车间-026-C线",
+    "workshop_id": 26,
+    "capacity": 760,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 27,
+    "name": "常州INSPECTION车间-027-D线",
+    "workshop_id": 27,
+    "capacity": 845,
+    "oee_target": 0.82,
+    "status": "maintenance"
+  },
+  {
+    "id": 28,
+    "name": "杭州WAREHOUSE车间-028-A线",
+    "workshop_id": 28,
+    "capacity": 930,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 29,
+    "name": "青岛SURFACE车间-029-B线",
+    "workshop_id": 29,
+    "capacity": 1015,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 30,
+    "name": "上海TESTING车间-030-C线",
+    "workshop_id": 30,
+    "capacity": 1100,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 31,
+    "name": "苏州PACKAGING车间-031-D线",
+    "workshop_id": 31,
+    "capacity": 1185,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 32,
+    "name": "宁波MACHINING车间-032-A线",
+    "workshop_id": 32,
+    "capacity": 1270,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 33,
+    "name": "武汉SMT车间-033-B线",
+    "workshop_id": 33,
+    "capacity": 1355,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 34,
+    "name": "成都ASSEMBLY车间-034-C线",
+    "workshop_id": 34,
+    "capacity": 1440,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 35,
+    "name": "合肥INSPECTION车间-035-D线",
+    "workshop_id": 35,
+    "capacity": 1525,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 36,
+    "name": "无锡WAREHOUSE车间-036-A线",
+    "workshop_id": 36,
+    "capacity": 1610,
+    "oee_target": 0.82,
+    "status": "maintenance"
+  },
+  {
+    "id": 37,
+    "name": "常州SURFACE车间-037-B线",
+    "workshop_id": 37,
+    "capacity": 1695,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 38,
+    "name": "杭州TESTING车间-038-C线",
+    "workshop_id": 38,
+    "capacity": 1780,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 39,
+    "name": "青岛PACKAGING车间-039-D线",
+    "workshop_id": 39,
+    "capacity": 1865,
+    "oee_target": 0.85,
+    "status": "maintenance"
+  },
+  {
+    "id": 40,
+    "name": "上海MACHINING车间-040-A线",
+    "workshop_id": 40,
+    "capacity": 1950,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 41,
+    "name": "苏州SMT车间-041-B线",
+    "workshop_id": 41,
+    "capacity": 2035,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 42,
+    "name": "宁波ASSEMBLY车间-042-C线",
+    "workshop_id": 42,
+    "capacity": 2120,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 43,
+    "name": "武汉INSPECTION车间-043-D线",
+    "workshop_id": 43,
+    "capacity": 2205,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 44,
+    "name": "成都WAREHOUSE车间-044-A线",
+    "workshop_id": 44,
+    "capacity": 420,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 45,
+    "name": "合肥SURFACE车间-045-B线",
+    "workshop_id": 45,
+    "capacity": 505,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 46,
+    "name": "无锡TESTING车间-046-C线",
+    "workshop_id": 46,
+    "capacity": 590,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 47,
+    "name": "常州PACKAGING车间-047-D线",
+    "workshop_id": 47,
+    "capacity": 675,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 48,
+    "name": "杭州MACHINING车间-048-A线",
+    "workshop_id": 48,
+    "capacity": 760,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 49,
+    "name": "青岛SMT车间-049-B线",
+    "workshop_id": 49,
+    "capacity": 845,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 50,
+    "name": "上海ASSEMBLY车间-050-C线",
+    "workshop_id": 50,
+    "capacity": 930,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 51,
+    "name": "苏州INSPECTION车间-051-D线",
+    "workshop_id": 51,
+    "capacity": 1015,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 52,
+    "name": "宁波WAREHOUSE车间-052-A线",
+    "workshop_id": 52,
+    "capacity": 1100,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 53,
+    "name": "武汉SURFACE车间-053-B线",
+    "workshop_id": 53,
+    "capacity": 1185,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 54,
+    "name": "成都TESTING车间-054-C线",
+    "workshop_id": 54,
+    "capacity": 1270,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 55,
+    "name": "合肥PACKAGING车间-055-D线",
+    "workshop_id": 55,
+    "capacity": 1355,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 56,
+    "name": "无锡MACHINING车间-056-A线",
+    "workshop_id": 56,
+    "capacity": 1440,
+    "oee_target": 0.84,
+    "status": "maintenance"
+  },
+  {
+    "id": 57,
+    "name": "常州SMT车间-057-B线",
+    "workshop_id": 57,
+    "capacity": 1525,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 58,
+    "name": "杭州ASSEMBLY车间-058-C线",
+    "workshop_id": 58,
+    "capacity": 1610,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 59,
+    "name": "青岛INSPECTION车间-059-D线",
+    "workshop_id": 59,
+    "capacity": 1695,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 60,
+    "name": "上海WAREHOUSE车间-060-A线",
+    "workshop_id": 60,
+    "capacity": 1780,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 61,
+    "name": "苏州SURFACE车间-061-B线",
+    "workshop_id": 61,
+    "capacity": 1865,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 62,
+    "name": "宁波TESTING车间-062-C线",
+    "workshop_id": 62,
+    "capacity": 1950,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 63,
+    "name": "武汉PACKAGING车间-063-D线",
+    "workshop_id": 63,
+    "capacity": 2035,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 64,
+    "name": "成都MACHINING车间-064-A线",
+    "workshop_id": 64,
+    "capacity": 2120,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 65,
+    "name": "合肥SMT车间-065-B线",
+    "workshop_id": 65,
+    "capacity": 2205,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 66,
+    "name": "无锡ASSEMBLY车间-066-C线",
+    "workshop_id": 66,
+    "capacity": 420,
+    "oee_target": 0.85,
+    "status": "maintenance"
+  },
+  {
+    "id": 67,
+    "name": "常州INSPECTION车间-067-D线",
+    "workshop_id": 67,
+    "capacity": 505,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 68,
+    "name": "杭州WAREHOUSE车间-068-A线",
+    "workshop_id": 68,
+    "capacity": 590,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 69,
+    "name": "青岛SURFACE车间-069-B线",
+    "workshop_id": 69,
+    "capacity": 675,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 70,
+    "name": "上海TESTING车间-070-C线",
+    "workshop_id": 70,
+    "capacity": 760,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 71,
+    "name": "苏州PACKAGING车间-071-D线",
+    "workshop_id": 71,
+    "capacity": 845,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 72,
+    "name": "宁波MACHINING车间-072-A线",
+    "workshop_id": 72,
+    "capacity": 930,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 73,
+    "name": "武汉SMT车间-073-B线",
+    "workshop_id": 73,
+    "capacity": 1015,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 74,
+    "name": "成都ASSEMBLY车间-074-C线",
+    "workshop_id": 74,
+    "capacity": 1100,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 75,
+    "name": "合肥INSPECTION车间-075-D线",
+    "workshop_id": 75,
+    "capacity": 1185,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 76,
+    "name": "无锡WAREHOUSE车间-076-A线",
+    "workshop_id": 76,
+    "capacity": 1270,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 77,
+    "name": "常州SURFACE车间-077-B线",
+    "workshop_id": 77,
+    "capacity": 1355,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 78,
+    "name": "杭州TESTING车间-078-C线",
+    "workshop_id": 78,
+    "capacity": 1440,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 79,
+    "name": "青岛PACKAGING车间-079-D线",
+    "workshop_id": 79,
+    "capacity": 1525,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 80,
+    "name": "上海MACHINING车间-080-A线",
+    "workshop_id": 80,
+    "capacity": 1610,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 81,
+    "name": "苏州SMT车间-081-B线",
+    "workshop_id": 81,
+    "capacity": 1695,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 82,
+    "name": "宁波ASSEMBLY车间-082-C线",
+    "workshop_id": 82,
+    "capacity": 1780,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 83,
+    "name": "武汉INSPECTION车间-083-D线",
+    "workshop_id": 83,
+    "capacity": 1865,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 84,
+    "name": "成都WAREHOUSE车间-084-A线",
+    "workshop_id": 84,
+    "capacity": 1950,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 85,
+    "name": "合肥SURFACE车间-085-B线",
+    "workshop_id": 85,
+    "capacity": 2035,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 86,
+    "name": "无锡TESTING车间-086-C线",
+    "workshop_id": 86,
+    "capacity": 2120,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 87,
+    "name": "常州PACKAGING车间-087-D线",
+    "workshop_id": 87,
+    "capacity": 2205,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 88,
+    "name": "杭州MACHINING车间-088-A线",
+    "workshop_id": 88,
+    "capacity": 420,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 89,
+    "name": "青岛SMT车间-089-B线",
+    "workshop_id": 89,
+    "capacity": 505,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 90,
+    "name": "上海ASSEMBLY车间-090-C线",
+    "workshop_id": 90,
+    "capacity": 590,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 91,
+    "name": "苏州INSPECTION车间-091-D线",
+    "workshop_id": 91,
+    "capacity": 675,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 92,
+    "name": "宁波WAREHOUSE车间-092-A线",
+    "workshop_id": 92,
+    "capacity": 760,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 93,
+    "name": "武汉SURFACE车间-093-B线",
+    "workshop_id": 93,
+    "capacity": 845,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 94,
+    "name": "成都TESTING车间-094-C线",
+    "workshop_id": 94,
+    "capacity": 930,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 95,
+    "name": "合肥PACKAGING车间-095-D线",
+    "workshop_id": 95,
+    "capacity": 1015,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 96,
+    "name": "无锡MACHINING车间-096-A线",
+    "workshop_id": 96,
+    "capacity": 1100,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 97,
+    "name": "常州SMT车间-097-B线",
+    "workshop_id": 97,
+    "capacity": 1185,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 98,
+    "name": "杭州ASSEMBLY车间-098-C线",
+    "workshop_id": 98,
+    "capacity": 1270,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 99,
+    "name": "青岛INSPECTION车间-099-D线",
+    "workshop_id": 99,
+    "capacity": 1355,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 100,
+    "name": "上海WAREHOUSE车间-100-A线",
+    "workshop_id": 100,
+    "capacity": 1440,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 101,
+    "name": "苏州SURFACE车间-101-B线",
+    "workshop_id": 101,
+    "capacity": 1525,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 102,
+    "name": "宁波TESTING车间-102-C线",
+    "workshop_id": 102,
+    "capacity": 1610,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 103,
+    "name": "武汉PACKAGING车间-103-D线",
+    "workshop_id": 103,
+    "capacity": 1695,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 104,
+    "name": "成都MACHINING车间-104-A线",
+    "workshop_id": 104,
+    "capacity": 1780,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 105,
+    "name": "合肥SMT车间-105-B线",
+    "workshop_id": 105,
+    "capacity": 1865,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 106,
+    "name": "无锡ASSEMBLY车间-106-C线",
+    "workshop_id": 106,
+    "capacity": 1950,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 107,
+    "name": "常州INSPECTION车间-107-D线",
+    "workshop_id": 107,
+    "capacity": 2035,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 108,
+    "name": "杭州WAREHOUSE车间-108-A线",
+    "workshop_id": 108,
+    "capacity": 2120,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 109,
+    "name": "青岛SURFACE车间-109-B线",
+    "workshop_id": 109,
+    "capacity": 2205,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 110,
+    "name": "上海TESTING车间-110-C线",
+    "workshop_id": 110,
+    "capacity": 420,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 111,
+    "name": "苏州PACKAGING车间-111-D线",
+    "workshop_id": 111,
+    "capacity": 505,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 112,
+    "name": "宁波MACHINING车间-112-A线",
+    "workshop_id": 112,
+    "capacity": 590,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 113,
+    "name": "武汉SMT车间-113-B线",
+    "workshop_id": 113,
+    "capacity": 675,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 114,
+    "name": "成都ASSEMBLY车间-114-C线",
+    "workshop_id": 114,
+    "capacity": 760,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 115,
+    "name": "合肥INSPECTION车间-115-D线",
+    "workshop_id": 115,
+    "capacity": 845,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 116,
+    "name": "无锡WAREHOUSE车间-116-A线",
+    "workshop_id": 116,
+    "capacity": 930,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 117,
+    "name": "常州SURFACE车间-117-B线",
+    "workshop_id": 117,
+    "capacity": 1015,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 118,
+    "name": "杭州TESTING车间-118-C线",
+    "workshop_id": 118,
+    "capacity": 1100,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 119,
+    "name": "青岛PACKAGING车间-119-D线",
+    "workshop_id": 119,
+    "capacity": 1185,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 120,
+    "name": "上海MACHINING车间-120-A线",
+    "workshop_id": 120,
+    "capacity": 1270,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 121,
+    "name": "苏州SMT车间-121-B线",
+    "workshop_id": 121,
+    "capacity": 1355,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 122,
+    "name": "宁波ASSEMBLY车间-122-C线",
+    "workshop_id": 122,
+    "capacity": 1440,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 123,
+    "name": "武汉INSPECTION车间-123-D线",
+    "workshop_id": 123,
+    "capacity": 1525,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 124,
+    "name": "成都WAREHOUSE车间-124-A线",
+    "workshop_id": 124,
+    "capacity": 1610,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 125,
+    "name": "合肥SURFACE车间-125-B线",
+    "workshop_id": 125,
+    "capacity": 1695,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 126,
+    "name": "无锡TESTING车间-126-C线",
+    "workshop_id": 126,
+    "capacity": 1780,
+    "oee_target": 0.82,
+    "status": "maintenance"
+  },
+  {
+    "id": 127,
+    "name": "常州PACKAGING车间-127-D线",
+    "workshop_id": 127,
+    "capacity": 1865,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 128,
+    "name": "杭州MACHINING车间-128-A线",
+    "workshop_id": 128,
+    "capacity": 1950,
+    "oee_target": 0.84,
+    "status": "maintenance"
+  },
+  {
+    "id": 129,
+    "name": "青岛SMT车间-129-B线",
+    "workshop_id": 129,
+    "capacity": 2035,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 130,
+    "name": "上海ASSEMBLY车间-130-C线",
+    "workshop_id": 130,
+    "capacity": 2120,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 131,
+    "name": "苏州INSPECTION车间-131-D线",
+    "workshop_id": 131,
+    "capacity": 2205,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 132,
+    "name": "宁波WAREHOUSE车间-132-A线",
+    "workshop_id": 132,
+    "capacity": 420,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 133,
+    "name": "武汉SURFACE车间-133-B线",
+    "workshop_id": 133,
+    "capacity": 505,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 134,
+    "name": "成都TESTING车间-134-C线",
+    "workshop_id": 134,
+    "capacity": 590,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 135,
+    "name": "合肥PACKAGING车间-135-D线",
+    "workshop_id": 135,
+    "capacity": 675,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 136,
+    "name": "无锡MACHINING车间-136-A线",
+    "workshop_id": 136,
+    "capacity": 760,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 137,
+    "name": "常州SMT车间-137-B线",
+    "workshop_id": 137,
+    "capacity": 845,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 138,
+    "name": "杭州ASSEMBLY车间-138-C线",
+    "workshop_id": 138,
+    "capacity": 930,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 139,
+    "name": "青岛INSPECTION车间-139-D线",
+    "workshop_id": 139,
+    "capacity": 1015,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 140,
+    "name": "上海WAREHOUSE车间-140-A线",
+    "workshop_id": 140,
+    "capacity": 1100,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 141,
+    "name": "苏州SURFACE车间-141-B线",
+    "workshop_id": 141,
+    "capacity": 1185,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 142,
+    "name": "宁波TESTING车间-142-C线",
+    "workshop_id": 142,
+    "capacity": 1270,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 143,
+    "name": "武汉PACKAGING车间-143-D线",
+    "workshop_id": 143,
+    "capacity": 1355,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 144,
+    "name": "成都MACHINING车间-144-A线",
+    "workshop_id": 144,
+    "capacity": 1440,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 145,
+    "name": "合肥SMT车间-145-B线",
+    "workshop_id": 145,
+    "capacity": 1525,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 146,
+    "name": "无锡ASSEMBLY车间-146-C线",
+    "workshop_id": 146,
+    "capacity": 1610,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 147,
+    "name": "常州INSPECTION车间-147-D线",
+    "workshop_id": 147,
+    "capacity": 1695,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 148,
+    "name": "杭州WAREHOUSE车间-148-A线",
+    "workshop_id": 148,
+    "capacity": 1780,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 149,
+    "name": "青岛SURFACE车间-149-B线",
+    "workshop_id": 149,
+    "capacity": 1865,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 150,
+    "name": "上海TESTING车间-150-C线",
+    "workshop_id": 150,
+    "capacity": 1950,
     "oee_target": 0.88,
     "status": "maintenance"
   },
   {
-    "id": 15,
-    "name": "测试老化车间-B线",
-    "workshop_id": 8,
-    "capacity": 1240,
+    "id": 151,
+    "name": "苏州PACKAGING车间-151-D线",
+    "workshop_id": 151,
+    "capacity": 2035,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 152,
+    "name": "宁波MACHINING车间-152-A线",
+    "workshop_id": 152,
+    "capacity": 2120,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 153,
+    "name": "武汉SMT车间-153-B线",
+    "workshop_id": 153,
+    "capacity": 2205,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 154,
+    "name": "成都ASSEMBLY车间-154-C线",
+    "workshop_id": 154,
+    "capacity": 420,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 155,
+    "name": "合肥INSPECTION车间-155-D线",
+    "workshop_id": 155,
+    "capacity": 505,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 156,
+    "name": "无锡WAREHOUSE车间-156-A线",
+    "workshop_id": 156,
+    "capacity": 590,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 157,
+    "name": "常州SURFACE车间-157-B线",
+    "workshop_id": 157,
+    "capacity": 675,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 158,
+    "name": "杭州TESTING车间-158-C线",
+    "workshop_id": 158,
+    "capacity": 760,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 159,
+    "name": "青岛PACKAGING车间-159-D线",
+    "workshop_id": 159,
+    "capacity": 845,
+    "oee_target": 0.88,
+    "status": "maintenance"
+  },
+  {
+    "id": 160,
+    "name": "上海MACHINING车间-160-A线",
+    "workshop_id": 160,
+    "capacity": 930,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 161,
+    "name": "苏州SMT车间-161-B线",
+    "workshop_id": 161,
+    "capacity": 1015,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 162,
+    "name": "宁波ASSEMBLY车间-162-C线",
+    "workshop_id": 162,
+    "capacity": 1100,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 163,
+    "name": "武汉INSPECTION车间-163-D线",
+    "workshop_id": 163,
+    "capacity": 1185,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 164,
+    "name": "成都WAREHOUSE车间-164-A线",
+    "workshop_id": 164,
+    "capacity": 1270,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 165,
+    "name": "合肥SURFACE车间-165-B线",
+    "workshop_id": 165,
+    "capacity": 1355,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 166,
+    "name": "无锡TESTING车间-166-C线",
+    "workshop_id": 166,
+    "capacity": 1440,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 167,
+    "name": "常州PACKAGING车间-167-D线",
+    "workshop_id": 167,
+    "capacity": 1525,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 168,
+    "name": "杭州MACHINING车间-168-A线",
+    "workshop_id": 168,
+    "capacity": 1610,
     "oee_target": 0.88,
     "status": "running"
+  },
+  {
+    "id": 169,
+    "name": "青岛SMT车间-169-B线",
+    "workshop_id": 169,
+    "capacity": 1695,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 170,
+    "name": "上海ASSEMBLY车间-170-C线",
+    "workshop_id": 170,
+    "capacity": 1780,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 171,
+    "name": "苏州INSPECTION车间-171-D线",
+    "workshop_id": 171,
+    "capacity": 1865,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 172,
+    "name": "宁波WAREHOUSE车间-172-A线",
+    "workshop_id": 172,
+    "capacity": 1950,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 173,
+    "name": "武汉SURFACE车间-173-B线",
+    "workshop_id": 173,
+    "capacity": 2035,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 174,
+    "name": "成都TESTING车间-174-C线",
+    "workshop_id": 174,
+    "capacity": 2120,
+    "oee_target": 0.85,
+    "status": "maintenance"
+  },
+  {
+    "id": 175,
+    "name": "合肥PACKAGING车间-175-D线",
+    "workshop_id": 175,
+    "capacity": 2205,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 176,
+    "name": "无锡MACHINING车间-176-A线",
+    "workshop_id": 176,
+    "capacity": 420,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 177,
+    "name": "常州SMT车间-177-B线",
+    "workshop_id": 177,
+    "capacity": 505,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 178,
+    "name": "杭州ASSEMBLY车间-178-C线",
+    "workshop_id": 178,
+    "capacity": 590,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 179,
+    "name": "青岛INSPECTION车间-179-D线",
+    "workshop_id": 179,
+    "capacity": 675,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 180,
+    "name": "上海WAREHOUSE车间-180-A线",
+    "workshop_id": 180,
+    "capacity": 760,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 181,
+    "name": "苏州SURFACE车间-181-B线",
+    "workshop_id": 181,
+    "capacity": 845,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 182,
+    "name": "宁波TESTING车间-182-C线",
+    "workshop_id": 182,
+    "capacity": 930,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 183,
+    "name": "武汉PACKAGING车间-183-D线",
+    "workshop_id": 183,
+    "capacity": 1015,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 184,
+    "name": "成都MACHINING车间-184-A线",
+    "workshop_id": 184,
+    "capacity": 1100,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 185,
+    "name": "合肥SMT车间-185-B线",
+    "workshop_id": 185,
+    "capacity": 1185,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 186,
+    "name": "无锡ASSEMBLY车间-186-C线",
+    "workshop_id": 186,
+    "capacity": 1270,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 187,
+    "name": "常州INSPECTION车间-187-D线",
+    "workshop_id": 187,
+    "capacity": 1355,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 188,
+    "name": "杭州WAREHOUSE车间-188-A线",
+    "workshop_id": 188,
+    "capacity": 1440,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 189,
+    "name": "青岛SURFACE车间-189-B线",
+    "workshop_id": 189,
+    "capacity": 1525,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 190,
+    "name": "上海TESTING车间-190-C线",
+    "workshop_id": 190,
+    "capacity": 1610,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 191,
+    "name": "苏州PACKAGING车间-191-D线",
+    "workshop_id": 191,
+    "capacity": 1695,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 192,
+    "name": "宁波MACHINING车间-192-A线",
+    "workshop_id": 192,
+    "capacity": 1780,
+    "oee_target": 0.85,
+    "status": "maintenance"
+  },
+  {
+    "id": 193,
+    "name": "武汉SMT车间-193-B线",
+    "workshop_id": 193,
+    "capacity": 1865,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 194,
+    "name": "成都ASSEMBLY车间-194-C线",
+    "workshop_id": 194,
+    "capacity": 1950,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 195,
+    "name": "合肥INSPECTION车间-195-D线",
+    "workshop_id": 195,
+    "capacity": 2035,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 196,
+    "name": "无锡WAREHOUSE车间-196-A线",
+    "workshop_id": 196,
+    "capacity": 2120,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 197,
+    "name": "常州SURFACE车间-197-B线",
+    "workshop_id": 197,
+    "capacity": 2205,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 198,
+    "name": "杭州TESTING车间-198-C线",
+    "workshop_id": 198,
+    "capacity": 420,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 199,
+    "name": "青岛PACKAGING车间-199-D线",
+    "workshop_id": 199,
+    "capacity": 505,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 200,
+    "name": "上海MACHINING车间-200-A线",
+    "workshop_id": 200,
+    "capacity": 590,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 201,
+    "name": "苏州SMT车间-201-B线",
+    "workshop_id": 201,
+    "capacity": 675,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 202,
+    "name": "宁波ASSEMBLY车间-202-C线",
+    "workshop_id": 202,
+    "capacity": 760,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 203,
+    "name": "武汉INSPECTION车间-203-D线",
+    "workshop_id": 203,
+    "capacity": 845,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 204,
+    "name": "成都WAREHOUSE车间-204-A线",
+    "workshop_id": 204,
+    "capacity": 930,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 205,
+    "name": "合肥SURFACE车间-205-B线",
+    "workshop_id": 205,
+    "capacity": 1015,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 206,
+    "name": "无锡TESTING车间-206-C线",
+    "workshop_id": 206,
+    "capacity": 1100,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 207,
+    "name": "常州PACKAGING车间-207-D线",
+    "workshop_id": 207,
+    "capacity": 1185,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 208,
+    "name": "杭州MACHINING车间-208-A线",
+    "workshop_id": 208,
+    "capacity": 1270,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 209,
+    "name": "青岛SMT车间-209-B线",
+    "workshop_id": 209,
+    "capacity": 1355,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 210,
+    "name": "上海ASSEMBLY车间-210-C线",
+    "workshop_id": 210,
+    "capacity": 1440,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 211,
+    "name": "苏州INSPECTION车间-211-D线",
+    "workshop_id": 211,
+    "capacity": 1525,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 212,
+    "name": "宁波WAREHOUSE车间-212-A线",
+    "workshop_id": 212,
+    "capacity": 1610,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 213,
+    "name": "武汉SURFACE车间-213-B线",
+    "workshop_id": 213,
+    "capacity": 1695,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 214,
+    "name": "成都TESTING车间-214-C线",
+    "workshop_id": 214,
+    "capacity": 1780,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 215,
+    "name": "合肥PACKAGING车间-215-D线",
+    "workshop_id": 215,
+    "capacity": 1865,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 216,
+    "name": "无锡MACHINING车间-216-A线",
+    "workshop_id": 216,
+    "capacity": 1950,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 217,
+    "name": "常州SMT车间-217-B线",
+    "workshop_id": 217,
+    "capacity": 2035,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 218,
+    "name": "杭州ASSEMBLY车间-218-C线",
+    "workshop_id": 218,
+    "capacity": 2120,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 219,
+    "name": "青岛INSPECTION车间-219-D线",
+    "workshop_id": 219,
+    "capacity": 2205,
+    "oee_target": 0.85,
+    "status": "maintenance"
+  },
+  {
+    "id": 220,
+    "name": "上海WAREHOUSE车间-220-A线",
+    "workshop_id": 220,
+    "capacity": 420,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 221,
+    "name": "苏州SURFACE车间-221-B线",
+    "workshop_id": 221,
+    "capacity": 505,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 222,
+    "name": "宁波TESTING车间-222-C线",
+    "workshop_id": 222,
+    "capacity": 590,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 223,
+    "name": "武汉PACKAGING车间-223-D线",
+    "workshop_id": 223,
+    "capacity": 675,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 224,
+    "name": "成都MACHINING车间-224-A线",
+    "workshop_id": 224,
+    "capacity": 760,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 225,
+    "name": "合肥SMT车间-225-B线",
+    "workshop_id": 225,
+    "capacity": 845,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 226,
+    "name": "无锡ASSEMBLY车间-226-C线",
+    "workshop_id": 226,
+    "capacity": 930,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 227,
+    "name": "常州INSPECTION车间-227-D线",
+    "workshop_id": 227,
+    "capacity": 1015,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 228,
+    "name": "杭州WAREHOUSE车间-228-A线",
+    "workshop_id": 228,
+    "capacity": 1100,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 229,
+    "name": "青岛SURFACE车间-229-B线",
+    "workshop_id": 229,
+    "capacity": 1185,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 230,
+    "name": "上海TESTING车间-230-C线",
+    "workshop_id": 230,
+    "capacity": 1270,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 231,
+    "name": "苏州PACKAGING车间-231-D线",
+    "workshop_id": 231,
+    "capacity": 1355,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 232,
+    "name": "宁波MACHINING车间-232-A线",
+    "workshop_id": 232,
+    "capacity": 1440,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 233,
+    "name": "武汉SMT车间-233-B线",
+    "workshop_id": 233,
+    "capacity": 1525,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 234,
+    "name": "成都ASSEMBLY车间-234-C线",
+    "workshop_id": 234,
+    "capacity": 1610,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 235,
+    "name": "合肥INSPECTION车间-235-D线",
+    "workshop_id": 235,
+    "capacity": 1695,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 236,
+    "name": "无锡WAREHOUSE车间-236-A线",
+    "workshop_id": 236,
+    "capacity": 1780,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 237,
+    "name": "常州SURFACE车间-237-B线",
+    "workshop_id": 237,
+    "capacity": 1865,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 238,
+    "name": "杭州TESTING车间-238-C线",
+    "workshop_id": 238,
+    "capacity": 1950,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 239,
+    "name": "青岛PACKAGING车间-239-D线",
+    "workshop_id": 239,
+    "capacity": 2035,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 240,
+    "name": "上海MACHINING车间-240-A线",
+    "workshop_id": 240,
+    "capacity": 2120,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 241,
+    "name": "苏州SMT车间-241-B线",
+    "workshop_id": 241,
+    "capacity": 2205,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 242,
+    "name": "宁波ASSEMBLY车间-242-C线",
+    "workshop_id": 242,
+    "capacity": 420,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 243,
+    "name": "武汉INSPECTION车间-243-D线",
+    "workshop_id": 243,
+    "capacity": 505,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 244,
+    "name": "成都WAREHOUSE车间-244-A线",
+    "workshop_id": 244,
+    "capacity": 590,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 245,
+    "name": "合肥SURFACE车间-245-B线",
+    "workshop_id": 245,
+    "capacity": 675,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 246,
+    "name": "无锡TESTING车间-246-C线",
+    "workshop_id": 246,
+    "capacity": 760,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 247,
+    "name": "常州PACKAGING车间-247-D线",
+    "workshop_id": 247,
+    "capacity": 845,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 248,
+    "name": "杭州MACHINING车间-248-A线",
+    "workshop_id": 248,
+    "capacity": 930,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 249,
+    "name": "青岛SMT车间-249-B线",
+    "workshop_id": 249,
+    "capacity": 1015,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 250,
+    "name": "上海ASSEMBLY车间-250-C线",
+    "workshop_id": 250,
+    "capacity": 1100,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 251,
+    "name": "苏州INSPECTION车间-251-D线",
+    "workshop_id": 251,
+    "capacity": 1185,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 252,
+    "name": "宁波WAREHOUSE车间-252-A线",
+    "workshop_id": 252,
+    "capacity": 1270,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 253,
+    "name": "武汉SURFACE车间-253-B线",
+    "workshop_id": 253,
+    "capacity": 1355,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 254,
+    "name": "成都TESTING车间-254-C线",
+    "workshop_id": 254,
+    "capacity": 1440,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 255,
+    "name": "合肥PACKAGING车间-255-D线",
+    "workshop_id": 255,
+    "capacity": 1525,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 256,
+    "name": "无锡MACHINING车间-256-A线",
+    "workshop_id": 256,
+    "capacity": 1610,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 257,
+    "name": "常州SMT车间-257-B线",
+    "workshop_id": 257,
+    "capacity": 1695,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 258,
+    "name": "杭州ASSEMBLY车间-258-C线",
+    "workshop_id": 258,
+    "capacity": 1780,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 259,
+    "name": "青岛INSPECTION车间-259-D线",
+    "workshop_id": 259,
+    "capacity": 1865,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 260,
+    "name": "上海WAREHOUSE车间-260-A线",
+    "workshop_id": 260,
+    "capacity": 1950,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 261,
+    "name": "苏州SURFACE车间-261-B线",
+    "workshop_id": 261,
+    "capacity": 2035,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 262,
+    "name": "宁波TESTING车间-262-C线",
+    "workshop_id": 262,
+    "capacity": 2120,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 263,
+    "name": "武汉PACKAGING车间-263-D线",
+    "workshop_id": 263,
+    "capacity": 2205,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 264,
+    "name": "成都MACHINING车间-264-A线",
+    "workshop_id": 264,
+    "capacity": 420,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 265,
+    "name": "合肥SMT车间-265-B线",
+    "workshop_id": 265,
+    "capacity": 505,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 266,
+    "name": "无锡ASSEMBLY车间-266-C线",
+    "workshop_id": 266,
+    "capacity": 590,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 267,
+    "name": "常州INSPECTION车间-267-D线",
+    "workshop_id": 267,
+    "capacity": 675,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 268,
+    "name": "杭州WAREHOUSE车间-268-A线",
+    "workshop_id": 268,
+    "capacity": 760,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 269,
+    "name": "青岛SURFACE车间-269-B线",
+    "workshop_id": 269,
+    "capacity": 845,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 270,
+    "name": "上海TESTING车间-270-C线",
+    "workshop_id": 270,
+    "capacity": 930,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 271,
+    "name": "苏州PACKAGING车间-271-D线",
+    "workshop_id": 271,
+    "capacity": 1015,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 272,
+    "name": "宁波MACHINING车间-272-A线",
+    "workshop_id": 272,
+    "capacity": 1100,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 273,
+    "name": "武汉SMT车间-273-B线",
+    "workshop_id": 273,
+    "capacity": 1185,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 274,
+    "name": "成都ASSEMBLY车间-274-C线",
+    "workshop_id": 274,
+    "capacity": 1270,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 275,
+    "name": "合肥INSPECTION车间-275-D线",
+    "workshop_id": 275,
+    "capacity": 1355,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 276,
+    "name": "无锡WAREHOUSE车间-276-A线",
+    "workshop_id": 276,
+    "capacity": 1440,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 277,
+    "name": "常州SURFACE车间-277-B线",
+    "workshop_id": 277,
+    "capacity": 1525,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 278,
+    "name": "杭州TESTING车间-278-C线",
+    "workshop_id": 278,
+    "capacity": 1610,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 279,
+    "name": "青岛PACKAGING车间-279-D线",
+    "workshop_id": 279,
+    "capacity": 1695,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 280,
+    "name": "上海MACHINING车间-280-A线",
+    "workshop_id": 280,
+    "capacity": 1780,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 281,
+    "name": "苏州SMT车间-281-B线",
+    "workshop_id": 281,
+    "capacity": 1865,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 282,
+    "name": "宁波ASSEMBLY车间-282-C线",
+    "workshop_id": 282,
+    "capacity": 1950,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 283,
+    "name": "武汉INSPECTION车间-283-D线",
+    "workshop_id": 283,
+    "capacity": 2035,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 284,
+    "name": "成都WAREHOUSE车间-284-A线",
+    "workshop_id": 284,
+    "capacity": 2120,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 285,
+    "name": "合肥SURFACE车间-285-B线",
+    "workshop_id": 285,
+    "capacity": 2205,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 286,
+    "name": "无锡TESTING车间-286-C线",
+    "workshop_id": 286,
+    "capacity": 420,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 287,
+    "name": "常州PACKAGING车间-287-D线",
+    "workshop_id": 287,
+    "capacity": 505,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 288,
+    "name": "杭州MACHINING车间-288-A线",
+    "workshop_id": 288,
+    "capacity": 590,
+    "oee_target": 0.82,
+    "status": "maintenance"
+  },
+  {
+    "id": 289,
+    "name": "青岛SMT车间-289-B线",
+    "workshop_id": 289,
+    "capacity": 675,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 290,
+    "name": "上海ASSEMBLY车间-290-C线",
+    "workshop_id": 290,
+    "capacity": 760,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 291,
+    "name": "苏州INSPECTION车间-291-D线",
+    "workshop_id": 291,
+    "capacity": 845,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 292,
+    "name": "宁波WAREHOUSE车间-292-A线",
+    "workshop_id": 292,
+    "capacity": 930,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 293,
+    "name": "武汉SURFACE车间-293-B线",
+    "workshop_id": 293,
+    "capacity": 1015,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 294,
+    "name": "成都TESTING车间-294-C线",
+    "workshop_id": 294,
+    "capacity": 1100,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 295,
+    "name": "合肥PACKAGING车间-295-D线",
+    "workshop_id": 295,
+    "capacity": 1185,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 296,
+    "name": "无锡MACHINING车间-296-A线",
+    "workshop_id": 296,
+    "capacity": 1270,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 297,
+    "name": "常州SMT车间-297-B线",
+    "workshop_id": 297,
+    "capacity": 1355,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 298,
+    "name": "杭州ASSEMBLY车间-298-C线",
+    "workshop_id": 298,
+    "capacity": 1440,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 299,
+    "name": "青岛INSPECTION车间-299-D线",
+    "workshop_id": 299,
+    "capacity": 1525,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 300,
+    "name": "上海WAREHOUSE车间-300-A线",
+    "workshop_id": 300,
+    "capacity": 1610,
+    "oee_target": 0.85,
+    "status": "maintenance"
+  },
+  {
+    "id": 301,
+    "name": "苏州SURFACE车间-301-B线",
+    "workshop_id": 301,
+    "capacity": 1695,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 302,
+    "name": "宁波TESTING车间-302-C线",
+    "workshop_id": 302,
+    "capacity": 1780,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 303,
+    "name": "武汉PACKAGING车间-303-D线",
+    "workshop_id": 303,
+    "capacity": 1865,
+    "oee_target": 0.88,
+    "status": "idle"
+  },
+  {
+    "id": 304,
+    "name": "成都MACHINING车间-304-A线",
+    "workshop_id": 304,
+    "capacity": 1950,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 305,
+    "name": "合肥SMT车间-305-B线",
+    "workshop_id": 305,
+    "capacity": 2035,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 306,
+    "name": "无锡ASSEMBLY车间-306-C线",
+    "workshop_id": 306,
+    "capacity": 2120,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 307,
+    "name": "常州INSPECTION车间-307-D线",
+    "workshop_id": 307,
+    "capacity": 2205,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 308,
+    "name": "杭州WAREHOUSE车间-308-A线",
+    "workshop_id": 308,
+    "capacity": 420,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 309,
+    "name": "青岛SURFACE车间-309-B线",
+    "workshop_id": 309,
+    "capacity": 505,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 310,
+    "name": "上海TESTING车间-310-C线",
+    "workshop_id": 310,
+    "capacity": 590,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 311,
+    "name": "苏州PACKAGING车间-311-D线",
+    "workshop_id": 311,
+    "capacity": 675,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 312,
+    "name": "宁波MACHINING车间-312-A线",
+    "workshop_id": 312,
+    "capacity": 760,
+    "oee_target": 0.88,
+    "status": "maintenance"
+  },
+  {
+    "id": 313,
+    "name": "武汉SMT车间-313-B线",
+    "workshop_id": 313,
+    "capacity": 845,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 314,
+    "name": "成都ASSEMBLY车间-314-C线",
+    "workshop_id": 314,
+    "capacity": 930,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 315,
+    "name": "合肥INSPECTION车间-315-D线",
+    "workshop_id": 315,
+    "capacity": 1015,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 316,
+    "name": "无锡WAREHOUSE车间-316-A线",
+    "workshop_id": 316,
+    "capacity": 1100,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 317,
+    "name": "常州SURFACE车间-317-B线",
+    "workshop_id": 317,
+    "capacity": 1185,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 318,
+    "name": "杭州TESTING车间-318-C线",
+    "workshop_id": 318,
+    "capacity": 1270,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 319,
+    "name": "青岛PACKAGING车间-319-D线",
+    "workshop_id": 319,
+    "capacity": 1355,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 320,
+    "name": "上海MACHINING车间-320-A线",
+    "workshop_id": 320,
+    "capacity": 1440,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 321,
+    "name": "苏州SMT车间-321-B线",
+    "workshop_id": 321,
+    "capacity": 1525,
+    "oee_target": 0.88,
+    "status": "maintenance"
+  },
+  {
+    "id": 322,
+    "name": "宁波ASSEMBLY车间-322-C线",
+    "workshop_id": 322,
+    "capacity": 1610,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 323,
+    "name": "武汉INSPECTION车间-323-D线",
+    "workshop_id": 323,
+    "capacity": 1695,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 324,
+    "name": "成都WAREHOUSE车间-324-A线",
+    "workshop_id": 324,
+    "capacity": 1780,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 325,
+    "name": "合肥SURFACE车间-325-B线",
+    "workshop_id": 325,
+    "capacity": 1865,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 326,
+    "name": "无锡TESTING车间-326-C线",
+    "workshop_id": 326,
+    "capacity": 1950,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 327,
+    "name": "常州PACKAGING车间-327-D线",
+    "workshop_id": 327,
+    "capacity": 2035,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 328,
+    "name": "杭州MACHINING车间-328-A线",
+    "workshop_id": 328,
+    "capacity": 2120,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 329,
+    "name": "青岛SMT车间-329-B线",
+    "workshop_id": 329,
+    "capacity": 2205,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 330,
+    "name": "上海ASSEMBLY车间-330-C线",
+    "workshop_id": 330,
+    "capacity": 420,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 331,
+    "name": "苏州INSPECTION车间-331-D线",
+    "workshop_id": 331,
+    "capacity": 505,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 332,
+    "name": "宁波WAREHOUSE车间-332-A线",
+    "workshop_id": 332,
+    "capacity": 590,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 333,
+    "name": "武汉SURFACE车间-333-B线",
+    "workshop_id": 333,
+    "capacity": 675,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 334,
+    "name": "成都TESTING车间-334-C线",
+    "workshop_id": 334,
+    "capacity": 760,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 335,
+    "name": "合肥PACKAGING车间-335-D线",
+    "workshop_id": 335,
+    "capacity": 845,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 336,
+    "name": "无锡MACHINING车间-336-A线",
+    "workshop_id": 336,
+    "capacity": 930,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 337,
+    "name": "常州SMT车间-337-B线",
+    "workshop_id": 337,
+    "capacity": 1015,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 338,
+    "name": "杭州ASSEMBLY车间-338-C线",
+    "workshop_id": 338,
+    "capacity": 1100,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 339,
+    "name": "青岛INSPECTION车间-339-D线",
+    "workshop_id": 339,
+    "capacity": 1185,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 340,
+    "name": "上海WAREHOUSE车间-340-A线",
+    "workshop_id": 340,
+    "capacity": 1270,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 341,
+    "name": "苏州SURFACE车间-341-B线",
+    "workshop_id": 341,
+    "capacity": 1355,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 342,
+    "name": "宁波TESTING车间-342-C线",
+    "workshop_id": 342,
+    "capacity": 1440,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 343,
+    "name": "武汉PACKAGING车间-343-D线",
+    "workshop_id": 343,
+    "capacity": 1525,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 344,
+    "name": "成都MACHINING车间-344-A线",
+    "workshop_id": 344,
+    "capacity": 1610,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 345,
+    "name": "合肥SMT车间-345-B线",
+    "workshop_id": 345,
+    "capacity": 1695,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 346,
+    "name": "无锡ASSEMBLY车间-346-C线",
+    "workshop_id": 346,
+    "capacity": 1780,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 347,
+    "name": "常州INSPECTION车间-347-D线",
+    "workshop_id": 347,
+    "capacity": 1865,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 348,
+    "name": "杭州WAREHOUSE车间-348-A线",
+    "workshop_id": 348,
+    "capacity": 1950,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 349,
+    "name": "青岛SURFACE车间-349-B线",
+    "workshop_id": 349,
+    "capacity": 2035,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 350,
+    "name": "上海TESTING车间-350-C线",
+    "workshop_id": 350,
+    "capacity": 2120,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 351,
+    "name": "苏州PACKAGING车间-351-D线",
+    "workshop_id": 351,
+    "capacity": 2205,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 352,
+    "name": "宁波MACHINING车间-352-A线",
+    "workshop_id": 352,
+    "capacity": 420,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 353,
+    "name": "武汉SMT车间-353-B线",
+    "workshop_id": 353,
+    "capacity": 505,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 354,
+    "name": "成都ASSEMBLY车间-354-C线",
+    "workshop_id": 354,
+    "capacity": 590,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 355,
+    "name": "合肥INSPECTION车间-355-D线",
+    "workshop_id": 355,
+    "capacity": 675,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 356,
+    "name": "无锡WAREHOUSE车间-356-A线",
+    "workshop_id": 356,
+    "capacity": 760,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 357,
+    "name": "常州SURFACE车间-357-B线",
+    "workshop_id": 357,
+    "capacity": 845,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 358,
+    "name": "杭州TESTING车间-358-C线",
+    "workshop_id": 358,
+    "capacity": 930,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 359,
+    "name": "青岛PACKAGING车间-359-D线",
+    "workshop_id": 359,
+    "capacity": 1015,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 360,
+    "name": "上海MACHINING车间-360-A线",
+    "workshop_id": 360,
+    "capacity": 1100,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 361,
+    "name": "苏州SMT车间-361-B线",
+    "workshop_id": 361,
+    "capacity": 1185,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 362,
+    "name": "宁波ASSEMBLY车间-362-C线",
+    "workshop_id": 362,
+    "capacity": 1270,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 363,
+    "name": "武汉INSPECTION车间-363-D线",
+    "workshop_id": 363,
+    "capacity": 1355,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 364,
+    "name": "成都WAREHOUSE车间-364-A线",
+    "workshop_id": 364,
+    "capacity": 1440,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 365,
+    "name": "合肥SURFACE车间-365-B线",
+    "workshop_id": 365,
+    "capacity": 1525,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 366,
+    "name": "无锡TESTING车间-366-C线",
+    "workshop_id": 366,
+    "capacity": 1610,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 367,
+    "name": "常州PACKAGING车间-367-D线",
+    "workshop_id": 367,
+    "capacity": 1695,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 368,
+    "name": "杭州MACHINING车间-368-A线",
+    "workshop_id": 368,
+    "capacity": 1780,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 369,
+    "name": "青岛SMT车间-369-B线",
+    "workshop_id": 369,
+    "capacity": 1865,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 370,
+    "name": "上海ASSEMBLY车间-370-C线",
+    "workshop_id": 370,
+    "capacity": 1950,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 371,
+    "name": "苏州INSPECTION车间-371-D线",
+    "workshop_id": 371,
+    "capacity": 2035,
+    "oee_target": 0.84,
+    "status": "maintenance"
+  },
+  {
+    "id": 372,
+    "name": "宁波WAREHOUSE车间-372-A线",
+    "workshop_id": 372,
+    "capacity": 2120,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 373,
+    "name": "武汉SURFACE车间-373-B线",
+    "workshop_id": 373,
+    "capacity": 2205,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 374,
+    "name": "成都TESTING车间-374-C线",
+    "workshop_id": 374,
+    "capacity": 420,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 375,
+    "name": "合肥PACKAGING车间-375-D线",
+    "workshop_id": 375,
+    "capacity": 505,
+    "oee_target": 0.88,
+    "status": "idle"
+  },
+  {
+    "id": 376,
+    "name": "无锡MACHINING车间-376-A线",
+    "workshop_id": 376,
+    "capacity": 590,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 377,
+    "name": "常州SMT车间-377-B线",
+    "workshop_id": 377,
+    "capacity": 675,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 378,
+    "name": "杭州ASSEMBLY车间-378-C线",
+    "workshop_id": 378,
+    "capacity": 760,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 379,
+    "name": "青岛INSPECTION车间-379-D线",
+    "workshop_id": 379,
+    "capacity": 845,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 380,
+    "name": "上海WAREHOUSE车间-380-A线",
+    "workshop_id": 380,
+    "capacity": 930,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 381,
+    "name": "苏州SURFACE车间-381-B线",
+    "workshop_id": 381,
+    "capacity": 1015,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 382,
+    "name": "宁波TESTING车间-382-C线",
+    "workshop_id": 382,
+    "capacity": 1100,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 383,
+    "name": "武汉PACKAGING车间-383-D线",
+    "workshop_id": 383,
+    "capacity": 1185,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 384,
+    "name": "成都MACHINING车间-384-A线",
+    "workshop_id": 384,
+    "capacity": 1270,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 385,
+    "name": "合肥SMT车间-385-B线",
+    "workshop_id": 385,
+    "capacity": 1355,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 386,
+    "name": "无锡ASSEMBLY车间-386-C线",
+    "workshop_id": 386,
+    "capacity": 1440,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 387,
+    "name": "常州INSPECTION车间-387-D线",
+    "workshop_id": 387,
+    "capacity": 1525,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 388,
+    "name": "杭州WAREHOUSE车间-388-A线",
+    "workshop_id": 388,
+    "capacity": 1610,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 389,
+    "name": "青岛SURFACE车间-389-B线",
+    "workshop_id": 389,
+    "capacity": 1695,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 390,
+    "name": "上海TESTING车间-390-C线",
+    "workshop_id": 390,
+    "capacity": 1780,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 391,
+    "name": "苏州PACKAGING车间-391-D线",
+    "workshop_id": 391,
+    "capacity": 1865,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 392,
+    "name": "宁波MACHINING车间-392-A线",
+    "workshop_id": 392,
+    "capacity": 1950,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 393,
+    "name": "武汉SMT车间-393-B线",
+    "workshop_id": 393,
+    "capacity": 2035,
+    "oee_target": 0.88,
+    "status": "idle"
+  },
+  {
+    "id": 394,
+    "name": "成都ASSEMBLY车间-394-C线",
+    "workshop_id": 394,
+    "capacity": 2120,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 395,
+    "name": "合肥INSPECTION车间-395-D线",
+    "workshop_id": 395,
+    "capacity": 2205,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 396,
+    "name": "无锡WAREHOUSE车间-396-A线",
+    "workshop_id": 396,
+    "capacity": 420,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 397,
+    "name": "常州SURFACE车间-397-B线",
+    "workshop_id": 397,
+    "capacity": 505,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 398,
+    "name": "杭州TESTING车间-398-C线",
+    "workshop_id": 398,
+    "capacity": 590,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 399,
+    "name": "青岛PACKAGING车间-399-D线",
+    "workshop_id": 399,
+    "capacity": 675,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 400,
+    "name": "上海MACHINING车间-400-A线",
+    "workshop_id": 400,
+    "capacity": 760,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 401,
+    "name": "苏州SMT车间-401-B线",
+    "workshop_id": 401,
+    "capacity": 845,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 402,
+    "name": "宁波ASSEMBLY车间-402-C线",
+    "workshop_id": 402,
+    "capacity": 930,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 403,
+    "name": "武汉INSPECTION车间-403-D线",
+    "workshop_id": 403,
+    "capacity": 1015,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 404,
+    "name": "成都WAREHOUSE车间-404-A线",
+    "workshop_id": 404,
+    "capacity": 1100,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 405,
+    "name": "合肥SURFACE车间-405-B线",
+    "workshop_id": 405,
+    "capacity": 1185,
+    "oee_target": 0.82,
+    "status": "maintenance"
+  },
+  {
+    "id": 406,
+    "name": "无锡TESTING车间-406-C线",
+    "workshop_id": 406,
+    "capacity": 1270,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 407,
+    "name": "常州PACKAGING车间-407-D线",
+    "workshop_id": 407,
+    "capacity": 1355,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 408,
+    "name": "杭州MACHINING车间-408-A线",
+    "workshop_id": 408,
+    "capacity": 1440,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 409,
+    "name": "青岛SMT车间-409-B线",
+    "workshop_id": 409,
+    "capacity": 1525,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 410,
+    "name": "上海ASSEMBLY车间-410-C线",
+    "workshop_id": 410,
+    "capacity": 1610,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 411,
+    "name": "苏州INSPECTION车间-411-D线",
+    "workshop_id": 411,
+    "capacity": 1695,
+    "oee_target": 0.88,
+    "status": "idle"
+  },
+  {
+    "id": 412,
+    "name": "宁波WAREHOUSE车间-412-A线",
+    "workshop_id": 412,
+    "capacity": 1780,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 413,
+    "name": "武汉SURFACE车间-413-B线",
+    "workshop_id": 413,
+    "capacity": 1865,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 414,
+    "name": "成都TESTING车间-414-C线",
+    "workshop_id": 414,
+    "capacity": 1950,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 415,
+    "name": "合肥PACKAGING车间-415-D线",
+    "workshop_id": 415,
+    "capacity": 2035,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 416,
+    "name": "无锡MACHINING车间-416-A线",
+    "workshop_id": 416,
+    "capacity": 2120,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 417,
+    "name": "常州SMT车间-417-B线",
+    "workshop_id": 417,
+    "capacity": 2205,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 418,
+    "name": "杭州ASSEMBLY车间-418-C线",
+    "workshop_id": 418,
+    "capacity": 420,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 419,
+    "name": "青岛INSPECTION车间-419-D线",
+    "workshop_id": 419,
+    "capacity": 505,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 420,
+    "name": "上海WAREHOUSE车间-420-A线",
+    "workshop_id": 420,
+    "capacity": 590,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 421,
+    "name": "苏州SURFACE车间-421-B线",
+    "workshop_id": 421,
+    "capacity": 675,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 422,
+    "name": "宁波TESTING车间-422-C线",
+    "workshop_id": 422,
+    "capacity": 760,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 423,
+    "name": "武汉PACKAGING车间-423-D线",
+    "workshop_id": 423,
+    "capacity": 845,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 424,
+    "name": "成都MACHINING车间-424-A线",
+    "workshop_id": 424,
+    "capacity": 930,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 425,
+    "name": "合肥SMT车间-425-B线",
+    "workshop_id": 425,
+    "capacity": 1015,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 426,
+    "name": "无锡ASSEMBLY车间-426-C线",
+    "workshop_id": 426,
+    "capacity": 1100,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 427,
+    "name": "常州INSPECTION车间-427-D线",
+    "workshop_id": 427,
+    "capacity": 1185,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 428,
+    "name": "杭州WAREHOUSE车间-428-A线",
+    "workshop_id": 428,
+    "capacity": 1270,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 429,
+    "name": "青岛SURFACE车间-429-B线",
+    "workshop_id": 429,
+    "capacity": 1355,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 430,
+    "name": "上海TESTING车间-430-C线",
+    "workshop_id": 430,
+    "capacity": 1440,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 431,
+    "name": "苏州PACKAGING车间-431-D线",
+    "workshop_id": 431,
+    "capacity": 1525,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 432,
+    "name": "宁波MACHINING车间-432-A线",
+    "workshop_id": 432,
+    "capacity": 1610,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 433,
+    "name": "武汉SMT车间-433-B线",
+    "workshop_id": 433,
+    "capacity": 1695,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 434,
+    "name": "成都ASSEMBLY车间-434-C线",
+    "workshop_id": 434,
+    "capacity": 1780,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 435,
+    "name": "合肥INSPECTION车间-435-D线",
+    "workshop_id": 435,
+    "capacity": 1865,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 436,
+    "name": "无锡WAREHOUSE车间-436-A线",
+    "workshop_id": 436,
+    "capacity": 1950,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 437,
+    "name": "常州SURFACE车间-437-B线",
+    "workshop_id": 437,
+    "capacity": 2035,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 438,
+    "name": "杭州TESTING车间-438-C线",
+    "workshop_id": 438,
+    "capacity": 2120,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 439,
+    "name": "青岛PACKAGING车间-439-D线",
+    "workshop_id": 439,
+    "capacity": 2205,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 440,
+    "name": "上海MACHINING车间-440-A线",
+    "workshop_id": 440,
+    "capacity": 420,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 441,
+    "name": "苏州SMT车间-441-B线",
+    "workshop_id": 441,
+    "capacity": 505,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 442,
+    "name": "宁波ASSEMBLY车间-442-C线",
+    "workshop_id": 442,
+    "capacity": 590,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 443,
+    "name": "武汉INSPECTION车间-443-D线",
+    "workshop_id": 443,
+    "capacity": 675,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 444,
+    "name": "成都WAREHOUSE车间-444-A线",
+    "workshop_id": 444,
+    "capacity": 760,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 445,
+    "name": "合肥SURFACE车间-445-B线",
+    "workshop_id": 445,
+    "capacity": 845,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 446,
+    "name": "无锡TESTING车间-446-C线",
+    "workshop_id": 446,
+    "capacity": 930,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 447,
+    "name": "常州PACKAGING车间-447-D线",
+    "workshop_id": 447,
+    "capacity": 1015,
+    "oee_target": 0.88,
+    "status": "maintenance"
+  },
+  {
+    "id": 448,
+    "name": "杭州MACHINING车间-448-A线",
+    "workshop_id": 448,
+    "capacity": 1100,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 449,
+    "name": "青岛SMT车间-449-B线",
+    "workshop_id": 449,
+    "capacity": 1185,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 450,
+    "name": "上海ASSEMBLY车间-450-C线",
+    "workshop_id": 450,
+    "capacity": 1270,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 451,
+    "name": "苏州INSPECTION车间-451-D线",
+    "workshop_id": 451,
+    "capacity": 1355,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 452,
+    "name": "宁波WAREHOUSE车间-452-A线",
+    "workshop_id": 452,
+    "capacity": 1440,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 453,
+    "name": "武汉SURFACE车间-453-B线",
+    "workshop_id": 453,
+    "capacity": 1525,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 454,
+    "name": "成都TESTING车间-454-C线",
+    "workshop_id": 454,
+    "capacity": 1610,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 455,
+    "name": "合肥PACKAGING车间-455-D线",
+    "workshop_id": 455,
+    "capacity": 1695,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 456,
+    "name": "无锡MACHINING车间-456-A线",
+    "workshop_id": 456,
+    "capacity": 1780,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 457,
+    "name": "常州SMT车间-457-B线",
+    "workshop_id": 457,
+    "capacity": 1865,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 458,
+    "name": "杭州ASSEMBLY车间-458-C线",
+    "workshop_id": 458,
+    "capacity": 1950,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 459,
+    "name": "青岛INSPECTION车间-459-D线",
+    "workshop_id": 459,
+    "capacity": 2035,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 460,
+    "name": "上海WAREHOUSE车间-460-A线",
+    "workshop_id": 460,
+    "capacity": 2120,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 461,
+    "name": "苏州SURFACE车间-461-B线",
+    "workshop_id": 461,
+    "capacity": 2205,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 462,
+    "name": "宁波TESTING车间-462-C线",
+    "workshop_id": 462,
+    "capacity": 420,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 463,
+    "name": "武汉PACKAGING车间-463-D线",
+    "workshop_id": 463,
+    "capacity": 505,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 464,
+    "name": "成都MACHINING车间-464-A线",
+    "workshop_id": 464,
+    "capacity": 590,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 465,
+    "name": "合肥SMT车间-465-B线",
+    "workshop_id": 465,
+    "capacity": 675,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 466,
+    "name": "无锡ASSEMBLY车间-466-C线",
+    "workshop_id": 466,
+    "capacity": 760,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 467,
+    "name": "常州INSPECTION车间-467-D线",
+    "workshop_id": 467,
+    "capacity": 845,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 468,
+    "name": "杭州WAREHOUSE车间-468-A线",
+    "workshop_id": 468,
+    "capacity": 930,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 469,
+    "name": "青岛SURFACE车间-469-B线",
+    "workshop_id": 469,
+    "capacity": 1015,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 470,
+    "name": "上海TESTING车间-470-C线",
+    "workshop_id": 470,
+    "capacity": 1100,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 471,
+    "name": "苏州PACKAGING车间-471-D线",
+    "workshop_id": 471,
+    "capacity": 1185,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 472,
+    "name": "宁波MACHINING车间-472-A线",
+    "workshop_id": 472,
+    "capacity": 1270,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 473,
+    "name": "武汉SMT车间-473-B线",
+    "workshop_id": 473,
+    "capacity": 1355,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 474,
+    "name": "成都ASSEMBLY车间-474-C线",
+    "workshop_id": 474,
+    "capacity": 1440,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 475,
+    "name": "合肥INSPECTION车间-475-D线",
+    "workshop_id": 475,
+    "capacity": 1525,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 476,
+    "name": "无锡WAREHOUSE车间-476-A线",
+    "workshop_id": 476,
+    "capacity": 1610,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 477,
+    "name": "常州SURFACE车间-477-B线",
+    "workshop_id": 477,
+    "capacity": 1695,
+    "oee_target": 0.82,
+    "status": "maintenance"
+  },
+  {
+    "id": 478,
+    "name": "杭州TESTING车间-478-C线",
+    "workshop_id": 478,
+    "capacity": 1780,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 479,
+    "name": "青岛PACKAGING车间-479-D线",
+    "workshop_id": 479,
+    "capacity": 1865,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 480,
+    "name": "上海MACHINING车间-480-A线",
+    "workshop_id": 480,
+    "capacity": 1950,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 481,
+    "name": "苏州SMT车间-481-B线",
+    "workshop_id": 481,
+    "capacity": 2035,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 482,
+    "name": "宁波ASSEMBLY车间-482-C线",
+    "workshop_id": 482,
+    "capacity": 2120,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 483,
+    "name": "武汉INSPECTION车间-483-D线",
+    "workshop_id": 483,
+    "capacity": 2205,
+    "oee_target": 0.88,
+    "status": "idle"
+  },
+  {
+    "id": 484,
+    "name": "成都WAREHOUSE车间-484-A线",
+    "workshop_id": 484,
+    "capacity": 420,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 485,
+    "name": "合肥SURFACE车间-485-B线",
+    "workshop_id": 485,
+    "capacity": 505,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 486,
+    "name": "无锡TESTING车间-486-C线",
+    "workshop_id": 486,
+    "capacity": 590,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 487,
+    "name": "常州PACKAGING车间-487-D线",
+    "workshop_id": 487,
+    "capacity": 675,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 488,
+    "name": "杭州MACHINING车间-488-A线",
+    "workshop_id": 488,
+    "capacity": 760,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 489,
+    "name": "青岛SMT车间-489-B线",
+    "workshop_id": 489,
+    "capacity": 845,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 490,
+    "name": "上海ASSEMBLY车间-490-C线",
+    "workshop_id": 490,
+    "capacity": 930,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 491,
+    "name": "苏州INSPECTION车间-491-D线",
+    "workshop_id": 491,
+    "capacity": 1015,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 492,
+    "name": "宁波WAREHOUSE车间-492-A线",
+    "workshop_id": 492,
+    "capacity": 1100,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 493,
+    "name": "武汉SURFACE车间-493-B线",
+    "workshop_id": 493,
+    "capacity": 1185,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 494,
+    "name": "成都TESTING车间-494-C线",
+    "workshop_id": 494,
+    "capacity": 1270,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 495,
+    "name": "合肥PACKAGING车间-495-D线",
+    "workshop_id": 495,
+    "capacity": 1355,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 496,
+    "name": "无锡MACHINING车间-496-A线",
+    "workshop_id": 496,
+    "capacity": 1440,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 497,
+    "name": "常州SMT车间-497-B线",
+    "workshop_id": 497,
+    "capacity": 1525,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 498,
+    "name": "杭州ASSEMBLY车间-498-C线",
+    "workshop_id": 498,
+    "capacity": 1610,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 499,
+    "name": "青岛INSPECTION车间-499-D线",
+    "workshop_id": 499,
+    "capacity": 1695,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 500,
+    "name": "上海WAREHOUSE车间-500-A线",
+    "workshop_id": 500,
+    "capacity": 1780,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 501,
+    "name": "苏州SURFACE车间-501-B线",
+    "workshop_id": 501,
+    "capacity": 1865,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 502,
+    "name": "宁波TESTING车间-502-C线",
+    "workshop_id": 502,
+    "capacity": 1950,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 503,
+    "name": "武汉PACKAGING车间-503-D线",
+    "workshop_id": 503,
+    "capacity": 2035,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 504,
+    "name": "成都MACHINING车间-504-A线",
+    "workshop_id": 504,
+    "capacity": 2120,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 505,
+    "name": "合肥SMT车间-505-B线",
+    "workshop_id": 505,
+    "capacity": 2205,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 506,
+    "name": "无锡ASSEMBLY车间-506-C线",
+    "workshop_id": 506,
+    "capacity": 420,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 507,
+    "name": "常州INSPECTION车间-507-D线",
+    "workshop_id": 507,
+    "capacity": 505,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 508,
+    "name": "杭州WAREHOUSE车间-508-A线",
+    "workshop_id": 508,
+    "capacity": 590,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 509,
+    "name": "青岛SURFACE车间-509-B线",
+    "workshop_id": 509,
+    "capacity": 675,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 510,
+    "name": "上海TESTING车间-510-C线",
+    "workshop_id": 510,
+    "capacity": 760,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 511,
+    "name": "苏州PACKAGING车间-511-D线",
+    "workshop_id": 511,
+    "capacity": 845,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 512,
+    "name": "宁波MACHINING车间-512-A线",
+    "workshop_id": 512,
+    "capacity": 930,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 513,
+    "name": "武汉SMT车间-513-B线",
+    "workshop_id": 513,
+    "capacity": 1015,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 514,
+    "name": "成都ASSEMBLY车间-514-C线",
+    "workshop_id": 514,
+    "capacity": 1100,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 515,
+    "name": "合肥INSPECTION车间-515-D线",
+    "workshop_id": 515,
+    "capacity": 1185,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 516,
+    "name": "无锡WAREHOUSE车间-516-A线",
+    "workshop_id": 516,
+    "capacity": 1270,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 517,
+    "name": "常州SURFACE车间-517-B线",
+    "workshop_id": 517,
+    "capacity": 1355,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 518,
+    "name": "杭州TESTING车间-518-C线",
+    "workshop_id": 518,
+    "capacity": 1440,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 519,
+    "name": "青岛PACKAGING车间-519-D线",
+    "workshop_id": 519,
+    "capacity": 1525,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 520,
+    "name": "上海MACHINING车间-520-A线",
+    "workshop_id": 520,
+    "capacity": 1610,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 521,
+    "name": "苏州SMT车间-521-B线",
+    "workshop_id": 521,
+    "capacity": 1695,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 522,
+    "name": "宁波ASSEMBLY车间-522-C线",
+    "workshop_id": 522,
+    "capacity": 1780,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 523,
+    "name": "武汉INSPECTION车间-523-D线",
+    "workshop_id": 523,
+    "capacity": 1865,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 524,
+    "name": "成都WAREHOUSE车间-524-A线",
+    "workshop_id": 524,
+    "capacity": 1950,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 525,
+    "name": "合肥SURFACE车间-525-B线",
+    "workshop_id": 525,
+    "capacity": 2035,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 526,
+    "name": "无锡TESTING车间-526-C线",
+    "workshop_id": 526,
+    "capacity": 2120,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 527,
+    "name": "常州PACKAGING车间-527-D线",
+    "workshop_id": 527,
+    "capacity": 2205,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 528,
+    "name": "杭州MACHINING车间-528-A线",
+    "workshop_id": 528,
+    "capacity": 420,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 529,
+    "name": "青岛SMT车间-529-B线",
+    "workshop_id": 529,
+    "capacity": 505,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 530,
+    "name": "上海ASSEMBLY车间-530-C线",
+    "workshop_id": 530,
+    "capacity": 590,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 531,
+    "name": "苏州INSPECTION车间-531-D线",
+    "workshop_id": 531,
+    "capacity": 675,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 532,
+    "name": "宁波WAREHOUSE车间-532-A线",
+    "workshop_id": 532,
+    "capacity": 760,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 533,
+    "name": "武汉SURFACE车间-533-B线",
+    "workshop_id": 533,
+    "capacity": 845,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 534,
+    "name": "成都TESTING车间-534-C线",
+    "workshop_id": 534,
+    "capacity": 930,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 535,
+    "name": "合肥PACKAGING车间-535-D线",
+    "workshop_id": 535,
+    "capacity": 1015,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 536,
+    "name": "无锡MACHINING车间-536-A线",
+    "workshop_id": 536,
+    "capacity": 1100,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 537,
+    "name": "常州SMT车间-537-B线",
+    "workshop_id": 537,
+    "capacity": 1185,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 538,
+    "name": "杭州ASSEMBLY车间-538-C线",
+    "workshop_id": 538,
+    "capacity": 1270,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 539,
+    "name": "青岛INSPECTION车间-539-D线",
+    "workshop_id": 539,
+    "capacity": 1355,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 540,
+    "name": "上海WAREHOUSE车间-540-A线",
+    "workshop_id": 540,
+    "capacity": 1440,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 541,
+    "name": "苏州SURFACE车间-541-B线",
+    "workshop_id": 541,
+    "capacity": 1525,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 542,
+    "name": "宁波TESTING车间-542-C线",
+    "workshop_id": 542,
+    "capacity": 1610,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 543,
+    "name": "武汉PACKAGING车间-543-D线",
+    "workshop_id": 543,
+    "capacity": 1695,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 544,
+    "name": "成都MACHINING车间-544-A线",
+    "workshop_id": 544,
+    "capacity": 1780,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 545,
+    "name": "合肥SMT车间-545-B线",
+    "workshop_id": 545,
+    "capacity": 1865,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 546,
+    "name": "无锡ASSEMBLY车间-546-C线",
+    "workshop_id": 546,
+    "capacity": 1950,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 547,
+    "name": "常州INSPECTION车间-547-D线",
+    "workshop_id": 547,
+    "capacity": 2035,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 548,
+    "name": "杭州WAREHOUSE车间-548-A线",
+    "workshop_id": 548,
+    "capacity": 2120,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 549,
+    "name": "青岛SURFACE车间-549-B线",
+    "workshop_id": 549,
+    "capacity": 2205,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 550,
+    "name": "上海TESTING车间-550-C线",
+    "workshop_id": 550,
+    "capacity": 420,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 551,
+    "name": "苏州PACKAGING车间-551-D线",
+    "workshop_id": 551,
+    "capacity": 505,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 552,
+    "name": "宁波MACHINING车间-552-A线",
+    "workshop_id": 552,
+    "capacity": 590,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 553,
+    "name": "武汉SMT车间-553-B线",
+    "workshop_id": 553,
+    "capacity": 675,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 554,
+    "name": "成都ASSEMBLY车间-554-C线",
+    "workshop_id": 554,
+    "capacity": 760,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 555,
+    "name": "合肥INSPECTION车间-555-D线",
+    "workshop_id": 555,
+    "capacity": 845,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 556,
+    "name": "无锡WAREHOUSE车间-556-A线",
+    "workshop_id": 556,
+    "capacity": 930,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 557,
+    "name": "常州SURFACE车间-557-B线",
+    "workshop_id": 557,
+    "capacity": 1015,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 558,
+    "name": "杭州TESTING车间-558-C线",
+    "workshop_id": 558,
+    "capacity": 1100,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 559,
+    "name": "青岛PACKAGING车间-559-D线",
+    "workshop_id": 559,
+    "capacity": 1185,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 560,
+    "name": "上海MACHINING车间-560-A线",
+    "workshop_id": 560,
+    "capacity": 1270,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 561,
+    "name": "苏州SMT车间-561-B线",
+    "workshop_id": 561,
+    "capacity": 1355,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 562,
+    "name": "宁波ASSEMBLY车间-562-C线",
+    "workshop_id": 562,
+    "capacity": 1440,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 563,
+    "name": "武汉INSPECTION车间-563-D线",
+    "workshop_id": 563,
+    "capacity": 1525,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 564,
+    "name": "成都WAREHOUSE车间-564-A线",
+    "workshop_id": 564,
+    "capacity": 1610,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 565,
+    "name": "合肥SURFACE车间-565-B线",
+    "workshop_id": 565,
+    "capacity": 1695,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 566,
+    "name": "无锡TESTING车间-566-C线",
+    "workshop_id": 566,
+    "capacity": 1780,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 567,
+    "name": "常州PACKAGING车间-567-D线",
+    "workshop_id": 567,
+    "capacity": 1865,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 568,
+    "name": "杭州MACHINING车间-568-A线",
+    "workshop_id": 568,
+    "capacity": 1950,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 569,
+    "name": "青岛SMT车间-569-B线",
+    "workshop_id": 569,
+    "capacity": 2035,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 570,
+    "name": "上海ASSEMBLY车间-570-C线",
+    "workshop_id": 570,
+    "capacity": 2120,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 571,
+    "name": "苏州INSPECTION车间-571-D线",
+    "workshop_id": 571,
+    "capacity": 2205,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 572,
+    "name": "宁波WAREHOUSE车间-572-A线",
+    "workshop_id": 572,
+    "capacity": 420,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 573,
+    "name": "武汉SURFACE车间-573-B线",
+    "workshop_id": 573,
+    "capacity": 505,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 574,
+    "name": "成都TESTING车间-574-C线",
+    "workshop_id": 574,
+    "capacity": 590,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 575,
+    "name": "合肥PACKAGING车间-575-D线",
+    "workshop_id": 575,
+    "capacity": 675,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 576,
+    "name": "无锡MACHINING车间-576-A线",
+    "workshop_id": 576,
+    "capacity": 760,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 577,
+    "name": "常州SMT车间-577-B线",
+    "workshop_id": 577,
+    "capacity": 845,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 578,
+    "name": "杭州ASSEMBLY车间-578-C线",
+    "workshop_id": 578,
+    "capacity": 930,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 579,
+    "name": "青岛INSPECTION车间-579-D线",
+    "workshop_id": 579,
+    "capacity": 1015,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 580,
+    "name": "上海WAREHOUSE车间-580-A线",
+    "workshop_id": 580,
+    "capacity": 1100,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 581,
+    "name": "苏州SURFACE车间-581-B线",
+    "workshop_id": 581,
+    "capacity": 1185,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 582,
+    "name": "宁波TESTING车间-582-C线",
+    "workshop_id": 582,
+    "capacity": 1270,
+    "oee_target": 0.88,
+    "status": "maintenance"
+  },
+  {
+    "id": 583,
+    "name": "武汉PACKAGING车间-583-D线",
+    "workshop_id": 583,
+    "capacity": 1355,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 584,
+    "name": "成都MACHINING车间-584-A线",
+    "workshop_id": 584,
+    "capacity": 1440,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 585,
+    "name": "合肥SMT车间-585-B线",
+    "workshop_id": 585,
+    "capacity": 1525,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 586,
+    "name": "无锡ASSEMBLY车间-586-C线",
+    "workshop_id": 586,
+    "capacity": 1610,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 587,
+    "name": "常州INSPECTION车间-587-D线",
+    "workshop_id": 587,
+    "capacity": 1695,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 588,
+    "name": "杭州WAREHOUSE车间-588-A线",
+    "workshop_id": 588,
+    "capacity": 1780,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 589,
+    "name": "青岛SURFACE车间-589-B线",
+    "workshop_id": 589,
+    "capacity": 1865,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 590,
+    "name": "上海TESTING车间-590-C线",
+    "workshop_id": 590,
+    "capacity": 1950,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 591,
+    "name": "苏州PACKAGING车间-591-D线",
+    "workshop_id": 591,
+    "capacity": 2035,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 592,
+    "name": "宁波MACHINING车间-592-A线",
+    "workshop_id": 592,
+    "capacity": 2120,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 593,
+    "name": "武汉SMT车间-593-B线",
+    "workshop_id": 593,
+    "capacity": 2205,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 594,
+    "name": "成都ASSEMBLY车间-594-C线",
+    "workshop_id": 594,
+    "capacity": 420,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 595,
+    "name": "合肥INSPECTION车间-595-D线",
+    "workshop_id": 595,
+    "capacity": 505,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 596,
+    "name": "无锡WAREHOUSE车间-596-A线",
+    "workshop_id": 596,
+    "capacity": 590,
+    "oee_target": 0.84,
+    "status": "maintenance"
+  },
+  {
+    "id": 597,
+    "name": "常州SURFACE车间-597-B线",
+    "workshop_id": 597,
+    "capacity": 675,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 598,
+    "name": "杭州TESTING车间-598-C线",
+    "workshop_id": 598,
+    "capacity": 760,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 599,
+    "name": "青岛PACKAGING车间-599-D线",
+    "workshop_id": 599,
+    "capacity": 845,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 600,
+    "name": "上海MACHINING车间-600-A线",
+    "workshop_id": 600,
+    "capacity": 930,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 601,
+    "name": "苏州SMT车间-601-B线",
+    "workshop_id": 601,
+    "capacity": 1015,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 602,
+    "name": "宁波ASSEMBLY车间-602-C线",
+    "workshop_id": 602,
+    "capacity": 1100,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 603,
+    "name": "武汉INSPECTION车间-603-D线",
+    "workshop_id": 603,
+    "capacity": 1185,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 604,
+    "name": "成都WAREHOUSE车间-604-A线",
+    "workshop_id": 604,
+    "capacity": 1270,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 605,
+    "name": "合肥SURFACE车间-605-B线",
+    "workshop_id": 605,
+    "capacity": 1355,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 606,
+    "name": "无锡TESTING车间-606-C线",
+    "workshop_id": 606,
+    "capacity": 1440,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 607,
+    "name": "常州PACKAGING车间-607-D线",
+    "workshop_id": 607,
+    "capacity": 1525,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 608,
+    "name": "杭州MACHINING车间-608-A线",
+    "workshop_id": 608,
+    "capacity": 1610,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 609,
+    "name": "青岛SMT车间-609-B线",
+    "workshop_id": 609,
+    "capacity": 1695,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 610,
+    "name": "上海ASSEMBLY车间-610-C线",
+    "workshop_id": 610,
+    "capacity": 1780,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 611,
+    "name": "苏州INSPECTION车间-611-D线",
+    "workshop_id": 611,
+    "capacity": 1865,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 612,
+    "name": "宁波WAREHOUSE车间-612-A线",
+    "workshop_id": 612,
+    "capacity": 1950,
+    "oee_target": 0.82,
+    "status": "maintenance"
+  },
+  {
+    "id": 613,
+    "name": "武汉SURFACE车间-613-B线",
+    "workshop_id": 613,
+    "capacity": 2035,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 614,
+    "name": "成都TESTING车间-614-C线",
+    "workshop_id": 614,
+    "capacity": 2120,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 615,
+    "name": "合肥PACKAGING车间-615-D线",
+    "workshop_id": 615,
+    "capacity": 2205,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 616,
+    "name": "无锡MACHINING车间-616-A线",
+    "workshop_id": 616,
+    "capacity": 420,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 617,
+    "name": "常州SMT车间-617-B线",
+    "workshop_id": 617,
+    "capacity": 505,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 618,
+    "name": "杭州ASSEMBLY车间-618-C线",
+    "workshop_id": 618,
+    "capacity": 590,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 619,
+    "name": "青岛INSPECTION车间-619-D线",
+    "workshop_id": 619,
+    "capacity": 675,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 620,
+    "name": "上海WAREHOUSE车间-620-A线",
+    "workshop_id": 620,
+    "capacity": 760,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 621,
+    "name": "苏州SURFACE车间-621-B线",
+    "workshop_id": 621,
+    "capacity": 845,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 622,
+    "name": "宁波TESTING车间-622-C线",
+    "workshop_id": 622,
+    "capacity": 930,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 623,
+    "name": "武汉PACKAGING车间-623-D线",
+    "workshop_id": 623,
+    "capacity": 1015,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 624,
+    "name": "成都MACHINING车间-624-A线",
+    "workshop_id": 624,
+    "capacity": 1100,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 625,
+    "name": "合肥SMT车间-625-B线",
+    "workshop_id": 625,
+    "capacity": 1185,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 626,
+    "name": "无锡ASSEMBLY车间-626-C线",
+    "workshop_id": 626,
+    "capacity": 1270,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 627,
+    "name": "常州INSPECTION车间-627-D线",
+    "workshop_id": 627,
+    "capacity": 1355,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 628,
+    "name": "杭州WAREHOUSE车间-628-A线",
+    "workshop_id": 628,
+    "capacity": 1440,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 629,
+    "name": "青岛SURFACE车间-629-B线",
+    "workshop_id": 629,
+    "capacity": 1525,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 630,
+    "name": "上海TESTING车间-630-C线",
+    "workshop_id": 630,
+    "capacity": 1610,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 631,
+    "name": "苏州PACKAGING车间-631-D线",
+    "workshop_id": 631,
+    "capacity": 1695,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 632,
+    "name": "宁波MACHINING车间-632-A线",
+    "workshop_id": 632,
+    "capacity": 1780,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 633,
+    "name": "武汉SMT车间-633-B线",
+    "workshop_id": 633,
+    "capacity": 1865,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 634,
+    "name": "成都ASSEMBLY车间-634-C线",
+    "workshop_id": 634,
+    "capacity": 1950,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 635,
+    "name": "合肥INSPECTION车间-635-D线",
+    "workshop_id": 635,
+    "capacity": 2035,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 636,
+    "name": "无锡WAREHOUSE车间-636-A线",
+    "workshop_id": 636,
+    "capacity": 2120,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 637,
+    "name": "常州SURFACE车间-637-B线",
+    "workshop_id": 637,
+    "capacity": 2205,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 638,
+    "name": "杭州TESTING车间-638-C线",
+    "workshop_id": 638,
+    "capacity": 420,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 639,
+    "name": "青岛PACKAGING车间-639-D线",
+    "workshop_id": 639,
+    "capacity": 505,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 640,
+    "name": "上海MACHINING车间-640-A线",
+    "workshop_id": 640,
+    "capacity": 590,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 641,
+    "name": "苏州SMT车间-001-B线",
+    "workshop_id": 1,
+    "capacity": 675,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 642,
+    "name": "宁波ASSEMBLY车间-002-C线",
+    "workshop_id": 2,
+    "capacity": 760,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 643,
+    "name": "武汉INSPECTION车间-003-D线",
+    "workshop_id": 3,
+    "capacity": 845,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 644,
+    "name": "成都WAREHOUSE车间-004-A线",
+    "workshop_id": 4,
+    "capacity": 930,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 645,
+    "name": "合肥SURFACE车间-005-B线",
+    "workshop_id": 5,
+    "capacity": 1015,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 646,
+    "name": "无锡TESTING车间-006-C线",
+    "workshop_id": 6,
+    "capacity": 1100,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 647,
+    "name": "常州PACKAGING车间-007-D线",
+    "workshop_id": 7,
+    "capacity": 1185,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 648,
+    "name": "杭州MACHINING车间-008-A线",
+    "workshop_id": 8,
+    "capacity": 1270,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 649,
+    "name": "青岛SMT车间-009-B线",
+    "workshop_id": 9,
+    "capacity": 1355,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 650,
+    "name": "上海ASSEMBLY车间-010-C线",
+    "workshop_id": 10,
+    "capacity": 1440,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 651,
+    "name": "苏州INSPECTION车间-011-D线",
+    "workshop_id": 11,
+    "capacity": 1525,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 652,
+    "name": "宁波WAREHOUSE车间-012-A线",
+    "workshop_id": 12,
+    "capacity": 1610,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 653,
+    "name": "武汉SURFACE车间-013-B线",
+    "workshop_id": 13,
+    "capacity": 1695,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 654,
+    "name": "成都TESTING车间-014-C线",
+    "workshop_id": 14,
+    "capacity": 1780,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 655,
+    "name": "合肥PACKAGING车间-015-D线",
+    "workshop_id": 15,
+    "capacity": 1865,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 656,
+    "name": "无锡MACHINING车间-016-A线",
+    "workshop_id": 16,
+    "capacity": 1950,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 657,
+    "name": "常州SMT车间-017-B线",
+    "workshop_id": 17,
+    "capacity": 2035,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 658,
+    "name": "杭州ASSEMBLY车间-018-C线",
+    "workshop_id": 18,
+    "capacity": 2120,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 659,
+    "name": "青岛INSPECTION车间-019-D线",
+    "workshop_id": 19,
+    "capacity": 2205,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 660,
+    "name": "上海WAREHOUSE车间-020-A线",
+    "workshop_id": 20,
+    "capacity": 420,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 661,
+    "name": "苏州SURFACE车间-021-B线",
+    "workshop_id": 21,
+    "capacity": 505,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 662,
+    "name": "宁波TESTING车间-022-C线",
+    "workshop_id": 22,
+    "capacity": 590,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 663,
+    "name": "武汉PACKAGING车间-023-D线",
+    "workshop_id": 23,
+    "capacity": 675,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 664,
+    "name": "成都MACHINING车间-024-A线",
+    "workshop_id": 24,
+    "capacity": 760,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 665,
+    "name": "合肥SMT车间-025-B线",
+    "workshop_id": 25,
+    "capacity": 845,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 666,
+    "name": "无锡ASSEMBLY车间-026-C线",
+    "workshop_id": 26,
+    "capacity": 930,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 667,
+    "name": "常州INSPECTION车间-027-D线",
+    "workshop_id": 27,
+    "capacity": 1015,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 668,
+    "name": "杭州WAREHOUSE车间-028-A线",
+    "workshop_id": 28,
+    "capacity": 1100,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 669,
+    "name": "青岛SURFACE车间-029-B线",
+    "workshop_id": 29,
+    "capacity": 1185,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 670,
+    "name": "上海TESTING车间-030-C线",
+    "workshop_id": 30,
+    "capacity": 1270,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 671,
+    "name": "苏州PACKAGING车间-031-D线",
+    "workshop_id": 31,
+    "capacity": 1355,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 672,
+    "name": "宁波MACHINING车间-032-A线",
+    "workshop_id": 32,
+    "capacity": 1440,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 673,
+    "name": "武汉SMT车间-033-B线",
+    "workshop_id": 33,
+    "capacity": 1525,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 674,
+    "name": "成都ASSEMBLY车间-034-C线",
+    "workshop_id": 34,
+    "capacity": 1610,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 675,
+    "name": "合肥INSPECTION车间-035-D线",
+    "workshop_id": 35,
+    "capacity": 1695,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 676,
+    "name": "无锡WAREHOUSE车间-036-A线",
+    "workshop_id": 36,
+    "capacity": 1780,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 677,
+    "name": "常州SURFACE车间-037-B线",
+    "workshop_id": 37,
+    "capacity": 1865,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 678,
+    "name": "杭州TESTING车间-038-C线",
+    "workshop_id": 38,
+    "capacity": 1950,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 679,
+    "name": "青岛PACKAGING车间-039-D线",
+    "workshop_id": 39,
+    "capacity": 2035,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 680,
+    "name": "上海MACHINING车间-040-A线",
+    "workshop_id": 40,
+    "capacity": 2120,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 681,
+    "name": "苏州SMT车间-041-B线",
+    "workshop_id": 41,
+    "capacity": 2205,
+    "oee_target": 0.88,
+    "status": "maintenance"
+  },
+  {
+    "id": 682,
+    "name": "宁波ASSEMBLY车间-042-C线",
+    "workshop_id": 42,
+    "capacity": 420,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 683,
+    "name": "武汉INSPECTION车间-043-D线",
+    "workshop_id": 43,
+    "capacity": 505,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 684,
+    "name": "成都WAREHOUSE车间-044-A线",
+    "workshop_id": 44,
+    "capacity": 590,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 685,
+    "name": "合肥SURFACE车间-045-B线",
+    "workshop_id": 45,
+    "capacity": 675,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 686,
+    "name": "无锡TESTING车间-046-C线",
+    "workshop_id": 46,
+    "capacity": 760,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 687,
+    "name": "常州PACKAGING车间-047-D线",
+    "workshop_id": 47,
+    "capacity": 845,
+    "oee_target": 0.85,
+    "status": "maintenance"
+  },
+  {
+    "id": 688,
+    "name": "杭州MACHINING车间-048-A线",
+    "workshop_id": 48,
+    "capacity": 930,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 689,
+    "name": "青岛SMT车间-049-B线",
+    "workshop_id": 49,
+    "capacity": 1015,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 690,
+    "name": "上海ASSEMBLY车间-050-C线",
+    "workshop_id": 50,
+    "capacity": 1100,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 691,
+    "name": "苏州INSPECTION车间-051-D线",
+    "workshop_id": 51,
+    "capacity": 1185,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 692,
+    "name": "宁波WAREHOUSE车间-052-A线",
+    "workshop_id": 52,
+    "capacity": 1270,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 693,
+    "name": "武汉SURFACE车间-053-B线",
+    "workshop_id": 53,
+    "capacity": 1355,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 694,
+    "name": "成都TESTING车间-054-C线",
+    "workshop_id": 54,
+    "capacity": 1440,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 695,
+    "name": "合肥PACKAGING车间-055-D线",
+    "workshop_id": 55,
+    "capacity": 1525,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 696,
+    "name": "无锡MACHINING车间-056-A线",
+    "workshop_id": 56,
+    "capacity": 1610,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 697,
+    "name": "常州SMT车间-057-B线",
+    "workshop_id": 57,
+    "capacity": 1695,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 698,
+    "name": "杭州ASSEMBLY车间-058-C线",
+    "workshop_id": 58,
+    "capacity": 1780,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 699,
+    "name": "青岛INSPECTION车间-059-D线",
+    "workshop_id": 59,
+    "capacity": 1865,
+    "oee_target": 0.88,
+    "status": "idle"
+  },
+  {
+    "id": 700,
+    "name": "上海WAREHOUSE车间-060-A线",
+    "workshop_id": 60,
+    "capacity": 1950,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 701,
+    "name": "苏州SURFACE车间-061-B线",
+    "workshop_id": 61,
+    "capacity": 2035,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 702,
+    "name": "宁波TESTING车间-062-C线",
+    "workshop_id": 62,
+    "capacity": 2120,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 703,
+    "name": "武汉PACKAGING车间-063-D线",
+    "workshop_id": 63,
+    "capacity": 2205,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 704,
+    "name": "成都MACHINING车间-064-A线",
+    "workshop_id": 64,
+    "capacity": 420,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 705,
+    "name": "合肥SMT车间-065-B线",
+    "workshop_id": 65,
+    "capacity": 505,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 706,
+    "name": "无锡ASSEMBLY车间-066-C线",
+    "workshop_id": 66,
+    "capacity": 590,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 707,
+    "name": "常州INSPECTION车间-067-D线",
+    "workshop_id": 67,
+    "capacity": 675,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 708,
+    "name": "杭州WAREHOUSE车间-068-A线",
+    "workshop_id": 68,
+    "capacity": 760,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 709,
+    "name": "青岛SURFACE车间-069-B线",
+    "workshop_id": 69,
+    "capacity": 845,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 710,
+    "name": "上海TESTING车间-070-C线",
+    "workshop_id": 70,
+    "capacity": 930,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 711,
+    "name": "苏州PACKAGING车间-071-D线",
+    "workshop_id": 71,
+    "capacity": 1015,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 712,
+    "name": "宁波MACHINING车间-072-A线",
+    "workshop_id": 72,
+    "capacity": 1100,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 713,
+    "name": "武汉SMT车间-073-B线",
+    "workshop_id": 73,
+    "capacity": 1185,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 714,
+    "name": "成都ASSEMBLY车间-074-C线",
+    "workshop_id": 74,
+    "capacity": 1270,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 715,
+    "name": "合肥INSPECTION车间-075-D线",
+    "workshop_id": 75,
+    "capacity": 1355,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 716,
+    "name": "无锡WAREHOUSE车间-076-A线",
+    "workshop_id": 76,
+    "capacity": 1440,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 717,
+    "name": "常州SURFACE车间-077-B线",
+    "workshop_id": 77,
+    "capacity": 1525,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 718,
+    "name": "杭州TESTING车间-078-C线",
+    "workshop_id": 78,
+    "capacity": 1610,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 719,
+    "name": "青岛PACKAGING车间-079-D线",
+    "workshop_id": 79,
+    "capacity": 1695,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 720,
+    "name": "上海MACHINING车间-080-A线",
+    "workshop_id": 80,
+    "capacity": 1780,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 721,
+    "name": "苏州SMT车间-081-B线",
+    "workshop_id": 81,
+    "capacity": 1865,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 722,
+    "name": "宁波ASSEMBLY车间-082-C线",
+    "workshop_id": 82,
+    "capacity": 1950,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 723,
+    "name": "武汉INSPECTION车间-083-D线",
+    "workshop_id": 83,
+    "capacity": 2035,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 724,
+    "name": "成都WAREHOUSE车间-084-A线",
+    "workshop_id": 84,
+    "capacity": 2120,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 725,
+    "name": "合肥SURFACE车间-085-B线",
+    "workshop_id": 85,
+    "capacity": 2205,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 726,
+    "name": "无锡TESTING车间-086-C线",
+    "workshop_id": 86,
+    "capacity": 420,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 727,
+    "name": "常州PACKAGING车间-087-D线",
+    "workshop_id": 87,
+    "capacity": 505,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 728,
+    "name": "杭州MACHINING车间-088-A线",
+    "workshop_id": 88,
+    "capacity": 590,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 729,
+    "name": "青岛SMT车间-089-B线",
+    "workshop_id": 89,
+    "capacity": 675,
+    "oee_target": 0.82,
+    "status": "maintenance"
+  },
+  {
+    "id": 730,
+    "name": "上海ASSEMBLY车间-090-C线",
+    "workshop_id": 90,
+    "capacity": 760,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 731,
+    "name": "苏州INSPECTION车间-091-D线",
+    "workshop_id": 91,
+    "capacity": 845,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 732,
+    "name": "宁波WAREHOUSE车间-092-A线",
+    "workshop_id": 92,
+    "capacity": 930,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 733,
+    "name": "武汉SURFACE车间-093-B线",
+    "workshop_id": 93,
+    "capacity": 1015,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 734,
+    "name": "成都TESTING车间-094-C线",
+    "workshop_id": 94,
+    "capacity": 1100,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 735,
+    "name": "合肥PACKAGING车间-095-D线",
+    "workshop_id": 95,
+    "capacity": 1185,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 736,
+    "name": "无锡MACHINING车间-096-A线",
+    "workshop_id": 96,
+    "capacity": 1270,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 737,
+    "name": "常州SMT车间-097-B线",
+    "workshop_id": 97,
+    "capacity": 1355,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 738,
+    "name": "杭州ASSEMBLY车间-098-C线",
+    "workshop_id": 98,
+    "capacity": 1440,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 739,
+    "name": "青岛INSPECTION车间-099-D线",
+    "workshop_id": 99,
+    "capacity": 1525,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 740,
+    "name": "上海WAREHOUSE车间-100-A线",
+    "workshop_id": 100,
+    "capacity": 1610,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 741,
+    "name": "苏州SURFACE车间-101-B线",
+    "workshop_id": 101,
+    "capacity": 1695,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 742,
+    "name": "宁波TESTING车间-102-C线",
+    "workshop_id": 102,
+    "capacity": 1780,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 743,
+    "name": "武汉PACKAGING车间-103-D线",
+    "workshop_id": 103,
+    "capacity": 1865,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 744,
+    "name": "成都MACHINING车间-104-A线",
+    "workshop_id": 104,
+    "capacity": 1950,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 745,
+    "name": "合肥SMT车间-105-B线",
+    "workshop_id": 105,
+    "capacity": 2035,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 746,
+    "name": "无锡ASSEMBLY车间-106-C线",
+    "workshop_id": 106,
+    "capacity": 2120,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 747,
+    "name": "常州INSPECTION车间-107-D线",
+    "workshop_id": 107,
+    "capacity": 2205,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 748,
+    "name": "杭州WAREHOUSE车间-108-A线",
+    "workshop_id": 108,
+    "capacity": 420,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 749,
+    "name": "青岛SURFACE车间-109-B线",
+    "workshop_id": 109,
+    "capacity": 505,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 750,
+    "name": "上海TESTING车间-110-C线",
+    "workshop_id": 110,
+    "capacity": 590,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 751,
+    "name": "苏州PACKAGING车间-111-D线",
+    "workshop_id": 111,
+    "capacity": 675,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 752,
+    "name": "宁波MACHINING车间-112-A线",
+    "workshop_id": 112,
+    "capacity": 760,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 753,
+    "name": "武汉SMT车间-113-B线",
+    "workshop_id": 113,
+    "capacity": 845,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 754,
+    "name": "成都ASSEMBLY车间-114-C线",
+    "workshop_id": 114,
+    "capacity": 930,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 755,
+    "name": "合肥INSPECTION车间-115-D线",
+    "workshop_id": 115,
+    "capacity": 1015,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 756,
+    "name": "无锡WAREHOUSE车间-116-A线",
+    "workshop_id": 116,
+    "capacity": 1100,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 757,
+    "name": "常州SURFACE车间-117-B线",
+    "workshop_id": 117,
+    "capacity": 1185,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 758,
+    "name": "杭州TESTING车间-118-C线",
+    "workshop_id": 118,
+    "capacity": 1270,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 759,
+    "name": "青岛PACKAGING车间-119-D线",
+    "workshop_id": 119,
+    "capacity": 1355,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 760,
+    "name": "上海MACHINING车间-120-A线",
+    "workshop_id": 120,
+    "capacity": 1440,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 761,
+    "name": "苏州SMT车间-121-B线",
+    "workshop_id": 121,
+    "capacity": 1525,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 762,
+    "name": "宁波ASSEMBLY车间-122-C线",
+    "workshop_id": 122,
+    "capacity": 1610,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 763,
+    "name": "武汉INSPECTION车间-123-D线",
+    "workshop_id": 123,
+    "capacity": 1695,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 764,
+    "name": "成都WAREHOUSE车间-124-A线",
+    "workshop_id": 124,
+    "capacity": 1780,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 765,
+    "name": "合肥SURFACE车间-125-B线",
+    "workshop_id": 125,
+    "capacity": 1865,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 766,
+    "name": "无锡TESTING车间-126-C线",
+    "workshop_id": 126,
+    "capacity": 1950,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 767,
+    "name": "常州PACKAGING车间-127-D线",
+    "workshop_id": 127,
+    "capacity": 2035,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 768,
+    "name": "杭州MACHINING车间-128-A线",
+    "workshop_id": 128,
+    "capacity": 2120,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 769,
+    "name": "青岛SMT车间-129-B线",
+    "workshop_id": 129,
+    "capacity": 2205,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 770,
+    "name": "上海ASSEMBLY车间-130-C线",
+    "workshop_id": 130,
+    "capacity": 420,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 771,
+    "name": "苏州INSPECTION车间-131-D线",
+    "workshop_id": 131,
+    "capacity": 505,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 772,
+    "name": "宁波WAREHOUSE车间-132-A线",
+    "workshop_id": 132,
+    "capacity": 590,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 773,
+    "name": "武汉SURFACE车间-133-B线",
+    "workshop_id": 133,
+    "capacity": 675,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 774,
+    "name": "成都TESTING车间-134-C线",
+    "workshop_id": 134,
+    "capacity": 760,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 775,
+    "name": "合肥PACKAGING车间-135-D线",
+    "workshop_id": 135,
+    "capacity": 845,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 776,
+    "name": "无锡MACHINING车间-136-A线",
+    "workshop_id": 136,
+    "capacity": 930,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 777,
+    "name": "常州SMT车间-137-B线",
+    "workshop_id": 137,
+    "capacity": 1015,
+    "oee_target": 0.85,
+    "status": "maintenance"
+  },
+  {
+    "id": 778,
+    "name": "杭州ASSEMBLY车间-138-C线",
+    "workshop_id": 138,
+    "capacity": 1100,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 779,
+    "name": "青岛INSPECTION车间-139-D线",
+    "workshop_id": 139,
+    "capacity": 1185,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 780,
+    "name": "上海WAREHOUSE车间-140-A线",
+    "workshop_id": 140,
+    "capacity": 1270,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 781,
+    "name": "苏州SURFACE车间-141-B线",
+    "workshop_id": 141,
+    "capacity": 1355,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 782,
+    "name": "宁波TESTING车间-142-C线",
+    "workshop_id": 142,
+    "capacity": 1440,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 783,
+    "name": "武汉PACKAGING车间-143-D线",
+    "workshop_id": 143,
+    "capacity": 1525,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 784,
+    "name": "成都MACHINING车间-144-A线",
+    "workshop_id": 144,
+    "capacity": 1610,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 785,
+    "name": "合肥SMT车间-145-B线",
+    "workshop_id": 145,
+    "capacity": 1695,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 786,
+    "name": "无锡ASSEMBLY车间-146-C线",
+    "workshop_id": 146,
+    "capacity": 1780,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 787,
+    "name": "常州INSPECTION车间-147-D线",
+    "workshop_id": 147,
+    "capacity": 1865,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 788,
+    "name": "杭州WAREHOUSE车间-148-A线",
+    "workshop_id": 148,
+    "capacity": 1950,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 789,
+    "name": "青岛SURFACE车间-149-B线",
+    "workshop_id": 149,
+    "capacity": 2035,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 790,
+    "name": "上海TESTING车间-150-C线",
+    "workshop_id": 150,
+    "capacity": 2120,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 791,
+    "name": "苏州PACKAGING车间-151-D线",
+    "workshop_id": 151,
+    "capacity": 2205,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 792,
+    "name": "宁波MACHINING车间-152-A线",
+    "workshop_id": 152,
+    "capacity": 420,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 793,
+    "name": "武汉SMT车间-153-B线",
+    "workshop_id": 153,
+    "capacity": 505,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 794,
+    "name": "成都ASSEMBLY车间-154-C线",
+    "workshop_id": 154,
+    "capacity": 590,
+    "oee_target": 0.84,
+    "status": "maintenance"
+  },
+  {
+    "id": 795,
+    "name": "合肥INSPECTION车间-155-D线",
+    "workshop_id": 155,
+    "capacity": 675,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 796,
+    "name": "无锡WAREHOUSE车间-156-A线",
+    "workshop_id": 156,
+    "capacity": 760,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 797,
+    "name": "常州SURFACE车间-157-B线",
+    "workshop_id": 157,
+    "capacity": 845,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 798,
+    "name": "杭州TESTING车间-158-C线",
+    "workshop_id": 158,
+    "capacity": 930,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 799,
+    "name": "青岛PACKAGING车间-159-D线",
+    "workshop_id": 159,
+    "capacity": 1015,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 800,
+    "name": "上海MACHINING车间-160-A线",
+    "workshop_id": 160,
+    "capacity": 1100,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 801,
+    "name": "苏州SMT车间-161-B线",
+    "workshop_id": 161,
+    "capacity": 1185,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 802,
+    "name": "宁波ASSEMBLY车间-162-C线",
+    "workshop_id": 162,
+    "capacity": 1270,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 803,
+    "name": "武汉INSPECTION车间-163-D线",
+    "workshop_id": 163,
+    "capacity": 1355,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 804,
+    "name": "成都WAREHOUSE车间-164-A线",
+    "workshop_id": 164,
+    "capacity": 1440,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 805,
+    "name": "合肥SURFACE车间-165-B线",
+    "workshop_id": 165,
+    "capacity": 1525,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 806,
+    "name": "无锡TESTING车间-166-C线",
+    "workshop_id": 166,
+    "capacity": 1610,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 807,
+    "name": "常州PACKAGING车间-167-D线",
+    "workshop_id": 167,
+    "capacity": 1695,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 808,
+    "name": "杭州MACHINING车间-168-A线",
+    "workshop_id": 168,
+    "capacity": 1780,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 809,
+    "name": "青岛SMT车间-169-B线",
+    "workshop_id": 169,
+    "capacity": 1865,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 810,
+    "name": "上海ASSEMBLY车间-170-C线",
+    "workshop_id": 170,
+    "capacity": 1950,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 811,
+    "name": "苏州INSPECTION车间-171-D线",
+    "workshop_id": 171,
+    "capacity": 2035,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 812,
+    "name": "宁波WAREHOUSE车间-172-A线",
+    "workshop_id": 172,
+    "capacity": 2120,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 813,
+    "name": "武汉SURFACE车间-173-B线",
+    "workshop_id": 173,
+    "capacity": 2205,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 814,
+    "name": "成都TESTING车间-174-C线",
+    "workshop_id": 174,
+    "capacity": 420,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 815,
+    "name": "合肥PACKAGING车间-175-D线",
+    "workshop_id": 175,
+    "capacity": 505,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 816,
+    "name": "无锡MACHINING车间-176-A线",
+    "workshop_id": 176,
+    "capacity": 590,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 817,
+    "name": "常州SMT车间-177-B线",
+    "workshop_id": 177,
+    "capacity": 675,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 818,
+    "name": "杭州ASSEMBLY车间-178-C线",
+    "workshop_id": 178,
+    "capacity": 760,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 819,
+    "name": "青岛INSPECTION车间-179-D线",
+    "workshop_id": 179,
+    "capacity": 845,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 820,
+    "name": "上海WAREHOUSE车间-180-A线",
+    "workshop_id": 180,
+    "capacity": 930,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 821,
+    "name": "苏州SURFACE车间-181-B线",
+    "workshop_id": 181,
+    "capacity": 1015,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 822,
+    "name": "宁波TESTING车间-182-C线",
+    "workshop_id": 182,
+    "capacity": 1100,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 823,
+    "name": "武汉PACKAGING车间-183-D线",
+    "workshop_id": 183,
+    "capacity": 1185,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 824,
+    "name": "成都MACHINING车间-184-A线",
+    "workshop_id": 184,
+    "capacity": 1270,
+    "oee_target": 0.87,
+    "status": "maintenance"
+  },
+  {
+    "id": 825,
+    "name": "合肥SMT车间-185-B线",
+    "workshop_id": 185,
+    "capacity": 1355,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 826,
+    "name": "无锡ASSEMBLY车间-186-C线",
+    "workshop_id": 186,
+    "capacity": 1440,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 827,
+    "name": "常州INSPECTION车间-187-D线",
+    "workshop_id": 187,
+    "capacity": 1525,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 828,
+    "name": "杭州WAREHOUSE车间-188-A线",
+    "workshop_id": 188,
+    "capacity": 1610,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 829,
+    "name": "青岛SURFACE车间-189-B线",
+    "workshop_id": 189,
+    "capacity": 1695,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 830,
+    "name": "上海TESTING车间-190-C线",
+    "workshop_id": 190,
+    "capacity": 1780,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 831,
+    "name": "苏州PACKAGING车间-191-D线",
+    "workshop_id": 191,
+    "capacity": 1865,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 832,
+    "name": "宁波MACHINING车间-192-A线",
+    "workshop_id": 192,
+    "capacity": 1950,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 833,
+    "name": "武汉SMT车间-193-B线",
+    "workshop_id": 193,
+    "capacity": 2035,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 834,
+    "name": "成都ASSEMBLY车间-194-C线",
+    "workshop_id": 194,
+    "capacity": 2120,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 835,
+    "name": "合肥INSPECTION车间-195-D线",
+    "workshop_id": 195,
+    "capacity": 2205,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 836,
+    "name": "无锡WAREHOUSE车间-196-A线",
+    "workshop_id": 196,
+    "capacity": 420,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 837,
+    "name": "常州SURFACE车间-197-B线",
+    "workshop_id": 197,
+    "capacity": 505,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 838,
+    "name": "杭州TESTING车间-198-C线",
+    "workshop_id": 198,
+    "capacity": 590,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 839,
+    "name": "青岛PACKAGING车间-199-D线",
+    "workshop_id": 199,
+    "capacity": 675,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 840,
+    "name": "上海MACHINING车间-200-A线",
+    "workshop_id": 200,
+    "capacity": 760,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 841,
+    "name": "苏州SMT车间-201-B线",
+    "workshop_id": 201,
+    "capacity": 845,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 842,
+    "name": "宁波ASSEMBLY车间-202-C线",
+    "workshop_id": 202,
+    "capacity": 930,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 843,
+    "name": "武汉INSPECTION车间-203-D线",
+    "workshop_id": 203,
+    "capacity": 1015,
+    "oee_target": 0.88,
+    "status": "idle"
+  },
+  {
+    "id": 844,
+    "name": "成都WAREHOUSE车间-204-A线",
+    "workshop_id": 204,
+    "capacity": 1100,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 845,
+    "name": "合肥SURFACE车间-205-B线",
+    "workshop_id": 205,
+    "capacity": 1185,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 846,
+    "name": "无锡TESTING车间-206-C线",
+    "workshop_id": 206,
+    "capacity": 1270,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 847,
+    "name": "常州PACKAGING车间-207-D线",
+    "workshop_id": 207,
+    "capacity": 1355,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 848,
+    "name": "杭州MACHINING车间-208-A线",
+    "workshop_id": 208,
+    "capacity": 1440,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 849,
+    "name": "青岛SMT车间-209-B线",
+    "workshop_id": 209,
+    "capacity": 1525,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 850,
+    "name": "上海ASSEMBLY车间-210-C线",
+    "workshop_id": 210,
+    "capacity": 1610,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 851,
+    "name": "苏州INSPECTION车间-211-D线",
+    "workshop_id": 211,
+    "capacity": 1695,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 852,
+    "name": "宁波WAREHOUSE车间-212-A线",
+    "workshop_id": 212,
+    "capacity": 1780,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 853,
+    "name": "武汉SURFACE车间-213-B线",
+    "workshop_id": 213,
+    "capacity": 1865,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 854,
+    "name": "成都TESTING车间-214-C线",
+    "workshop_id": 214,
+    "capacity": 1950,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 855,
+    "name": "合肥PACKAGING车间-215-D线",
+    "workshop_id": 215,
+    "capacity": 2035,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 856,
+    "name": "无锡MACHINING车间-216-A线",
+    "workshop_id": 216,
+    "capacity": 2120,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 857,
+    "name": "常州SMT车间-217-B线",
+    "workshop_id": 217,
+    "capacity": 2205,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 858,
+    "name": "杭州ASSEMBLY车间-218-C线",
+    "workshop_id": 218,
+    "capacity": 420,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 859,
+    "name": "青岛INSPECTION车间-219-D线",
+    "workshop_id": 219,
+    "capacity": 505,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 860,
+    "name": "上海WAREHOUSE车间-220-A线",
+    "workshop_id": 220,
+    "capacity": 590,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 861,
+    "name": "苏州SURFACE车间-221-B线",
+    "workshop_id": 221,
+    "capacity": 675,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 862,
+    "name": "宁波TESTING车间-222-C线",
+    "workshop_id": 222,
+    "capacity": 760,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 863,
+    "name": "武汉PACKAGING车间-223-D线",
+    "workshop_id": 223,
+    "capacity": 845,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 864,
+    "name": "成都MACHINING车间-224-A线",
+    "workshop_id": 224,
+    "capacity": 930,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 865,
+    "name": "合肥SMT车间-225-B线",
+    "workshop_id": 225,
+    "capacity": 1015,
+    "oee_target": 0.83,
+    "status": "maintenance"
+  },
+  {
+    "id": 866,
+    "name": "无锡ASSEMBLY车间-226-C线",
+    "workshop_id": 226,
+    "capacity": 1100,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 867,
+    "name": "常州INSPECTION车间-227-D线",
+    "workshop_id": 227,
+    "capacity": 1185,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 868,
+    "name": "杭州WAREHOUSE车间-228-A线",
+    "workshop_id": 228,
+    "capacity": 1270,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 869,
+    "name": "青岛SURFACE车间-229-B线",
+    "workshop_id": 229,
+    "capacity": 1355,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 870,
+    "name": "上海TESTING车间-230-C线",
+    "workshop_id": 230,
+    "capacity": 1440,
+    "oee_target": 0.88,
+    "status": "maintenance"
+  },
+  {
+    "id": 871,
+    "name": "苏州PACKAGING车间-231-D线",
+    "workshop_id": 231,
+    "capacity": 1525,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 872,
+    "name": "宁波MACHINING车间-232-A线",
+    "workshop_id": 232,
+    "capacity": 1610,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 873,
+    "name": "武汉SMT车间-233-B线",
+    "workshop_id": 233,
+    "capacity": 1695,
+    "oee_target": 0.82,
+    "status": "maintenance"
+  },
+  {
+    "id": 874,
+    "name": "成都ASSEMBLY车间-234-C线",
+    "workshop_id": 234,
+    "capacity": 1780,
+    "oee_target": 0.83,
+    "status": "idle"
+  },
+  {
+    "id": 875,
+    "name": "合肥INSPECTION车间-235-D线",
+    "workshop_id": 235,
+    "capacity": 1865,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 876,
+    "name": "无锡WAREHOUSE车间-236-A线",
+    "workshop_id": 236,
+    "capacity": 1950,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 877,
+    "name": "常州SURFACE车间-237-B线",
+    "workshop_id": 237,
+    "capacity": 2035,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 878,
+    "name": "杭州TESTING车间-238-C线",
+    "workshop_id": 238,
+    "capacity": 2120,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 879,
+    "name": "青岛PACKAGING车间-239-D线",
+    "workshop_id": 239,
+    "capacity": 2205,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 880,
+    "name": "上海MACHINING车间-240-A线",
+    "workshop_id": 240,
+    "capacity": 420,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 881,
+    "name": "苏州SMT车间-241-B线",
+    "workshop_id": 241,
+    "capacity": 505,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 882,
+    "name": "宁波ASSEMBLY车间-242-C线",
+    "workshop_id": 242,
+    "capacity": 590,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 883,
+    "name": "武汉INSPECTION车间-243-D线",
+    "workshop_id": 243,
+    "capacity": 675,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 884,
+    "name": "成都WAREHOUSE车间-244-A线",
+    "workshop_id": 244,
+    "capacity": 760,
+    "oee_target": 0.84,
+    "status": "idle"
+  },
+  {
+    "id": 885,
+    "name": "合肥SURFACE车间-245-B线",
+    "workshop_id": 245,
+    "capacity": 845,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 886,
+    "name": "无锡TESTING车间-246-C线",
+    "workshop_id": 246,
+    "capacity": 930,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 887,
+    "name": "常州PACKAGING车间-247-D线",
+    "workshop_id": 247,
+    "capacity": 1015,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 888,
+    "name": "杭州MACHINING车间-248-A线",
+    "workshop_id": 248,
+    "capacity": 1100,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 889,
+    "name": "青岛SMT车间-249-B线",
+    "workshop_id": 249,
+    "capacity": 1185,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 890,
+    "name": "上海ASSEMBLY车间-250-C线",
+    "workshop_id": 250,
+    "capacity": 1270,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 891,
+    "name": "苏州INSPECTION车间-251-D线",
+    "workshop_id": 251,
+    "capacity": 1355,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 892,
+    "name": "宁波WAREHOUSE车间-252-A线",
+    "workshop_id": 252,
+    "capacity": 1440,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 893,
+    "name": "武汉SURFACE车间-253-B线",
+    "workshop_id": 253,
+    "capacity": 1525,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 894,
+    "name": "成都TESTING车间-254-C线",
+    "workshop_id": 254,
+    "capacity": 1610,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 895,
+    "name": "合肥PACKAGING车间-255-D线",
+    "workshop_id": 255,
+    "capacity": 1695,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 896,
+    "name": "无锡MACHINING车间-256-A线",
+    "workshop_id": 256,
+    "capacity": 1780,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 897,
+    "name": "常州SMT车间-257-B线",
+    "workshop_id": 257,
+    "capacity": 1865,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 898,
+    "name": "杭州ASSEMBLY车间-258-C线",
+    "workshop_id": 258,
+    "capacity": 1950,
+    "oee_target": 0.89,
+    "status": "maintenance"
+  },
+  {
+    "id": 899,
+    "name": "青岛INSPECTION车间-259-D线",
+    "workshop_id": 259,
+    "capacity": 2035,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 900,
+    "name": "上海WAREHOUSE车间-260-A线",
+    "workshop_id": 260,
+    "capacity": 2120,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 901,
+    "name": "苏州SURFACE车间-261-B线",
+    "workshop_id": 261,
+    "capacity": 2205,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 902,
+    "name": "宁波TESTING车间-262-C线",
+    "workshop_id": 262,
+    "capacity": 420,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 903,
+    "name": "武汉PACKAGING车间-263-D线",
+    "workshop_id": 263,
+    "capacity": 505,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 904,
+    "name": "成都MACHINING车间-264-A线",
+    "workshop_id": 264,
+    "capacity": 590,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 905,
+    "name": "合肥SMT车间-265-B线",
+    "workshop_id": 265,
+    "capacity": 675,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 906,
+    "name": "无锡ASSEMBLY车间-266-C线",
+    "workshop_id": 266,
+    "capacity": 760,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 907,
+    "name": "常州INSPECTION车间-267-D线",
+    "workshop_id": 267,
+    "capacity": 845,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 908,
+    "name": "杭州WAREHOUSE车间-268-A线",
+    "workshop_id": 268,
+    "capacity": 930,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 909,
+    "name": "青岛SURFACE车间-269-B线",
+    "workshop_id": 269,
+    "capacity": 1015,
+    "oee_target": 0.82,
+    "status": "idle"
+  },
+  {
+    "id": 910,
+    "name": "上海TESTING车间-270-C线",
+    "workshop_id": 270,
+    "capacity": 1100,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 911,
+    "name": "苏州PACKAGING车间-271-D线",
+    "workshop_id": 271,
+    "capacity": 1185,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 912,
+    "name": "宁波MACHINING车间-272-A线",
+    "workshop_id": 272,
+    "capacity": 1270,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 913,
+    "name": "武汉SMT车间-273-B线",
+    "workshop_id": 273,
+    "capacity": 1355,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 914,
+    "name": "成都ASSEMBLY车间-274-C线",
+    "workshop_id": 274,
+    "capacity": 1440,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 915,
+    "name": "合肥INSPECTION车间-275-D线",
+    "workshop_id": 275,
+    "capacity": 1525,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 916,
+    "name": "无锡WAREHOUSE车间-276-A线",
+    "workshop_id": 276,
+    "capacity": 1610,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 917,
+    "name": "常州SURFACE车间-277-B线",
+    "workshop_id": 277,
+    "capacity": 1695,
+    "oee_target": 0.9,
+    "status": "idle"
+  },
+  {
+    "id": 918,
+    "name": "杭州TESTING车间-278-C线",
+    "workshop_id": 278,
+    "capacity": 1780,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 919,
+    "name": "青岛PACKAGING车间-279-D线",
+    "workshop_id": 279,
+    "capacity": 1865,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 920,
+    "name": "上海MACHINING车间-280-A线",
+    "workshop_id": 280,
+    "capacity": 1950,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 921,
+    "name": "苏州SMT车间-281-B线",
+    "workshop_id": 281,
+    "capacity": 2035,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 922,
+    "name": "宁波ASSEMBLY车间-282-C线",
+    "workshop_id": 282,
+    "capacity": 2120,
+    "oee_target": 0.86,
+    "status": "maintenance"
+  },
+  {
+    "id": 923,
+    "name": "武汉INSPECTION车间-283-D线",
+    "workshop_id": 283,
+    "capacity": 2205,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 924,
+    "name": "成都WAREHOUSE车间-284-A线",
+    "workshop_id": 284,
+    "capacity": 420,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 925,
+    "name": "合肥SURFACE车间-285-B线",
+    "workshop_id": 285,
+    "capacity": 505,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 926,
+    "name": "无锡TESTING车间-286-C线",
+    "workshop_id": 286,
+    "capacity": 590,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 927,
+    "name": "常州PACKAGING车间-287-D线",
+    "workshop_id": 287,
+    "capacity": 675,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 928,
+    "name": "杭州MACHINING车间-288-A线",
+    "workshop_id": 288,
+    "capacity": 760,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 929,
+    "name": "青岛SMT车间-289-B线",
+    "workshop_id": 289,
+    "capacity": 845,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 930,
+    "name": "上海ASSEMBLY车间-290-C线",
+    "workshop_id": 290,
+    "capacity": 930,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 931,
+    "name": "苏州INSPECTION车间-291-D线",
+    "workshop_id": 291,
+    "capacity": 1015,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 932,
+    "name": "宁波WAREHOUSE车间-292-A线",
+    "workshop_id": 292,
+    "capacity": 1100,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 933,
+    "name": "武汉SURFACE车间-293-B线",
+    "workshop_id": 293,
+    "capacity": 1185,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 934,
+    "name": "成都TESTING车间-294-C线",
+    "workshop_id": 294,
+    "capacity": 1270,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 935,
+    "name": "合肥PACKAGING车间-295-D线",
+    "workshop_id": 295,
+    "capacity": 1355,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 936,
+    "name": "无锡MACHINING车间-296-A线",
+    "workshop_id": 296,
+    "capacity": 1440,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 937,
+    "name": "常州SMT车间-297-B线",
+    "workshop_id": 297,
+    "capacity": 1525,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 938,
+    "name": "杭州ASSEMBLY车间-298-C线",
+    "workshop_id": 298,
+    "capacity": 1610,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 939,
+    "name": "青岛INSPECTION车间-299-D线",
+    "workshop_id": 299,
+    "capacity": 1695,
+    "oee_target": 0.85,
+    "status": "running"
+  },
+  {
+    "id": 940,
+    "name": "上海WAREHOUSE车间-300-A线",
+    "workshop_id": 300,
+    "capacity": 1780,
+    "oee_target": 0.86,
+    "status": "idle"
+  },
+  {
+    "id": 941,
+    "name": "苏州SURFACE车间-301-B线",
+    "workshop_id": 301,
+    "capacity": 1865,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 942,
+    "name": "宁波TESTING车间-302-C线",
+    "workshop_id": 302,
+    "capacity": 1950,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 943,
+    "name": "武汉PACKAGING车间-303-D线",
+    "workshop_id": 303,
+    "capacity": 2035,
+    "oee_target": 0.89,
+    "status": "running"
+  },
+  {
+    "id": 944,
+    "name": "成都MACHINING车间-304-A线",
+    "workshop_id": 304,
+    "capacity": 2120,
+    "oee_target": 0.9,
+    "status": "running"
+  },
+  {
+    "id": 945,
+    "name": "合肥SMT车间-305-B线",
+    "workshop_id": 305,
+    "capacity": 2205,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 946,
+    "name": "无锡ASSEMBLY车间-306-C线",
+    "workshop_id": 306,
+    "capacity": 420,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 947,
+    "name": "常州INSPECTION车间-307-D线",
+    "workshop_id": 307,
+    "capacity": 505,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 948,
+    "name": "杭州WAREHOUSE车间-308-A线",
+    "workshop_id": 308,
+    "capacity": 590,
+    "oee_target": 0.85,
+    "status": "maintenance"
+  },
+  {
+    "id": 949,
+    "name": "青岛SURFACE车间-309-B线",
+    "workshop_id": 309,
+    "capacity": 675,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 950,
+    "name": "上海TESTING车间-310-C线",
+    "workshop_id": 310,
+    "capacity": 760,
+    "oee_target": 0.87,
+    "status": "idle"
+  },
+  {
+    "id": 951,
+    "name": "苏州PACKAGING车间-311-D线",
+    "workshop_id": 311,
+    "capacity": 845,
+    "oee_target": 0.88,
+    "status": "running"
+  },
+  {
+    "id": 952,
+    "name": "宁波MACHINING车间-312-A线",
+    "workshop_id": 312,
+    "capacity": 930,
+    "oee_target": 0.89,
+    "status": "idle"
+  },
+  {
+    "id": 953,
+    "name": "武汉SMT车间-313-B线",
+    "workshop_id": 313,
+    "capacity": 1015,
+    "oee_target": 0.9,
+    "status": "maintenance"
+  },
+  {
+    "id": 954,
+    "name": "成都ASSEMBLY车间-314-C线",
+    "workshop_id": 314,
+    "capacity": 1100,
+    "oee_target": 0.82,
+    "status": "running"
+  },
+  {
+    "id": 955,
+    "name": "合肥INSPECTION车间-315-D线",
+    "workshop_id": 315,
+    "capacity": 1185,
+    "oee_target": 0.83,
+    "status": "running"
+  },
+  {
+    "id": 956,
+    "name": "无锡WAREHOUSE车间-316-A线",
+    "workshop_id": 316,
+    "capacity": 1270,
+    "oee_target": 0.84,
+    "status": "running"
+  },
+  {
+    "id": 957,
+    "name": "常州SURFACE车间-317-B线",
+    "workshop_id": 317,
+    "capacity": 1355,
+    "oee_target": 0.85,
+    "status": "idle"
+  },
+  {
+    "id": 958,
+    "name": "杭州TESTING车间-318-C线",
+    "workshop_id": 318,
+    "capacity": 1440,
+    "oee_target": 0.86,
+    "status": "running"
+  },
+  {
+    "id": 959,
+    "name": "青岛PACKAGING车间-319-D线",
+    "workshop_id": 319,
+    "capacity": 1525,
+    "oee_target": 0.87,
+    "status": "running"
+  },
+  {
+    "id": 960,
+    "name": "上海MACHINING车间-320-A线",
+    "workshop_id": 320,
+    "capacity": 1610,
+    "oee_target": 0.88,
+    "status": "idle"
   }
 ]

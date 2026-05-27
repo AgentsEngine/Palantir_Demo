@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "manufoundry123"
     POSTGRES_DB: str = "manufoundry"
     DATABASE_BACKEND: str = "auto"  # auto | postgresql | sqlite
+    SQLITE_DB_PATH: str = ""
 
     NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
@@ -56,6 +57,36 @@ class Settings(BaseSettings):
     AI_TIMEOUT_SECONDS: int = 30
     KNOWLEDGE_STORAGE_DIR: str = "storage/knowledge_assets"
 
+    # Identity access center
+    PASSWORD_MIN_LENGTH: int = 10
+    PASSWORD_REQUIRE_COMPLEXITY: bool = True
+    PASSWORD_HISTORY_COUNT: int = 3
+    LOGIN_LOCK_THRESHOLD: int = 5
+    LOGIN_LOCK_MINUTES: int = 15
+    OIDC_ENABLED: bool = False
+    OIDC_ISSUER: str = ""
+    OIDC_AUTHORIZATION_ENDPOINT: str = ""
+    OIDC_TOKEN_ENDPOINT: str = ""
+    OIDC_USERINFO_ENDPOINT: str = ""
+    OIDC_CLIENT_ID: str = ""
+    OIDC_CLIENT_SECRET: str = ""
+    OIDC_REDIRECT_URI: str = ""
+    OIDC_SCOPES: str = "openid profile email"
+    OIDC_USERNAME_CLAIM: str = "preferred_username"
+    OIDC_EMAIL_CLAIM: str = "email"
+    OIDC_DISPLAY_NAME_CLAIM: str = "name"
+    OIDC_SUBJECT_CLAIM: str = "sub"
+    OIDC_REQUIRE_PLATFORM_MFA: bool = False
+
+    # Tenant onboarding and transactional email
+    APP_PUBLIC_URL: str = "http://localhost:5173"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "no-reply@manufoundry.local"
+    SMTP_TLS: bool = True
+
     @property
     def IS_PRODUCTION(self) -> bool:
         return self.APP_MODE.lower() == "production"
@@ -77,6 +108,10 @@ class Settings(BaseSettings):
         }
         if self.SECRET_KEY in unsafe_secrets or len(self.SECRET_KEY) < 32:
             raise ValueError("SECRET_KEY must be a strong non-default value when APP_MODE=production")
+        if "*" in self.CORS_ORIGINS:
+            raise ValueError("CORS_ORIGINS must be explicit when APP_MODE=production")
+        if not self.SMTP_HOST:
+            raise ValueError("SMTP_HOST must be configured when APP_MODE=production")
 
     @property
     def DATABASE_URL(self) -> str:

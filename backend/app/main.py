@@ -99,6 +99,7 @@ from app.api import (  # noqa: E402
     notifications,
     ontology,
     pipeline,
+    platform,
     productization,
     quality,
     release,
@@ -118,6 +119,7 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["认证"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["系统管理"])
 app.include_router(workflow.router, prefix="/api/v1/workflow", tags=["工作流"])
 
+app.include_router(platform.router, prefix="/api/v1/platform", tags=["platform"])
 app.include_router(applications.router, prefix="/api/v1/applications", tags=["applications"])
 app.include_router(applications.admin_router, prefix="/api/v1/admin", tags=["applications-admin"])
 app.include_router(forms.router, prefix="/api/v1/forms", tags=["forms"])

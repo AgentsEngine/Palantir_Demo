@@ -1,1 +1,8102 @@
-[{"id": 1, "inspection_id": 52, "defect_type": "表面划伤", "severity": "major", "description": "密封泄漏，major级别", "root_cause": "原材料问题", "correction": "让步接收"}, {"id": 2, "inspection_id": 56, "defect_type": "电气短路", "severity": "major", "description": "装配松动，major级别", "root_cause": "操作不当", "correction": "返修"}, {"id": 3, "inspection_id": 3, "defect_type": "电气短路", "severity": "critical", "description": "密封泄漏，critical级别", "root_cause": "操作不当", "correction": "报废"}, {"id": 4, "inspection_id": 23, "defect_type": "尺寸超差", "severity": "major", "description": "焊接气孔，major级别", "root_cause": "环境因素", "correction": "报废"}, {"id": 5, "inspection_id": 61, "defect_type": "尺寸超差", "severity": "minor", "description": "尺寸超差，minor级别", "root_cause": "环境因素", "correction": "报废"}, {"id": 6, "inspection_id": 85, "defect_type": "电气短路", "severity": "critical", "description": "密封泄漏，critical级别", "root_cause": "环境因素", "correction": "返修"}, {"id": 7, "inspection_id": 54, "defect_type": "焊接气孔", "severity": "major", "description": "焊接气孔，major级别", "root_cause": "环境因素", "correction": "报废"}, {"id": 8, "inspection_id": 86, "defect_type": "焊接气孔", "severity": "major", "description": "密封泄漏，major级别", "root_cause": "操作不当", "correction": "报废"}, {"id": 9, "inspection_id": 27, "defect_type": "电气短路", "severity": "minor", "description": "颜色偏差，minor级别", "root_cause": "原材料问题", "correction": "让步接收"}, {"id": 10, "inspection_id": 4, "defect_type": "尺寸超差", "severity": "major", "description": "密封泄漏，major级别", "root_cause": "操作不当", "correction": "返修"}, {"id": 11, "inspection_id": 19, "defect_type": "颜色偏差", "severity": "minor", "description": "尺寸超差，minor级别", "root_cause": "环境因素", "correction": "返修"}, {"id": 12, "inspection_id": 93, "defect_type": "焊接气孔", "severity": "major", "description": "焊接气孔，major级别", "root_cause": "操作不当", "correction": "返工"}, {"id": 13, "inspection_id": 29, "defect_type": "表面划伤", "severity": "minor", "description": "颜色偏差，minor级别", "root_cause": "操作不当", "correction": "返工"}, {"id": 14, "inspection_id": 60, "defect_type": "颜色偏差", "severity": "critical", "description": "标识错误，critical级别", "root_cause": "设备精度不足", "correction": "停线整改"}, {"id": 15, "inspection_id": 1, "defect_type": "电气短路", "severity": "major", "description": "标识错误，major级别", "root_cause": "工艺参数偏差", "correction": "让步接收"}, {"id": 16, "inspection_id": 85, "defect_type": "密封泄漏", "severity": "minor", "description": "表面划伤，minor级别", "root_cause": "工艺参数偏差", "correction": "返修"}, {"id": 17, "inspection_id": 74, "defect_type": "装配松动", "severity": "major", "description": "焊接气孔，major级别", "root_cause": "设备精度不足", "correction": "停线整改"}, {"id": 18, "inspection_id": 19, "defect_type": "装配松动", "severity": "minor", "description": "表面划伤，minor级别", "root_cause": "操作不当", "correction": "返修"}, {"id": 19, "inspection_id": 79, "defect_type": "表面划伤", "severity": "minor", "description": "装配松动，minor级别", "root_cause": "设备精度不足", "correction": "让步接收"}, {"id": 20, "inspection_id": 85, "defect_type": "电气短路", "severity": "minor", "description": "密封泄漏，minor级别", "root_cause": "工艺参数偏差", "correction": "停线整改"}, {"id": 21, "inspection_id": 74, "defect_type": "电气短路", "severity": "major", "description": "焊接气孔，major级别", "root_cause": "原材料问题", "correction": "返修"}, {"id": 22, "inspection_id": 19, "defect_type": "尺寸超差", "severity": "minor", "description": "颜色偏差，minor级别", "root_cause": "操作不当", "correction": "报废"}, {"id": 23, "inspection_id": 2, "defect_type": "焊接气孔", "severity": "critical", "description": "尺寸超差，critical级别", "root_cause": "设备精度不足", "correction": "报废"}, {"id": 24, "inspection_id": 2, "defect_type": "标识错误", "severity": "minor", "description": "标识错误，minor级别", "root_cause": "原材料问题", "correction": "报废"}, {"id": 25, "inspection_id": 74, "defect_type": "颜色偏差", "severity": "major", "description": "标识错误，major级别", "root_cause": "设备精度不足", "correction": "返修"}, {"id": 26, "inspection_id": 70, "defect_type": "标识错误", "severity": "major", "description": "表面划伤，major级别", "root_cause": "原材料问题", "correction": "停线整改"}, {"id": 27, "inspection_id": 44, "defect_type": "焊接气孔", "severity": "critical", "description": "电气短路，critical级别", "root_cause": "原材料问题", "correction": "返修"}, {"id": 28, "inspection_id": 59, "defect_type": "表面划伤", "severity": "major", "description": "密封泄漏，major级别", "root_cause": "环境因素", "correction": "让步接收"}, {"id": 29, "inspection_id": 47, "defect_type": "颜色偏差", "severity": "minor", "description": "尺寸超差，minor级别", "root_cause": "环境因素", "correction": "报废"}, {"id": 30, "inspection_id": 59, "defect_type": "表面划伤", "severity": "minor", "description": "表面划伤，minor级别", "root_cause": "环境因素", "correction": "让步接收"}]
+[
+  {
+    "id": 1,
+    "inspection_id": 1666,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260501",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 2,
+    "inspection_id": 931,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260502",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 3,
+    "inspection_id": 1242,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 4,
+    "inspection_id": 1351,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260504",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 5,
+    "inspection_id": 968,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 6,
+    "inspection_id": 2001,
+    "defect_type": "颜色偏差",
+    "severity": "critical",
+    "description": "颜色偏差，等级 critical，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 7,
+    "inspection_id": 1390,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260507",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 8,
+    "inspection_id": 576,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260508",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 9,
+    "inspection_id": 1973,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260509",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 10,
+    "inspection_id": 1434,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260510",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 11,
+    "inspection_id": 1709,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260511",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 12,
+    "inspection_id": 2032,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260512",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 13,
+    "inspection_id": 1955,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 14,
+    "inspection_id": 767,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 15,
+    "inspection_id": 1161,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 16,
+    "inspection_id": 123,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260516",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 17,
+    "inspection_id": 995,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260517",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 18,
+    "inspection_id": 829,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260518",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 19,
+    "inspection_id": 378,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260519",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 20,
+    "inspection_id": 1614,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 21,
+    "inspection_id": 1606,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 22,
+    "inspection_id": 1089,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260522",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 23,
+    "inspection_id": 2149,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260523",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 24,
+    "inspection_id": 1785,
+    "defect_type": "电气短路",
+    "severity": "critical",
+    "description": "电气短路，等级 critical，来源批次 Q-20260524",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 25,
+    "inspection_id": 731,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260525",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 26,
+    "inspection_id": 1568,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 27,
+    "inspection_id": 928,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260500",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 28,
+    "inspection_id": 1991,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260501",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 29,
+    "inspection_id": 1363,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260502",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 30,
+    "inspection_id": 1537,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 31,
+    "inspection_id": 1608,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260504",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 32,
+    "inspection_id": 429,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260505",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 33,
+    "inspection_id": 45,
+    "defect_type": "装配松动",
+    "severity": "critical",
+    "description": "装配松动，等级 critical，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 34,
+    "inspection_id": 49,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260507",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 35,
+    "inspection_id": 1170,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260508",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 36,
+    "inspection_id": 1251,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260509",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 37,
+    "inspection_id": 383,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 38,
+    "inspection_id": 964,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260511",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 39,
+    "inspection_id": 116,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260512",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 40,
+    "inspection_id": 927,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260513",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 41,
+    "inspection_id": 1207,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260514",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 42,
+    "inspection_id": 539,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 43,
+    "inspection_id": 1959,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260516",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 44,
+    "inspection_id": 1333,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260517",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 45,
+    "inspection_id": 104,
+    "defect_type": "密封泄漏",
+    "severity": "critical",
+    "description": "密封泄漏，等级 critical，来源批次 Q-20260518",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 46,
+    "inspection_id": 698,
+    "defect_type": "颜色偏差",
+    "severity": "critical",
+    "description": "颜色偏差，等级 critical，来源批次 Q-20260519",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 47,
+    "inspection_id": 45,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 48,
+    "inspection_id": 1251,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260521",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 49,
+    "inspection_id": 964,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260522",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 50,
+    "inspection_id": 1535,
+    "defect_type": "尺寸超差",
+    "severity": "critical",
+    "description": "尺寸超差，等级 critical，来源批次 Q-20260523",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 51,
+    "inspection_id": 1186,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260524",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 52,
+    "inspection_id": 710,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260525",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 53,
+    "inspection_id": 115,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 54,
+    "inspection_id": 314,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260500",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 55,
+    "inspection_id": 1343,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260501",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 56,
+    "inspection_id": 1337,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260502",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 57,
+    "inspection_id": 1351,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260503",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 58,
+    "inspection_id": 1482,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260504",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 59,
+    "inspection_id": 1798,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260505",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 60,
+    "inspection_id": 689,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 61,
+    "inspection_id": 1314,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260507",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 62,
+    "inspection_id": 762,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 63,
+    "inspection_id": 980,
+    "defect_type": "装配松动",
+    "severity": "critical",
+    "description": "装配松动，等级 critical，来源批次 Q-20260509",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 64,
+    "inspection_id": 564,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260510",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 65,
+    "inspection_id": 894,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 66,
+    "inspection_id": 520,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260512",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 67,
+    "inspection_id": 120,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260513",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 68,
+    "inspection_id": 136,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260514",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 69,
+    "inspection_id": 324,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260515",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 70,
+    "inspection_id": 1014,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260516",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 71,
+    "inspection_id": 1497,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260517",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 72,
+    "inspection_id": 653,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260518",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 73,
+    "inspection_id": 1092,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260519",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 74,
+    "inspection_id": 980,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260520",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 75,
+    "inspection_id": 84,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260521",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 76,
+    "inspection_id": 1922,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260522",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 77,
+    "inspection_id": 1427,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260523",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 78,
+    "inspection_id": 2010,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260524",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 79,
+    "inspection_id": 1061,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260525",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 80,
+    "inspection_id": 731,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260526",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 81,
+    "inspection_id": 724,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260500",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 82,
+    "inspection_id": 835,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260501",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 83,
+    "inspection_id": 1594,
+    "defect_type": "装配松动",
+    "severity": "critical",
+    "description": "装配松动，等级 critical，来源批次 Q-20260502",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 84,
+    "inspection_id": 1563,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260503",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 85,
+    "inspection_id": 703,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260504",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 86,
+    "inspection_id": 1758,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260505",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 87,
+    "inspection_id": 20,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 88,
+    "inspection_id": 1681,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260507",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 89,
+    "inspection_id": 164,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260508",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 90,
+    "inspection_id": 1451,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260509",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 91,
+    "inspection_id": 115,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 92,
+    "inspection_id": 1777,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260511",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 93,
+    "inspection_id": 49,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260512",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 94,
+    "inspection_id": 1194,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260513",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 95,
+    "inspection_id": 21,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 96,
+    "inspection_id": 759,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 97,
+    "inspection_id": 1568,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 98,
+    "inspection_id": 1047,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260517",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 99,
+    "inspection_id": 22,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260518",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 100,
+    "inspection_id": 1958,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260519",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 101,
+    "inspection_id": 942,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260520",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 102,
+    "inspection_id": 2174,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 103,
+    "inspection_id": 118,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260522",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 104,
+    "inspection_id": 1413,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260523",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 105,
+    "inspection_id": 123,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 106,
+    "inspection_id": 424,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260525",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 107,
+    "inspection_id": 827,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260526",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 108,
+    "inspection_id": 1458,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260500",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 109,
+    "inspection_id": 1589,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260501",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 110,
+    "inspection_id": 118,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260502",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 111,
+    "inspection_id": 1804,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 112,
+    "inspection_id": 544,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260504",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 113,
+    "inspection_id": 574,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 114,
+    "inspection_id": 924,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 115,
+    "inspection_id": 705,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260507",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 116,
+    "inspection_id": 10,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 117,
+    "inspection_id": 1045,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260509",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 118,
+    "inspection_id": 964,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260510",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 119,
+    "inspection_id": 1785,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260511",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 120,
+    "inspection_id": 834,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260512",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 121,
+    "inspection_id": 1991,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260513",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 122,
+    "inspection_id": 2010,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260514",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 123,
+    "inspection_id": 1506,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 124,
+    "inspection_id": 1008,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260516",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 125,
+    "inspection_id": 1872,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260517",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 126,
+    "inspection_id": 1938,
+    "defect_type": "颜色偏差",
+    "severity": "critical",
+    "description": "颜色偏差，等级 critical，来源批次 Q-20260518",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 127,
+    "inspection_id": 1907,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260519",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 128,
+    "inspection_id": 164,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260520",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 129,
+    "inspection_id": 455,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260521",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 130,
+    "inspection_id": 1116,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260522",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 131,
+    "inspection_id": 1144,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260523",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 132,
+    "inspection_id": 1019,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 133,
+    "inspection_id": 526,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260525",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 134,
+    "inspection_id": 1458,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 135,
+    "inspection_id": 2026,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260500",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 136,
+    "inspection_id": 1563,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260501",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 137,
+    "inspection_id": 762,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260502",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 138,
+    "inspection_id": 558,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260503",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 139,
+    "inspection_id": 1661,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260504",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 140,
+    "inspection_id": 387,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260505",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 141,
+    "inspection_id": 2001,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260506",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 142,
+    "inspection_id": 650,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260507",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 143,
+    "inspection_id": 2149,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260508",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 144,
+    "inspection_id": 1092,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260509",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 145,
+    "inspection_id": 2148,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 146,
+    "inspection_id": 573,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 147,
+    "inspection_id": 201,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260512",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 148,
+    "inspection_id": 370,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 149,
+    "inspection_id": 45,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 150,
+    "inspection_id": 1658,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260515",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 151,
+    "inspection_id": 925,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 152,
+    "inspection_id": 334,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260517",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 153,
+    "inspection_id": 1027,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260518",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 154,
+    "inspection_id": 216,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260519",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 155,
+    "inspection_id": 1768,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 156,
+    "inspection_id": 272,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260521",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 157,
+    "inspection_id": 2147,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260522",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 158,
+    "inspection_id": 1932,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260523",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 159,
+    "inspection_id": 1593,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260524",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 160,
+    "inspection_id": 1144,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260525",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 161,
+    "inspection_id": 1126,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260526",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 162,
+    "inspection_id": 2134,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260500",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 163,
+    "inspection_id": 560,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260501",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 164,
+    "inspection_id": 2010,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260502",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 165,
+    "inspection_id": 2093,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260503",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 166,
+    "inspection_id": 2149,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260504",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 167,
+    "inspection_id": 1718,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 168,
+    "inspection_id": 1057,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260506",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 169,
+    "inspection_id": 1368,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260507",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 170,
+    "inspection_id": 413,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260508",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 171,
+    "inspection_id": 2004,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260509",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 172,
+    "inspection_id": 1758,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260510",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 173,
+    "inspection_id": 1606,
+    "defect_type": "装配松动",
+    "severity": "critical",
+    "description": "装配松动，等级 critical，来源批次 Q-20260511",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 174,
+    "inspection_id": 1203,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260512",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 175,
+    "inspection_id": 1554,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260513",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 176,
+    "inspection_id": 324,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 177,
+    "inspection_id": 903,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260515",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 178,
+    "inspection_id": 156,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 179,
+    "inspection_id": 1625,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260517",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 180,
+    "inspection_id": 270,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260518",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 181,
+    "inspection_id": 311,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260519",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 182,
+    "inspection_id": 1718,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 183,
+    "inspection_id": 1085,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260521",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 184,
+    "inspection_id": 203,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260522",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 185,
+    "inspection_id": 387,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260523",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 186,
+    "inspection_id": 1536,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 187,
+    "inspection_id": 370,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260525",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 188,
+    "inspection_id": 118,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 189,
+    "inspection_id": 407,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260500",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 190,
+    "inspection_id": 675,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260501",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 191,
+    "inspection_id": 1709,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260502",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 192,
+    "inspection_id": 2027,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260503",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 193,
+    "inspection_id": 1931,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260504",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 194,
+    "inspection_id": 1011,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260505",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 195,
+    "inspection_id": 383,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260506",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 196,
+    "inspection_id": 395,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260507",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 197,
+    "inspection_id": 311,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260508",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 198,
+    "inspection_id": 251,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260509",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 199,
+    "inspection_id": 2098,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260510",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 200,
+    "inspection_id": 995,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 201,
+    "inspection_id": 164,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260512",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 202,
+    "inspection_id": 672,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260513",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 203,
+    "inspection_id": 1593,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260514",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 204,
+    "inspection_id": 1758,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260515",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 205,
+    "inspection_id": 137,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 206,
+    "inspection_id": 1471,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260517",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 207,
+    "inspection_id": 1535,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260518",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 208,
+    "inspection_id": 1736,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260519",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 209,
+    "inspection_id": 758,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260520",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 210,
+    "inspection_id": 2171,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 211,
+    "inspection_id": 251,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260522",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 212,
+    "inspection_id": 1485,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260523",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 213,
+    "inspection_id": 1476,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 214,
+    "inspection_id": 1922,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260525",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 215,
+    "inspection_id": 20,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 216,
+    "inspection_id": 407,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260500",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 217,
+    "inspection_id": 1250,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260501",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 218,
+    "inspection_id": 444,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260502",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 219,
+    "inspection_id": 573,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260503",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 220,
+    "inspection_id": 62,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260504",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 221,
+    "inspection_id": 1658,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260505",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 222,
+    "inspection_id": 1418,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260506",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 223,
+    "inspection_id": 1165,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260507",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 224,
+    "inspection_id": 437,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260508",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 225,
+    "inspection_id": 1019,
+    "defect_type": "密封泄漏",
+    "severity": "critical",
+    "description": "密封泄漏，等级 critical，来源批次 Q-20260509",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 226,
+    "inspection_id": 710,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260510",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 227,
+    "inspection_id": 1289,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260511",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 228,
+    "inspection_id": 118,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260512",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 229,
+    "inspection_id": 911,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260513",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 230,
+    "inspection_id": 1608,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260514",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 231,
+    "inspection_id": 2067,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260515",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 232,
+    "inspection_id": 672,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260516",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 233,
+    "inspection_id": 2027,
+    "defect_type": "装配松动",
+    "severity": "critical",
+    "description": "装配松动，等级 critical，来源批次 Q-20260517",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 234,
+    "inspection_id": 1235,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260518",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 235,
+    "inspection_id": 575,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260519",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 236,
+    "inspection_id": 722,
+    "defect_type": "颜色偏差",
+    "severity": "critical",
+    "description": "颜色偏差，等级 critical，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 237,
+    "inspection_id": 151,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260521",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 238,
+    "inspection_id": 1798,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260522",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 239,
+    "inspection_id": 281,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260523",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 240,
+    "inspection_id": 1503,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260524",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 241,
+    "inspection_id": 1752,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260525",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 242,
+    "inspection_id": 53,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260526",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 243,
+    "inspection_id": 1871,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260500",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 244,
+    "inspection_id": 655,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260501",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 245,
+    "inspection_id": 1142,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260502",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 246,
+    "inspection_id": 1027,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 247,
+    "inspection_id": 2134,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260504",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 248,
+    "inspection_id": 1449,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260505",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 249,
+    "inspection_id": 561,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 250,
+    "inspection_id": 83,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260507",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 251,
+    "inspection_id": 44,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 252,
+    "inspection_id": 1992,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260509",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 253,
+    "inspection_id": 1431,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260510",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 254,
+    "inspection_id": 759,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260511",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 255,
+    "inspection_id": 1955,
+    "defect_type": "密封泄漏",
+    "severity": "critical",
+    "description": "密封泄漏，等级 critical，来源批次 Q-20260512",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 256,
+    "inspection_id": 1811,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 257,
+    "inspection_id": 1535,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 258,
+    "inspection_id": 930,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260515",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 259,
+    "inspection_id": 2067,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260516",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 260,
+    "inspection_id": 2128,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260517",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 261,
+    "inspection_id": 925,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260518",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 262,
+    "inspection_id": 1945,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260519",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 263,
+    "inspection_id": 2072,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260520",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 264,
+    "inspection_id": 801,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260521",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 265,
+    "inspection_id": 2176,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260522",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 266,
+    "inspection_id": 2051,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260523",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 267,
+    "inspection_id": 1644,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260524",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 268,
+    "inspection_id": 1964,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260525",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 269,
+    "inspection_id": 2031,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 270,
+    "inspection_id": 1234,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260500",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 271,
+    "inspection_id": 167,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260501",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 272,
+    "inspection_id": 1343,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260502",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 273,
+    "inspection_id": 2078,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260503",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 274,
+    "inspection_id": 1964,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260504",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 275,
+    "inspection_id": 1977,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260505",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 276,
+    "inspection_id": 655,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260506",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 277,
+    "inspection_id": 1811,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260507",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 278,
+    "inspection_id": 1736,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 279,
+    "inspection_id": 2147,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260509",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 280,
+    "inspection_id": 574,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 281,
+    "inspection_id": 1871,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 282,
+    "inspection_id": 1061,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260512",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 283,
+    "inspection_id": 84,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260513",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 284,
+    "inspection_id": 428,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260514",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 285,
+    "inspection_id": 508,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 286,
+    "inspection_id": 1991,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260516",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 287,
+    "inspection_id": 1207,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260517",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 288,
+    "inspection_id": 1958,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260518",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 289,
+    "inspection_id": 1399,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260519",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 290,
+    "inspection_id": 1578,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260520",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 291,
+    "inspection_id": 198,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 292,
+    "inspection_id": 1298,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260522",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 293,
+    "inspection_id": 1774,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260523",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 294,
+    "inspection_id": 1397,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260524",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 295,
+    "inspection_id": 1931,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260525",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 296,
+    "inspection_id": 204,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 297,
+    "inspection_id": 1777,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260500",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 298,
+    "inspection_id": 894,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260501",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 299,
+    "inspection_id": 931,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260502",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 300,
+    "inspection_id": 571,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260503",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 301,
+    "inspection_id": 1931,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260504",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 302,
+    "inspection_id": 574,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260505",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 303,
+    "inspection_id": 869,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260506",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 304,
+    "inspection_id": 763,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260507",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 305,
+    "inspection_id": 988,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260508",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 306,
+    "inspection_id": 1434,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260509",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 307,
+    "inspection_id": 142,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 308,
+    "inspection_id": 1231,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260511",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 309,
+    "inspection_id": 2026,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260512",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 310,
+    "inspection_id": 1289,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260513",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 311,
+    "inspection_id": 1709,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260514",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 312,
+    "inspection_id": 254,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260515",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 313,
+    "inspection_id": 1092,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260516",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 314,
+    "inspection_id": 2084,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260517",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 315,
+    "inspection_id": 958,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260518",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 316,
+    "inspection_id": 1629,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260519",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 317,
+    "inspection_id": 544,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260520",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 318,
+    "inspection_id": 1162,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260521",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 319,
+    "inspection_id": 1107,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260522",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 320,
+    "inspection_id": 980,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260523",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 321,
+    "inspection_id": 560,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 322,
+    "inspection_id": 411,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260525",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 323,
+    "inspection_id": 1920,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260526",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 324,
+    "inspection_id": 120,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260500",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 325,
+    "inspection_id": 2144,
+    "defect_type": "密封泄漏",
+    "severity": "critical",
+    "description": "密封泄漏，等级 critical，来源批次 Q-20260501",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 326,
+    "inspection_id": 356,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260502",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 327,
+    "inspection_id": 537,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 328,
+    "inspection_id": 519,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260504",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 329,
+    "inspection_id": 1931,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260505",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 330,
+    "inspection_id": 1688,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 331,
+    "inspection_id": 411,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260507",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 332,
+    "inspection_id": 134,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260508",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 333,
+    "inspection_id": 871,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260509",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 334,
+    "inspection_id": 156,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260510",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 335,
+    "inspection_id": 1144,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260511",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 336,
+    "inspection_id": 460,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260512",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 337,
+    "inspection_id": 1625,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260513",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 338,
+    "inspection_id": 1445,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260514",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 339,
+    "inspection_id": 2009,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260515",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 340,
+    "inspection_id": 1709,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260516",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 341,
+    "inspection_id": 1506,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260517",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 342,
+    "inspection_id": 1994,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260518",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 343,
+    "inspection_id": 1014,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260519",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 344,
+    "inspection_id": 57,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260520",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 345,
+    "inspection_id": 1324,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260521",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 346,
+    "inspection_id": 1314,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260522",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 347,
+    "inspection_id": 1186,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260523",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 348,
+    "inspection_id": 369,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260524",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 349,
+    "inspection_id": 1497,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260525",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 350,
+    "inspection_id": 49,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260526",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 351,
+    "inspection_id": 1161,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260500",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 352,
+    "inspection_id": 1423,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260501",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 353,
+    "inspection_id": 854,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260502",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 354,
+    "inspection_id": 2067,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260503",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 355,
+    "inspection_id": 1313,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260504",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 356,
+    "inspection_id": 2158,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260505",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 357,
+    "inspection_id": 580,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 358,
+    "inspection_id": 2181,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260507",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 359,
+    "inspection_id": 1324,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260508",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 360,
+    "inspection_id": 1389,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260509",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 361,
+    "inspection_id": 714,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 362,
+    "inspection_id": 167,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260511",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 363,
+    "inspection_id": 1045,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260512",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 364,
+    "inspection_id": 1938,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260513",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 365,
+    "inspection_id": 2056,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 366,
+    "inspection_id": 2017,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260515",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 367,
+    "inspection_id": 762,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260516",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 368,
+    "inspection_id": 1337,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260517",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 369,
+    "inspection_id": 1449,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260518",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 370,
+    "inspection_id": 1135,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260519",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 371,
+    "inspection_id": 1666,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260520",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 372,
+    "inspection_id": 1413,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 373,
+    "inspection_id": 1938,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260522",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 374,
+    "inspection_id": 53,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260523",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 375,
+    "inspection_id": 548,
+    "defect_type": "密封泄漏",
+    "severity": "critical",
+    "description": "密封泄漏，等级 critical，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 376,
+    "inspection_id": 1964,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260525",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 377,
+    "inspection_id": 10,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 378,
+    "inspection_id": 2098,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260500",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 379,
+    "inspection_id": 1546,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260501",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 380,
+    "inspection_id": 753,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260502",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 381,
+    "inspection_id": 871,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260503",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 382,
+    "inspection_id": 1644,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260504",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 383,
+    "inspection_id": 1400,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260505",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 384,
+    "inspection_id": 1095,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260506",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 385,
+    "inspection_id": 1069,
+    "defect_type": "密封泄漏",
+    "severity": "critical",
+    "description": "密封泄漏，等级 critical，来源批次 Q-20260507",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 386,
+    "inspection_id": 1351,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 387,
+    "inspection_id": 1554,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260509",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 388,
+    "inspection_id": 950,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260510",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 389,
+    "inspection_id": 714,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260511",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 390,
+    "inspection_id": 1037,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260512",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 391,
+    "inspection_id": 1117,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260513",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 392,
+    "inspection_id": 1811,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260514",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 393,
+    "inspection_id": 1797,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 394,
+    "inspection_id": 602,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260516",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 395,
+    "inspection_id": 1820,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260517",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 396,
+    "inspection_id": 280,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260518",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 397,
+    "inspection_id": 2199,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260519",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 398,
+    "inspection_id": 1166,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 399,
+    "inspection_id": 931,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260521",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 400,
+    "inspection_id": 1127,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260522",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 401,
+    "inspection_id": 1031,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260523",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 402,
+    "inspection_id": 1116,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260524",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 403,
+    "inspection_id": 115,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260525",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 404,
+    "inspection_id": 472,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 405,
+    "inspection_id": 767,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260500",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 406,
+    "inspection_id": 1126,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260501",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 407,
+    "inspection_id": 714,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260502",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 408,
+    "inspection_id": 1045,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260503",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 409,
+    "inspection_id": 1427,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260504",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 410,
+    "inspection_id": 1494,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260505",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 411,
+    "inspection_id": 1920,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260506",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 412,
+    "inspection_id": 1651,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260507",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 413,
+    "inspection_id": 1871,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260508",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 414,
+    "inspection_id": 150,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260509",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 415,
+    "inspection_id": 572,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260510",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 416,
+    "inspection_id": 1737,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260511",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 417,
+    "inspection_id": 1008,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260512",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 418,
+    "inspection_id": 815,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 419,
+    "inspection_id": 303,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 420,
+    "inspection_id": 101,
+    "defect_type": "尺寸超差",
+    "severity": "critical",
+    "description": "尺寸超差，等级 critical，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 421,
+    "inspection_id": 823,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260516",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 422,
+    "inspection_id": 213,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260517",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 423,
+    "inspection_id": 1097,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260518",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 424,
+    "inspection_id": 2038,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260519",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 425,
+    "inspection_id": 2027,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260520",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 426,
+    "inspection_id": 703,
+    "defect_type": "颜色偏差",
+    "severity": "critical",
+    "description": "颜色偏差，等级 critical，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 427,
+    "inspection_id": 1625,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260522",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 428,
+    "inspection_id": 1016,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260523",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 429,
+    "inspection_id": 203,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260524",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 430,
+    "inspection_id": 2144,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260525",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 431,
+    "inspection_id": 1363,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260526",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 432,
+    "inspection_id": 407,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260500",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 433,
+    "inspection_id": 1568,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260501",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 434,
+    "inspection_id": 1124,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260502",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 435,
+    "inspection_id": 1503,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260503",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 436,
+    "inspection_id": 1679,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260504",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 437,
+    "inspection_id": 1019,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260505",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 438,
+    "inspection_id": 1089,
+    "defect_type": "虚焊",
+    "severity": "critical",
+    "description": "虚焊，等级 critical，来源批次 Q-20260506",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 439,
+    "inspection_id": 476,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260507",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 440,
+    "inspection_id": 548,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 441,
+    "inspection_id": 429,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260509",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 442,
+    "inspection_id": 387,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260510",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 443,
+    "inspection_id": 995,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 444,
+    "inspection_id": 1234,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260512",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 445,
+    "inspection_id": 987,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 446,
+    "inspection_id": 1451,
+    "defect_type": "颜色偏差",
+    "severity": "critical",
+    "description": "颜色偏差，等级 critical，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 447,
+    "inspection_id": 1483,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260515",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 448,
+    "inspection_id": 45,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260516",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 449,
+    "inspection_id": 84,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260517",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 450,
+    "inspection_id": 1039,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260518",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 451,
+    "inspection_id": 783,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260519",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 452,
+    "inspection_id": 1589,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 453,
+    "inspection_id": 1707,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260521",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 454,
+    "inspection_id": 2126,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260522",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 455,
+    "inspection_id": 602,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260523",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 456,
+    "inspection_id": 1399,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260524",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 457,
+    "inspection_id": 1147,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260525",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 458,
+    "inspection_id": 1736,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 459,
+    "inspection_id": 911,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260500",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 460,
+    "inspection_id": 1901,
+    "defect_type": "尺寸超差",
+    "severity": "critical",
+    "description": "尺寸超差，等级 critical，来源批次 Q-20260501",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 461,
+    "inspection_id": 1606,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260502",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 462,
+    "inspection_id": 258,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260503",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 463,
+    "inspection_id": 714,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260504",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 464,
+    "inspection_id": 1361,
+    "defect_type": "电气短路",
+    "severity": "critical",
+    "description": "电气短路，等级 critical，来源批次 Q-20260505",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 465,
+    "inspection_id": 561,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 466,
+    "inspection_id": 438,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260507",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 467,
+    "inspection_id": 1828,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 468,
+    "inspection_id": 1920,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260509",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 469,
+    "inspection_id": 156,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260510",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 470,
+    "inspection_id": 261,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 471,
+    "inspection_id": 869,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260512",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 472,
+    "inspection_id": 1707,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 473,
+    "inspection_id": 1565,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260514",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 474,
+    "inspection_id": 2149,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260515",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 475,
+    "inspection_id": 1877,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260516",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 476,
+    "inspection_id": 924,
+    "defect_type": "颜色偏差",
+    "severity": "critical",
+    "description": "颜色偏差，等级 critical，来源批次 Q-20260517",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 477,
+    "inspection_id": 1964,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260518",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 478,
+    "inspection_id": 1118,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260519",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 479,
+    "inspection_id": 1058,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260520",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 480,
+    "inspection_id": 2010,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260521",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 481,
+    "inspection_id": 314,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260522",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 482,
+    "inspection_id": 1074,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260523",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 483,
+    "inspection_id": 1565,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260524",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 484,
+    "inspection_id": 1471,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260525",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 485,
+    "inspection_id": 2017,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 486,
+    "inspection_id": 824,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260500",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 487,
+    "inspection_id": 62,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260501",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 488,
+    "inspection_id": 1537,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260502",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 489,
+    "inspection_id": 1922,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260503",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 490,
+    "inspection_id": 938,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260504",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 491,
+    "inspection_id": 1703,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 492,
+    "inspection_id": 773,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260506",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 493,
+    "inspection_id": 1400,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260507",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 494,
+    "inspection_id": 198,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260508",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 495,
+    "inspection_id": 348,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260509",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 496,
+    "inspection_id": 398,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260510",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 497,
+    "inspection_id": 1880,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260511",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 498,
+    "inspection_id": 950,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260512",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 499,
+    "inspection_id": 57,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260513",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 500,
+    "inspection_id": 1608,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260514",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 501,
+    "inspection_id": 2052,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260515",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 502,
+    "inspection_id": 980,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260516",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 503,
+    "inspection_id": 1058,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260517",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 504,
+    "inspection_id": 156,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260518",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 505,
+    "inspection_id": 2031,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260519",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 506,
+    "inspection_id": 370,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260520",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 507,
+    "inspection_id": 137,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 508,
+    "inspection_id": 877,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260522",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 509,
+    "inspection_id": 2171,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260523",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 510,
+    "inspection_id": 53,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 511,
+    "inspection_id": 1061,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260525",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 512,
+    "inspection_id": 1096,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 513,
+    "inspection_id": 815,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260500",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 514,
+    "inspection_id": 1483,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260501",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 515,
+    "inspection_id": 1871,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260502",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 516,
+    "inspection_id": 270,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 517,
+    "inspection_id": 1457,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260504",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 518,
+    "inspection_id": 1463,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260505",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 519,
+    "inspection_id": 2084,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260506",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 520,
+    "inspection_id": 1885,
+    "defect_type": "尺寸超差",
+    "severity": "critical",
+    "description": "尺寸超差，等级 critical，来源批次 Q-20260507",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 521,
+    "inspection_id": 1593,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260508",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 522,
+    "inspection_id": 1297,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260509",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 523,
+    "inspection_id": 1142,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260510",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 524,
+    "inspection_id": 435,
+    "defect_type": "电气短路",
+    "severity": "critical",
+    "description": "电气短路，等级 critical，来源批次 Q-20260511",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 525,
+    "inspection_id": 1633,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260512",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 526,
+    "inspection_id": 1203,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 527,
+    "inspection_id": 1661,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260514",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 528,
+    "inspection_id": 1992,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 529,
+    "inspection_id": 272,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260516",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 530,
+    "inspection_id": 1347,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260517",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 531,
+    "inspection_id": 270,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260518",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 532,
+    "inspection_id": 1679,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260519",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 533,
+    "inspection_id": 1347,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260520",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 534,
+    "inspection_id": 2019,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260521",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 535,
+    "inspection_id": 1768,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260522",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 536,
+    "inspection_id": 156,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260523",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 537,
+    "inspection_id": 2098,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260524",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 538,
+    "inspection_id": 829,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260525",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 539,
+    "inspection_id": 964,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260526",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 540,
+    "inspection_id": 369,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260500",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 541,
+    "inspection_id": 1448,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260501",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 542,
+    "inspection_id": 2114,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260502",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 543,
+    "inspection_id": 314,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 544,
+    "inspection_id": 903,
+    "defect_type": "电气短路",
+    "severity": "critical",
+    "description": "电气短路，等级 critical，来源批次 Q-20260504",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 545,
+    "inspection_id": 151,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 546,
+    "inspection_id": 1633,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 547,
+    "inspection_id": 2174,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260507",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 548,
+    "inspection_id": 987,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260508",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 549,
+    "inspection_id": 84,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260509",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 550,
+    "inspection_id": 1606,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 551,
+    "inspection_id": 2149,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 552,
+    "inspection_id": 1242,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260512",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 553,
+    "inspection_id": 1871,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 554,
+    "inspection_id": 1594,
+    "defect_type": "电气短路",
+    "severity": "critical",
+    "description": "电气短路，等级 critical，来源批次 Q-20260514",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 555,
+    "inspection_id": 964,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260515",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 556,
+    "inspection_id": 120,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 557,
+    "inspection_id": 1162,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260517",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 558,
+    "inspection_id": 1031,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260518",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 559,
+    "inspection_id": 558,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260519",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 560,
+    "inspection_id": 655,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 561,
+    "inspection_id": 508,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 562,
+    "inspection_id": 1889,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260522",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 563,
+    "inspection_id": 1482,
+    "defect_type": "装配松动",
+    "severity": "critical",
+    "description": "装配松动，等级 critical，来源批次 Q-20260523",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 564,
+    "inspection_id": 672,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260524",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 565,
+    "inspection_id": 1361,
+    "defect_type": "密封泄漏",
+    "severity": "critical",
+    "description": "密封泄漏，等级 critical，来源批次 Q-20260525",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 566,
+    "inspection_id": 694,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260526",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 567,
+    "inspection_id": 645,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260500",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 568,
+    "inspection_id": 1322,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260501",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 569,
+    "inspection_id": 1873,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260502",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 570,
+    "inspection_id": 1363,
+    "defect_type": "尺寸超差",
+    "severity": "critical",
+    "description": "尺寸超差，等级 critical，来源批次 Q-20260503",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 571,
+    "inspection_id": 815,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260504",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 572,
+    "inspection_id": 1019,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260505",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 573,
+    "inspection_id": 311,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260506",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 574,
+    "inspection_id": 2128,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260507",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 575,
+    "inspection_id": 1479,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 576,
+    "inspection_id": 1231,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260509",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 577,
+    "inspection_id": 758,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260510",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 578,
+    "inspection_id": 548,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260511",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 579,
+    "inspection_id": 292,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260512",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 580,
+    "inspection_id": 1061,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 581,
+    "inspection_id": 1665,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260514",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 582,
+    "inspection_id": 1180,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260515",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 583,
+    "inspection_id": 1992,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 584,
+    "inspection_id": 1037,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260517",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 585,
+    "inspection_id": 345,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260518",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 586,
+    "inspection_id": 281,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260519",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 587,
+    "inspection_id": 1877,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260520",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 588,
+    "inspection_id": 1147,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260521",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 589,
+    "inspection_id": 1347,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260522",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 590,
+    "inspection_id": 2147,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260523",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 591,
+    "inspection_id": 1483,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260524",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 592,
+    "inspection_id": 1880,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260525",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 593,
+    "inspection_id": 573,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260526",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 594,
+    "inspection_id": 1019,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260500",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 595,
+    "inspection_id": 1625,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260501",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 596,
+    "inspection_id": 395,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260502",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 597,
+    "inspection_id": 2093,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260503",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 598,
+    "inspection_id": 650,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260504",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 599,
+    "inspection_id": 1122,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260505",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 600,
+    "inspection_id": 1231,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 601,
+    "inspection_id": 1681,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260507",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 602,
+    "inspection_id": 1922,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260508",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 603,
+    "inspection_id": 1506,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260509",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 604,
+    "inspection_id": 2001,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260510",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 605,
+    "inspection_id": 1877,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260511",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 606,
+    "inspection_id": 2144,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260512",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 607,
+    "inspection_id": 413,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 608,
+    "inspection_id": 1019,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260514",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 609,
+    "inspection_id": 140,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260515",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 610,
+    "inspection_id": 1144,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 611,
+    "inspection_id": 247,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260517",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 612,
+    "inspection_id": 1162,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260518",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 613,
+    "inspection_id": 783,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260519",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 614,
+    "inspection_id": 324,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260520",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 615,
+    "inspection_id": 303,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260521",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 616,
+    "inspection_id": 672,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260522",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 617,
+    "inspection_id": 1482,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260523",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 618,
+    "inspection_id": 1624,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260524",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 619,
+    "inspection_id": 1166,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260525",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 620,
+    "inspection_id": 2149,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260526",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 621,
+    "inspection_id": 2052,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260500",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 622,
+    "inspection_id": 280,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260501",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 623,
+    "inspection_id": 167,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260502",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 624,
+    "inspection_id": 808,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 625,
+    "inspection_id": 1932,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260504",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 626,
+    "inspection_id": 1358,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260505",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 627,
+    "inspection_id": 84,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260506",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 628,
+    "inspection_id": 44,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260507",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 629,
+    "inspection_id": 950,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260508",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 630,
+    "inspection_id": 99,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260509",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 631,
+    "inspection_id": 1573,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260510",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 632,
+    "inspection_id": 1877,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260511",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 633,
+    "inspection_id": 1268,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260512",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 634,
+    "inspection_id": 1061,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260513",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 635,
+    "inspection_id": 2149,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 636,
+    "inspection_id": 303,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260515",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 637,
+    "inspection_id": 487,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260516",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 638,
+    "inspection_id": 1625,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260517",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 639,
+    "inspection_id": 1322,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260518",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 640,
+    "inspection_id": 1774,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260519",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 641,
+    "inspection_id": 783,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260520",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 642,
+    "inspection_id": 2198,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260521",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 643,
+    "inspection_id": 854,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260522",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 644,
+    "inspection_id": 1828,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260523",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 645,
+    "inspection_id": 1116,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260524",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 646,
+    "inspection_id": 564,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260525",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 647,
+    "inspection_id": 1170,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260526",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 648,
+    "inspection_id": 767,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260500",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 649,
+    "inspection_id": 1089,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260501",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 650,
+    "inspection_id": 1095,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260502",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 651,
+    "inspection_id": 1707,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260503",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 652,
+    "inspection_id": 105,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260504",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 653,
+    "inspection_id": 2175,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260505",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 654,
+    "inspection_id": 1363,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 655,
+    "inspection_id": 584,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260507",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 656,
+    "inspection_id": 1351,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260508",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 657,
+    "inspection_id": 2128,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260509",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 658,
+    "inspection_id": 962,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260510",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 659,
+    "inspection_id": 118,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 660,
+    "inspection_id": 1347,
+    "defect_type": "尺寸超差",
+    "severity": "critical",
+    "description": "尺寸超差，等级 critical，来源批次 Q-20260512",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 661,
+    "inspection_id": 356,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260513",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 662,
+    "inspection_id": 1872,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260514",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 663,
+    "inspection_id": 603,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260515",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 664,
+    "inspection_id": 544,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 665,
+    "inspection_id": 1396,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260517",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 666,
+    "inspection_id": 311,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260518",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 667,
+    "inspection_id": 1471,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260519",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 668,
+    "inspection_id": 560,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260520",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 669,
+    "inspection_id": 1161,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 670,
+    "inspection_id": 669,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260522",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 671,
+    "inspection_id": 2085,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260523",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 672,
+    "inspection_id": 1885,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260524",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 673,
+    "inspection_id": 356,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260525",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 674,
+    "inspection_id": 20,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260526",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 675,
+    "inspection_id": 1991,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260500",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 676,
+    "inspection_id": 1433,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260501",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 677,
+    "inspection_id": 1578,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260502",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 678,
+    "inspection_id": 599,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260503",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 679,
+    "inspection_id": 1118,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260504",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 680,
+    "inspection_id": 698,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 681,
+    "inspection_id": 1147,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260506",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 682,
+    "inspection_id": 1343,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260507",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 683,
+    "inspection_id": 602,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 684,
+    "inspection_id": 1471,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260509",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 685,
+    "inspection_id": 53,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260510",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 686,
+    "inspection_id": 10,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260511",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 687,
+    "inspection_id": 903,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260512",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 688,
+    "inspection_id": 2128,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 689,
+    "inspection_id": 167,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260514",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 690,
+    "inspection_id": 572,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260515",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 691,
+    "inspection_id": 254,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260516",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 692,
+    "inspection_id": 321,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260517",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 693,
+    "inspection_id": 739,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260518",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 694,
+    "inspection_id": 194,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260519",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 695,
+    "inspection_id": 498,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260520",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 696,
+    "inspection_id": 645,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260521",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 697,
+    "inspection_id": 1390,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260522",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 698,
+    "inspection_id": 2171,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260523",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 699,
+    "inspection_id": 1231,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260524",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 700,
+    "inspection_id": 1479,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260525",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 701,
+    "inspection_id": 1777,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260526",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 702,
+    "inspection_id": 1041,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260500",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 703,
+    "inspection_id": 1347,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260501",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 704,
+    "inspection_id": 576,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260502",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 705,
+    "inspection_id": 1485,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260503",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 706,
+    "inspection_id": 1434,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260504",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 707,
+    "inspection_id": 1037,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 708,
+    "inspection_id": 164,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 709,
+    "inspection_id": 2078,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260507",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 710,
+    "inspection_id": 1920,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260508",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 711,
+    "inspection_id": 548,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260509",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 712,
+    "inspection_id": 185,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 713,
+    "inspection_id": 1061,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260511",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 714,
+    "inspection_id": 1127,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260512",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 715,
+    "inspection_id": 454,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 716,
+    "inspection_id": 1921,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260514",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 717,
+    "inspection_id": 1752,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260515",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 718,
+    "inspection_id": 161,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260516",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 719,
+    "inspection_id": 650,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260517",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 720,
+    "inspection_id": 1271,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260518",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 721,
+    "inspection_id": 324,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260519",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 722,
+    "inspection_id": 99,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260520",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 723,
+    "inspection_id": 1399,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 724,
+    "inspection_id": 763,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260522",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 725,
+    "inspection_id": 379,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260523",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 726,
+    "inspection_id": 324,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260524",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 727,
+    "inspection_id": 1092,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260525",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 728,
+    "inspection_id": 603,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260526",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 729,
+    "inspection_id": 1709,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260500",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 730,
+    "inspection_id": 1580,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260501",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 731,
+    "inspection_id": 508,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260502",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 732,
+    "inspection_id": 571,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260503",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 733,
+    "inspection_id": 1709,
+    "defect_type": "装配松动",
+    "severity": "critical",
+    "description": "装配松动，等级 critical，来源批次 Q-20260504",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 734,
+    "inspection_id": 1855,
+    "defect_type": "电气短路",
+    "severity": "critical",
+    "description": "电气短路，等级 critical，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 735,
+    "inspection_id": 1665,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260506",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 736,
+    "inspection_id": 1240,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260507",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 737,
+    "inspection_id": 2009,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260508",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 738,
+    "inspection_id": 2198,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260509",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 739,
+    "inspection_id": 2052,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 740,
+    "inspection_id": 808,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260511",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 741,
+    "inspection_id": 1703,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260512",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 742,
+    "inspection_id": 2078,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260513",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 743,
+    "inspection_id": 1255,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260514",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 744,
+    "inspection_id": 617,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 745,
+    "inspection_id": 2052,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260516",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 746,
+    "inspection_id": 1048,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260517",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 747,
+    "inspection_id": 1390,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260518",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 748,
+    "inspection_id": 1135,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260519",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 749,
+    "inspection_id": 383,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260520",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 750,
+    "inspection_id": 962,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260521",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 751,
+    "inspection_id": 1433,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260522",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 752,
+    "inspection_id": 1900,
+    "defect_type": "焊接气孔",
+    "severity": "critical",
+    "description": "焊接气孔，等级 critical，来源批次 Q-20260523",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 753,
+    "inspection_id": 835,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 754,
+    "inspection_id": 1494,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260525",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 755,
+    "inspection_id": 520,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260526",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 756,
+    "inspection_id": 270,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260500",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 757,
+    "inspection_id": 824,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260501",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 758,
+    "inspection_id": 2098,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260502",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 759,
+    "inspection_id": 1214,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 760,
+    "inspection_id": 745,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260504",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 761,
+    "inspection_id": 2010,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 762,
+    "inspection_id": 1620,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 763,
+    "inspection_id": 2173,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260507",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 764,
+    "inspection_id": 1601,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260508",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 765,
+    "inspection_id": 2027,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260509",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 766,
+    "inspection_id": 571,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260510",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 767,
+    "inspection_id": 115,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260511",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 768,
+    "inspection_id": 1242,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260512",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 769,
+    "inspection_id": 526,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260513",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 770,
+    "inspection_id": 1804,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260514",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 771,
+    "inspection_id": 161,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260515",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 772,
+    "inspection_id": 722,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260516",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 773,
+    "inspection_id": 487,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260517",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 774,
+    "inspection_id": 1863,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260518",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 775,
+    "inspection_id": 1363,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260519",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 776,
+    "inspection_id": 1863,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 777,
+    "inspection_id": 383,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 778,
+    "inspection_id": 1573,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260522",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 779,
+    "inspection_id": 429,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260523",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 780,
+    "inspection_id": 2027,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260524",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 781,
+    "inspection_id": 435,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260525",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 782,
+    "inspection_id": 2077,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260526",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 783,
+    "inspection_id": 454,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260500",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 784,
+    "inspection_id": 1423,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260501",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 785,
+    "inspection_id": 1120,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260502",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 786,
+    "inspection_id": 227,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260503",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 787,
+    "inspection_id": 1907,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260504",
+    "root_cause": "工艺参数偏差",
+    "correction": "停线整改"
+  },
+  {
+    "id": 788,
+    "inspection_id": 1594,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260505",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 789,
+    "inspection_id": 2098,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 790,
+    "inspection_id": 1565,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260507",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 791,
+    "inspection_id": 801,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260508",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 792,
+    "inspection_id": 1389,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260509",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 793,
+    "inspection_id": 1494,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260510",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 794,
+    "inspection_id": 576,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260511",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 795,
+    "inspection_id": 1865,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260512",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 796,
+    "inspection_id": 1147,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260513",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 797,
+    "inspection_id": 1606,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260514",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 798,
+    "inspection_id": 1433,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260515",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 799,
+    "inspection_id": 1193,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260516",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 800,
+    "inspection_id": 1126,
+    "defect_type": "尺寸超差",
+    "severity": "major",
+    "description": "尺寸超差，等级 major，来源批次 Q-20260517",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 801,
+    "inspection_id": 370,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260518",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 802,
+    "inspection_id": 1804,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260519",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 803,
+    "inspection_id": 1231,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260520",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 804,
+    "inspection_id": 1872,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260521",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 805,
+    "inspection_id": 1811,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260522",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 806,
+    "inspection_id": 1351,
+    "defect_type": "颜色偏差",
+    "severity": "critical",
+    "description": "颜色偏差，等级 critical，来源批次 Q-20260523",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 807,
+    "inspection_id": 1144,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260524",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 808,
+    "inspection_id": 1606,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260525",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 809,
+    "inspection_id": 1503,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260526",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 810,
+    "inspection_id": 2093,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260500",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 811,
+    "inspection_id": 2005,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260501",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 812,
+    "inspection_id": 927,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260502",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 813,
+    "inspection_id": 1703,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260503",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 814,
+    "inspection_id": 1390,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260504",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 815,
+    "inspection_id": 571,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260505",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 816,
+    "inspection_id": 680,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260506",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 817,
+    "inspection_id": 774,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260507",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 818,
+    "inspection_id": 1629,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260508",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 819,
+    "inspection_id": 787,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260509",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 820,
+    "inspection_id": 1991,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260510",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 821,
+    "inspection_id": 2114,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260511",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 822,
+    "inspection_id": 766,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260512",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 823,
+    "inspection_id": 1120,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260513",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 824,
+    "inspection_id": 134,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260514",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 825,
+    "inspection_id": 924,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260515",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 826,
+    "inspection_id": 1069,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 827,
+    "inspection_id": 161,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260517",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 828,
+    "inspection_id": 1872,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260518",
+    "root_cause": "来料波动",
+    "correction": "返修"
+  },
+  {
+    "id": 829,
+    "inspection_id": 1871,
+    "defect_type": "毛刺",
+    "severity": "critical",
+    "description": "毛刺，等级 critical，来源批次 Q-20260519",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 830,
+    "inspection_id": 2126,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260520",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 831,
+    "inspection_id": 1142,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260521",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 832,
+    "inspection_id": 115,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260522",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 833,
+    "inspection_id": 672,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260523",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 834,
+    "inspection_id": 292,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 835,
+    "inspection_id": 2126,
+    "defect_type": "密封泄漏",
+    "severity": "critical",
+    "description": "密封泄漏，等级 critical，来源批次 Q-20260525",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 836,
+    "inspection_id": 202,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260526",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 837,
+    "inspection_id": 1535,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260500",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 838,
+    "inspection_id": 31,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260501",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 839,
+    "inspection_id": 99,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260502",
+    "root_cause": "设备精度漂移",
+    "correction": "返工"
+  },
+  {
+    "id": 840,
+    "inspection_id": 742,
+    "defect_type": "尺寸超差",
+    "severity": "critical",
+    "description": "尺寸超差，等级 critical，来源批次 Q-20260503",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 841,
+    "inspection_id": 1928,
+    "defect_type": "表面划伤",
+    "severity": "critical",
+    "description": "表面划伤，等级 critical，来源批次 Q-20260504",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 842,
+    "inspection_id": 1922,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 843,
+    "inspection_id": 1921,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260506",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 844,
+    "inspection_id": 694,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260507",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 845,
+    "inspection_id": 2031,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260508",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 846,
+    "inspection_id": 950,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260509",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 847,
+    "inspection_id": 582,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260510",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 848,
+    "inspection_id": 1343,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 849,
+    "inspection_id": 378,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260512",
+    "root_cause": "操作不一致",
+    "correction": "报废"
+  },
+  {
+    "id": 850,
+    "inspection_id": 823,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260513",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 851,
+    "inspection_id": 2134,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260514",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 852,
+    "inspection_id": 2158,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260515",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 853,
+    "inspection_id": 2184,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260516",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 854,
+    "inspection_id": 1434,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260517",
+    "root_cause": "环境温湿度异常",
+    "correction": "让步接收"
+  },
+  {
+    "id": 855,
+    "inspection_id": 1089,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260518",
+    "root_cause": "来料波动",
+    "correction": "报废"
+  },
+  {
+    "id": 856,
+    "inspection_id": 1116,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260519",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 857,
+    "inspection_id": 1661,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260520",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 858,
+    "inspection_id": 2031,
+    "defect_type": "虚焊",
+    "severity": "major",
+    "description": "虚焊，等级 major，来源批次 Q-20260521",
+    "root_cause": "设备精度漂移",
+    "correction": "停线整改"
+  },
+  {
+    "id": 859,
+    "inspection_id": 1457,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260522",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 860,
+    "inspection_id": 759,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260523",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 861,
+    "inspection_id": 758,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260524",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 862,
+    "inspection_id": 1703,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260525",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 863,
+    "inspection_id": 134,
+    "defect_type": "装配松动",
+    "severity": "critical",
+    "description": "装配松动，等级 critical，来源批次 Q-20260526",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 864,
+    "inspection_id": 1703,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260500",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 865,
+    "inspection_id": 203,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260501",
+    "root_cause": "来料波动",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 866,
+    "inspection_id": 1865,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260502",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  },
+  {
+    "id": 867,
+    "inspection_id": 1568,
+    "defect_type": "标识错误",
+    "severity": "minor",
+    "description": "标识错误，等级 minor，来源批次 Q-20260503",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 868,
+    "inspection_id": 1240,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260504",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 869,
+    "inspection_id": 1451,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260505",
+    "root_cause": "环境温湿度异常",
+    "correction": "报废"
+  },
+  {
+    "id": 870,
+    "inspection_id": 2180,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260506",
+    "root_cause": "操作不一致",
+    "correction": "返工"
+  },
+  {
+    "id": 871,
+    "inspection_id": 13,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260507",
+    "root_cause": "来料波动",
+    "correction": "让步接收"
+  },
+  {
+    "id": 872,
+    "inspection_id": 1601,
+    "defect_type": "焊接气孔",
+    "severity": "major",
+    "description": "焊接气孔，等级 major，来源批次 Q-20260508",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 873,
+    "inspection_id": 370,
+    "defect_type": "装配松动",
+    "severity": "major",
+    "description": "装配松动，等级 major，来源批次 Q-20260509",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 874,
+    "inspection_id": 194,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260510",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 875,
+    "inspection_id": 593,
+    "defect_type": "密封泄漏",
+    "severity": "minor",
+    "description": "密封泄漏，等级 minor，来源批次 Q-20260511",
+    "root_cause": "工艺参数偏差",
+    "correction": "返修"
+  },
+  {
+    "id": 876,
+    "inspection_id": 1688,
+    "defect_type": "颜色偏差",
+    "severity": "minor",
+    "description": "颜色偏差，等级 minor，来源批次 Q-20260512",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 877,
+    "inspection_id": 942,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260513",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 878,
+    "inspection_id": 925,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260514",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 879,
+    "inspection_id": 123,
+    "defect_type": "毛刺",
+    "severity": "major",
+    "description": "毛刺，等级 major，来源批次 Q-20260515",
+    "root_cause": "操作不一致",
+    "correction": "让步接收"
+  },
+  {
+    "id": 880,
+    "inspection_id": 321,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260516",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 881,
+    "inspection_id": 2098,
+    "defect_type": "表面划伤",
+    "severity": "major",
+    "description": "表面划伤，等级 major，来源批次 Q-20260517",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 882,
+    "inspection_id": 399,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260518",
+    "root_cause": "工艺参数偏差",
+    "correction": "返工"
+  },
+  {
+    "id": 883,
+    "inspection_id": 1589,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260519",
+    "root_cause": "来料波动",
+    "correction": "停线整改"
+  },
+  {
+    "id": 884,
+    "inspection_id": 999,
+    "defect_type": "电气短路",
+    "severity": "minor",
+    "description": "电气短路，等级 minor，来源批次 Q-20260520",
+    "root_cause": "设备精度漂移",
+    "correction": "报废"
+  },
+  {
+    "id": 885,
+    "inspection_id": 1587,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260521",
+    "root_cause": "环境温湿度异常",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 886,
+    "inspection_id": 1142,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260522",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 887,
+    "inspection_id": 2076,
+    "defect_type": "标识错误",
+    "severity": "major",
+    "description": "标识错误，等级 major，来源批次 Q-20260523",
+    "root_cause": "设备精度漂移",
+    "correction": "让步接收"
+  },
+  {
+    "id": 888,
+    "inspection_id": 57,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260524",
+    "root_cause": "工艺参数偏差",
+    "correction": "报废"
+  },
+  {
+    "id": 889,
+    "inspection_id": 2181,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260525",
+    "root_cause": "工艺参数偏差",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 890,
+    "inspection_id": 334,
+    "defect_type": "尺寸超差",
+    "severity": "minor",
+    "description": "尺寸超差，等级 minor，来源批次 Q-20260526",
+    "root_cause": "工艺参数偏差",
+    "correction": "让步接收"
+  },
+  {
+    "id": 891,
+    "inspection_id": 857,
+    "defect_type": "表面划伤",
+    "severity": "minor",
+    "description": "表面划伤，等级 minor，来源批次 Q-20260500",
+    "root_cause": "环境温湿度异常",
+    "correction": "停线整改"
+  },
+  {
+    "id": 892,
+    "inspection_id": 254,
+    "defect_type": "焊接气孔",
+    "severity": "minor",
+    "description": "焊接气孔，等级 minor，来源批次 Q-20260501",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 893,
+    "inspection_id": 116,
+    "defect_type": "装配松动",
+    "severity": "minor",
+    "description": "装配松动，等级 minor，来源批次 Q-20260502",
+    "root_cause": "设备精度漂移",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 894,
+    "inspection_id": 247,
+    "defect_type": "电气短路",
+    "severity": "major",
+    "description": "电气短路，等级 major，来源批次 Q-20260503",
+    "root_cause": "操作不一致",
+    "correction": "供应商 8D"
+  },
+  {
+    "id": 895,
+    "inspection_id": 1624,
+    "defect_type": "密封泄漏",
+    "severity": "major",
+    "description": "密封泄漏，等级 major，来源批次 Q-20260504",
+    "root_cause": "环境温湿度异常",
+    "correction": "返工"
+  },
+  {
+    "id": 896,
+    "inspection_id": 118,
+    "defect_type": "颜色偏差",
+    "severity": "major",
+    "description": "颜色偏差，等级 major，来源批次 Q-20260505",
+    "root_cause": "设备精度漂移",
+    "correction": "返修"
+  },
+  {
+    "id": 897,
+    "inspection_id": 1096,
+    "defect_type": "标识错误",
+    "severity": "critical",
+    "description": "标识错误，等级 critical，来源批次 Q-20260506",
+    "root_cause": "环境温湿度异常",
+    "correction": "返修"
+  },
+  {
+    "id": 898,
+    "inspection_id": 398,
+    "defect_type": "虚焊",
+    "severity": "minor",
+    "description": "虚焊，等级 minor，来源批次 Q-20260507",
+    "root_cause": "操作不一致",
+    "correction": "返修"
+  },
+  {
+    "id": 899,
+    "inspection_id": 487,
+    "defect_type": "毛刺",
+    "severity": "minor",
+    "description": "毛刺，等级 minor，来源批次 Q-20260508",
+    "root_cause": "操作不一致",
+    "correction": "停线整改"
+  },
+  {
+    "id": 900,
+    "inspection_id": 383,
+    "defect_type": "尺寸超差",
+    "severity": "critical",
+    "description": "尺寸超差，等级 critical，来源批次 Q-20260509",
+    "root_cause": "来料波动",
+    "correction": "返工"
+  }
+]

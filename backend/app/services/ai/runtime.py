@@ -15,6 +15,7 @@ from .settings import settings_snapshot, settings_to_provider_config
 from .tenant_profile import TenantProfile, default_tenant_profile
 from .tools import choose_draft_actions
 from .client import get_provider
+from .agent_context_router import classify_context_need
 
 
 EXTERNAL_PROVIDER_NAMES = {"openai-compatible", "openai", "azure-openai", "deepseek", "qwen", "glm"}
@@ -119,16 +120,18 @@ class AgentRuntime:
                 "summary": request.message[:160],
             }
         ]
-        evidence = search_ingested_knowledge(request.message, limit=3)
-        steps.append(
-            {
-                "id": "step-knowledge-search",
-                "type": "tool",
-                "tool": "knowledge.search",
-                "status": "completed",
-                "result_count": len(evidence),
-            }
-        )
+        context_need = classify_context_need(request.message, request.context)
+        evidence = search_ingested_knowledge(request.message, limit=3) if context_need in {"knowledge_rag", "business_query", "semantic_graph", "draft_action"} else []
+        if context_need in {"knowledge_rag", "business_query", "semantic_graph", "draft_action"}:
+            steps.append(
+                {
+                    "id": "step-knowledge-search",
+                    "type": "tool",
+                    "tool": "knowledge.search",
+                    "status": "completed",
+                    "result_count": len(evidence),
+                }
+            )
         actions = choose_draft_actions(request.message, evidence=evidence)
         if actions:
             steps.append(

@@ -103,6 +103,45 @@ def test_record_search_uses_searchable_fields_first():
     assert _record_matches_search(Record(), fields, "needle") is False
 
 
+def test_dynamic_record_partial_update_preserves_existing_fields():
+    pytest.importorskip("fastapi")
+    from app.api.forms import _merged_record_data
+
+    merged = _merged_record_data(
+        {"title": "Original", "priority": "high", "owner": "Alice"},
+        {"priority": "low"},
+    )
+
+    assert merged == {"title": "Original", "priority": "low", "owner": "Alice"}
+
+
+def test_hidden_fields_are_not_queryable():
+    pytest.importorskip("fastapi")
+    from fastapi import HTTPException
+    from app.api.forms import _ensure_filter_fields_visible, _record_matches_search, _visible_field_subset
+
+    class Field:
+        def __init__(self, field_name, searchable):
+            self.field_name = field_name
+            self.searchable = searchable
+            self.archived = False
+
+    class Record:
+        data = {"title": "Pump issue", "internal_note": "secret needle"}
+
+    fields = [Field("title", True), Field("internal_note", True)]
+    visible_fields = {"title"}
+    query_fields = _visible_field_subset(fields, visible_fields)
+
+    assert _record_matches_search(Record(), query_fields, "pump") is True
+    assert _record_matches_search(Record(), query_fields, "needle") is False
+    with pytest.raises(HTTPException):
+        _ensure_filter_fields_visible(
+            [{"field": "internal_note", "op": "contains", "value": "needle"}],
+            visible_fields,
+        )
+
+
 def test_record_filters_require_queryable_fields():
     pytest.importorskip("fastapi")
     from fastapi import HTTPException
@@ -123,6 +162,52 @@ def test_record_filters_require_queryable_fields():
     assert _record_matches_filters(Record(), fields, [{"field": "status", "op": "equals", "value": "closed"}]) is False
     with pytest.raises(HTTPException):
         _record_matches_filters(Record(), fields, [{"field": "missing", "op": "equals", "value": "x"}])
+
+
+def test_sort_fields_must_be_visible_and_sortable():
+    pytest.importorskip("fastapi")
+    from fastapi import HTTPException
+    from app.api.forms import _ensure_sort_field_allowed
+
+    class Field:
+        def __init__(self, field_name, sortable):
+            self.field_name = field_name
+            self.sortable = sortable
+            self.archived = False
+
+    fields = [Field("title", True), Field("internal_note", True), Field("description", False)]
+
+    _ensure_sort_field_allowed("title", fields, {"title", "description"})
+    with pytest.raises(HTTPException):
+        _ensure_sort_field_allowed("internal_note", fields, {"title"})
+    with pytest.raises(HTTPException):
+        _ensure_sort_field_allowed("description", fields, {"title", "description"})
+
+
+def test_field_change_compatibility_flags_existing_bad_values():
+    pytest.importorskip("fastapi")
+    from app.api.forms import _field_value_is_compatible
+
+    class Field:
+        enum_values = None
+
+        def __init__(self, field_type):
+            self.field_type = field_type
+
+    assert _field_value_is_compatible(Field("integer"), 7) is True
+    assert _field_value_is_compatible(Field("integer"), "7") is False
+    assert _field_value_is_compatible(Field("boolean"), True) is True
+    assert _field_value_is_compatible(Field("boolean"), "true") is False
+
+
+def test_production_dynamic_query_requires_pushed_search(monkeypatch):
+    pytest.importorskip("fastapi")
+    from fastapi import HTTPException
+    from app.api import forms
+
+    monkeypatch.setattr(forms.settings, "APP_MODE", "production")
+    with pytest.raises(HTTPException):
+        forms._ensure_production_record_query_supported("needle", [], False, True)
 
 
 def test_application_form_binding_schema_is_configuration_only():

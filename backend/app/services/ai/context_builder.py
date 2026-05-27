@@ -73,6 +73,8 @@ class ContextBuilder:
             },
             "page": page or request.page,
             "document_id": document_id,
+            "context_need": (request.context or {}).get("contextNeed") or (request.context or {}).get("context_need"),
+            "semantic_context": (request.context or {}).get("semanticContext") or {},
             "recent_messages": recent_messages,
             "memories": memories,
             "evidence": trimmed_evidence,
@@ -83,6 +85,8 @@ class ContextBuilder:
             "recent_messages": len(recent_messages),
             "memories": len(memories),
             "evidence": len(trimmed_evidence),
+            "semantic_objects": len((((request.context or {}).get("semanticContext") or {}).get("objects")) or []),
+            "semantic_records": ((request.context or {}).get("semanticContext") or {}).get("record_count", 0),
             "max_context_tokens": max_context_tokens,
             "estimated_tokens": payload["estimated_tokens"],
         }

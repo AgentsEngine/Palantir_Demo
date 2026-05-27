@@ -7,8 +7,14 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import current_tenant_id, require_admin
+from app.api.deps import current_tenant_id, current_user_id, get_db, require_admin
+from app.core.audit import write_audit_log
+from app.core.permissions import evaluate_form_permission, has_permission
+from app.core.security import hash_password
+from app.services.iam import ROLE_TEMPLATES, get_oidc_config, load_iam_settings, revoke_session, save_iam_settings, validate_password_policy
+from app.services.tenant_onboarding import assert_tenant_quota
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
@@ -47,6 +53,30 @@ class RoleCreate(BaseModel):
 class PermissionSet(BaseModel):
     role_id: int
     permissions: list[dict]
+
+
+class UserSecurityAction(BaseModel):
+    password: Optional[str] = None
+    locked: Optional[bool] = None
+    force_password_change: Optional[bool] = None
+    is_active: Optional[bool] = None
+    sso_provider: Optional[str] = None
+    sso_subject: Optional[str] = None
+
+
+class PermissionSimulateRequest(BaseModel):
+    user_id: int
+    resource_type: str
+    resource_key: str
+    action: str
+    form_id: Optional[int] = None
+    field_name: Optional[str] = None
+    record: dict = {}
+
+
+class IamSettingsUpdate(BaseModel):
+    security: dict = {}
+    oidc: dict = {}
 
 
 class OrgUnitCreate(BaseModel):
@@ -196,6 +226,14 @@ async def list_users(user_ctx: dict = Depends(require_admin)):
             out.append({
                 "id": u.id, "username": u.username, "display_name": u.display_name,
                 "email": u.email, "is_active": u.is_active, "is_admin": u.is_admin,
+                "login_failed_count": getattr(u, "login_failed_count", 0),
+                "locked_until": u.locked_until.isoformat() if getattr(u, "locked_until", None) else None,
+                "force_password_change": getattr(u, "force_password_change", False),
+                "last_login_at": u.last_login_at.isoformat() if getattr(u, "last_login_at", None) else None,
+                "last_login_ip": getattr(u, "last_login_ip", None),
+                "mfa_enabled": getattr(u, "mfa_enabled", False),
+                "sso_provider": getattr(u, "sso_provider", None),
+                "sso_subject": getattr(u, "sso_subject", None),
                 "roles": [{"id": r[0], "name": r[1], "label": r[2]} for r in roles_res.fetchall()],
                 "org_units": [
                     {
@@ -221,13 +259,18 @@ async def create_user(body: UserCreate, user_ctx: dict = Depends(require_admin))
     async def _query(db):
         from app.models.relational import OrgUnit, User, UserOrgMembership, UserRole
         tenant_id = current_tenant_id(user_ctx)
-        existing = await db.scalar(select(User).where(User.username == body.username))
+        await assert_tenant_quota(db, tenant_id, "users")
+        existing = await db.scalar(select(User).where(User.tenant_id == tenant_id, User.username == body.username))
         if existing:
             raise HTTPException(400, "用户名已存在")
+        if body.email:
+            existing_email = await db.scalar(select(User).where(User.tenant_id == tenant_id, User.email == body.email.lower()))
+            if existing_email:
+                raise HTTPException(400, "Email already exists")
         user = User(
             tenant_id=tenant_id,
             username=body.username, display_name=body.display_name,
-            email=body.email, hashed_password=_hash_password(body.password),
+            email=body.email.lower() if body.email else None, hashed_password=_hash_password(body.password),
             is_admin=body.is_admin,
         )
         db.add(user)
@@ -346,6 +389,93 @@ async def delete_user(user_id: int, user_ctx: dict = Depends(require_admin)):
 
     result = await _try_db(_query)
     return result or {"ok": True}
+
+
+@router.put("/users/{user_id}/security")
+async def update_user_security(user_id: int, body: UserSecurityAction, user_ctx: dict = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Update security-sensitive user settings and write an audit event."""
+    from datetime import datetime, timedelta
+    from app.models.relational import User
+
+    tenant_id = current_tenant_id(user_ctx)
+    user = await db.get(User, user_id)
+    if not user or user.tenant_id != tenant_id:
+        raise HTTPException(404, "User not found")
+    changes = body.dict(exclude_unset=True)
+    if body.password:
+        validate_password_policy(body.password)
+        user.hashed_password = hash_password(body.password)
+        user.force_password_change = True if body.force_password_change is None else bool(body.force_password_change)
+        changes["password"] = "***"
+    if body.locked is not None:
+        user.locked_until = datetime.utcnow() + timedelta(days=3650) if body.locked else None
+        user.login_failed_count = 0 if not body.locked else user.login_failed_count
+    if body.force_password_change is not None:
+        user.force_password_change = body.force_password_change
+    if body.is_active is not None:
+        user.is_active = body.is_active
+    if body.sso_provider is not None:
+        user.sso_provider = body.sso_provider or None
+    if body.sso_subject is not None:
+        user.sso_subject = body.sso_subject or None
+    await db.commit()
+    await write_audit_log(
+        action="update_user_security",
+        resource_type="user",
+        resource_id=user.id,
+        user_id=current_user_id(user_ctx),
+        tenant_id=tenant_id,
+        new_values=changes,
+    )
+    return {"ok": True}
+
+
+@router.get("/users/{user_id}/sessions")
+async def list_user_sessions(user_id: int, user_ctx: dict = Depends(require_admin)):
+    async def _query(db):
+        from app.models.relational import UserSession
+        tenant_id = current_tenant_id(user_ctx)
+        rows = (await db.execute(
+            select(UserSession)
+            .where(UserSession.user_id == user_id, UserSession.tenant_id == tenant_id)
+            .order_by(UserSession.created_at.desc())
+        )).scalars().all()
+        return {
+            "data": [
+                {
+                    "id": row.id,
+                    "session_id": row.session_id,
+                    "login_method": row.login_method,
+                    "ip_address": row.ip_address,
+                    "user_agent": row.user_agent,
+                    "expires_at": row.expires_at.isoformat() if row.expires_at else None,
+                    "revoked_at": row.revoked_at.isoformat() if row.revoked_at else None,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                }
+                for row in rows
+            ]
+        }
+
+    result = await _try_db(_query)
+    return result or {"data": []}
+
+
+@router.post("/sessions/{session_id}/revoke")
+async def revoke_user_session(session_id: str, user_ctx: dict = Depends(require_admin)):
+    async def _query(db):
+        ok = await revoke_session(db, session_id, current_user_id(user_ctx))
+        await db.commit()
+        await write_audit_log(
+            action="revoke_session",
+            resource_type="user_session",
+            user_id=current_user_id(user_ctx),
+            tenant_id=current_tenant_id(user_ctx),
+            new_values={"session_id": session_id},
+        )
+        return {"ok": ok}
+
+    result = await _try_db(_query)
+    return result or {"ok": False}
 
 
 # ── Role CRUD ────────────────────────────────────────────
@@ -486,7 +616,18 @@ async def list_roles(user_ctx: dict = Depends(require_admin)):
             out.append({
                 "id": r.id, "name": r.name, "label": r.label, "description": r.description,
                 "permissions": [
-                    {"resource_type": p.resource_type, "resource_key": p.resource_key, "action": p.action}
+                    {
+                        "id": p.id,
+                        "resource_type": p.resource_type,
+                        "resource_key": p.resource_key,
+                        "action": p.action,
+                        "effect": getattr(p, "effect", "allow"),
+                        "data_scope": getattr(p, "data_scope", "all"),
+                        "condition_json": getattr(p, "condition_json", None),
+                        "field_rules_json": getattr(p, "field_rules_json", None),
+                        "priority": getattr(p, "priority", 100),
+                        "enabled": getattr(p, "enabled", True),
+                    }
                     for p in perms
                 ],
             })
@@ -502,6 +643,9 @@ async def create_role(body: RoleCreate, user_ctx: dict = Depends(require_admin))
     async def _query(db):
         from app.models.relational import Role
         tenant_id = current_tenant_id(user_ctx)
+        existing = await db.scalar(select(Role.id).where(Role.tenant_id == tenant_id, Role.name == body.name))
+        if existing:
+            raise HTTPException(409, "Role name already exists")
         role = Role(tenant_id=tenant_id, name=body.name, label=body.label, description=body.description)
         db.add(role)
         await db.commit()
@@ -531,8 +675,22 @@ async def set_permissions(role_id: int, body: PermissionSet, user_ctx: dict = De
                 resource_type=p.get("resource_type", "action"),
                 resource_key=p.get("resource_key"),
                 action=p.get("action", "view"),
+                effect=p.get("effect", "allow"),
+                data_scope=p.get("data_scope", "all"),
+                condition_json=p.get("condition_json"),
+                field_rules_json=p.get("field_rules_json"),
+                priority=int(p.get("priority", 100) or 100),
+                enabled=bool(p.get("enabled", True)),
             ))
         await db.commit()
+        await write_audit_log(
+            action="set_role_permissions",
+            resource_type="role",
+            resource_id=target_role_id,
+            user_id=current_user_id(user_ctx),
+            tenant_id=tenant_id,
+            new_values={"permissions": body.permissions},
+        )
         return {"ok": True}
 
     result = await _try_db(_query)
@@ -554,6 +712,74 @@ async def delete_role(role_id: int, user_ctx: dict = Depends(require_admin)):
 
     result = await _try_db(_query)
     return result or {"ok": True}
+
+
+@router.get("/role-templates")
+async def list_role_templates(user_ctx: dict = Depends(require_admin)):
+    return {"data": ROLE_TEMPLATES}
+
+
+@router.get("/iam/settings")
+async def get_iam_settings(user_ctx: dict = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    iam_settings = await load_iam_settings(db)
+    oidc = get_oidc_config()
+    oidc_public = {key: value for key, value in oidc.items() if key != "client_secret"}
+    return {"data": {"security": iam_settings["security"], "oidc": oidc_public}}
+
+
+@router.put("/iam/settings")
+async def update_iam_settings(body: IamSettingsUpdate, user_ctx: dict = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    saved = await save_iam_settings(db, body.dict(), updated_by=str(current_user_id(user_ctx)))
+    await db.commit()
+    oidc = get_oidc_config()
+    oidc_public = {key: value for key, value in oidc.items() if key != "client_secret"}
+    await write_audit_log(
+        action="update_iam_settings",
+        resource_type="identity_access",
+        user_id=current_user_id(user_ctx),
+        tenant_id=current_tenant_id(user_ctx),
+        new_values={"security": saved["security"], "oidc": oidc_public},
+    )
+    return {"data": {"security": saved["security"], "oidc": oidc_public}}
+
+
+@router.post("/permissions/simulate")
+async def simulate_permission(
+    body: PermissionSimulateRequest,
+    user_ctx: dict = Depends(require_admin),
+    db = Depends(get_db),
+):
+    from app.models.relational import User
+    tenant_id = current_tenant_id(user_ctx)
+    target = await db.get(User, body.user_id)
+    if not target or target.tenant_id != tenant_id:
+        raise HTTPException(404, "User not found")
+    principal = {"uid": target.id, "sub": target.username, "is_admin": target.is_admin, "tenant_id": tenant_id}
+    if body.form_id is not None:
+        decision = await evaluate_form_permission(
+            principal,
+            body.form_id,
+            body.action,
+            db,
+            field_name=body.field_name,
+            record_data=body.record,
+        )
+    else:
+        allowed = await has_permission(principal, body.resource_type, body.resource_key, body.action, db)
+        decision = {
+            "allowed": allowed,
+            "source": "role_permission",
+            "reason": "generic RBAC evaluation",
+            "matched": [],
+        }
+    await write_audit_log(
+        action="simulate_permission",
+        resource_type="permission",
+        user_id=current_user_id(user_ctx),
+        tenant_id=tenant_id,
+        new_values=body.dict(),
+    )
+    return {"data": decision}
 
 
 # ── Audit Logs ──────────────────────────────────────────

@@ -3,7 +3,7 @@
 import json
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,6 +17,7 @@ from app.services.ai.agent_runs import cancel_agent_run, confirm_agent_run, crea
 from app.services.ai.audit import list_ai_audit_logs, record_ai_event
 from app.services.ai.client import get_provider
 from app.services.ai.confirmations import consume_confirmation_token
+from app.services.ai.agent_context_router import agent_context_router
 from app.services.ai.context_builder import context_builder
 from app.services.ai.memory import memory_service
 from app.services.ai.orchestrator import run_agent
@@ -101,6 +102,10 @@ def _user_key(user: dict[str, Any]) -> str:
 
 
 def _now_iso(value: Any) -> str | None:
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()
     return value.isoformat() if hasattr(value, "isoformat") else None
 
 
@@ -327,7 +332,33 @@ async def _run_agent_for_user(body: AgentRequest, current_user: dict):
     if (body.context or {}).get("surface") == "knowledge":
         result = await _run_knowledge_agent_surface_with_context(body)
     else:
+        context_need = agent_context_router.classify(body.message, body.context)
+        semantic_context: dict[str, Any] = {"intent": context_need, "objects": [], "records": [], "relations": []}
+        if context_need in {"business_query", "visible_dataset", "current_object", "semantic_graph", "draft_action"}:
+            async with db_session() as session:
+                semantic_context = await agent_context_router.build_semantic_context(
+                    session,
+                    message=body.message,
+                    context=body.context or {},
+                    tenant_id=current_tenant_id(current_user),
+                )
+            body.context = {
+                **(body.context or {}),
+                "contextNeed": context_need,
+                "semanticContext": semantic_context,
+            }
         result = await run_agent(body, current_user)
+        result.steps.insert(
+            0,
+            {
+                "id": "step-context-intent",
+                "type": "context",
+                "status": "completed",
+                "intent": context_need,
+                "semantic_objects": len(semantic_context.get("objects") or []),
+                "semantic_records": semantic_context.get("record_count", 0),
+            },
+        )
         conversation_id = (body.context or {}).get("conversation_id") or (body.context or {}).get("conversationId")
         if conversation_id:
             async with db_session() as session:

@@ -12,6 +12,14 @@ def test_detect_intent_oee_and_general():
     assert detect_intent("hello assistant") == "general"
 
 
+def test_ai_timestamp_serialization_marks_database_utc_values():
+    from datetime import datetime
+
+    from app.api.ai_assistant import _now_iso
+
+    assert _now_iso(datetime(2026, 5, 27, 14, 21, 0)) == "2026-05-27T14:21:00+00:00"
+
+
 @pytest.mark.asyncio
 async def test_chat_returns_fallback_equipment_response():
     from app.api.ai_assistant import ChatRequest, chat

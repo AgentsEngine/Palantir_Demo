@@ -1,26 +1,2562 @@
 [
   {
     "id": 1,
-    "name": "宁海智能制造中心",
-    "location": "浙江省宁波市宁海县",
-    "capacity": 50000,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 101 号",
+    "capacity": 30300,
     "status": "active",
-    "description": "集团总部工厂，涵盖精密加工、装配和检验全流程"
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
   },
   {
     "id": 2,
-    "name": "苏州精密部件厂",
-    "location": "江苏省苏州市工业园区",
-    "capacity": 30000,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 102 号",
+    "capacity": 32600,
     "status": "active",
-    "description": "专注精密机械部件加工"
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
   },
   {
     "id": 3,
-    "name": "武汉电子组装厂",
-    "location": "湖北省武汉市光谷",
-    "capacity": 80000,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 103 号",
+    "capacity": 34900,
     "status": "active",
-    "description": "电子元器件组装与测试"
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 4,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 104 号",
+    "capacity": 37200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 5,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 105 号",
+    "capacity": 39500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 6,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 106 号",
+    "capacity": 41800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 7,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 107 号",
+    "capacity": 44100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 8,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 108 号",
+    "capacity": 46400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 9,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 109 号",
+    "capacity": 48700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 10,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 110 号",
+    "capacity": 51000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 11,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 111 号",
+    "capacity": 53300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 12,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 112 号",
+    "capacity": 55600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 13,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 113 号",
+    "capacity": 57900,
+    "status": "maintenance",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 14,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 114 号",
+    "capacity": 60200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 15,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 115 号",
+    "capacity": 62500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 16,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 116 号",
+    "capacity": 64800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 17,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 117 号",
+    "capacity": 67100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 18,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 118 号",
+    "capacity": 69400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 19,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 119 号",
+    "capacity": 71700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 20,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 120 号",
+    "capacity": 74000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 21,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 121 号",
+    "capacity": 76300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 22,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 122 号",
+    "capacity": 78600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 23,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 123 号",
+    "capacity": 80900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 24,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 124 号",
+    "capacity": 83200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 25,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 125 号",
+    "capacity": 85500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 26,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 126 号",
+    "capacity": 87800,
+    "status": "maintenance",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 27,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 127 号",
+    "capacity": 90100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 28,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 128 号",
+    "capacity": 92400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 29,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 129 号",
+    "capacity": 94700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 30,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 130 号",
+    "capacity": 97000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 31,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 131 号",
+    "capacity": 99300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 32,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 132 号",
+    "capacity": 101600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 33,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 133 号",
+    "capacity": 103900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 34,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 134 号",
+    "capacity": 106200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 35,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 135 号",
+    "capacity": 108500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 36,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 136 号",
+    "capacity": 110800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 37,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 137 号",
+    "capacity": 113100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 38,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 138 号",
+    "capacity": 115400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 39,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 139 号",
+    "capacity": 117700,
+    "status": "maintenance",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 40,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 140 号",
+    "capacity": 120000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 41,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 141 号",
+    "capacity": 122300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 42,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 142 号",
+    "capacity": 124600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 43,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 143 号",
+    "capacity": 126900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 44,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 144 号",
+    "capacity": 129200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 45,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 145 号",
+    "capacity": 131500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 46,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 146 号",
+    "capacity": 133800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 47,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 147 号",
+    "capacity": 136100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 48,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 148 号",
+    "capacity": 138400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 49,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 149 号",
+    "capacity": 140700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 50,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 150 号",
+    "capacity": 143000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 51,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 151 号",
+    "capacity": 145300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 52,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 152 号",
+    "capacity": 147600,
+    "status": "maintenance",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 53,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 153 号",
+    "capacity": 149900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 54,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 154 号",
+    "capacity": 152200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 55,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 155 号",
+    "capacity": 154500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 56,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 156 号",
+    "capacity": 156800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 57,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 157 号",
+    "capacity": 159100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 58,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 158 号",
+    "capacity": 161400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 59,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 159 号",
+    "capacity": 163700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 60,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 160 号",
+    "capacity": 166000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 61,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 161 号",
+    "capacity": 168300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 62,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 162 号",
+    "capacity": 170600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 63,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 163 号",
+    "capacity": 172900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 64,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 164 号",
+    "capacity": 175200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 65,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 165 号",
+    "capacity": 177500,
+    "status": "maintenance",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 66,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 166 号",
+    "capacity": 179800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 67,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 167 号",
+    "capacity": 182100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 68,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 168 号",
+    "capacity": 184400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 69,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 169 号",
+    "capacity": 186700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 70,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 170 号",
+    "capacity": 189000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 71,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 171 号",
+    "capacity": 191300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 72,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 172 号",
+    "capacity": 193600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 73,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 173 号",
+    "capacity": 195900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 74,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 174 号",
+    "capacity": 198200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 75,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 175 号",
+    "capacity": 200500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 76,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 176 号",
+    "capacity": 202800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 77,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 177 号",
+    "capacity": 205100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 78,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 178 号",
+    "capacity": 207400,
+    "status": "maintenance",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 79,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 179 号",
+    "capacity": 209700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 80,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 180 号",
+    "capacity": 212000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 81,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 181 号",
+    "capacity": 214300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 82,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 182 号",
+    "capacity": 216600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 83,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 183 号",
+    "capacity": 218900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 84,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 184 号",
+    "capacity": 221200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 85,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 185 号",
+    "capacity": 223500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 86,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 186 号",
+    "capacity": 225800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 87,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 187 号",
+    "capacity": 228100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 88,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 188 号",
+    "capacity": 230400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 89,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 189 号",
+    "capacity": 232700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 90,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 190 号",
+    "capacity": 235000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 91,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 191 号",
+    "capacity": 237300,
+    "status": "maintenance",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 92,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 192 号",
+    "capacity": 239600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 93,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 193 号",
+    "capacity": 241900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 94,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 194 号",
+    "capacity": 244200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 95,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 195 号",
+    "capacity": 246500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 96,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 196 号",
+    "capacity": 248800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 97,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 197 号",
+    "capacity": 251100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 98,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 198 号",
+    "capacity": 253400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 99,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 199 号",
+    "capacity": 255700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 100,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 200 号",
+    "capacity": 258000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 101,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 201 号",
+    "capacity": 260300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 102,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 202 号",
+    "capacity": 262600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 103,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 203 号",
+    "capacity": 264900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 104,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 204 号",
+    "capacity": 267200,
+    "status": "maintenance",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 105,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 205 号",
+    "capacity": 269500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 106,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 206 号",
+    "capacity": 271800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 107,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 207 号",
+    "capacity": 274100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 108,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 208 号",
+    "capacity": 276400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 109,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 209 号",
+    "capacity": 278700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 110,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 210 号",
+    "capacity": 281000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 111,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 211 号",
+    "capacity": 283300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 112,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 212 号",
+    "capacity": 285600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 113,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 213 号",
+    "capacity": 287900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 114,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 214 号",
+    "capacity": 290200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 115,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 215 号",
+    "capacity": 292500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 116,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 216 号",
+    "capacity": 294800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 117,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 217 号",
+    "capacity": 297100,
+    "status": "maintenance",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 118,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 218 号",
+    "capacity": 299400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 119,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 219 号",
+    "capacity": 301700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 120,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 220 号",
+    "capacity": 304000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 121,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 221 号",
+    "capacity": 306300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 122,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 222 号",
+    "capacity": 308600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 123,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 223 号",
+    "capacity": 310900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 124,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 224 号",
+    "capacity": 313200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 125,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 225 号",
+    "capacity": 315500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 126,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 226 号",
+    "capacity": 317800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 127,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 227 号",
+    "capacity": 320100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 128,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 228 号",
+    "capacity": 322400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 129,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 229 号",
+    "capacity": 324700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 130,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 230 号",
+    "capacity": 327000,
+    "status": "maintenance",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 131,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 231 号",
+    "capacity": 329300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 132,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 232 号",
+    "capacity": 331600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 133,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 233 号",
+    "capacity": 333900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 134,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 234 号",
+    "capacity": 336200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 135,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 235 号",
+    "capacity": 338500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 136,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 236 号",
+    "capacity": 340800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 137,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 237 号",
+    "capacity": 343100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 138,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 238 号",
+    "capacity": 345400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 139,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 239 号",
+    "capacity": 347700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 140,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 240 号",
+    "capacity": 350000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 141,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 241 号",
+    "capacity": 352300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 142,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 242 号",
+    "capacity": 354600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 143,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 243 号",
+    "capacity": 356900,
+    "status": "maintenance",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 144,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 244 号",
+    "capacity": 359200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 145,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 245 号",
+    "capacity": 361500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 146,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 246 号",
+    "capacity": 363800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 147,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 247 号",
+    "capacity": 366100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 148,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 248 号",
+    "capacity": 368400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 149,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 249 号",
+    "capacity": 370700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 150,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 250 号",
+    "capacity": 373000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 151,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 251 号",
+    "capacity": 375300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 152,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 252 号",
+    "capacity": 377600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 153,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 253 号",
+    "capacity": 379900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 154,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 254 号",
+    "capacity": 382200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 155,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 255 号",
+    "capacity": 384500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 156,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 256 号",
+    "capacity": 386800,
+    "status": "maintenance",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 157,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 257 号",
+    "capacity": 389100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 158,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 258 号",
+    "capacity": 391400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 159,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 259 号",
+    "capacity": 393700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 160,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 260 号",
+    "capacity": 396000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 161,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 261 号",
+    "capacity": 398300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 162,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 262 号",
+    "capacity": 400600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 163,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 263 号",
+    "capacity": 402900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 164,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 264 号",
+    "capacity": 405200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 165,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 265 号",
+    "capacity": 407500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 166,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 266 号",
+    "capacity": 409800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 167,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 267 号",
+    "capacity": 412100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 168,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 268 号",
+    "capacity": 414400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 169,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 269 号",
+    "capacity": 416700,
+    "status": "maintenance",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 170,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 270 号",
+    "capacity": 419000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 171,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 271 号",
+    "capacity": 421300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 172,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 272 号",
+    "capacity": 423600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 173,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 273 号",
+    "capacity": 425900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 174,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 274 号",
+    "capacity": 428200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 175,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 275 号",
+    "capacity": 430500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 176,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 276 号",
+    "capacity": 432800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 177,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 277 号",
+    "capacity": 435100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 178,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 278 号",
+    "capacity": 437400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 179,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 279 号",
+    "capacity": 439700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 180,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 280 号",
+    "capacity": 442000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 181,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 281 号",
+    "capacity": 444300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 182,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 282 号",
+    "capacity": 446600,
+    "status": "maintenance",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 183,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 283 号",
+    "capacity": 448900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 184,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 284 号",
+    "capacity": 451200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 185,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 285 号",
+    "capacity": 453500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 186,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 286 号",
+    "capacity": 455800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 187,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 287 号",
+    "capacity": 458100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 188,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 288 号",
+    "capacity": 460400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 189,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 289 号",
+    "capacity": 462700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 190,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 290 号",
+    "capacity": 465000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 191,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 291 号",
+    "capacity": 467300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 192,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 292 号",
+    "capacity": 469600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 193,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 293 号",
+    "capacity": 471900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 194,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 294 号",
+    "capacity": 474200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 195,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 295 号",
+    "capacity": 476500,
+    "status": "maintenance",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 196,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 296 号",
+    "capacity": 478800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 197,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 297 号",
+    "capacity": 481100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 198,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 298 号",
+    "capacity": 483400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 199,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 299 号",
+    "capacity": 485700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 200,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 300 号",
+    "capacity": 488000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 201,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 301 号",
+    "capacity": 490300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 202,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 302 号",
+    "capacity": 492600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 203,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 303 号",
+    "capacity": 494900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 204,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 304 号",
+    "capacity": 497200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 205,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 305 号",
+    "capacity": 499500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 206,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 306 号",
+    "capacity": 501800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 207,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 307 号",
+    "capacity": 504100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 208,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 308 号",
+    "capacity": 506400,
+    "status": "maintenance",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 209,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 309 号",
+    "capacity": 508700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 210,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 310 号",
+    "capacity": 511000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 211,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 311 号",
+    "capacity": 513300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 212,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 312 号",
+    "capacity": 515600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 213,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 313 号",
+    "capacity": 517900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 214,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 314 号",
+    "capacity": 520200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 215,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 315 号",
+    "capacity": 522500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 216,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 316 号",
+    "capacity": 524800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 217,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 317 号",
+    "capacity": 527100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 218,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 318 号",
+    "capacity": 529400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 219,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 319 号",
+    "capacity": 531700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 220,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 320 号",
+    "capacity": 534000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 221,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 321 号",
+    "capacity": 536300,
+    "status": "maintenance",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 222,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 322 号",
+    "capacity": 538600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 223,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 323 号",
+    "capacity": 540900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 224,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 324 号",
+    "capacity": 543200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 225,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 325 号",
+    "capacity": 545500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 226,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 326 号",
+    "capacity": 547800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 227,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 327 号",
+    "capacity": 550100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 228,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 328 号",
+    "capacity": 552400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 229,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 329 号",
+    "capacity": 554700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 230,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 330 号",
+    "capacity": 557000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 231,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 331 号",
+    "capacity": 559300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 232,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 332 号",
+    "capacity": 561600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 233,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 333 号",
+    "capacity": 563900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 234,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 334 号",
+    "capacity": 566200,
+    "status": "maintenance",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 235,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 335 号",
+    "capacity": 568500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 236,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 336 号",
+    "capacity": 570800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 237,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 337 号",
+    "capacity": 573100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 238,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 338 号",
+    "capacity": 575400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 239,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 339 号",
+    "capacity": 577700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 240,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 340 号",
+    "capacity": 580000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 241,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 341 号",
+    "capacity": 582300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 242,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 342 号",
+    "capacity": 584600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 243,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 343 号",
+    "capacity": 586900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 244,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 344 号",
+    "capacity": 589200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 245,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 345 号",
+    "capacity": 591500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 246,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 346 号",
+    "capacity": 593800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 247,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 347 号",
+    "capacity": 596100,
+    "status": "maintenance",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 248,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 348 号",
+    "capacity": 598400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 249,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 349 号",
+    "capacity": 600700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 250,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 350 号",
+    "capacity": 603000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 251,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 351 号",
+    "capacity": 605300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 252,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 352 号",
+    "capacity": 607600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 253,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 353 号",
+    "capacity": 609900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 254,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 354 号",
+    "capacity": 612200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 255,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 355 号",
+    "capacity": 614500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 256,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 356 号",
+    "capacity": 616800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 257,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 357 号",
+    "capacity": 619100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 258,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 358 号",
+    "capacity": 621400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 259,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 359 号",
+    "capacity": 623700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 260,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 360 号",
+    "capacity": 626000,
+    "status": "maintenance",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 261,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 361 号",
+    "capacity": 628300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 262,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 362 号",
+    "capacity": 630600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 263,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 363 号",
+    "capacity": 632900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 264,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 364 号",
+    "capacity": 635200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 265,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 365 号",
+    "capacity": 637500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 266,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 366 号",
+    "capacity": 639800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 267,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 367 号",
+    "capacity": 642100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 268,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 368 号",
+    "capacity": 644400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 269,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 369 号",
+    "capacity": 646700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 270,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 370 号",
+    "capacity": 649000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 271,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 371 号",
+    "capacity": 651300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 272,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 372 号",
+    "capacity": 653600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 273,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 373 号",
+    "capacity": 655900,
+    "status": "maintenance",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 274,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 374 号",
+    "capacity": 658200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 275,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 375 号",
+    "capacity": 660500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 276,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 376 号",
+    "capacity": 662800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 277,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 377 号",
+    "capacity": 665100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 278,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 378 号",
+    "capacity": 667400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 279,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 379 号",
+    "capacity": 669700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 280,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 380 号",
+    "capacity": 672000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 281,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 381 号",
+    "capacity": 674300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 282,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 382 号",
+    "capacity": 676600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 283,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 383 号",
+    "capacity": 678900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 284,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 384 号",
+    "capacity": 681200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 285,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 385 号",
+    "capacity": 683500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 286,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 386 号",
+    "capacity": 685800,
+    "status": "maintenance",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 287,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 387 号",
+    "capacity": 688100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 288,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 388 号",
+    "capacity": 690400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 289,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 389 号",
+    "capacity": 692700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 290,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 390 号",
+    "capacity": 695000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 291,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 391 号",
+    "capacity": 697300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 292,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 392 号",
+    "capacity": 699600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 293,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 393 号",
+    "capacity": 701900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 294,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 394 号",
+    "capacity": 704200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 295,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 395 号",
+    "capacity": 706500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 296,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 396 号",
+    "capacity": 708800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 297,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 397 号",
+    "capacity": 711100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 298,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 398 号",
+    "capacity": 713400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 299,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 399 号",
+    "capacity": 715700,
+    "status": "maintenance",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 300,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 400 号",
+    "capacity": 718000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 301,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 401 号",
+    "capacity": 720300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 302,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 402 号",
+    "capacity": 722600,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 303,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 403 号",
+    "capacity": 724900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 304,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 404 号",
+    "capacity": 727200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 305,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 405 号",
+    "capacity": 729500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 306,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 406 号",
+    "capacity": 731800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 307,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 407 号",
+    "capacity": 734100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 308,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 408 号",
+    "capacity": 736400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 309,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 409 号",
+    "capacity": 738700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 310,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 410 号",
+    "capacity": 741000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 311,
+    "name": "苏州电子组装工厂",
+    "location": "苏州工业园区 411 号",
+    "capacity": 743300,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 312,
+    "name": "宁波机加工工厂",
+    "location": "宁波工业园区 412 号",
+    "capacity": 745600,
+    "status": "maintenance",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 313,
+    "name": "武汉压铸工厂",
+    "location": "武汉工业园区 413 号",
+    "capacity": 747900,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 314,
+    "name": "成都新能源部件工厂",
+    "location": "成都工业园区 414 号",
+    "capacity": 750200,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 315,
+    "name": "合肥精密装配工厂",
+    "location": "合肥工业园区 415 号",
+    "capacity": 752500,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 316,
+    "name": "无锡电子组装工厂",
+    "location": "无锡工业园区 416 号",
+    "capacity": 754800,
+    "status": "active",
+    "description": "覆盖电子组装制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 317,
+    "name": "常州机加工工厂",
+    "location": "常州工业园区 417 号",
+    "capacity": 757100,
+    "status": "active",
+    "description": "覆盖机加工制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 318,
+    "name": "杭州压铸工厂",
+    "location": "杭州工业园区 418 号",
+    "capacity": 759400,
+    "status": "active",
+    "description": "覆盖压铸制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 319,
+    "name": "青岛新能源部件工厂",
+    "location": "青岛工业园区 419 号",
+    "capacity": 761700,
+    "status": "active",
+    "description": "覆盖新能源部件制造、检验、仓储和追溯业务。"
+  },
+  {
+    "id": 320,
+    "name": "上海精密装配工厂",
+    "location": "上海工业园区 420 号",
+    "capacity": 764000,
+    "status": "active",
+    "description": "覆盖精密装配制造、检验、仓储和追溯业务。"
   }
 ]

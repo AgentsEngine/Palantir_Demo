@@ -1,58 +1,4482 @@
 [
   {
     "id": 1,
-    "name": "CNC加工车间",
+    "name": "苏州SMT车间-001",
     "factory_id": 1,
-    "area": 2000,
-    "workshop_type": "machining"
-  },
-  {
-    "id": 2,
-    "name": "焊接车间",
-    "factory_id": 1,
-    "area": 1500,
-    "workshop_type": "welding"
-  },
-  {
-    "id": 3,
-    "name": "装配车间",
-    "factory_id": 1,
-    "area": 3000,
-    "workshop_type": "assembly"
-  },
-  {
-    "id": 4,
-    "name": "质检中心",
-    "factory_id": 1,
-    "area": 800,
-    "workshop_type": "inspection"
-  },
-  {
-    "id": 5,
-    "name": "精密铸造车间",
-    "factory_id": 2,
-    "area": 1800,
-    "workshop_type": "casting"
-  },
-  {
-    "id": 6,
-    "name": "表面处理车间",
-    "factory_id": 2,
-    "area": 1200,
-    "workshop_type": "surface"
-  },
-  {
-    "id": 7,
-    "name": "SMT贴片车间",
-    "factory_id": 3,
-    "area": 2500,
+    "area": 770,
     "workshop_type": "smt"
   },
   {
-    "id": 8,
-    "name": "测试老化车间",
+    "id": 2,
+    "name": "宁波ASSEMBLY车间-002",
+    "factory_id": 2,
+    "area": 890,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 3,
+    "name": "武汉INSPECTION车间-003",
     "factory_id": 3,
-    "area": 2000,
+    "area": 1010,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 4,
+    "name": "成都WAREHOUSE车间-004",
+    "factory_id": 4,
+    "area": 1130,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 5,
+    "name": "合肥SURFACE车间-005",
+    "factory_id": 5,
+    "area": 1250,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 6,
+    "name": "无锡TESTING车间-006",
+    "factory_id": 6,
+    "area": 1370,
     "workshop_type": "testing"
+  },
+  {
+    "id": 7,
+    "name": "常州PACKAGING车间-007",
+    "factory_id": 7,
+    "area": 1490,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 8,
+    "name": "杭州MACHINING车间-008",
+    "factory_id": 8,
+    "area": 1610,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 9,
+    "name": "青岛SMT车间-009",
+    "factory_id": 9,
+    "area": 1730,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 10,
+    "name": "上海ASSEMBLY车间-010",
+    "factory_id": 10,
+    "area": 1850,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 11,
+    "name": "苏州INSPECTION车间-011",
+    "factory_id": 11,
+    "area": 1970,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 12,
+    "name": "宁波WAREHOUSE车间-012",
+    "factory_id": 12,
+    "area": 2090,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 13,
+    "name": "武汉SURFACE车间-013",
+    "factory_id": 13,
+    "area": 2210,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 14,
+    "name": "成都TESTING车间-014",
+    "factory_id": 14,
+    "area": 2330,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 15,
+    "name": "合肥PACKAGING车间-015",
+    "factory_id": 15,
+    "area": 2450,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 16,
+    "name": "无锡MACHINING车间-016",
+    "factory_id": 16,
+    "area": 2570,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 17,
+    "name": "常州SMT车间-017",
+    "factory_id": 17,
+    "area": 2690,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 18,
+    "name": "杭州ASSEMBLY车间-018",
+    "factory_id": 18,
+    "area": 650,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 19,
+    "name": "青岛INSPECTION车间-019",
+    "factory_id": 19,
+    "area": 770,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 20,
+    "name": "上海WAREHOUSE车间-020",
+    "factory_id": 20,
+    "area": 890,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 21,
+    "name": "苏州SURFACE车间-021",
+    "factory_id": 21,
+    "area": 1010,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 22,
+    "name": "宁波TESTING车间-022",
+    "factory_id": 22,
+    "area": 1130,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 23,
+    "name": "武汉PACKAGING车间-023",
+    "factory_id": 23,
+    "area": 1250,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 24,
+    "name": "成都MACHINING车间-024",
+    "factory_id": 24,
+    "area": 1370,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 25,
+    "name": "合肥SMT车间-025",
+    "factory_id": 25,
+    "area": 1490,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 26,
+    "name": "无锡ASSEMBLY车间-026",
+    "factory_id": 26,
+    "area": 1610,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 27,
+    "name": "常州INSPECTION车间-027",
+    "factory_id": 27,
+    "area": 1730,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 28,
+    "name": "杭州WAREHOUSE车间-028",
+    "factory_id": 28,
+    "area": 1850,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 29,
+    "name": "青岛SURFACE车间-029",
+    "factory_id": 29,
+    "area": 1970,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 30,
+    "name": "上海TESTING车间-030",
+    "factory_id": 30,
+    "area": 2090,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 31,
+    "name": "苏州PACKAGING车间-031",
+    "factory_id": 31,
+    "area": 2210,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 32,
+    "name": "宁波MACHINING车间-032",
+    "factory_id": 32,
+    "area": 2330,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 33,
+    "name": "武汉SMT车间-033",
+    "factory_id": 33,
+    "area": 2450,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 34,
+    "name": "成都ASSEMBLY车间-034",
+    "factory_id": 34,
+    "area": 2570,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 35,
+    "name": "合肥INSPECTION车间-035",
+    "factory_id": 35,
+    "area": 2690,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 36,
+    "name": "无锡WAREHOUSE车间-036",
+    "factory_id": 36,
+    "area": 650,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 37,
+    "name": "常州SURFACE车间-037",
+    "factory_id": 37,
+    "area": 770,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 38,
+    "name": "杭州TESTING车间-038",
+    "factory_id": 38,
+    "area": 890,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 39,
+    "name": "青岛PACKAGING车间-039",
+    "factory_id": 39,
+    "area": 1010,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 40,
+    "name": "上海MACHINING车间-040",
+    "factory_id": 40,
+    "area": 1130,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 41,
+    "name": "苏州SMT车间-041",
+    "factory_id": 41,
+    "area": 1250,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 42,
+    "name": "宁波ASSEMBLY车间-042",
+    "factory_id": 42,
+    "area": 1370,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 43,
+    "name": "武汉INSPECTION车间-043",
+    "factory_id": 43,
+    "area": 1490,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 44,
+    "name": "成都WAREHOUSE车间-044",
+    "factory_id": 44,
+    "area": 1610,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 45,
+    "name": "合肥SURFACE车间-045",
+    "factory_id": 45,
+    "area": 1730,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 46,
+    "name": "无锡TESTING车间-046",
+    "factory_id": 46,
+    "area": 1850,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 47,
+    "name": "常州PACKAGING车间-047",
+    "factory_id": 47,
+    "area": 1970,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 48,
+    "name": "杭州MACHINING车间-048",
+    "factory_id": 48,
+    "area": 2090,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 49,
+    "name": "青岛SMT车间-049",
+    "factory_id": 49,
+    "area": 2210,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 50,
+    "name": "上海ASSEMBLY车间-050",
+    "factory_id": 50,
+    "area": 2330,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 51,
+    "name": "苏州INSPECTION车间-051",
+    "factory_id": 51,
+    "area": 2450,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 52,
+    "name": "宁波WAREHOUSE车间-052",
+    "factory_id": 52,
+    "area": 2570,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 53,
+    "name": "武汉SURFACE车间-053",
+    "factory_id": 53,
+    "area": 2690,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 54,
+    "name": "成都TESTING车间-054",
+    "factory_id": 54,
+    "area": 650,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 55,
+    "name": "合肥PACKAGING车间-055",
+    "factory_id": 55,
+    "area": 770,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 56,
+    "name": "无锡MACHINING车间-056",
+    "factory_id": 56,
+    "area": 890,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 57,
+    "name": "常州SMT车间-057",
+    "factory_id": 57,
+    "area": 1010,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 58,
+    "name": "杭州ASSEMBLY车间-058",
+    "factory_id": 58,
+    "area": 1130,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 59,
+    "name": "青岛INSPECTION车间-059",
+    "factory_id": 59,
+    "area": 1250,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 60,
+    "name": "上海WAREHOUSE车间-060",
+    "factory_id": 60,
+    "area": 1370,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 61,
+    "name": "苏州SURFACE车间-061",
+    "factory_id": 61,
+    "area": 1490,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 62,
+    "name": "宁波TESTING车间-062",
+    "factory_id": 62,
+    "area": 1610,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 63,
+    "name": "武汉PACKAGING车间-063",
+    "factory_id": 63,
+    "area": 1730,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 64,
+    "name": "成都MACHINING车间-064",
+    "factory_id": 64,
+    "area": 1850,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 65,
+    "name": "合肥SMT车间-065",
+    "factory_id": 65,
+    "area": 1970,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 66,
+    "name": "无锡ASSEMBLY车间-066",
+    "factory_id": 66,
+    "area": 2090,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 67,
+    "name": "常州INSPECTION车间-067",
+    "factory_id": 67,
+    "area": 2210,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 68,
+    "name": "杭州WAREHOUSE车间-068",
+    "factory_id": 68,
+    "area": 2330,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 69,
+    "name": "青岛SURFACE车间-069",
+    "factory_id": 69,
+    "area": 2450,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 70,
+    "name": "上海TESTING车间-070",
+    "factory_id": 70,
+    "area": 2570,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 71,
+    "name": "苏州PACKAGING车间-071",
+    "factory_id": 71,
+    "area": 2690,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 72,
+    "name": "宁波MACHINING车间-072",
+    "factory_id": 72,
+    "area": 650,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 73,
+    "name": "武汉SMT车间-073",
+    "factory_id": 73,
+    "area": 770,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 74,
+    "name": "成都ASSEMBLY车间-074",
+    "factory_id": 74,
+    "area": 890,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 75,
+    "name": "合肥INSPECTION车间-075",
+    "factory_id": 75,
+    "area": 1010,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 76,
+    "name": "无锡WAREHOUSE车间-076",
+    "factory_id": 76,
+    "area": 1130,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 77,
+    "name": "常州SURFACE车间-077",
+    "factory_id": 77,
+    "area": 1250,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 78,
+    "name": "杭州TESTING车间-078",
+    "factory_id": 78,
+    "area": 1370,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 79,
+    "name": "青岛PACKAGING车间-079",
+    "factory_id": 79,
+    "area": 1490,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 80,
+    "name": "上海MACHINING车间-080",
+    "factory_id": 80,
+    "area": 1610,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 81,
+    "name": "苏州SMT车间-081",
+    "factory_id": 81,
+    "area": 1730,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 82,
+    "name": "宁波ASSEMBLY车间-082",
+    "factory_id": 82,
+    "area": 1850,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 83,
+    "name": "武汉INSPECTION车间-083",
+    "factory_id": 83,
+    "area": 1970,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 84,
+    "name": "成都WAREHOUSE车间-084",
+    "factory_id": 84,
+    "area": 2090,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 85,
+    "name": "合肥SURFACE车间-085",
+    "factory_id": 85,
+    "area": 2210,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 86,
+    "name": "无锡TESTING车间-086",
+    "factory_id": 86,
+    "area": 2330,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 87,
+    "name": "常州PACKAGING车间-087",
+    "factory_id": 87,
+    "area": 2450,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 88,
+    "name": "杭州MACHINING车间-088",
+    "factory_id": 88,
+    "area": 2570,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 89,
+    "name": "青岛SMT车间-089",
+    "factory_id": 89,
+    "area": 2690,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 90,
+    "name": "上海ASSEMBLY车间-090",
+    "factory_id": 90,
+    "area": 650,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 91,
+    "name": "苏州INSPECTION车间-091",
+    "factory_id": 91,
+    "area": 770,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 92,
+    "name": "宁波WAREHOUSE车间-092",
+    "factory_id": 92,
+    "area": 890,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 93,
+    "name": "武汉SURFACE车间-093",
+    "factory_id": 93,
+    "area": 1010,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 94,
+    "name": "成都TESTING车间-094",
+    "factory_id": 94,
+    "area": 1130,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 95,
+    "name": "合肥PACKAGING车间-095",
+    "factory_id": 95,
+    "area": 1250,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 96,
+    "name": "无锡MACHINING车间-096",
+    "factory_id": 96,
+    "area": 1370,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 97,
+    "name": "常州SMT车间-097",
+    "factory_id": 97,
+    "area": 1490,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 98,
+    "name": "杭州ASSEMBLY车间-098",
+    "factory_id": 98,
+    "area": 1610,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 99,
+    "name": "青岛INSPECTION车间-099",
+    "factory_id": 99,
+    "area": 1730,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 100,
+    "name": "上海WAREHOUSE车间-100",
+    "factory_id": 100,
+    "area": 1850,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 101,
+    "name": "苏州SURFACE车间-101",
+    "factory_id": 101,
+    "area": 1970,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 102,
+    "name": "宁波TESTING车间-102",
+    "factory_id": 102,
+    "area": 2090,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 103,
+    "name": "武汉PACKAGING车间-103",
+    "factory_id": 103,
+    "area": 2210,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 104,
+    "name": "成都MACHINING车间-104",
+    "factory_id": 104,
+    "area": 2330,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 105,
+    "name": "合肥SMT车间-105",
+    "factory_id": 105,
+    "area": 2450,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 106,
+    "name": "无锡ASSEMBLY车间-106",
+    "factory_id": 106,
+    "area": 2570,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 107,
+    "name": "常州INSPECTION车间-107",
+    "factory_id": 107,
+    "area": 2690,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 108,
+    "name": "杭州WAREHOUSE车间-108",
+    "factory_id": 108,
+    "area": 650,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 109,
+    "name": "青岛SURFACE车间-109",
+    "factory_id": 109,
+    "area": 770,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 110,
+    "name": "上海TESTING车间-110",
+    "factory_id": 110,
+    "area": 890,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 111,
+    "name": "苏州PACKAGING车间-111",
+    "factory_id": 111,
+    "area": 1010,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 112,
+    "name": "宁波MACHINING车间-112",
+    "factory_id": 112,
+    "area": 1130,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 113,
+    "name": "武汉SMT车间-113",
+    "factory_id": 113,
+    "area": 1250,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 114,
+    "name": "成都ASSEMBLY车间-114",
+    "factory_id": 114,
+    "area": 1370,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 115,
+    "name": "合肥INSPECTION车间-115",
+    "factory_id": 115,
+    "area": 1490,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 116,
+    "name": "无锡WAREHOUSE车间-116",
+    "factory_id": 116,
+    "area": 1610,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 117,
+    "name": "常州SURFACE车间-117",
+    "factory_id": 117,
+    "area": 1730,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 118,
+    "name": "杭州TESTING车间-118",
+    "factory_id": 118,
+    "area": 1850,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 119,
+    "name": "青岛PACKAGING车间-119",
+    "factory_id": 119,
+    "area": 1970,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 120,
+    "name": "上海MACHINING车间-120",
+    "factory_id": 120,
+    "area": 2090,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 121,
+    "name": "苏州SMT车间-121",
+    "factory_id": 121,
+    "area": 2210,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 122,
+    "name": "宁波ASSEMBLY车间-122",
+    "factory_id": 122,
+    "area": 2330,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 123,
+    "name": "武汉INSPECTION车间-123",
+    "factory_id": 123,
+    "area": 2450,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 124,
+    "name": "成都WAREHOUSE车间-124",
+    "factory_id": 124,
+    "area": 2570,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 125,
+    "name": "合肥SURFACE车间-125",
+    "factory_id": 125,
+    "area": 2690,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 126,
+    "name": "无锡TESTING车间-126",
+    "factory_id": 126,
+    "area": 650,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 127,
+    "name": "常州PACKAGING车间-127",
+    "factory_id": 127,
+    "area": 770,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 128,
+    "name": "杭州MACHINING车间-128",
+    "factory_id": 128,
+    "area": 890,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 129,
+    "name": "青岛SMT车间-129",
+    "factory_id": 129,
+    "area": 1010,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 130,
+    "name": "上海ASSEMBLY车间-130",
+    "factory_id": 130,
+    "area": 1130,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 131,
+    "name": "苏州INSPECTION车间-131",
+    "factory_id": 131,
+    "area": 1250,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 132,
+    "name": "宁波WAREHOUSE车间-132",
+    "factory_id": 132,
+    "area": 1370,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 133,
+    "name": "武汉SURFACE车间-133",
+    "factory_id": 133,
+    "area": 1490,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 134,
+    "name": "成都TESTING车间-134",
+    "factory_id": 134,
+    "area": 1610,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 135,
+    "name": "合肥PACKAGING车间-135",
+    "factory_id": 135,
+    "area": 1730,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 136,
+    "name": "无锡MACHINING车间-136",
+    "factory_id": 136,
+    "area": 1850,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 137,
+    "name": "常州SMT车间-137",
+    "factory_id": 137,
+    "area": 1970,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 138,
+    "name": "杭州ASSEMBLY车间-138",
+    "factory_id": 138,
+    "area": 2090,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 139,
+    "name": "青岛INSPECTION车间-139",
+    "factory_id": 139,
+    "area": 2210,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 140,
+    "name": "上海WAREHOUSE车间-140",
+    "factory_id": 140,
+    "area": 2330,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 141,
+    "name": "苏州SURFACE车间-141",
+    "factory_id": 141,
+    "area": 2450,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 142,
+    "name": "宁波TESTING车间-142",
+    "factory_id": 142,
+    "area": 2570,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 143,
+    "name": "武汉PACKAGING车间-143",
+    "factory_id": 143,
+    "area": 2690,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 144,
+    "name": "成都MACHINING车间-144",
+    "factory_id": 144,
+    "area": 650,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 145,
+    "name": "合肥SMT车间-145",
+    "factory_id": 145,
+    "area": 770,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 146,
+    "name": "无锡ASSEMBLY车间-146",
+    "factory_id": 146,
+    "area": 890,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 147,
+    "name": "常州INSPECTION车间-147",
+    "factory_id": 147,
+    "area": 1010,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 148,
+    "name": "杭州WAREHOUSE车间-148",
+    "factory_id": 148,
+    "area": 1130,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 149,
+    "name": "青岛SURFACE车间-149",
+    "factory_id": 149,
+    "area": 1250,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 150,
+    "name": "上海TESTING车间-150",
+    "factory_id": 150,
+    "area": 1370,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 151,
+    "name": "苏州PACKAGING车间-151",
+    "factory_id": 151,
+    "area": 1490,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 152,
+    "name": "宁波MACHINING车间-152",
+    "factory_id": 152,
+    "area": 1610,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 153,
+    "name": "武汉SMT车间-153",
+    "factory_id": 153,
+    "area": 1730,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 154,
+    "name": "成都ASSEMBLY车间-154",
+    "factory_id": 154,
+    "area": 1850,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 155,
+    "name": "合肥INSPECTION车间-155",
+    "factory_id": 155,
+    "area": 1970,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 156,
+    "name": "无锡WAREHOUSE车间-156",
+    "factory_id": 156,
+    "area": 2090,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 157,
+    "name": "常州SURFACE车间-157",
+    "factory_id": 157,
+    "area": 2210,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 158,
+    "name": "杭州TESTING车间-158",
+    "factory_id": 158,
+    "area": 2330,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 159,
+    "name": "青岛PACKAGING车间-159",
+    "factory_id": 159,
+    "area": 2450,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 160,
+    "name": "上海MACHINING车间-160",
+    "factory_id": 160,
+    "area": 2570,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 161,
+    "name": "苏州SMT车间-161",
+    "factory_id": 161,
+    "area": 2690,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 162,
+    "name": "宁波ASSEMBLY车间-162",
+    "factory_id": 162,
+    "area": 650,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 163,
+    "name": "武汉INSPECTION车间-163",
+    "factory_id": 163,
+    "area": 770,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 164,
+    "name": "成都WAREHOUSE车间-164",
+    "factory_id": 164,
+    "area": 890,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 165,
+    "name": "合肥SURFACE车间-165",
+    "factory_id": 165,
+    "area": 1010,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 166,
+    "name": "无锡TESTING车间-166",
+    "factory_id": 166,
+    "area": 1130,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 167,
+    "name": "常州PACKAGING车间-167",
+    "factory_id": 167,
+    "area": 1250,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 168,
+    "name": "杭州MACHINING车间-168",
+    "factory_id": 168,
+    "area": 1370,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 169,
+    "name": "青岛SMT车间-169",
+    "factory_id": 169,
+    "area": 1490,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 170,
+    "name": "上海ASSEMBLY车间-170",
+    "factory_id": 170,
+    "area": 1610,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 171,
+    "name": "苏州INSPECTION车间-171",
+    "factory_id": 171,
+    "area": 1730,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 172,
+    "name": "宁波WAREHOUSE车间-172",
+    "factory_id": 172,
+    "area": 1850,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 173,
+    "name": "武汉SURFACE车间-173",
+    "factory_id": 173,
+    "area": 1970,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 174,
+    "name": "成都TESTING车间-174",
+    "factory_id": 174,
+    "area": 2090,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 175,
+    "name": "合肥PACKAGING车间-175",
+    "factory_id": 175,
+    "area": 2210,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 176,
+    "name": "无锡MACHINING车间-176",
+    "factory_id": 176,
+    "area": 2330,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 177,
+    "name": "常州SMT车间-177",
+    "factory_id": 177,
+    "area": 2450,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 178,
+    "name": "杭州ASSEMBLY车间-178",
+    "factory_id": 178,
+    "area": 2570,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 179,
+    "name": "青岛INSPECTION车间-179",
+    "factory_id": 179,
+    "area": 2690,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 180,
+    "name": "上海WAREHOUSE车间-180",
+    "factory_id": 180,
+    "area": 650,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 181,
+    "name": "苏州SURFACE车间-181",
+    "factory_id": 181,
+    "area": 770,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 182,
+    "name": "宁波TESTING车间-182",
+    "factory_id": 182,
+    "area": 890,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 183,
+    "name": "武汉PACKAGING车间-183",
+    "factory_id": 183,
+    "area": 1010,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 184,
+    "name": "成都MACHINING车间-184",
+    "factory_id": 184,
+    "area": 1130,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 185,
+    "name": "合肥SMT车间-185",
+    "factory_id": 185,
+    "area": 1250,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 186,
+    "name": "无锡ASSEMBLY车间-186",
+    "factory_id": 186,
+    "area": 1370,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 187,
+    "name": "常州INSPECTION车间-187",
+    "factory_id": 187,
+    "area": 1490,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 188,
+    "name": "杭州WAREHOUSE车间-188",
+    "factory_id": 188,
+    "area": 1610,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 189,
+    "name": "青岛SURFACE车间-189",
+    "factory_id": 189,
+    "area": 1730,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 190,
+    "name": "上海TESTING车间-190",
+    "factory_id": 190,
+    "area": 1850,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 191,
+    "name": "苏州PACKAGING车间-191",
+    "factory_id": 191,
+    "area": 1970,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 192,
+    "name": "宁波MACHINING车间-192",
+    "factory_id": 192,
+    "area": 2090,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 193,
+    "name": "武汉SMT车间-193",
+    "factory_id": 193,
+    "area": 2210,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 194,
+    "name": "成都ASSEMBLY车间-194",
+    "factory_id": 194,
+    "area": 2330,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 195,
+    "name": "合肥INSPECTION车间-195",
+    "factory_id": 195,
+    "area": 2450,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 196,
+    "name": "无锡WAREHOUSE车间-196",
+    "factory_id": 196,
+    "area": 2570,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 197,
+    "name": "常州SURFACE车间-197",
+    "factory_id": 197,
+    "area": 2690,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 198,
+    "name": "杭州TESTING车间-198",
+    "factory_id": 198,
+    "area": 650,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 199,
+    "name": "青岛PACKAGING车间-199",
+    "factory_id": 199,
+    "area": 770,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 200,
+    "name": "上海MACHINING车间-200",
+    "factory_id": 200,
+    "area": 890,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 201,
+    "name": "苏州SMT车间-201",
+    "factory_id": 201,
+    "area": 1010,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 202,
+    "name": "宁波ASSEMBLY车间-202",
+    "factory_id": 202,
+    "area": 1130,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 203,
+    "name": "武汉INSPECTION车间-203",
+    "factory_id": 203,
+    "area": 1250,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 204,
+    "name": "成都WAREHOUSE车间-204",
+    "factory_id": 204,
+    "area": 1370,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 205,
+    "name": "合肥SURFACE车间-205",
+    "factory_id": 205,
+    "area": 1490,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 206,
+    "name": "无锡TESTING车间-206",
+    "factory_id": 206,
+    "area": 1610,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 207,
+    "name": "常州PACKAGING车间-207",
+    "factory_id": 207,
+    "area": 1730,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 208,
+    "name": "杭州MACHINING车间-208",
+    "factory_id": 208,
+    "area": 1850,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 209,
+    "name": "青岛SMT车间-209",
+    "factory_id": 209,
+    "area": 1970,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 210,
+    "name": "上海ASSEMBLY车间-210",
+    "factory_id": 210,
+    "area": 2090,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 211,
+    "name": "苏州INSPECTION车间-211",
+    "factory_id": 211,
+    "area": 2210,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 212,
+    "name": "宁波WAREHOUSE车间-212",
+    "factory_id": 212,
+    "area": 2330,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 213,
+    "name": "武汉SURFACE车间-213",
+    "factory_id": 213,
+    "area": 2450,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 214,
+    "name": "成都TESTING车间-214",
+    "factory_id": 214,
+    "area": 2570,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 215,
+    "name": "合肥PACKAGING车间-215",
+    "factory_id": 215,
+    "area": 2690,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 216,
+    "name": "无锡MACHINING车间-216",
+    "factory_id": 216,
+    "area": 650,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 217,
+    "name": "常州SMT车间-217",
+    "factory_id": 217,
+    "area": 770,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 218,
+    "name": "杭州ASSEMBLY车间-218",
+    "factory_id": 218,
+    "area": 890,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 219,
+    "name": "青岛INSPECTION车间-219",
+    "factory_id": 219,
+    "area": 1010,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 220,
+    "name": "上海WAREHOUSE车间-220",
+    "factory_id": 220,
+    "area": 1130,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 221,
+    "name": "苏州SURFACE车间-221",
+    "factory_id": 221,
+    "area": 1250,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 222,
+    "name": "宁波TESTING车间-222",
+    "factory_id": 222,
+    "area": 1370,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 223,
+    "name": "武汉PACKAGING车间-223",
+    "factory_id": 223,
+    "area": 1490,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 224,
+    "name": "成都MACHINING车间-224",
+    "factory_id": 224,
+    "area": 1610,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 225,
+    "name": "合肥SMT车间-225",
+    "factory_id": 225,
+    "area": 1730,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 226,
+    "name": "无锡ASSEMBLY车间-226",
+    "factory_id": 226,
+    "area": 1850,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 227,
+    "name": "常州INSPECTION车间-227",
+    "factory_id": 227,
+    "area": 1970,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 228,
+    "name": "杭州WAREHOUSE车间-228",
+    "factory_id": 228,
+    "area": 2090,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 229,
+    "name": "青岛SURFACE车间-229",
+    "factory_id": 229,
+    "area": 2210,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 230,
+    "name": "上海TESTING车间-230",
+    "factory_id": 230,
+    "area": 2330,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 231,
+    "name": "苏州PACKAGING车间-231",
+    "factory_id": 231,
+    "area": 2450,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 232,
+    "name": "宁波MACHINING车间-232",
+    "factory_id": 232,
+    "area": 2570,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 233,
+    "name": "武汉SMT车间-233",
+    "factory_id": 233,
+    "area": 2690,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 234,
+    "name": "成都ASSEMBLY车间-234",
+    "factory_id": 234,
+    "area": 650,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 235,
+    "name": "合肥INSPECTION车间-235",
+    "factory_id": 235,
+    "area": 770,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 236,
+    "name": "无锡WAREHOUSE车间-236",
+    "factory_id": 236,
+    "area": 890,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 237,
+    "name": "常州SURFACE车间-237",
+    "factory_id": 237,
+    "area": 1010,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 238,
+    "name": "杭州TESTING车间-238",
+    "factory_id": 238,
+    "area": 1130,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 239,
+    "name": "青岛PACKAGING车间-239",
+    "factory_id": 239,
+    "area": 1250,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 240,
+    "name": "上海MACHINING车间-240",
+    "factory_id": 240,
+    "area": 1370,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 241,
+    "name": "苏州SMT车间-241",
+    "factory_id": 241,
+    "area": 1490,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 242,
+    "name": "宁波ASSEMBLY车间-242",
+    "factory_id": 242,
+    "area": 1610,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 243,
+    "name": "武汉INSPECTION车间-243",
+    "factory_id": 243,
+    "area": 1730,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 244,
+    "name": "成都WAREHOUSE车间-244",
+    "factory_id": 244,
+    "area": 1850,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 245,
+    "name": "合肥SURFACE车间-245",
+    "factory_id": 245,
+    "area": 1970,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 246,
+    "name": "无锡TESTING车间-246",
+    "factory_id": 246,
+    "area": 2090,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 247,
+    "name": "常州PACKAGING车间-247",
+    "factory_id": 247,
+    "area": 2210,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 248,
+    "name": "杭州MACHINING车间-248",
+    "factory_id": 248,
+    "area": 2330,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 249,
+    "name": "青岛SMT车间-249",
+    "factory_id": 249,
+    "area": 2450,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 250,
+    "name": "上海ASSEMBLY车间-250",
+    "factory_id": 250,
+    "area": 2570,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 251,
+    "name": "苏州INSPECTION车间-251",
+    "factory_id": 251,
+    "area": 2690,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 252,
+    "name": "宁波WAREHOUSE车间-252",
+    "factory_id": 252,
+    "area": 650,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 253,
+    "name": "武汉SURFACE车间-253",
+    "factory_id": 253,
+    "area": 770,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 254,
+    "name": "成都TESTING车间-254",
+    "factory_id": 254,
+    "area": 890,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 255,
+    "name": "合肥PACKAGING车间-255",
+    "factory_id": 255,
+    "area": 1010,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 256,
+    "name": "无锡MACHINING车间-256",
+    "factory_id": 256,
+    "area": 1130,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 257,
+    "name": "常州SMT车间-257",
+    "factory_id": 257,
+    "area": 1250,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 258,
+    "name": "杭州ASSEMBLY车间-258",
+    "factory_id": 258,
+    "area": 1370,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 259,
+    "name": "青岛INSPECTION车间-259",
+    "factory_id": 259,
+    "area": 1490,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 260,
+    "name": "上海WAREHOUSE车间-260",
+    "factory_id": 260,
+    "area": 1610,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 261,
+    "name": "苏州SURFACE车间-261",
+    "factory_id": 261,
+    "area": 1730,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 262,
+    "name": "宁波TESTING车间-262",
+    "factory_id": 262,
+    "area": 1850,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 263,
+    "name": "武汉PACKAGING车间-263",
+    "factory_id": 263,
+    "area": 1970,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 264,
+    "name": "成都MACHINING车间-264",
+    "factory_id": 264,
+    "area": 2090,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 265,
+    "name": "合肥SMT车间-265",
+    "factory_id": 265,
+    "area": 2210,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 266,
+    "name": "无锡ASSEMBLY车间-266",
+    "factory_id": 266,
+    "area": 2330,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 267,
+    "name": "常州INSPECTION车间-267",
+    "factory_id": 267,
+    "area": 2450,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 268,
+    "name": "杭州WAREHOUSE车间-268",
+    "factory_id": 268,
+    "area": 2570,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 269,
+    "name": "青岛SURFACE车间-269",
+    "factory_id": 269,
+    "area": 2690,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 270,
+    "name": "上海TESTING车间-270",
+    "factory_id": 270,
+    "area": 650,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 271,
+    "name": "苏州PACKAGING车间-271",
+    "factory_id": 271,
+    "area": 770,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 272,
+    "name": "宁波MACHINING车间-272",
+    "factory_id": 272,
+    "area": 890,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 273,
+    "name": "武汉SMT车间-273",
+    "factory_id": 273,
+    "area": 1010,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 274,
+    "name": "成都ASSEMBLY车间-274",
+    "factory_id": 274,
+    "area": 1130,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 275,
+    "name": "合肥INSPECTION车间-275",
+    "factory_id": 275,
+    "area": 1250,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 276,
+    "name": "无锡WAREHOUSE车间-276",
+    "factory_id": 276,
+    "area": 1370,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 277,
+    "name": "常州SURFACE车间-277",
+    "factory_id": 277,
+    "area": 1490,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 278,
+    "name": "杭州TESTING车间-278",
+    "factory_id": 278,
+    "area": 1610,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 279,
+    "name": "青岛PACKAGING车间-279",
+    "factory_id": 279,
+    "area": 1730,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 280,
+    "name": "上海MACHINING车间-280",
+    "factory_id": 280,
+    "area": 1850,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 281,
+    "name": "苏州SMT车间-281",
+    "factory_id": 281,
+    "area": 1970,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 282,
+    "name": "宁波ASSEMBLY车间-282",
+    "factory_id": 282,
+    "area": 2090,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 283,
+    "name": "武汉INSPECTION车间-283",
+    "factory_id": 283,
+    "area": 2210,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 284,
+    "name": "成都WAREHOUSE车间-284",
+    "factory_id": 284,
+    "area": 2330,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 285,
+    "name": "合肥SURFACE车间-285",
+    "factory_id": 285,
+    "area": 2450,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 286,
+    "name": "无锡TESTING车间-286",
+    "factory_id": 286,
+    "area": 2570,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 287,
+    "name": "常州PACKAGING车间-287",
+    "factory_id": 287,
+    "area": 2690,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 288,
+    "name": "杭州MACHINING车间-288",
+    "factory_id": 288,
+    "area": 650,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 289,
+    "name": "青岛SMT车间-289",
+    "factory_id": 289,
+    "area": 770,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 290,
+    "name": "上海ASSEMBLY车间-290",
+    "factory_id": 290,
+    "area": 890,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 291,
+    "name": "苏州INSPECTION车间-291",
+    "factory_id": 291,
+    "area": 1010,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 292,
+    "name": "宁波WAREHOUSE车间-292",
+    "factory_id": 292,
+    "area": 1130,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 293,
+    "name": "武汉SURFACE车间-293",
+    "factory_id": 293,
+    "area": 1250,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 294,
+    "name": "成都TESTING车间-294",
+    "factory_id": 294,
+    "area": 1370,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 295,
+    "name": "合肥PACKAGING车间-295",
+    "factory_id": 295,
+    "area": 1490,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 296,
+    "name": "无锡MACHINING车间-296",
+    "factory_id": 296,
+    "area": 1610,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 297,
+    "name": "常州SMT车间-297",
+    "factory_id": 297,
+    "area": 1730,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 298,
+    "name": "杭州ASSEMBLY车间-298",
+    "factory_id": 298,
+    "area": 1850,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 299,
+    "name": "青岛INSPECTION车间-299",
+    "factory_id": 299,
+    "area": 1970,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 300,
+    "name": "上海WAREHOUSE车间-300",
+    "factory_id": 300,
+    "area": 2090,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 301,
+    "name": "苏州SURFACE车间-301",
+    "factory_id": 301,
+    "area": 2210,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 302,
+    "name": "宁波TESTING车间-302",
+    "factory_id": 302,
+    "area": 2330,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 303,
+    "name": "武汉PACKAGING车间-303",
+    "factory_id": 303,
+    "area": 2450,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 304,
+    "name": "成都MACHINING车间-304",
+    "factory_id": 304,
+    "area": 2570,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 305,
+    "name": "合肥SMT车间-305",
+    "factory_id": 305,
+    "area": 2690,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 306,
+    "name": "无锡ASSEMBLY车间-306",
+    "factory_id": 306,
+    "area": 650,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 307,
+    "name": "常州INSPECTION车间-307",
+    "factory_id": 307,
+    "area": 770,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 308,
+    "name": "杭州WAREHOUSE车间-308",
+    "factory_id": 308,
+    "area": 890,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 309,
+    "name": "青岛SURFACE车间-309",
+    "factory_id": 309,
+    "area": 1010,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 310,
+    "name": "上海TESTING车间-310",
+    "factory_id": 310,
+    "area": 1130,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 311,
+    "name": "苏州PACKAGING车间-311",
+    "factory_id": 311,
+    "area": 1250,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 312,
+    "name": "宁波MACHINING车间-312",
+    "factory_id": 312,
+    "area": 1370,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 313,
+    "name": "武汉SMT车间-313",
+    "factory_id": 313,
+    "area": 1490,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 314,
+    "name": "成都ASSEMBLY车间-314",
+    "factory_id": 314,
+    "area": 1610,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 315,
+    "name": "合肥INSPECTION车间-315",
+    "factory_id": 315,
+    "area": 1730,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 316,
+    "name": "无锡WAREHOUSE车间-316",
+    "factory_id": 316,
+    "area": 1850,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 317,
+    "name": "常州SURFACE车间-317",
+    "factory_id": 317,
+    "area": 1970,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 318,
+    "name": "杭州TESTING车间-318",
+    "factory_id": 318,
+    "area": 2090,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 319,
+    "name": "青岛PACKAGING车间-319",
+    "factory_id": 319,
+    "area": 2210,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 320,
+    "name": "上海MACHINING车间-320",
+    "factory_id": 320,
+    "area": 2330,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 321,
+    "name": "苏州SMT车间-321",
+    "factory_id": 1,
+    "area": 2450,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 322,
+    "name": "宁波ASSEMBLY车间-322",
+    "factory_id": 2,
+    "area": 2570,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 323,
+    "name": "武汉INSPECTION车间-323",
+    "factory_id": 3,
+    "area": 2690,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 324,
+    "name": "成都WAREHOUSE车间-324",
+    "factory_id": 4,
+    "area": 650,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 325,
+    "name": "合肥SURFACE车间-325",
+    "factory_id": 5,
+    "area": 770,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 326,
+    "name": "无锡TESTING车间-326",
+    "factory_id": 6,
+    "area": 890,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 327,
+    "name": "常州PACKAGING车间-327",
+    "factory_id": 7,
+    "area": 1010,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 328,
+    "name": "杭州MACHINING车间-328",
+    "factory_id": 8,
+    "area": 1130,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 329,
+    "name": "青岛SMT车间-329",
+    "factory_id": 9,
+    "area": 1250,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 330,
+    "name": "上海ASSEMBLY车间-330",
+    "factory_id": 10,
+    "area": 1370,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 331,
+    "name": "苏州INSPECTION车间-331",
+    "factory_id": 11,
+    "area": 1490,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 332,
+    "name": "宁波WAREHOUSE车间-332",
+    "factory_id": 12,
+    "area": 1610,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 333,
+    "name": "武汉SURFACE车间-333",
+    "factory_id": 13,
+    "area": 1730,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 334,
+    "name": "成都TESTING车间-334",
+    "factory_id": 14,
+    "area": 1850,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 335,
+    "name": "合肥PACKAGING车间-335",
+    "factory_id": 15,
+    "area": 1970,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 336,
+    "name": "无锡MACHINING车间-336",
+    "factory_id": 16,
+    "area": 2090,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 337,
+    "name": "常州SMT车间-337",
+    "factory_id": 17,
+    "area": 2210,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 338,
+    "name": "杭州ASSEMBLY车间-338",
+    "factory_id": 18,
+    "area": 2330,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 339,
+    "name": "青岛INSPECTION车间-339",
+    "factory_id": 19,
+    "area": 2450,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 340,
+    "name": "上海WAREHOUSE车间-340",
+    "factory_id": 20,
+    "area": 2570,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 341,
+    "name": "苏州SURFACE车间-341",
+    "factory_id": 21,
+    "area": 2690,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 342,
+    "name": "宁波TESTING车间-342",
+    "factory_id": 22,
+    "area": 650,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 343,
+    "name": "武汉PACKAGING车间-343",
+    "factory_id": 23,
+    "area": 770,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 344,
+    "name": "成都MACHINING车间-344",
+    "factory_id": 24,
+    "area": 890,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 345,
+    "name": "合肥SMT车间-345",
+    "factory_id": 25,
+    "area": 1010,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 346,
+    "name": "无锡ASSEMBLY车间-346",
+    "factory_id": 26,
+    "area": 1130,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 347,
+    "name": "常州INSPECTION车间-347",
+    "factory_id": 27,
+    "area": 1250,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 348,
+    "name": "杭州WAREHOUSE车间-348",
+    "factory_id": 28,
+    "area": 1370,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 349,
+    "name": "青岛SURFACE车间-349",
+    "factory_id": 29,
+    "area": 1490,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 350,
+    "name": "上海TESTING车间-350",
+    "factory_id": 30,
+    "area": 1610,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 351,
+    "name": "苏州PACKAGING车间-351",
+    "factory_id": 31,
+    "area": 1730,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 352,
+    "name": "宁波MACHINING车间-352",
+    "factory_id": 32,
+    "area": 1850,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 353,
+    "name": "武汉SMT车间-353",
+    "factory_id": 33,
+    "area": 1970,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 354,
+    "name": "成都ASSEMBLY车间-354",
+    "factory_id": 34,
+    "area": 2090,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 355,
+    "name": "合肥INSPECTION车间-355",
+    "factory_id": 35,
+    "area": 2210,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 356,
+    "name": "无锡WAREHOUSE车间-356",
+    "factory_id": 36,
+    "area": 2330,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 357,
+    "name": "常州SURFACE车间-357",
+    "factory_id": 37,
+    "area": 2450,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 358,
+    "name": "杭州TESTING车间-358",
+    "factory_id": 38,
+    "area": 2570,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 359,
+    "name": "青岛PACKAGING车间-359",
+    "factory_id": 39,
+    "area": 2690,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 360,
+    "name": "上海MACHINING车间-360",
+    "factory_id": 40,
+    "area": 650,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 361,
+    "name": "苏州SMT车间-361",
+    "factory_id": 41,
+    "area": 770,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 362,
+    "name": "宁波ASSEMBLY车间-362",
+    "factory_id": 42,
+    "area": 890,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 363,
+    "name": "武汉INSPECTION车间-363",
+    "factory_id": 43,
+    "area": 1010,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 364,
+    "name": "成都WAREHOUSE车间-364",
+    "factory_id": 44,
+    "area": 1130,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 365,
+    "name": "合肥SURFACE车间-365",
+    "factory_id": 45,
+    "area": 1250,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 366,
+    "name": "无锡TESTING车间-366",
+    "factory_id": 46,
+    "area": 1370,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 367,
+    "name": "常州PACKAGING车间-367",
+    "factory_id": 47,
+    "area": 1490,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 368,
+    "name": "杭州MACHINING车间-368",
+    "factory_id": 48,
+    "area": 1610,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 369,
+    "name": "青岛SMT车间-369",
+    "factory_id": 49,
+    "area": 1730,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 370,
+    "name": "上海ASSEMBLY车间-370",
+    "factory_id": 50,
+    "area": 1850,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 371,
+    "name": "苏州INSPECTION车间-371",
+    "factory_id": 51,
+    "area": 1970,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 372,
+    "name": "宁波WAREHOUSE车间-372",
+    "factory_id": 52,
+    "area": 2090,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 373,
+    "name": "武汉SURFACE车间-373",
+    "factory_id": 53,
+    "area": 2210,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 374,
+    "name": "成都TESTING车间-374",
+    "factory_id": 54,
+    "area": 2330,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 375,
+    "name": "合肥PACKAGING车间-375",
+    "factory_id": 55,
+    "area": 2450,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 376,
+    "name": "无锡MACHINING车间-376",
+    "factory_id": 56,
+    "area": 2570,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 377,
+    "name": "常州SMT车间-377",
+    "factory_id": 57,
+    "area": 2690,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 378,
+    "name": "杭州ASSEMBLY车间-378",
+    "factory_id": 58,
+    "area": 650,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 379,
+    "name": "青岛INSPECTION车间-379",
+    "factory_id": 59,
+    "area": 770,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 380,
+    "name": "上海WAREHOUSE车间-380",
+    "factory_id": 60,
+    "area": 890,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 381,
+    "name": "苏州SURFACE车间-381",
+    "factory_id": 61,
+    "area": 1010,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 382,
+    "name": "宁波TESTING车间-382",
+    "factory_id": 62,
+    "area": 1130,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 383,
+    "name": "武汉PACKAGING车间-383",
+    "factory_id": 63,
+    "area": 1250,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 384,
+    "name": "成都MACHINING车间-384",
+    "factory_id": 64,
+    "area": 1370,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 385,
+    "name": "合肥SMT车间-385",
+    "factory_id": 65,
+    "area": 1490,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 386,
+    "name": "无锡ASSEMBLY车间-386",
+    "factory_id": 66,
+    "area": 1610,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 387,
+    "name": "常州INSPECTION车间-387",
+    "factory_id": 67,
+    "area": 1730,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 388,
+    "name": "杭州WAREHOUSE车间-388",
+    "factory_id": 68,
+    "area": 1850,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 389,
+    "name": "青岛SURFACE车间-389",
+    "factory_id": 69,
+    "area": 1970,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 390,
+    "name": "上海TESTING车间-390",
+    "factory_id": 70,
+    "area": 2090,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 391,
+    "name": "苏州PACKAGING车间-391",
+    "factory_id": 71,
+    "area": 2210,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 392,
+    "name": "宁波MACHINING车间-392",
+    "factory_id": 72,
+    "area": 2330,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 393,
+    "name": "武汉SMT车间-393",
+    "factory_id": 73,
+    "area": 2450,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 394,
+    "name": "成都ASSEMBLY车间-394",
+    "factory_id": 74,
+    "area": 2570,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 395,
+    "name": "合肥INSPECTION车间-395",
+    "factory_id": 75,
+    "area": 2690,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 396,
+    "name": "无锡WAREHOUSE车间-396",
+    "factory_id": 76,
+    "area": 650,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 397,
+    "name": "常州SURFACE车间-397",
+    "factory_id": 77,
+    "area": 770,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 398,
+    "name": "杭州TESTING车间-398",
+    "factory_id": 78,
+    "area": 890,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 399,
+    "name": "青岛PACKAGING车间-399",
+    "factory_id": 79,
+    "area": 1010,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 400,
+    "name": "上海MACHINING车间-400",
+    "factory_id": 80,
+    "area": 1130,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 401,
+    "name": "苏州SMT车间-401",
+    "factory_id": 81,
+    "area": 1250,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 402,
+    "name": "宁波ASSEMBLY车间-402",
+    "factory_id": 82,
+    "area": 1370,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 403,
+    "name": "武汉INSPECTION车间-403",
+    "factory_id": 83,
+    "area": 1490,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 404,
+    "name": "成都WAREHOUSE车间-404",
+    "factory_id": 84,
+    "area": 1610,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 405,
+    "name": "合肥SURFACE车间-405",
+    "factory_id": 85,
+    "area": 1730,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 406,
+    "name": "无锡TESTING车间-406",
+    "factory_id": 86,
+    "area": 1850,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 407,
+    "name": "常州PACKAGING车间-407",
+    "factory_id": 87,
+    "area": 1970,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 408,
+    "name": "杭州MACHINING车间-408",
+    "factory_id": 88,
+    "area": 2090,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 409,
+    "name": "青岛SMT车间-409",
+    "factory_id": 89,
+    "area": 2210,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 410,
+    "name": "上海ASSEMBLY车间-410",
+    "factory_id": 90,
+    "area": 2330,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 411,
+    "name": "苏州INSPECTION车间-411",
+    "factory_id": 91,
+    "area": 2450,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 412,
+    "name": "宁波WAREHOUSE车间-412",
+    "factory_id": 92,
+    "area": 2570,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 413,
+    "name": "武汉SURFACE车间-413",
+    "factory_id": 93,
+    "area": 2690,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 414,
+    "name": "成都TESTING车间-414",
+    "factory_id": 94,
+    "area": 650,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 415,
+    "name": "合肥PACKAGING车间-415",
+    "factory_id": 95,
+    "area": 770,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 416,
+    "name": "无锡MACHINING车间-416",
+    "factory_id": 96,
+    "area": 890,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 417,
+    "name": "常州SMT车间-417",
+    "factory_id": 97,
+    "area": 1010,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 418,
+    "name": "杭州ASSEMBLY车间-418",
+    "factory_id": 98,
+    "area": 1130,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 419,
+    "name": "青岛INSPECTION车间-419",
+    "factory_id": 99,
+    "area": 1250,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 420,
+    "name": "上海WAREHOUSE车间-420",
+    "factory_id": 100,
+    "area": 1370,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 421,
+    "name": "苏州SURFACE车间-421",
+    "factory_id": 101,
+    "area": 1490,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 422,
+    "name": "宁波TESTING车间-422",
+    "factory_id": 102,
+    "area": 1610,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 423,
+    "name": "武汉PACKAGING车间-423",
+    "factory_id": 103,
+    "area": 1730,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 424,
+    "name": "成都MACHINING车间-424",
+    "factory_id": 104,
+    "area": 1850,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 425,
+    "name": "合肥SMT车间-425",
+    "factory_id": 105,
+    "area": 1970,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 426,
+    "name": "无锡ASSEMBLY车间-426",
+    "factory_id": 106,
+    "area": 2090,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 427,
+    "name": "常州INSPECTION车间-427",
+    "factory_id": 107,
+    "area": 2210,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 428,
+    "name": "杭州WAREHOUSE车间-428",
+    "factory_id": 108,
+    "area": 2330,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 429,
+    "name": "青岛SURFACE车间-429",
+    "factory_id": 109,
+    "area": 2450,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 430,
+    "name": "上海TESTING车间-430",
+    "factory_id": 110,
+    "area": 2570,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 431,
+    "name": "苏州PACKAGING车间-431",
+    "factory_id": 111,
+    "area": 2690,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 432,
+    "name": "宁波MACHINING车间-432",
+    "factory_id": 112,
+    "area": 650,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 433,
+    "name": "武汉SMT车间-433",
+    "factory_id": 113,
+    "area": 770,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 434,
+    "name": "成都ASSEMBLY车间-434",
+    "factory_id": 114,
+    "area": 890,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 435,
+    "name": "合肥INSPECTION车间-435",
+    "factory_id": 115,
+    "area": 1010,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 436,
+    "name": "无锡WAREHOUSE车间-436",
+    "factory_id": 116,
+    "area": 1130,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 437,
+    "name": "常州SURFACE车间-437",
+    "factory_id": 117,
+    "area": 1250,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 438,
+    "name": "杭州TESTING车间-438",
+    "factory_id": 118,
+    "area": 1370,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 439,
+    "name": "青岛PACKAGING车间-439",
+    "factory_id": 119,
+    "area": 1490,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 440,
+    "name": "上海MACHINING车间-440",
+    "factory_id": 120,
+    "area": 1610,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 441,
+    "name": "苏州SMT车间-441",
+    "factory_id": 121,
+    "area": 1730,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 442,
+    "name": "宁波ASSEMBLY车间-442",
+    "factory_id": 122,
+    "area": 1850,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 443,
+    "name": "武汉INSPECTION车间-443",
+    "factory_id": 123,
+    "area": 1970,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 444,
+    "name": "成都WAREHOUSE车间-444",
+    "factory_id": 124,
+    "area": 2090,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 445,
+    "name": "合肥SURFACE车间-445",
+    "factory_id": 125,
+    "area": 2210,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 446,
+    "name": "无锡TESTING车间-446",
+    "factory_id": 126,
+    "area": 2330,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 447,
+    "name": "常州PACKAGING车间-447",
+    "factory_id": 127,
+    "area": 2450,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 448,
+    "name": "杭州MACHINING车间-448",
+    "factory_id": 128,
+    "area": 2570,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 449,
+    "name": "青岛SMT车间-449",
+    "factory_id": 129,
+    "area": 2690,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 450,
+    "name": "上海ASSEMBLY车间-450",
+    "factory_id": 130,
+    "area": 650,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 451,
+    "name": "苏州INSPECTION车间-451",
+    "factory_id": 131,
+    "area": 770,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 452,
+    "name": "宁波WAREHOUSE车间-452",
+    "factory_id": 132,
+    "area": 890,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 453,
+    "name": "武汉SURFACE车间-453",
+    "factory_id": 133,
+    "area": 1010,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 454,
+    "name": "成都TESTING车间-454",
+    "factory_id": 134,
+    "area": 1130,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 455,
+    "name": "合肥PACKAGING车间-455",
+    "factory_id": 135,
+    "area": 1250,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 456,
+    "name": "无锡MACHINING车间-456",
+    "factory_id": 136,
+    "area": 1370,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 457,
+    "name": "常州SMT车间-457",
+    "factory_id": 137,
+    "area": 1490,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 458,
+    "name": "杭州ASSEMBLY车间-458",
+    "factory_id": 138,
+    "area": 1610,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 459,
+    "name": "青岛INSPECTION车间-459",
+    "factory_id": 139,
+    "area": 1730,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 460,
+    "name": "上海WAREHOUSE车间-460",
+    "factory_id": 140,
+    "area": 1850,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 461,
+    "name": "苏州SURFACE车间-461",
+    "factory_id": 141,
+    "area": 1970,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 462,
+    "name": "宁波TESTING车间-462",
+    "factory_id": 142,
+    "area": 2090,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 463,
+    "name": "武汉PACKAGING车间-463",
+    "factory_id": 143,
+    "area": 2210,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 464,
+    "name": "成都MACHINING车间-464",
+    "factory_id": 144,
+    "area": 2330,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 465,
+    "name": "合肥SMT车间-465",
+    "factory_id": 145,
+    "area": 2450,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 466,
+    "name": "无锡ASSEMBLY车间-466",
+    "factory_id": 146,
+    "area": 2570,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 467,
+    "name": "常州INSPECTION车间-467",
+    "factory_id": 147,
+    "area": 2690,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 468,
+    "name": "杭州WAREHOUSE车间-468",
+    "factory_id": 148,
+    "area": 650,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 469,
+    "name": "青岛SURFACE车间-469",
+    "factory_id": 149,
+    "area": 770,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 470,
+    "name": "上海TESTING车间-470",
+    "factory_id": 150,
+    "area": 890,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 471,
+    "name": "苏州PACKAGING车间-471",
+    "factory_id": 151,
+    "area": 1010,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 472,
+    "name": "宁波MACHINING车间-472",
+    "factory_id": 152,
+    "area": 1130,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 473,
+    "name": "武汉SMT车间-473",
+    "factory_id": 153,
+    "area": 1250,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 474,
+    "name": "成都ASSEMBLY车间-474",
+    "factory_id": 154,
+    "area": 1370,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 475,
+    "name": "合肥INSPECTION车间-475",
+    "factory_id": 155,
+    "area": 1490,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 476,
+    "name": "无锡WAREHOUSE车间-476",
+    "factory_id": 156,
+    "area": 1610,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 477,
+    "name": "常州SURFACE车间-477",
+    "factory_id": 157,
+    "area": 1730,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 478,
+    "name": "杭州TESTING车间-478",
+    "factory_id": 158,
+    "area": 1850,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 479,
+    "name": "青岛PACKAGING车间-479",
+    "factory_id": 159,
+    "area": 1970,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 480,
+    "name": "上海MACHINING车间-480",
+    "factory_id": 160,
+    "area": 2090,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 481,
+    "name": "苏州SMT车间-481",
+    "factory_id": 161,
+    "area": 2210,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 482,
+    "name": "宁波ASSEMBLY车间-482",
+    "factory_id": 162,
+    "area": 2330,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 483,
+    "name": "武汉INSPECTION车间-483",
+    "factory_id": 163,
+    "area": 2450,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 484,
+    "name": "成都WAREHOUSE车间-484",
+    "factory_id": 164,
+    "area": 2570,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 485,
+    "name": "合肥SURFACE车间-485",
+    "factory_id": 165,
+    "area": 2690,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 486,
+    "name": "无锡TESTING车间-486",
+    "factory_id": 166,
+    "area": 650,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 487,
+    "name": "常州PACKAGING车间-487",
+    "factory_id": 167,
+    "area": 770,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 488,
+    "name": "杭州MACHINING车间-488",
+    "factory_id": 168,
+    "area": 890,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 489,
+    "name": "青岛SMT车间-489",
+    "factory_id": 169,
+    "area": 1010,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 490,
+    "name": "上海ASSEMBLY车间-490",
+    "factory_id": 170,
+    "area": 1130,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 491,
+    "name": "苏州INSPECTION车间-491",
+    "factory_id": 171,
+    "area": 1250,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 492,
+    "name": "宁波WAREHOUSE车间-492",
+    "factory_id": 172,
+    "area": 1370,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 493,
+    "name": "武汉SURFACE车间-493",
+    "factory_id": 173,
+    "area": 1490,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 494,
+    "name": "成都TESTING车间-494",
+    "factory_id": 174,
+    "area": 1610,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 495,
+    "name": "合肥PACKAGING车间-495",
+    "factory_id": 175,
+    "area": 1730,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 496,
+    "name": "无锡MACHINING车间-496",
+    "factory_id": 176,
+    "area": 1850,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 497,
+    "name": "常州SMT车间-497",
+    "factory_id": 177,
+    "area": 1970,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 498,
+    "name": "杭州ASSEMBLY车间-498",
+    "factory_id": 178,
+    "area": 2090,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 499,
+    "name": "青岛INSPECTION车间-499",
+    "factory_id": 179,
+    "area": 2210,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 500,
+    "name": "上海WAREHOUSE车间-500",
+    "factory_id": 180,
+    "area": 2330,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 501,
+    "name": "苏州SURFACE车间-501",
+    "factory_id": 181,
+    "area": 2450,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 502,
+    "name": "宁波TESTING车间-502",
+    "factory_id": 182,
+    "area": 2570,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 503,
+    "name": "武汉PACKAGING车间-503",
+    "factory_id": 183,
+    "area": 2690,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 504,
+    "name": "成都MACHINING车间-504",
+    "factory_id": 184,
+    "area": 650,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 505,
+    "name": "合肥SMT车间-505",
+    "factory_id": 185,
+    "area": 770,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 506,
+    "name": "无锡ASSEMBLY车间-506",
+    "factory_id": 186,
+    "area": 890,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 507,
+    "name": "常州INSPECTION车间-507",
+    "factory_id": 187,
+    "area": 1010,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 508,
+    "name": "杭州WAREHOUSE车间-508",
+    "factory_id": 188,
+    "area": 1130,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 509,
+    "name": "青岛SURFACE车间-509",
+    "factory_id": 189,
+    "area": 1250,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 510,
+    "name": "上海TESTING车间-510",
+    "factory_id": 190,
+    "area": 1370,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 511,
+    "name": "苏州PACKAGING车间-511",
+    "factory_id": 191,
+    "area": 1490,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 512,
+    "name": "宁波MACHINING车间-512",
+    "factory_id": 192,
+    "area": 1610,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 513,
+    "name": "武汉SMT车间-513",
+    "factory_id": 193,
+    "area": 1730,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 514,
+    "name": "成都ASSEMBLY车间-514",
+    "factory_id": 194,
+    "area": 1850,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 515,
+    "name": "合肥INSPECTION车间-515",
+    "factory_id": 195,
+    "area": 1970,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 516,
+    "name": "无锡WAREHOUSE车间-516",
+    "factory_id": 196,
+    "area": 2090,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 517,
+    "name": "常州SURFACE车间-517",
+    "factory_id": 197,
+    "area": 2210,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 518,
+    "name": "杭州TESTING车间-518",
+    "factory_id": 198,
+    "area": 2330,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 519,
+    "name": "青岛PACKAGING车间-519",
+    "factory_id": 199,
+    "area": 2450,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 520,
+    "name": "上海MACHINING车间-520",
+    "factory_id": 200,
+    "area": 2570,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 521,
+    "name": "苏州SMT车间-521",
+    "factory_id": 201,
+    "area": 2690,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 522,
+    "name": "宁波ASSEMBLY车间-522",
+    "factory_id": 202,
+    "area": 650,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 523,
+    "name": "武汉INSPECTION车间-523",
+    "factory_id": 203,
+    "area": 770,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 524,
+    "name": "成都WAREHOUSE车间-524",
+    "factory_id": 204,
+    "area": 890,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 525,
+    "name": "合肥SURFACE车间-525",
+    "factory_id": 205,
+    "area": 1010,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 526,
+    "name": "无锡TESTING车间-526",
+    "factory_id": 206,
+    "area": 1130,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 527,
+    "name": "常州PACKAGING车间-527",
+    "factory_id": 207,
+    "area": 1250,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 528,
+    "name": "杭州MACHINING车间-528",
+    "factory_id": 208,
+    "area": 1370,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 529,
+    "name": "青岛SMT车间-529",
+    "factory_id": 209,
+    "area": 1490,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 530,
+    "name": "上海ASSEMBLY车间-530",
+    "factory_id": 210,
+    "area": 1610,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 531,
+    "name": "苏州INSPECTION车间-531",
+    "factory_id": 211,
+    "area": 1730,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 532,
+    "name": "宁波WAREHOUSE车间-532",
+    "factory_id": 212,
+    "area": 1850,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 533,
+    "name": "武汉SURFACE车间-533",
+    "factory_id": 213,
+    "area": 1970,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 534,
+    "name": "成都TESTING车间-534",
+    "factory_id": 214,
+    "area": 2090,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 535,
+    "name": "合肥PACKAGING车间-535",
+    "factory_id": 215,
+    "area": 2210,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 536,
+    "name": "无锡MACHINING车间-536",
+    "factory_id": 216,
+    "area": 2330,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 537,
+    "name": "常州SMT车间-537",
+    "factory_id": 217,
+    "area": 2450,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 538,
+    "name": "杭州ASSEMBLY车间-538",
+    "factory_id": 218,
+    "area": 2570,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 539,
+    "name": "青岛INSPECTION车间-539",
+    "factory_id": 219,
+    "area": 2690,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 540,
+    "name": "上海WAREHOUSE车间-540",
+    "factory_id": 220,
+    "area": 650,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 541,
+    "name": "苏州SURFACE车间-541",
+    "factory_id": 221,
+    "area": 770,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 542,
+    "name": "宁波TESTING车间-542",
+    "factory_id": 222,
+    "area": 890,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 543,
+    "name": "武汉PACKAGING车间-543",
+    "factory_id": 223,
+    "area": 1010,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 544,
+    "name": "成都MACHINING车间-544",
+    "factory_id": 224,
+    "area": 1130,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 545,
+    "name": "合肥SMT车间-545",
+    "factory_id": 225,
+    "area": 1250,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 546,
+    "name": "无锡ASSEMBLY车间-546",
+    "factory_id": 226,
+    "area": 1370,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 547,
+    "name": "常州INSPECTION车间-547",
+    "factory_id": 227,
+    "area": 1490,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 548,
+    "name": "杭州WAREHOUSE车间-548",
+    "factory_id": 228,
+    "area": 1610,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 549,
+    "name": "青岛SURFACE车间-549",
+    "factory_id": 229,
+    "area": 1730,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 550,
+    "name": "上海TESTING车间-550",
+    "factory_id": 230,
+    "area": 1850,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 551,
+    "name": "苏州PACKAGING车间-551",
+    "factory_id": 231,
+    "area": 1970,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 552,
+    "name": "宁波MACHINING车间-552",
+    "factory_id": 232,
+    "area": 2090,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 553,
+    "name": "武汉SMT车间-553",
+    "factory_id": 233,
+    "area": 2210,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 554,
+    "name": "成都ASSEMBLY车间-554",
+    "factory_id": 234,
+    "area": 2330,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 555,
+    "name": "合肥INSPECTION车间-555",
+    "factory_id": 235,
+    "area": 2450,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 556,
+    "name": "无锡WAREHOUSE车间-556",
+    "factory_id": 236,
+    "area": 2570,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 557,
+    "name": "常州SURFACE车间-557",
+    "factory_id": 237,
+    "area": 2690,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 558,
+    "name": "杭州TESTING车间-558",
+    "factory_id": 238,
+    "area": 650,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 559,
+    "name": "青岛PACKAGING车间-559",
+    "factory_id": 239,
+    "area": 770,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 560,
+    "name": "上海MACHINING车间-560",
+    "factory_id": 240,
+    "area": 890,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 561,
+    "name": "苏州SMT车间-561",
+    "factory_id": 241,
+    "area": 1010,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 562,
+    "name": "宁波ASSEMBLY车间-562",
+    "factory_id": 242,
+    "area": 1130,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 563,
+    "name": "武汉INSPECTION车间-563",
+    "factory_id": 243,
+    "area": 1250,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 564,
+    "name": "成都WAREHOUSE车间-564",
+    "factory_id": 244,
+    "area": 1370,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 565,
+    "name": "合肥SURFACE车间-565",
+    "factory_id": 245,
+    "area": 1490,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 566,
+    "name": "无锡TESTING车间-566",
+    "factory_id": 246,
+    "area": 1610,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 567,
+    "name": "常州PACKAGING车间-567",
+    "factory_id": 247,
+    "area": 1730,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 568,
+    "name": "杭州MACHINING车间-568",
+    "factory_id": 248,
+    "area": 1850,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 569,
+    "name": "青岛SMT车间-569",
+    "factory_id": 249,
+    "area": 1970,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 570,
+    "name": "上海ASSEMBLY车间-570",
+    "factory_id": 250,
+    "area": 2090,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 571,
+    "name": "苏州INSPECTION车间-571",
+    "factory_id": 251,
+    "area": 2210,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 572,
+    "name": "宁波WAREHOUSE车间-572",
+    "factory_id": 252,
+    "area": 2330,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 573,
+    "name": "武汉SURFACE车间-573",
+    "factory_id": 253,
+    "area": 2450,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 574,
+    "name": "成都TESTING车间-574",
+    "factory_id": 254,
+    "area": 2570,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 575,
+    "name": "合肥PACKAGING车间-575",
+    "factory_id": 255,
+    "area": 2690,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 576,
+    "name": "无锡MACHINING车间-576",
+    "factory_id": 256,
+    "area": 650,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 577,
+    "name": "常州SMT车间-577",
+    "factory_id": 257,
+    "area": 770,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 578,
+    "name": "杭州ASSEMBLY车间-578",
+    "factory_id": 258,
+    "area": 890,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 579,
+    "name": "青岛INSPECTION车间-579",
+    "factory_id": 259,
+    "area": 1010,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 580,
+    "name": "上海WAREHOUSE车间-580",
+    "factory_id": 260,
+    "area": 1130,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 581,
+    "name": "苏州SURFACE车间-581",
+    "factory_id": 261,
+    "area": 1250,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 582,
+    "name": "宁波TESTING车间-582",
+    "factory_id": 262,
+    "area": 1370,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 583,
+    "name": "武汉PACKAGING车间-583",
+    "factory_id": 263,
+    "area": 1490,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 584,
+    "name": "成都MACHINING车间-584",
+    "factory_id": 264,
+    "area": 1610,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 585,
+    "name": "合肥SMT车间-585",
+    "factory_id": 265,
+    "area": 1730,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 586,
+    "name": "无锡ASSEMBLY车间-586",
+    "factory_id": 266,
+    "area": 1850,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 587,
+    "name": "常州INSPECTION车间-587",
+    "factory_id": 267,
+    "area": 1970,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 588,
+    "name": "杭州WAREHOUSE车间-588",
+    "factory_id": 268,
+    "area": 2090,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 589,
+    "name": "青岛SURFACE车间-589",
+    "factory_id": 269,
+    "area": 2210,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 590,
+    "name": "上海TESTING车间-590",
+    "factory_id": 270,
+    "area": 2330,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 591,
+    "name": "苏州PACKAGING车间-591",
+    "factory_id": 271,
+    "area": 2450,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 592,
+    "name": "宁波MACHINING车间-592",
+    "factory_id": 272,
+    "area": 2570,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 593,
+    "name": "武汉SMT车间-593",
+    "factory_id": 273,
+    "area": 2690,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 594,
+    "name": "成都ASSEMBLY车间-594",
+    "factory_id": 274,
+    "area": 650,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 595,
+    "name": "合肥INSPECTION车间-595",
+    "factory_id": 275,
+    "area": 770,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 596,
+    "name": "无锡WAREHOUSE车间-596",
+    "factory_id": 276,
+    "area": 890,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 597,
+    "name": "常州SURFACE车间-597",
+    "factory_id": 277,
+    "area": 1010,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 598,
+    "name": "杭州TESTING车间-598",
+    "factory_id": 278,
+    "area": 1130,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 599,
+    "name": "青岛PACKAGING车间-599",
+    "factory_id": 279,
+    "area": 1250,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 600,
+    "name": "上海MACHINING车间-600",
+    "factory_id": 280,
+    "area": 1370,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 601,
+    "name": "苏州SMT车间-601",
+    "factory_id": 281,
+    "area": 1490,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 602,
+    "name": "宁波ASSEMBLY车间-602",
+    "factory_id": 282,
+    "area": 1610,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 603,
+    "name": "武汉INSPECTION车间-603",
+    "factory_id": 283,
+    "area": 1730,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 604,
+    "name": "成都WAREHOUSE车间-604",
+    "factory_id": 284,
+    "area": 1850,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 605,
+    "name": "合肥SURFACE车间-605",
+    "factory_id": 285,
+    "area": 1970,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 606,
+    "name": "无锡TESTING车间-606",
+    "factory_id": 286,
+    "area": 2090,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 607,
+    "name": "常州PACKAGING车间-607",
+    "factory_id": 287,
+    "area": 2210,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 608,
+    "name": "杭州MACHINING车间-608",
+    "factory_id": 288,
+    "area": 2330,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 609,
+    "name": "青岛SMT车间-609",
+    "factory_id": 289,
+    "area": 2450,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 610,
+    "name": "上海ASSEMBLY车间-610",
+    "factory_id": 290,
+    "area": 2570,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 611,
+    "name": "苏州INSPECTION车间-611",
+    "factory_id": 291,
+    "area": 2690,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 612,
+    "name": "宁波WAREHOUSE车间-612",
+    "factory_id": 292,
+    "area": 650,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 613,
+    "name": "武汉SURFACE车间-613",
+    "factory_id": 293,
+    "area": 770,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 614,
+    "name": "成都TESTING车间-614",
+    "factory_id": 294,
+    "area": 890,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 615,
+    "name": "合肥PACKAGING车间-615",
+    "factory_id": 295,
+    "area": 1010,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 616,
+    "name": "无锡MACHINING车间-616",
+    "factory_id": 296,
+    "area": 1130,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 617,
+    "name": "常州SMT车间-617",
+    "factory_id": 297,
+    "area": 1250,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 618,
+    "name": "杭州ASSEMBLY车间-618",
+    "factory_id": 298,
+    "area": 1370,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 619,
+    "name": "青岛INSPECTION车间-619",
+    "factory_id": 299,
+    "area": 1490,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 620,
+    "name": "上海WAREHOUSE车间-620",
+    "factory_id": 300,
+    "area": 1610,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 621,
+    "name": "苏州SURFACE车间-621",
+    "factory_id": 301,
+    "area": 1730,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 622,
+    "name": "宁波TESTING车间-622",
+    "factory_id": 302,
+    "area": 1850,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 623,
+    "name": "武汉PACKAGING车间-623",
+    "factory_id": 303,
+    "area": 1970,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 624,
+    "name": "成都MACHINING车间-624",
+    "factory_id": 304,
+    "area": 2090,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 625,
+    "name": "合肥SMT车间-625",
+    "factory_id": 305,
+    "area": 2210,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 626,
+    "name": "无锡ASSEMBLY车间-626",
+    "factory_id": 306,
+    "area": 2330,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 627,
+    "name": "常州INSPECTION车间-627",
+    "factory_id": 307,
+    "area": 2450,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 628,
+    "name": "杭州WAREHOUSE车间-628",
+    "factory_id": 308,
+    "area": 2570,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 629,
+    "name": "青岛SURFACE车间-629",
+    "factory_id": 309,
+    "area": 2690,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 630,
+    "name": "上海TESTING车间-630",
+    "factory_id": 310,
+    "area": 650,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 631,
+    "name": "苏州PACKAGING车间-631",
+    "factory_id": 311,
+    "area": 770,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 632,
+    "name": "宁波MACHINING车间-632",
+    "factory_id": 312,
+    "area": 890,
+    "workshop_type": "machining"
+  },
+  {
+    "id": 633,
+    "name": "武汉SMT车间-633",
+    "factory_id": 313,
+    "area": 1010,
+    "workshop_type": "smt"
+  },
+  {
+    "id": 634,
+    "name": "成都ASSEMBLY车间-634",
+    "factory_id": 314,
+    "area": 1130,
+    "workshop_type": "assembly"
+  },
+  {
+    "id": 635,
+    "name": "合肥INSPECTION车间-635",
+    "factory_id": 315,
+    "area": 1250,
+    "workshop_type": "inspection"
+  },
+  {
+    "id": 636,
+    "name": "无锡WAREHOUSE车间-636",
+    "factory_id": 316,
+    "area": 1370,
+    "workshop_type": "warehouse"
+  },
+  {
+    "id": 637,
+    "name": "常州SURFACE车间-637",
+    "factory_id": 317,
+    "area": 1490,
+    "workshop_type": "surface"
+  },
+  {
+    "id": 638,
+    "name": "杭州TESTING车间-638",
+    "factory_id": 318,
+    "area": 1610,
+    "workshop_type": "testing"
+  },
+  {
+    "id": 639,
+    "name": "青岛PACKAGING车间-639",
+    "factory_id": 319,
+    "area": 1730,
+    "workshop_type": "packaging"
+  },
+  {
+    "id": 640,
+    "name": "上海MACHINING车间-640",
+    "factory_id": 320,
+    "area": 1850,
+    "workshop_type": "machining"
   }
 ]

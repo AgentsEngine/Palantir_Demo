@@ -310,6 +310,49 @@ def test_agent_context_builder_uses_recent_messages_only(ai_user_client):
     assert context_step["sources"]["recent_messages"] == 3
 
 
+def test_agent_plain_chat_does_not_force_page_or_knowledge_context(ai_user_client):
+    _ensure_ai_runtime_schema()
+
+    created = ai_user_client.post(
+        "/api/v1/ai/agent/conversations",
+        json={"title": "General chat", "page": "ai-workbench", "context": {"surface": "global"}},
+    )
+    conversation_id = created.json()["data"]["conversation_id"]
+    response = ai_user_client.post(
+        "/api/v1/ai/agent",
+        json={"message": "你好，先随便聊聊", "page": "ai-workbench", "context": {"conversation_id": conversation_id}},
+    )
+
+    assert response.status_code == 200
+    steps = response.json()["steps"]
+    assert any(step["id"] == "step-context-intent" and step["intent"] == "none" for step in steps)
+    assert not any(step.get("tool") == "knowledge.search" for step in steps)
+
+
+def test_agent_business_question_routes_to_semantic_context(ai_user_client):
+    _ensure_ai_runtime_schema()
+
+    created = ai_user_client.post(
+        "/api/v1/ai/agent/conversations",
+        json={"title": "Data chat", "page": "ai-workbench", "context": {"surface": "global"}},
+    )
+    conversation_id = created.json()["data"]["conversation_id"]
+    response = ai_user_client.post(
+        "/api/v1/ai/agent",
+        json={
+            "message": "分析一下供应商和物料风险数据",
+            "page": "ai-workbench",
+            "context": {"conversation_id": conversation_id, "route": "/supply-chain"},
+        },
+    )
+
+    assert response.status_code == 200
+    steps = response.json()["steps"]
+    intent_step = next(step for step in steps if step["id"] == "step-context-intent")
+    assert intent_step["intent"] == "business_query"
+    assert "semantic_objects" in intent_step
+
+
 def test_memory_compaction_and_user_delete(ai_user_client):
     _ensure_ai_runtime_schema()
 

@@ -18,6 +18,7 @@ import {
   sendAgentChat,
 } from '@/services/api';
 import { useAiWorkbench } from './context';
+import type { AiKnowledgeContext } from './context';
 import './style.css';
 
 type ChatRole = 'assistant' | 'user';
@@ -113,6 +114,49 @@ interface AgentChatResponse {
 }
 
 const nowText = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+const AI_WORKBENCH_PAGE = 'ai-workbench';
+
+function getClientContextNeed(message: string, hasKnowledgeContext: boolean): string {
+  const normalized = message.trim().toLowerCase();
+  if (!normalized) return 'none';
+  if (hasKnowledgeContext || /文档|sop|知识|证据|这篇|当前文档|抽取|发布清单/.test(normalized)) return 'knowledge_rag';
+  if (/表单|字段|记录|这条|这张表|列表|数据|指标|图表|分析|异常|风险|供应商|物料|工单|设备|质量|capa|spc|oee/.test(normalized)) return 'business_query';
+  if (/当前页|这个页面|这里|配置|菜单|权限|页面/.test(normalized)) return 'ui_page';
+  if (/草稿|生成.*建议|创建|发起|提交|保存|发布/.test(normalized)) return 'draft_action';
+  return 'none';
+}
+
+function buildMessageContext(options: {
+  message: string;
+  sessionId: string;
+  surface: string;
+  route: string;
+  pageContext: PageContext;
+  applicationName?: string;
+  knowledgeContext?: AiKnowledgeContext;
+}) {
+  const contextNeed = getClientContextNeed(options.message, Boolean(options.knowledgeContext));
+  const base = {
+    surface: contextNeed === 'knowledge_rag' && options.knowledgeContext ? 'knowledge' : 'global',
+    workspace: AI_WORKBENCH_PAGE,
+    contextNeed,
+    conversation_id: options.sessionId,
+    conversationId: options.sessionId,
+  };
+  if (contextNeed === 'none') return base;
+  return {
+    ...base,
+    route: options.route,
+    pageTitle: options.pageContext.title,
+    scope: options.pageContext.scope,
+    applicationName: options.applicationName,
+    documentId: options.knowledgeContext?.documentId,
+    document_id: options.knowledgeContext?.documentId,
+    documentTitle: options.knowledgeContext?.documentTitle,
+    document_title: options.knowledgeContext?.documentTitle,
+    knowledgeMode: options.knowledgeContext?.knowledgeMode,
+  };
+}
 
 const contextByRoute: Array<{
   test: (pathname: string) => boolean;
@@ -248,9 +292,10 @@ function mapServerConversation(
   intro: string,
 ): AgentSession {
   const id = conversation.conversation_id || conversation.id || `agent-session-${Date.now()}`;
+  const title = conversation.title && !/^\?+$/.test(conversation.title) ? conversation.title : '当前窗口';
   return {
     id,
-    title: conversation.title || '当前窗口',
+    title,
     contextKey,
     messages: conversation.last_message ? [] : [createAssistantMessage(intro)],
     createdAt: formatServerTime(conversation.created_at),
@@ -345,10 +390,8 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     [location.pathname, pageTitle],
   );
   const surface = knowledgeContext ? 'knowledge' : 'global';
-  const contextKey = `${location.pathname}:${knowledgeContext?.documentId || 'global'}`;
-  const intro = knowledgeContext
-    ? `我会基于《${knowledgeContext.documentTitle || '当前文档'}》和你的账号权限回答问题，也可以辅助抽取、发布和检查属性。`
-    : pageContext.intro;
+  const contextKey = AI_WORKBENCH_PAGE;
+  const intro = '我是独立 AI 工作区。你可以直接聊天；当你问到当前页面、表单、数据、知识文档或业务分析时，我会按需读取相关上下文。';
   const quickPrompts = knowledgeContext
     ? ['这篇文档讲什么', '抽取系统和能力', '生成发布清单建议', '我能对它做什么']
     : pageContext.quickPrompts;
@@ -358,21 +401,14 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   useEffect(() => {
     let active = true;
     const contextPayload = {
-      surface,
-      route: location.pathname,
-      pageTitle: pageContext.title,
-      documentId: knowledgeContext?.documentId,
-      document_id: knowledgeContext?.documentId,
-      documentTitle: knowledgeContext?.documentTitle,
-      document_title: knowledgeContext?.documentTitle,
-      knowledgeMode: knowledgeContext?.knowledgeMode,
+      surface: 'global',
+      workspace: AI_WORKBENCH_PAGE,
     };
     const bootstrapSessions = async () => {
       try {
         const response = await listAgentConversations({
-          page: location.pathname,
-          document_id: knowledgeContext?.documentId,
-          surface,
+          page: AI_WORKBENCH_PAGE,
+          surface: 'global',
           limit: 30,
         });
         const rows = ((response.data?.data || []) as AgentConversationPayload[])
@@ -387,9 +423,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
         }
         const created = await createAgentConversation({
           title: '当前窗口',
-          page: location.pathname,
-          document_id: knowledgeContext?.documentId,
-          document_title: knowledgeContext?.documentTitle,
+          page: AI_WORKBENCH_PAGE,
           context: contextPayload,
         });
         const session = mapServerConversation(created.data?.data || {}, contextKey, intro);
@@ -411,16 +445,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     return () => {
       active = false;
     };
-  }, [
-    contextKey,
-    intro,
-    knowledgeContext?.documentId,
-    knowledgeContext?.documentTitle,
-    knowledgeContext?.knowledgeMode,
-    location.pathname,
-    pageContext.title,
-    surface,
-  ]);
+  }, [contextKey, intro]);
 
   useEffect(() => {
     if (!activeSession?.id || activeSession.messages.length) return;
@@ -459,21 +484,13 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   const startNewSession = async () => {
     const title = `窗口 ${sessions.length + 1}`;
     const contextPayload = {
-      surface,
-      route: location.pathname,
-      pageTitle: pageContext.title,
-      documentId: knowledgeContext?.documentId,
-      document_id: knowledgeContext?.documentId,
-      documentTitle: knowledgeContext?.documentTitle,
-      document_title: knowledgeContext?.documentTitle,
-      knowledgeMode: knowledgeContext?.knowledgeMode,
+      surface: 'global',
+      workspace: AI_WORKBENCH_PAGE,
     };
     try {
       const created = await createAgentConversation({
         title,
-        page: location.pathname,
-        document_id: knowledgeContext?.documentId,
-        document_title: knowledgeContext?.documentTitle,
+        page: AI_WORKBENCH_PAGE,
         context: contextPayload,
       });
       const nextSession = mapServerConversation(created.data?.data || {}, contextKey, intro);
@@ -524,23 +541,19 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     setInput('');
     setSending(true);
     try {
+      const runtimeContext = buildMessageContext({
+        message: trimmed,
+        sessionId,
+        surface,
+        route: location.pathname,
+        pageContext,
+        applicationName,
+        knowledgeContext,
+      });
       const response = await sendAgentChat({
         message: trimmed,
-        page: location.pathname,
-        context: {
-          surface,
-          route: location.pathname,
-          pageTitle: pageContext.title,
-          scope: pageContext.scope,
-          applicationName,
-          documentId: knowledgeContext?.documentId,
-          document_id: knowledgeContext?.documentId,
-          documentTitle: knowledgeContext?.documentTitle,
-          document_title: knowledgeContext?.documentTitle,
-          knowledgeMode: knowledgeContext?.knowledgeMode,
-          conversation_id: sessionId,
-          conversationId: sessionId,
-        },
+        page: AI_WORKBENCH_PAGE,
+        context: runtimeContext,
       });
       const payload = (response.data ?? {}) as AgentChatResponse;
       const persistedUserMessage = payload.user_message ? mapServerMessage(payload.user_message) : userMessage;
@@ -630,6 +643,8 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                       <Tag>最近消息 {message.contextSources.recent_messages ?? 0}</Tag>
                       <Tag>记忆 {message.contextSources.memories ?? 0}</Tag>
                       <Tag>证据 {message.contextSources.evidence ?? 0}</Tag>
+                      {message.contextSources.semantic_objects ? <Tag>语义对象 {message.contextSources.semantic_objects}</Tag> : null}
+                      {message.contextSources.semantic_records ? <Tag>数据记录 {message.contextSources.semantic_records}</Tag> : null}
                     </div>
                   ) : null}
                   {message.actions?.length ? (

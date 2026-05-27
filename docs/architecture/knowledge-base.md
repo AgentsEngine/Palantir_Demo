@@ -1,6 +1,6 @@
 # Knowledge Base Architecture
 
-Last updated: 2026-05-26
+Last updated: 2026-05-27
 
 Source of truth:
 
@@ -8,6 +8,9 @@ Source of truth:
 - `frontend/src/pages/SystemAdmin/SemanticAssetCenter.tsx`
 - `frontend/src/pages/QualityImpact/index.tsx`
 - `frontend/src/services/api.ts`
+- `scripts/generate_purchase_pdf.py` for the local procurement/supplier-risk
+  PDF demo asset generator
+- `data/knowledge_assets/*` for bundled local seed assets
 
 Status: current API MVP plus target architecture notes. Sections labeled
 **Target** describe planned persistent/vector storage, not current runtime
@@ -113,6 +116,7 @@ Current implementation:
 ```text
 demo arrays
   -> upload simulation
+  -> optional locally generated PDF demo asset
   -> ingestion-job status
   -> normalized Markdown response
   -> chunk/card metadata
@@ -357,6 +361,33 @@ Frontend surfaces:
 - Account Center -> Ontology Modeling Center
 - Account Center -> Knowledge Graph Center
 - Quality Event Workbench right-side related knowledge cards
+
+## Demo Asset Generators
+
+For repeatable manual ingestion demos, the repository includes a local PDF
+generator:
+
+```powershell
+python scripts\generate_purchase_pdf.py
+```
+
+It creates a procurement and supplier-risk review PDF on the current Windows
+user's Desktop. The sample is intended to test:
+
+- PDF upload and extraction;
+- procurement/SQE evidence review;
+- object binding for supplier, material batch, purchase order, work order,
+  customer order, and quality event;
+- graph-publishable relationship evidence.
+
+Operational details and boundaries are documented in
+[Demo Knowledge Assets](../operations/demo-knowledge-assets.md).
+
+The bundled seed assets in `data/knowledge_assets/` cover SOP, CAPA, supplier
+8D, process control, reflow temperature review, and customer-risk communication
+scenarios. They are seed material for the local knowledge demo, while
+`generate_purchase_pdf.py` creates an additional manual-upload procurement
+sample.
 
 ## Implementation Principle
 

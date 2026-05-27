@@ -416,6 +416,58 @@ class Tenant(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200))
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     status: Mapped[str] = mapped_column(String(50), default="active")
+    config: Mapped[dict] = mapped_column(JSON, default=dict)
+    limits: Mapped[dict] = mapped_column(JSON, default=dict)
+    opened_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    suspended_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    domains: Mapped[list["TenantDomain"]] = relationship(back_populates="tenant", cascade="all, delete-orphan")
+
+
+class TenantDomain(TimestampMixin, Base):
+    __tablename__ = "tenant_domains"
+    __table_args__ = (
+        UniqueConstraint("domain", name="uq_tenant_domains_domain"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), index=True)
+    domain: Mapped[str] = mapped_column(String(255), index=True)
+    status: Mapped[str] = mapped_column(String(50), default="active")
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    tenant: Mapped["Tenant"] = relationship(back_populates="domains")
+
+
+class TenantInvite(TimestampMixin, Base):
+    __tablename__ = "tenant_invites"
+    __table_args__ = (
+        UniqueConstraint("token_hash", name="uq_tenant_invites_token_hash"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), index=True)
+    email: Mapped[str] = mapped_column(String(255), index=True)
+    role: Mapped[str] = mapped_column(String(50), default="member")
+    token_hash: Mapped[str] = mapped_column(String(128), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    invited_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+
+class PasswordResetToken(TimestampMixin, Base):
+    __tablename__ = "password_reset_tokens"
+    __table_args__ = (
+        UniqueConstraint("token_hash", name="uq_password_reset_tokens_token_hash"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(128), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 class Report(TimestampMixin, Base):
@@ -528,11 +580,14 @@ class MenuItem(TimestampMixin, Base):
 
 class Application(TimestampMixin, Base):
     __tablename__ = "applications"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "code", name="uq_applications_tenant_code"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
-    code: Mapped[str] = mapped_column(String(100), unique=True)
+    code: Mapped[str] = mapped_column(String(100))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     icon: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     default_route: Mapped[str] = mapped_column(String(200), default="/")
@@ -570,11 +625,14 @@ class ApplicationRole(TimestampMixin, Base):
 
 class Form(TimestampMixin, Base):
     __tablename__ = "forms"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "code", name="uq_forms_tenant_code"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
-    code: Mapped[str] = mapped_column(String(100), unique=True)
+    code: Mapped[str] = mapped_column(String(100))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     model_id: Mapped[Optional[int]] = mapped_column(ForeignKey("meta_models.id"), nullable=True)
     table_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
@@ -740,15 +798,28 @@ class WorkflowBinding(TimestampMixin, Base):
 
 class User(TimestampMixin, Base):
     __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "username", name="uq_users_tenant_username"),
+        UniqueConstraint("tenant_id", "email", name="uq_users_tenant_email"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
-    username: Mapped[str] = mapped_column(String(100), unique=True)
+    username: Mapped[str] = mapped_column(String(100))
     display_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     hashed_password: Mapped[str] = mapped_column(String(500))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    login_failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    force_password_change: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_login_ip: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    mfa_secret: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    sso_provider: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    sso_subject: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
 
     roles: Mapped[list["UserRole"]] = relationship(back_populates="user")
     org_memberships: Mapped[list["UserOrgMembership"]] = relationship(back_populates="user")
@@ -794,10 +865,13 @@ class UserOrgMembership(TimestampMixin, Base):
 
 class Role(TimestampMixin, Base):
     __tablename__ = "roles"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "name", name="uq_roles_tenant_name"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
     label: Mapped[str] = mapped_column(String(200))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -826,8 +900,50 @@ class RolePermission(TimestampMixin, Base):
     resource_type: Mapped[str] = mapped_column(String(50))
     resource_key: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     action: Mapped[str] = mapped_column(String(50))
+    effect: Mapped[str] = mapped_column(String(20), default="allow")
+    data_scope: Mapped[str] = mapped_column(String(50), default="all")
+    condition_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    field_rules_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
 
     role: Mapped["Role"] = relationship(back_populates="permissions")
+
+
+class UserSession(TimestampMixin, Base):
+    __tablename__ = "user_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    session_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    login_method: Mapped[str] = mapped_column(String(50), default="local")
+    ip_address: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    revoked_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+
+class PasswordHistory(TimestampMixin, Base):
+    __tablename__ = "password_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    password_hash: Mapped[str] = mapped_column(String(500))
+
+
+class OidcState(TimestampMixin, Base):
+    __tablename__ = "oidc_states"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    state: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    nonce: Mapped[str] = mapped_column(String(200))
+    redirect_uri: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    consumed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 # ── 工作流族 (Phase 3) ────────────────────────────────────

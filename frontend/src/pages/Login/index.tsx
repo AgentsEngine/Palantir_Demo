@@ -1,4 +1,4 @@
-import { Button, Card, Divider, Form, Input, Select, Space, Typography, message } from 'antd';
+import { Alert, Button, Card, Divider, Form, Input, Modal, Select, Space, Typography, message } from 'antd';
 import {
   ApiOutlined,
   BulbOutlined,
@@ -14,7 +14,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { authLogin } from '@/services/api';
+import { authLoginWithMfa, getOidcLoginUrl } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 
 const demoAccounts = [
@@ -73,7 +73,11 @@ const commandSlides = [
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [mfaOpen, setMfaOpen] = useState(false);
+  const [mfaPending, setMfaPending] = useState<{ username: string; password: string } | null>(null);
+  const [mfaForm] = Form.useForm();
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
   const currentSlide = commandSlides[activeSlide];
@@ -172,8 +176,14 @@ export default function LoginPage() {
   const handleLogin = async (values: { username: string; password: string }) => {
     setLoading(true);
     try {
-      const res = await authLogin(values.username, values.password);
+      const res = await authLoginWithMfa(values.username, values.password);
       const data = res.data;
+      if (data.requires_mfa || data.mfa_required) {
+        setMfaPending(values);
+        setMfaOpen(true);
+        message.info('请输入 MFA 验证码');
+        return;
+      }
       login(data.token, data.user);
       message.success(`欢迎回来，${data.user.display_name}`);
       navigate('/');
@@ -181,6 +191,41 @@ export default function LoginPage() {
       message.error('账号或密码不正确');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitMfa = async () => {
+    if (!mfaPending) return;
+    const values = await mfaForm.validateFields();
+    setLoading(true);
+    try {
+      const res = await authLoginWithMfa(mfaPending.username, mfaPending.password, values.code);
+      const data = res.data;
+      login(data.token, data.user);
+      setMfaOpen(false);
+      setMfaPending(null);
+      message.success(`欢迎回来，${data.user.display_name || data.user.username}`);
+      navigate('/');
+    } catch {
+      message.error('MFA 验证失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSsoLogin = async () => {
+    setSsoLoading(true);
+    try {
+      const res = await getOidcLoginUrl(`${window.location.origin}/login`);
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+        return;
+      }
+      message.warning('企业 SSO 尚未配置');
+    } catch {
+      message.warning('企业 SSO 尚未配置');
+    } finally {
+      setSsoLoading(false);
     }
   };
 
@@ -298,6 +343,16 @@ export default function LoginPage() {
           </Button>
         </Form>
 
+        <Button block icon={<SafetyCertificateOutlined />} loading={ssoLoading} onClick={handleSsoLogin} style={{ marginTop: 10 }}>
+          企业 SSO 登录
+        </Button>
+        <Alert
+          type="info"
+          showIcon
+          message="本地账号与企业 SSO 双登录并存；生产环境可通过后台配置 OIDC。"
+          style={{ marginTop: 12 }}
+        />
+
         <Divider />
         <div className="demo-account-row">
           <Typography.Text type="secondary">演示账号</Typography.Text>
@@ -319,6 +374,13 @@ export default function LoginPage() {
           </div>
         </div>
       </Card>
+      <Modal title="MFA 验证" open={mfaOpen} onOk={submitMfa} onCancel={() => setMfaOpen(false)} confirmLoading={loading}>
+        <Form form={mfaForm} layout="vertical">
+          <Form.Item name="code" label="6 位动态验证码" rules={[{ required: true, message: '请输入 MFA 验证码' }]}>
+            <Input placeholder="123456" maxLength={8} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

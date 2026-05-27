@@ -20,7 +20,8 @@ from app.api._model_driven_shared import assert_safe_identifier
 from app.api.deps import current_tenant_id, current_user_id, get_current_user, get_db, require_admin
 from app.config import settings
 from app.core.audit import write_audit_log
-from app.core.permissions import has_form_permission
+from app.core.permissions import allowed_form_fields, has_form_permission
+from app.services.tenant_onboarding import assert_tenant_quota
 
 router = APIRouter()
 
@@ -262,12 +263,15 @@ def _application_form_payload(binding) -> dict:
     }
 
 
-def _record_payload(record) -> dict:
+def _record_payload(record, *, visible_fields: Optional[set[str]] = None) -> dict:
+    data = record.data or {}
+    if visible_fields is not None:
+        data = {key: value for key, value in data.items() if key in visible_fields}
     return {
         "id": record.id,
         "form_id": record.form_id,
         "model_id": record.model_id,
-        "data": record.data or {},
+        "data": data,
         "status": record.status,
         "created_by": record.created_by,
         "updated_by": record.updated_by,
@@ -338,6 +342,14 @@ def _record_matches_search(record, fields: list, search: Optional[str]) -> bool:
     return any(needle in str(values.get(name, "")).lower() for name in names)
 
 
+def _visible_field_subset(fields: list, visible_fields: set[str]) -> list:
+    return [
+        field
+        for field in fields
+        if not field.archived and field.field_name in visible_fields
+    ]
+
+
 def _parse_record_filters(filters_json: Optional[str]) -> list[dict]:
     if not filters_json:
         return []
@@ -398,6 +410,45 @@ def _queryable_field_names(fields: list) -> set[str]:
     }
 
 
+def _sortable_field_names(fields: list) -> set[str]:
+    return {
+        field.field_name
+        for field in fields
+        if not field.archived and getattr(field, "sortable", False)
+    }
+
+
+def _ensure_filter_fields_visible(filters: list[dict], visible_fields: set[str]) -> None:
+    for filter_item in filters:
+        field = str(filter_item.get("field") or "")
+        expected = filter_item.get("value")
+        if expected in (None, ""):
+            continue
+        if field not in visible_fields:
+            raise HTTPException(403, f"Field permission denied for filtering: {field}")
+
+
+def _ensure_sort_field_allowed(sort_field: Optional[str], fields: list, visible_fields: set[str]) -> None:
+    if not sort_field:
+        return
+    known_fields = {field.field_name for field in fields if not field.archived}
+    if sort_field not in known_fields:
+        raise HTTPException(400, f"Invalid sort field: {sort_field}")
+    if sort_field not in visible_fields:
+        raise HTTPException(403, f"Field permission denied for sorting: {sort_field}")
+    if sort_field not in _sortable_field_names(fields):
+        raise HTTPException(400, f"Field is not indexed for sorting: {sort_field}")
+
+
+def _apply_record_sort_query(query, record_model, sort_field: Optional[str], sort_order: str):
+    if not sort_field:
+        return query.order_by(record_model.id.desc())
+    expr = _json_text_expr(record_model.data, sort_field)
+    if sort_order.lower() == "asc":
+        return query.order_by(expr.asc(), record_model.id.desc())
+    return query.order_by(expr.desc(), record_model.id.desc())
+
+
 def _json_text_expr(json_column, field_name: str):
     return json_column[field_name].as_string()
 
@@ -448,6 +499,69 @@ def _apply_record_filters_query(query, record_model, fields: list, filters: list
         else:
             raise HTTPException(400, f"Invalid filter operator: {op}")
     return query, True
+
+
+def _ensure_production_record_query_supported(
+    search: Optional[str],
+    filters: list[dict],
+    search_pushed: bool,
+    filters_pushed: bool,
+) -> None:
+    if settings.IS_PRODUCTION and ((search and not search_pushed) or (filters and not filters_pushed)):
+        raise HTTPException(400, "Query is not indexed for production dynamic records")
+
+
+def _merged_record_data(existing: Optional[dict], patch: Optional[dict]) -> dict:
+    return {**(existing or {}), **(patch or {})}
+
+
+def _field_value_is_compatible(field, value) -> bool:
+    if value in (None, ""):
+        return True
+    field_type = (field.field_type or "string").lower()
+    if field_type in {"number", "decimal", "float"}:
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if field_type in {"integer", "int"}:
+        return isinstance(value, int) and not isinstance(value, bool)
+    if field_type == "boolean":
+        return isinstance(value, bool)
+    if field_type in {"date", "datetime"}:
+        return isinstance(value, str)
+    if field_type == "enum":
+        allowed = _field_allowed_values(field)
+        return not allowed or str(value) in allowed
+    return True
+
+
+async def _dynamic_record_field_impact(db: AsyncSession, tenant_id: int, form_id: int, field) -> dict:
+    from app.models.relational import DynamicRecord
+
+    rows = (await db.execute(
+        select(DynamicRecord.data).where(
+            DynamicRecord.form_id == form_id,
+            DynamicRecord.tenant_id == tenant_id,
+            DynamicRecord.deleted_at.is_(None),
+        )
+    )).scalars().all()
+    total = len(rows)
+    filled = 0
+    missing_required = 0
+    incompatible = 0
+    for data in rows:
+        values = data or {}
+        value = values.get(field.field_name)
+        if value not in (None, ""):
+            filled += 1
+        if field.required and value in (None, ""):
+            missing_required += 1
+        if not _field_value_is_compatible(field, value):
+            incompatible += 1
+    return {
+        "record_count": total,
+        "filled_count": filled,
+        "missing_required_count": missing_required,
+        "incompatible_count": incompatible,
+    }
 
 
 async def _ensure_application_form_binding(db: AsyncSession, application_id: int, form_id: int) -> None:
@@ -1090,6 +1204,9 @@ async def get_form(
     fields = (await db.execute(
         select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
     )).scalars().all()
+    if not user.get("is_admin"):
+        visible_names = await allowed_form_fields(user, form_id, "view", fields, db)
+        fields = [field for field in fields if field.field_name in visible_names]
     app_rows = await db.execute(
         select(Application, ApplicationForm)
         .join(ApplicationForm, ApplicationForm.application_id == Application.id)
@@ -1192,11 +1309,39 @@ async def update_form_field(
     field = await db.get(FormField, field_id)
     if not field or field.form_id != form_id or field.tenant_id != tenant_id:
         raise HTTPException(404, "Field not found")
-    for key, value in body.dict(exclude_unset=True).items():
+    updates = body.dict(exclude_unset=True)
+    old_values = _field_payload(field)
+    changed = False
+    for key, value in updates.items():
+        if getattr(field, key) != value:
+            changed = True
         setattr(field, key, value)
+    impact = await _dynamic_record_field_impact(db, tenant_id, form_id, field) if changed else None
+    if updates.get("required") is True and impact and impact["missing_required_count"]:
+        raise HTTPException(
+            409,
+            f"Cannot require field with {impact['missing_required_count']} existing record(s) missing a value",
+        )
+    if "field_type" in updates and impact and impact["incompatible_count"]:
+        raise HTTPException(
+            409,
+            f"Cannot change field type with {impact['incompatible_count']} incompatible existing record value(s)",
+        )
     await db.commit()
     await db.refresh(field)
-    return {"data": _field_payload(field)}
+    await write_audit_log(
+        tenant_id=tenant_id,
+        user_id=current_user_id(user),
+        action="update_field",
+        resource_type="form",
+        resource_id=form_id,
+        old_values=old_values,
+        new_values=updates,
+    )
+    payload = {"data": _field_payload(field)}
+    if impact:
+        payload["impact"] = impact
+    return payload
 
 
 @router.delete("/{form_id}/fields/{field_id}")
@@ -1212,9 +1357,19 @@ async def archive_form_field(
     field = await db.get(FormField, field_id)
     if not field or field.form_id != form_id or field.tenant_id != tenant_id:
         raise HTTPException(404, "Field not found")
+    impact = await _dynamic_record_field_impact(db, tenant_id, form_id, field)
     field.archived = True
     await db.commit()
-    return {"ok": True}
+    await write_audit_log(
+        tenant_id=tenant_id,
+        user_id=current_user_id(user),
+        action="archive_field",
+        resource_type="form",
+        resource_id=form_id,
+        old_values={"field_name": field.field_name, "archived": False},
+        new_values={"field_name": field.field_name, "archived": True, "impact": impact},
+    )
+    return {"ok": True, "impact": impact}
 
 
 @router.get("/{form_id}/layouts")
@@ -1536,6 +1691,8 @@ async def list_dynamic_records(
     include_deleted: bool = False,
     search: Optional[str] = Query(default=None),
     filters_json: Optional[str] = Query(default=None, alias="filters"),
+    sort_field: Optional[str] = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     cursor_after_id: Optional[int] = Query(default=None, ge=1),
     cursor_before_id: Optional[int] = Query(default=None, ge=1),
     include_total: bool = True,
@@ -1554,16 +1711,19 @@ async def list_dynamic_records(
     fields = (await db.execute(
         select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
     )).scalars().all()
+    visible_fields = await allowed_form_fields(user, form_id, "view", fields, db)
+    query_fields = _visible_field_subset(fields, visible_fields)
     db_filters = [DynamicRecord.form_id == form_id, DynamicRecord.tenant_id == tenant_id]
     if not include_deleted:
         db_filters.append(DynamicRecord.deleted_at.is_(None))
 
     parsed_filters = _parse_record_filters(filters_json)
+    _ensure_filter_fields_visible(parsed_filters, visible_fields)
+    _ensure_sort_field_allowed(sort_field, fields, visible_fields)
     query = select(DynamicRecord).where(*db_filters)
-    query, search_pushed = _apply_record_search_query(query, DynamicRecord, fields, search)
-    query, filters_pushed = _apply_record_filters_query(query, DynamicRecord, fields, parsed_filters)
-    if settings.IS_PRODUCTION and ((search and not search_pushed) or (parsed_filters and not filters_pushed)):
-        raise HTTPException(400, "Query is not indexed for production dynamic records")
+    query, search_pushed = _apply_record_search_query(query, DynamicRecord, query_fields, search)
+    query, filters_pushed = _apply_record_filters_query(query, DynamicRecord, query_fields, parsed_filters)
+    _ensure_production_record_query_supported(search, parsed_filters, search_pushed, filters_pushed)
     if cursor_mode := (cursor_after_id is not None or cursor_before_id is not None):
         if (search and not search_pushed) or (parsed_filters and not filters_pushed):
             raise HTTPException(400, "Cursor pagination requires indexed search and filters")
@@ -1579,13 +1739,15 @@ async def list_dynamic_records(
     if cursor_before_id is not None:
         query = query.where(DynamicRecord.id > cursor_before_id)
 
-    query = query.order_by(DynamicRecord.id.desc())
+    query = _apply_record_sort_query(query, DynamicRecord, sort_field, sort_order)
     if not search and not parsed_filters and not cursor_mode:
-        total = await db.scalar(select(func.count(DynamicRecord.id)).where(*db_filters))
+        total = None
+        if include_total:
+            total = await db.scalar(select(func.count(DynamicRecord.id)).where(*db_filters))
         result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
         return {
-            "data": [_record_payload(record) for record in result.scalars().all()],
-            "total": int(total or 0),
+            "data": [_record_payload(record, visible_fields=visible_fields) for record in result.scalars().all()],
+            "total": int(total or 0) if total is not None else None,
             "page": page,
             "page_size": page_size,
             "has_more": False,
@@ -1596,15 +1758,15 @@ async def list_dynamic_records(
         total = None
         if include_total and not cursor_mode:
             count_query = select(func.count(DynamicRecord.id)).where(*db_filters)
-            count_query, _ = _apply_record_search_query(count_query, DynamicRecord, fields, search)
-            count_query, _ = _apply_record_filters_query(count_query, DynamicRecord, fields, parsed_filters)
+            count_query, _ = _apply_record_search_query(count_query, DynamicRecord, query_fields, search)
+            count_query, _ = _apply_record_filters_query(count_query, DynamicRecord, query_fields, parsed_filters)
             total = await db.scalar(count_query)
         result = await db.execute(query.limit(page_size + 1))
         rows = result.scalars().all()
         page_rows = rows[:page_size]
         next_cursor = page_rows[-1].id if len(rows) > page_size and page_rows else None
         return {
-            "data": [_record_payload(record) for record in page_rows],
+            "data": [_record_payload(record, visible_fields=visible_fields) for record in page_rows],
             "total": int(total) if total is not None else None,
             "page": page,
             "page_size": page_size,
@@ -1616,18 +1778,48 @@ async def list_dynamic_records(
     matched = [
         record
         for record in records
-        if _record_matches_search(record, fields, search)
-        and _record_matches_filters(record, fields, parsed_filters)
+        if _record_matches_search(record, query_fields, search)
+        and _record_matches_filters(record, query_fields, parsed_filters)
     ]
     total = len(matched)
     start = (page - 1) * page_size
     end = start + page_size
     return {
-        "data": [_record_payload(record) for record in matched[start:end]],
+        "data": [_record_payload(record, visible_fields=visible_fields) for record in matched[start:end]],
         "total": total,
         "page": page,
         "page_size": page_size,
     }
+
+
+@router.get("/{form_id}/records/{record_id}")
+async def get_dynamic_record(
+    form_id: int,
+    record_id: int,
+    include_deleted: bool = False,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    from app.models.relational import DynamicRecord, Form, FormField
+
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
+        raise HTTPException(404, "Form not found")
+    await _ensure_form_permission(db, user, form_id, "view")
+    record = await db.get(DynamicRecord, record_id)
+    if (
+        not record
+        or record.form_id != form_id
+        or record.tenant_id != tenant_id
+        or (record.deleted_at is not None and not include_deleted)
+    ):
+        raise HTTPException(404, "Record not found")
+    fields = (await db.execute(
+        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
+    )).scalars().all()
+    visible_fields = await allowed_form_fields(user, form_id, "view", fields, db)
+    return {"data": _record_payload(record, visible_fields=visible_fields)}
 
 
 @router.post("/{form_id}/records")
@@ -1644,9 +1836,14 @@ async def create_dynamic_record(
     if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "create")
+    await assert_tenant_quota(db, tenant_id, "dynamicRecords")
     fields = (await db.execute(
         select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
     )).scalars().all()
+    editable_fields = await allowed_form_fields(user, form_id, "create", fields, db)
+    denied_fields = sorted(set(body.data.keys()) - editable_fields)
+    if denied_fields:
+        raise HTTPException(403, f"Field permission denied: {', '.join(denied_fields)}")
     _validate_record_data(fields, body.data)
     record = DynamicRecord(
         tenant_id=tenant_id,
@@ -1691,8 +1888,13 @@ async def update_dynamic_record(
         fields = (await db.execute(
             select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
         )).scalars().all()
-        merged = {**(record.data or {}), **updates["data"]}
+        editable_fields = await allowed_form_fields(user, form_id, "edit", fields, db)
+        denied_fields = sorted(set(updates["data"].keys()) - editable_fields)
+        if denied_fields:
+            raise HTTPException(403, f"Field permission denied: {', '.join(denied_fields)}")
+        merged = _merged_record_data(record.data, updates["data"])
         _validate_record_data(fields, merged)
+        updates["data"] = merged
     for key, value in updates.items():
         setattr(record, key, value)
     record.updated_by = _uid(user)

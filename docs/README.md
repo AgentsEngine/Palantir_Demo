@@ -1,6 +1,6 @@
 # ManuFoundry Documentation
 
-Last updated: 2026-05-26
+Last updated: 2026-05-27
 
 This documentation set is organized by responsibility, not by file path. Some
 files under `docs/architecture/` describe current implementation, while others
@@ -64,6 +64,7 @@ Read these first when you want the current system truth:
 | [Deployment](operations/deployment.md) | Local startup, Docker Compose deployment, server update convention, and verification. |
 | [Testing](operations/testing.md) | Backend/frontend verification strategy and known test gaps. |
 | [Neo4j Beginner Guide](operations/neo4j-beginner-guide.md) | Beginner-friendly Neo4j browser and Cypher walkthrough for this project. |
+| [Demo Knowledge Assets](operations/demo-knowledge-assets.md) | Local scripts for generating and seeding demo knowledge-base files. |
 
 ## Product And UX Design
 

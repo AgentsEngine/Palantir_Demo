@@ -4,6 +4,7 @@ import {
   ApiOutlined,
   AppstoreOutlined,
   AuditOutlined,
+  BankOutlined,
   BellOutlined,
   DatabaseOutlined,
   DeleteOutlined,
@@ -44,6 +45,7 @@ import { useAuthStore } from '../../stores/authStore';
 import AppMenuManagement from '../SystemAdmin/AppMenuManagement';
 import IdentityAccessManagement from '../SystemAdmin/IdentityAccessManagement';
 import SemanticAssetCenter, { KnowledgeCenter } from '../SystemAdmin/SemanticAssetCenter';
+import TenantManagement from '../SystemAdmin/TenantManagement';
 import {
   adminListUsers,
   closeAgentConversation,
@@ -140,7 +142,7 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
   const user = useAuthStore((s) => s.user);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = searchParams.get('section') || 'account';
-  const identityDefaultTab = activeSection === 'roles' ? 'roles' : activeSection === 'orgs' ? 'orgs' : 'users';
+  const identityDefaultTab = activeSection === 'roles' ? 'roles' : activeSection === 'orgs' ? 'orgs' : activeSection === 'users' ? 'users' : 'overview';
   const normalizedSection = ['users', 'roles', 'orgs'].includes(activeSection)
     ? 'identity-access'
     : activeSection === 'ai-personal'
@@ -178,6 +180,12 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
         label: 'AI 与平台设置',
         icon: <RobotOutlined />,
         children: <AIPlatformPanelV2 />,
+      },
+      {
+        key: 'tenants',
+        label: '租户管理',
+        icon: <BankOutlined />,
+        children: <TenantManagement />,
       },
       {
         key: 'app-menu',

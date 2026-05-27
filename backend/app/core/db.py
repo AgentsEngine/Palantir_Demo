@@ -9,6 +9,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -44,6 +45,8 @@ async def safe_db_call(fn, *, default=None):
     try:
         async with db_session() as session:
             return await fn(session)
+    except HTTPException:
+        raise
     except Exception as exc:  # noqa: BLE001 — intentional broad catch with logging
         logger.warning("safe_db_call returning default: %s", exc)
         return default

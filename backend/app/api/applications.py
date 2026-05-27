@@ -17,6 +17,7 @@ from app.api.deps import current_tenant_id, current_user_id, get_current_user, g
 from app.config import settings
 from app.core.audit import write_audit_log
 from app.core.db import safe_db_call
+from app.services.tenant_onboarding import assert_tenant_quota
 
 router = APIRouter()
 admin_router = APIRouter()
@@ -437,6 +438,10 @@ async def admin_create_application(body: ApplicationCreate, user: dict = Depends
         from app.models.relational import Application
 
         tenant_id = current_tenant_id(user)
+        await assert_tenant_quota(db, tenant_id, "applications")
+        existing = await db.scalar(select(Application.id).where(Application.tenant_id == tenant_id, Application.code == body.code))
+        if existing:
+            raise HTTPException(409, "Application code already exists")
         app = Application(tenant_id=tenant_id, **body.dict())
         db.add(app)
         await db.commit()

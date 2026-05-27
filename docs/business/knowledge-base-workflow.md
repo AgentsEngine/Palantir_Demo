@@ -1,6 +1,6 @@
 # Knowledge Base Workflow
 
-Last updated: 2026-05-25
+Last updated: 2026-05-27
 
 ## What Users Do
 
@@ -39,6 +39,28 @@ Choose knowledge space
 
 Personal notes can stay private. Department and enterprise knowledge must go
 through review before it appears in business workbenches.
+
+### Demo Upload Material
+
+For procurement and supplier-risk demos, generate a local PDF sample first:
+
+```powershell
+python scripts\generate_purchase_pdf.py
+```
+
+The script writes
+`PUR-SQE-2026-0527_procurement_supplier_risk_review.pdf` to the current Windows
+user's Desktop. Upload that PDF through the Knowledge Center to exercise:
+
+- PDF extraction and evidence review;
+- purchasing/SQE risk notes;
+- object binding for supplier, batch, purchase order, work order, customer
+  order, and quality event;
+- graph relationship publishing review.
+
+The generated file is a local runtime artifact and should not be committed. See
+[Demo Knowledge Assets](../operations/demo-knowledge-assets.md) for script
+details.
 
 ## 2. Review And Publish
 

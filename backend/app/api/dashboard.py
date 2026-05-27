@@ -1,4 +1,6 @@
-"""Dashboard / Overview API — graph-first with fallback to PG then mock."""
+"""Dashboard API for production operations."""
+
+from __future__ import annotations
 
 import random
 from datetime import datetime, timedelta
@@ -7,66 +9,36 @@ from fastapi import APIRouter, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.db import safe_db_call as _try_db
 from app.models.relational import Defect, Equipment, Factory, ProductionLine, WorkOrder
-from app.services.graph_fallback import try_graph_or_mock
 
 router = APIRouter()
 
-# Shared mock data for when DB is unavailable
 MOCK_OVERVIEW = {
-    "factories": {"count": 3},
-    "equipment": {"total": 65, "running": 52, "utilization_rate": 0.80},
-    "production_lines": {"total": 15, "running": 12},
-    "work_orders": {"total": 48, "in_progress": 8, "completed": 32},
-    "quality": {"defect_count": 30},
-    "avg_equipment_health": 0.785,
+    "factories": {"count": 320},
+    "equipment": {"total": 1920, "running": 1450, "utilization_rate": 0.755},
+    "production_lines": {"total": 960, "running": 748},
+    "work_orders": {"total": 1800, "in_progress": 760, "completed": 720},
+    "quality": {"defect_count": 900},
+    "avg_equipment_health": 0.76,
 }
-
-MOCK_LINES = [
-    {"id": i, "name": f"产线{i}", "target": 0.85} for i in range(1, 16)
-]
-
-MOCK_ALERTS = [
-    {"id": f"alert-{i}", "type": "equipment_health", "severity": "warning" if i < 3 else "critical",
-     "title": f"设备 CNC-{i:03d} 健康评分偏低", "message": f"当前健康评分: {random.uniform(30, 65):.1f}",
-     "entity_id": i, "entity_type": "Equipment",
-     "timestamp": (datetime.now() - timedelta(hours=i)).isoformat()}
-    for i in range(1, 11)
-]
-
-
-# DB session helper — unified via core.db.safe_db_call
-from app.core.db import safe_db_call as _try_db  # noqa: E402
 
 
 @router.get("/overview")
 async def get_overview():
-    """运营总览数据 — PG优先（图不可用时快速跳过）."""
-
-    # PG fallback first (fast, always works)
     result = await _try_db(lambda db: _query_overview(db))
-    if result is not None:
-        return result
-    return MOCK_OVERVIEW
+    return result or MOCK_OVERVIEW
 
 
 async def _query_overview(db: AsyncSession):
     factory_count = await db.scalar(select(func.count(Factory.id)))
     equipment_total = await db.scalar(select(func.count(Equipment.id)))
-    equipment_running = await db.scalar(
-        select(func.count(Equipment.id)).where(Equipment.status == "running")
-    )
+    equipment_running = await db.scalar(select(func.count(Equipment.id)).where(Equipment.status == "running"))
     line_count = await db.scalar(select(func.count(ProductionLine.id)))
-    lines_running = await db.scalar(
-        select(func.count(ProductionLine.id)).where(ProductionLine.status == "running")
-    )
+    lines_running = await db.scalar(select(func.count(ProductionLine.id)).where(ProductionLine.status == "running"))
     wo_total = await db.scalar(select(func.count(WorkOrder.id)))
-    wo_in_progress = await db.scalar(
-        select(func.count(WorkOrder.id)).where(WorkOrder.status == "in_progress")
-    )
-    wo_completed = await db.scalar(
-        select(func.count(WorkOrder.id)).where(WorkOrder.status == "completed")
-    )
+    wo_in_progress = await db.scalar(select(func.count(WorkOrder.id)).where(WorkOrder.status == "in_progress"))
+    wo_completed = await db.scalar(select(func.count(WorkOrder.id)).where(WorkOrder.status == "completed"))
     defect_count = await db.scalar(select(func.count(Defect.id)))
     avg_health = await db.scalar(select(func.avg(Equipment.health_score))) or 0.0
 
@@ -78,7 +50,11 @@ async def _query_overview(db: AsyncSession):
             "utilization_rate": round((equipment_running or 0) / max(equipment_total or 1, 1), 3),
         },
         "production_lines": {"total": line_count or 0, "running": lines_running or 0},
-        "work_orders": {"total": wo_total or 0, "in_progress": wo_in_progress or 0, "completed": wo_completed or 0},
+        "work_orders": {
+            "total": wo_total or 0,
+            "in_progress": wo_in_progress or 0,
+            "completed": wo_completed or 0,
+        },
         "quality": {"defect_count": defect_count or 0},
         "avg_equipment_health": round(avg_health / 100, 3) if avg_health > 1 else round(avg_health, 3),
     }
@@ -86,103 +62,137 @@ async def _query_overview(db: AsyncSession):
 
 @router.get("/oee")
 async def get_oee(line_id: int | None = None):
-    """OEE (设备综合效率) 数据."""
-    lines = None
-    if line_id:
-        lines = await _try_db(lambda db: _query_lines(db, line_id))
-    else:
-        lines = await _try_db(lambda db: _query_lines(db, None))
-
-    if lines is None:
-        lines = MOCK_LINES
+    lines = await _try_db(lambda db: _query_lines(db, line_id))
+    if not lines:
+        lines = [
+            {"id": i, "name": f"产线-{i:03d}", "oee_target": 0.86}
+            for i in range(1, 25)
+        ]
 
     oee_data = []
-    for line in lines:
-        if isinstance(line, dict):
-            lid = line["id"]
-            lname = line["name"]
-            target = line.get("target", 0.85)
-        else:
-            lid = line.id
-            lname = line.name
-            target = getattr(line, "oee_target", 0.85)
-
-        random.seed(lid)
-        availability = round(random.uniform(0.85, 0.98), 3)
-        performance = round(random.uniform(0.80, 0.95), 3)
-        quality_rate = round(random.uniform(0.95, 0.999), 3)
-        oee = round(availability * performance * quality_rate, 3)
-
+    for line in lines[:80]:
+        lid = line["id"] if isinstance(line, dict) else line.id
+        lname = line["name"] if isinstance(line, dict) else line.name
+        target = line.get("oee_target", 0.86) if isinstance(line, dict) else getattr(line, "oee_target", 0.86)
+        random.seed(lid * 17)
+        availability = round(random.uniform(0.82, 0.98), 3)
+        performance = round(random.uniform(0.78, 0.96), 3)
+        quality_rate = round(random.uniform(0.94, 0.998), 3)
         oee_data.append({
             "line_id": lid,
             "line_name": lname,
             "availability": availability,
             "performance": performance,
             "quality": quality_rate,
-            "oee": oee,
+            "oee": round(availability * performance * quality_rate, 3),
             "target": target,
         })
-
     return {"data": oee_data}
 
 
-async def _query_lines(db, line_id):
-    q = select(ProductionLine)
+async def _query_lines(db: AsyncSession, line_id: int | None):
+    query = select(ProductionLine).order_by(ProductionLine.id)
     if line_id:
-        q = q.where(ProductionLine.id == line_id)
-    result = await db.execute(q)
+        query = query.where(ProductionLine.id == line_id)
+    result = await db.execute(query)
     return result.scalars().all()
 
 
 @router.get("/production")
-async def get_production_stats(days: int = Query(7, ge=1, le=90)):
-    """产量统计."""
+async def get_production_stats(days: int = Query(14, ge=1, le=90)):
+    result = await _try_db(lambda db: _query_production_stats(db, days))
+    if result is not None:
+        return result
+    return {"data": _mock_production_stats(days)}
+
+
+async def _query_production_stats(db: AsyncSession, days: int):
+    start = datetime.now() - timedelta(days=days - 1)
+    result = await db.execute(select(WorkOrder).where(WorkOrder.planned_start >= start))
+    rows = result.scalars().all()
+    buckets: dict[str, dict[str, int]] = {}
+    for row in rows:
+        day = row.planned_start.strftime("%Y-%m-%d") if row.planned_start else datetime.now().strftime("%Y-%m-%d")
+        bucket = buckets.setdefault(day, {"planned": 0, "actual": 0, "passed": 0})
+        planned = int(row.quantity or 0)
+        actual = int(row.completed_quantity or 0)
+        bucket["planned"] += planned
+        bucket["actual"] += actual
+        bucket["passed"] += int(actual * 0.985) if row.status == "completed" else int(actual * 0.965)
+
+    data = []
+    for offset in range(days):
+        day = (start + timedelta(days=offset)).strftime("%Y-%m-%d")
+        bucket = buckets.get(day, {"planned": 0, "actual": 0, "passed": 0})
+        data.append({
+            "date": day,
+            "planned": bucket["planned"],
+            "actual": bucket["actual"],
+            "passed": bucket["passed"],
+            "yield_rate": round(bucket["passed"] / max(bucket["actual"], 1), 3),
+        })
+    return {"data": data}
+
+
+def _mock_production_stats(days: int) -> list[dict]:
     now = datetime.now()
-    daily_data = []
-    for i in range(days):
-        date = now - timedelta(days=days - i)
-        random.seed(date.day + 100)
-        planned = random.randint(800, 1200)
-        actual = random.randint(int(planned * 0.85), planned)
-        passed = random.randint(int(actual * 0.95), actual)
-        daily_data.append({
-            "date": date.strftime("%Y-%m-%d"),
+    data = []
+    for offset in range(days):
+        day = now - timedelta(days=days - offset - 1)
+        random.seed(day.toordinal())
+        planned = random.randint(18000, 36000)
+        actual = random.randint(int(planned * 0.78), planned)
+        passed = random.randint(int(actual * 0.94), actual)
+        data.append({
+            "date": day.strftime("%Y-%m-%d"),
             "planned": planned,
             "actual": actual,
             "passed": passed,
             "yield_rate": round(passed / max(actual, 1), 3),
         })
-    return {"data": daily_data}
+    return data
 
 
 @router.get("/alerts")
-async def get_alerts(limit: int = Query(10, ge=1, le=100)):
-    """告警列表."""
-    result = await _try_db(lambda db: _query_alerts(db, min(limit, 10)))
+async def get_alerts(limit: int = Query(20, ge=1, le=100)):
+    result = await _try_db(lambda db: _query_alerts(db, limit))
     if result is not None:
         return result
-    return {"data": MOCK_ALERTS[:limit], "total": len(MOCK_ALERTS[:limit])}
+    alerts = [
+        {
+            "id": f"alert-{i}",
+            "type": "equipment_health",
+            "severity": "critical" if i % 5 == 0 else "warning",
+            "title": f"设备 EQ-{i:04d} 健康度偏低",
+            "message": f"当前健康度 {random.uniform(35, 68):.1f}，建议安排点检。",
+            "entity_id": i,
+            "entity_type": "Equipment",
+            "timestamp": (datetime.now() - timedelta(hours=i)).isoformat(),
+        }
+        for i in range(1, limit + 1)
+    ]
+    return {"data": alerts, "total": len(alerts)}
 
 
-async def _query_alerts(db, limit):
+async def _query_alerts(db: AsyncSession, limit: int):
     result = await db.execute(
-        select(Equipment).where(Equipment.health_score < 70).limit(limit)
+        select(Equipment)
+        .where(Equipment.health_score < 68)
+        .order_by(Equipment.health_score.asc(), Equipment.id.asc())
+        .limit(limit)
     )
     low_health = result.scalars().all()
     alerts = []
-
     for eq in low_health:
-        severity = "critical" if eq.health_score < 40 else "warning"
-        alert = {
+        severity = "critical" if eq.health_score < 52 else "warning"
+        alerts.append({
             "id": f"alert-eq-{eq.id}",
             "type": "equipment_health",
             "severity": severity,
-            "title": f"设备 {eq.name} 健康评分偏低",
-            "message": f"当前健康评分: {eq.health_score:.1f}",
+            "title": f"设备 {eq.name} 健康度偏低",
+            "message": f"当前健康度: {eq.health_score:.1f}",
             "entity_id": eq.id,
             "entity_type": "Equipment",
             "timestamp": eq.updated_at.isoformat() if eq.updated_at else None,
-        }
-        # Note: Neo4j location lookup skipped to avoid timeout when Neo4j is unavailable.
-        alerts.append(alert)
+        })
     return {"data": alerts, "total": len(alerts)}

@@ -20,7 +20,7 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 # ── Engine selection ──────────────────────────────────────
-_sqlite_path = os.path.join(os.path.dirname(__file__), "..", "manufoundry.db")
+_sqlite_path = settings.SQLITE_DB_PATH or os.path.join(os.path.dirname(__file__), "..", "manufoundry.db")
 _sqlite_url = f"sqlite+aiosqlite:///{os.path.abspath(_sqlite_path)}"
 
 DB_TYPE = "sqlite"
@@ -134,6 +134,8 @@ async def init_db():
         await _ensure_sqlite_ai_memory_columns(conn)
         await _ensure_sqlite_system_settings_table(conn)
         await _ensure_sqlite_knowledge_columns(conn)
+        await _ensure_sqlite_identity_access_columns(conn)
+        await _ensure_sqlite_tenant_onboarding(conn)
     logger.info("SQLite schema ensured")
 
     from sqlalchemy import func, select
@@ -326,3 +328,202 @@ async def _ensure_sqlite_knowledge_columns(conn) -> None:
     for column_name, definition in link_definitions.items():
         if link_columns and column_name not in link_columns:
             await conn.execute(text(f"ALTER TABLE knowledge_object_links ADD COLUMN {column_name} {definition}"))
+
+
+async def _ensure_sqlite_identity_access_columns(conn) -> None:
+    """Patch old demo SQLite schemas with identity/access-center fields."""
+    from sqlalchemy import text
+
+    existing = await conn.execute(text("PRAGMA table_info(users)"))
+    user_columns = {row[1] for row in existing.fetchall()}
+    user_definitions = {
+        "login_failed_count": "INTEGER NOT NULL DEFAULT 0",
+        "locked_until": "DATETIME",
+        "force_password_change": "BOOLEAN NOT NULL DEFAULT 0",
+        "last_login_at": "DATETIME",
+        "last_login_ip": "VARCHAR(100)",
+        "mfa_enabled": "BOOLEAN NOT NULL DEFAULT 0",
+        "mfa_secret": "VARCHAR(128)",
+        "sso_provider": "VARCHAR(80)",
+        "sso_subject": "VARCHAR(255)",
+    }
+    for column_name, definition in user_definitions.items():
+        if user_columns and column_name not in user_columns:
+            await conn.execute(text(f"ALTER TABLE users ADD COLUMN {column_name} {definition}"))
+
+    existing = await conn.execute(text("PRAGMA table_info(role_permissions)"))
+    permission_columns = {row[1] for row in existing.fetchall()}
+    permission_definitions = {
+        "effect": "VARCHAR(20) NOT NULL DEFAULT 'allow'",
+        "data_scope": "VARCHAR(50) NOT NULL DEFAULT 'all'",
+        "condition_json": "JSON",
+        "field_rules_json": "JSON",
+        "priority": "INTEGER NOT NULL DEFAULT 0",
+        "enabled": "BOOLEAN NOT NULL DEFAULT 1",
+    }
+    for column_name, definition in permission_definitions.items():
+        if permission_columns and column_name not in permission_columns:
+            await conn.execute(text(f"ALTER TABLE role_permissions ADD COLUMN {column_name} {definition}"))
+
+    await conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS user_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id VARCHAR(120) NOT NULL UNIQUE,
+                tenant_id INTEGER NOT NULL DEFAULT 1,
+                user_id INTEGER NOT NULL,
+                login_method VARCHAR(50) NOT NULL DEFAULT 'local',
+                ip_address VARCHAR(100),
+                user_agent TEXT,
+                expires_at DATETIME NOT NULL,
+                revoked_at DATETIME,
+                revoked_by INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+    )
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_sessions_user_id ON user_sessions (user_id)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_sessions_tenant_id ON user_sessions (tenant_id)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_sessions_session_id ON user_sessions (session_id)"))
+
+    await conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS password_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tenant_id INTEGER NOT NULL DEFAULT 1,
+                user_id INTEGER NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+    )
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_password_history_user_id ON password_history (user_id)"))
+
+    await conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS oidc_states (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                state VARCHAR(160) NOT NULL UNIQUE,
+                nonce VARCHAR(160) NOT NULL,
+                tenant_id INTEGER NOT NULL DEFAULT 1,
+                redirect_uri VARCHAR(500),
+                expires_at DATETIME NOT NULL,
+                consumed_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+    )
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_oidc_states_state ON oidc_states (state)"))
+
+
+async def _ensure_sqlite_tenant_onboarding(conn) -> None:
+    """Patch old demo SQLite schemas with tenant onboarding fields."""
+    import json
+
+    from sqlalchemy import text
+
+    from app.services.tenant_onboarding import DEFAULT_TENANT_CONFIG, DEFAULT_TENANT_LIMITS
+
+    existing = await conn.execute(text("PRAGMA table_info(tenants)"))
+    tenant_columns = {row[1] for row in existing.fetchall()}
+    tenant_definitions = {
+        "config": "JSON",
+        "limits": "JSON",
+        "opened_by": "INTEGER",
+        "suspended_reason": "TEXT",
+    }
+    for column_name, definition in tenant_definitions.items():
+        if tenant_columns and column_name not in tenant_columns:
+            await conn.execute(text(f"ALTER TABLE tenants ADD COLUMN {column_name} {definition}"))
+
+    await conn.execute(text("UPDATE tenants SET status = 'active' WHERE status IS NULL OR status = ''"))
+    await conn.execute(text("UPDATE tenants SET config = '{}' WHERE config IS NULL"))
+    await conn.execute(text("UPDATE tenants SET limits = '{}' WHERE limits IS NULL"))
+    await conn.execute(
+        text(
+            """
+            INSERT OR IGNORE INTO tenants (id, name, slug, status, config, limits)
+            VALUES (1, 'Default Tenant', 'default', 'active', :config, :limits)
+            """
+        ),
+        {
+            "config": json.dumps(DEFAULT_TENANT_CONFIG),
+            "limits": json.dumps(DEFAULT_TENANT_LIMITS),
+        },
+    )
+
+    await conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS tenant_domains (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tenant_id INTEGER NOT NULL,
+                domain VARCHAR(255) NOT NULL UNIQUE,
+                status VARCHAR(50) NOT NULL DEFAULT 'active',
+                is_primary BOOLEAN NOT NULL DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+    )
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_domains_tenant_id ON tenant_domains (tenant_id)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_domains_domain ON tenant_domains (domain)"))
+    await conn.execute(
+        text(
+            """
+            INSERT OR IGNORE INTO tenant_domains (tenant_id, domain, status, is_primary)
+            VALUES (1, 'manufoundry.local', 'active', 1)
+            """
+        )
+    )
+
+    await conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS tenant_invites (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tenant_id INTEGER NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                role VARCHAR(50) NOT NULL DEFAULT 'member',
+                token_hash VARCHAR(128) NOT NULL UNIQUE,
+                expires_at DATETIME NOT NULL,
+                accepted_at DATETIME,
+                invited_by INTEGER,
+                user_id INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+    )
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_invites_tenant_id ON tenant_invites (tenant_id)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_invites_email ON tenant_invites (email)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_invites_token_hash ON tenant_invites (token_hash)"))
+
+    await conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tenant_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                token_hash VARCHAR(128) NOT NULL UNIQUE,
+                expires_at DATETIME NOT NULL,
+                used_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+    )
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_password_reset_tokens_tenant_id ON password_reset_tokens (tenant_id)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_password_reset_tokens_user_id ON password_reset_tokens (user_id)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_password_reset_tokens_token_hash ON password_reset_tokens (token_hash)"))
