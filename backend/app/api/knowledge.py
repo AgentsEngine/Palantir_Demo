@@ -1041,7 +1041,7 @@ async def send_agent_message(
     await write_audit_log(
         action="ai_agent_message",
         resource_type="ai_agent_run",
-        resource_id=run_id,
+        resource_id=None,
         new_values={"run_id": run_id, "conversation_id": conversation_id, "message": content[:300]},
         user_id=current_user_id(user),
     )
