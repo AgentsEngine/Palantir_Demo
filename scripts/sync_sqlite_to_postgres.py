@@ -133,6 +133,21 @@ def source_value(row: sqlite3.Row, column: str, target_column: dict[str, str | b
     return convert_value(row[column], str(target_column["data_type"]))
 
 
+def valid_ids(sqlite_conn: sqlite3.Connection, table: str) -> set[Any]:
+    if table not in sqlite_tables(sqlite_conn):
+        return set()
+    return {row[0] for row in sqlite_conn.execute(f'select "id" from "{table}"').fetchall()}
+
+
+def filter_legacy_orphans(table: str, rows: list[sqlite3.Row], columns: list[str], parent_ids: dict[str, set[Any]]) -> list[sqlite3.Row]:
+    if table == "forms" or "form_id" not in columns:
+        return rows
+    form_ids = parent_ids.get("forms", set())
+    if not form_ids:
+        return rows
+    return [row for row in rows if row["form_id"] in form_ids]
+
+
 def reset_sequences(pg_conn, tables: list[str]) -> None:
     with pg_conn.cursor() as cur:
         for table in tables:
@@ -181,6 +196,7 @@ def main() -> None:
         source_tables = sqlite_tables(sqlite_conn)
         target_tables = postgres_tables(pg_conn)
         tables = sorted(source_tables & target_tables)
+        parent_ids = {"forms": valid_ids(sqlite_conn, "forms")}
         ordered_tables = insertion_order(pg_conn, tables)
         skipped = sorted(source_tables - target_tables)
         print(f"common_tables={len(tables)} skipped_source_tables={skipped}")
@@ -207,6 +223,7 @@ def main() -> None:
                 rows = sqlite_conn.execute(
                     f'select {", ".join([chr(34) + col + chr(34) for col in selected_columns])} from "{table}"'
                 ).fetchall()
+                rows = filter_legacy_orphans(table, rows, selected_columns, parent_ids)
                 copied_counts[table] = len(rows)
                 if args.dry_run or not rows:
                     continue
