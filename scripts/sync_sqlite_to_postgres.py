@@ -53,18 +53,25 @@ def sqlite_columns(conn: sqlite3.Connection, table: str) -> list[str]:
     return [row[1] for row in conn.execute(f'pragma table_info("{table}")').fetchall()]
 
 
-def postgres_columns(conn, table: str) -> dict[str, str]:
+def postgres_columns(conn, table: str) -> dict[str, dict[str, str | bool | None]]:
     with conn.cursor() as cur:
         cur.execute(
             """
-            select column_name, data_type
+            select column_name, data_type, is_nullable, column_default
             from information_schema.columns
             where table_schema = 'public' and table_name = %s
             order by ordinal_position
             """,
             (table,),
         )
-        return {name: data_type for name, data_type in cur.fetchall()}
+        return {
+            name: {
+                "data_type": data_type,
+                "nullable": is_nullable == "YES",
+                "default": column_default,
+            }
+            for name, data_type, is_nullable, column_default in cur.fetchall()
+        }
 
 
 def postgres_fk_dependencies(conn, tables: set[str]) -> dict[str, set[str]]:
@@ -117,6 +124,13 @@ def convert_value(value: Any, data_type: str) -> Any:
                 return Json(value)
         return Json(value)
     return value
+
+
+def source_value(row: sqlite3.Row, column: str, target_column: dict[str, str | bool | None]) -> Any:
+    if column == "tenant_id":
+        value = row[column] if column in row.keys() else None
+        return 1 if value is None else value
+    return convert_value(row[column], str(target_column["data_type"]))
 
 
 def reset_sequences(pg_conn, tables: list[str]) -> None:
@@ -181,21 +195,24 @@ def main() -> None:
             copied_counts: dict[str, int] = {}
             for table in ordered_tables:
                 src_columns = sqlite_columns(sqlite_conn, table)
-                target_column_types = postgres_columns(pg_conn, table)
-                columns = [col for col in src_columns if col in target_column_types]
+                target_columns = postgres_columns(pg_conn, table)
+                columns = [col for col in src_columns if col in target_columns]
+                if "tenant_id" in target_columns and "tenant_id" not in columns:
+                    columns.append("tenant_id")
                 if not columns:
                     copied_counts[table] = 0
                     continue
 
+                selected_columns = [col for col in columns if col in src_columns]
                 rows = sqlite_conn.execute(
-                    f'select {", ".join([chr(34) + col + chr(34) for col in columns])} from "{table}"'
+                    f'select {", ".join([chr(34) + col + chr(34) for col in selected_columns])} from "{table}"'
                 ).fetchall()
                 copied_counts[table] = len(rows)
                 if args.dry_run or not rows:
                     continue
 
                 values = [
-                    tuple(convert_value(row[col], target_column_types[col]) for col in columns)
+                    tuple(source_value(row, col, target_columns[col]) for col in columns)
                     for row in rows
                 ]
                 insert_sql = sql.SQL("insert into {table} ({columns}) values %s").format(
