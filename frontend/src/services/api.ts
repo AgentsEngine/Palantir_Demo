@@ -326,6 +326,8 @@ export const sendChat = (message: string, sessionId?: string) =>
   api.post('/ai/chat', { message, session_id: sessionId });
 export const smartAnalyze = (query: string) => api.post('/ai/analyze', { query });
 export const sendAgentChat = (data: Record<string, unknown>) => api.post('/ai/agent', data);
+export const confirmAgentRun = (runId: string, data: Record<string, unknown>) =>
+  api.post(`/ai/agent-runs/${runId}/confirm`, data);
 export const createAgentConversation = (data: Record<string, unknown>) =>
   api.post('/ai/agent/conversations', data);
 export const listAgentConversations = (params?: Record<string, unknown>) =>
@@ -450,6 +452,9 @@ export interface PlatformTenantUsage {
   users: number;
   applications: number;
   dynamicRecords: number;
+  forms?: number;
+  reports?: number;
+  auditLogs?: number;
 }
 
 export interface PlatformTenantInvite {
@@ -458,6 +463,45 @@ export interface PlatformTenantInvite {
   role: string;
   inviteUrl: string;
   emailDelivered?: boolean;
+}
+
+export interface PlatformTenantInviteItem {
+  id: number;
+  tenantId: number;
+  email: string;
+  role: string;
+  status: 'pending' | 'accepted' | 'revoked' | 'replaced' | 'expired';
+  expiresAt?: string | null;
+  acceptedAt?: string | null;
+  revokedAt?: string | null;
+  createdAt?: string | null;
+  invitedBy?: number | null;
+  userId?: number | null;
+  replacedByInviteId?: number | null;
+}
+
+export interface PlatformTenantUserSummary {
+  id: number;
+  username: string;
+  displayName?: string | null;
+  email?: string | null;
+  isActive: boolean;
+  isAdmin: boolean;
+  lastLoginAt?: string | null;
+  lockedUntil?: string | null;
+  roles?: Array<{ id: number; name: string; label: string }>;
+}
+
+export interface PlatformTenantAuditSummary {
+  id: number;
+  tenantId?: number | null;
+  userId?: number | null;
+  action: string;
+  resourceType: string;
+  resourceId?: number | null;
+  timestamp?: string | null;
+  oldValues?: string | null;
+  newValues?: string | null;
 }
 
 export interface PlatformTenantItem {
@@ -471,6 +515,20 @@ export interface PlatformTenantItem {
   usage?: PlatformTenantUsage;
   suspendedReason?: string | null;
   adminInvite?: PlatformTenantInvite;
+  adminUsersCount?: number;
+  activeUsersCount?: number;
+  pendingInvitesCount?: number;
+  lastLoginAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  openedBy?: number | null;
+}
+
+export interface PlatformTenantDetail extends PlatformTenantItem {
+  adminUsers?: PlatformTenantUserSummary[];
+  users?: PlatformTenantUserSummary[];
+  recentInvites?: PlatformTenantInviteItem[];
+  recentAuditLogs?: PlatformTenantAuditSummary[];
 }
 
 export interface PlatformTenantCreatePayload {
@@ -497,12 +555,21 @@ export interface PlatformTenantInvitePayload {
 }
 
 export const platformListTenants = () => api.get<{ data: PlatformTenantItem[] }>('/platform/tenants');
+export const platformGetTenant = (id: number) => api.get<{ data: PlatformTenantDetail }>(`/platform/tenants/${id}`);
 export const platformCreateTenant = (data: PlatformTenantCreatePayload) =>
   api.post<{ data: PlatformTenantItem }>('/platform/tenants', data);
 export const platformUpdateTenant = (id: number, data: PlatformTenantUpdatePayload) =>
   api.put<{ data: PlatformTenantItem }>(`/platform/tenants/${id}`, data);
 export const platformCreateTenantInvite = (id: number, data: PlatformTenantInvitePayload) =>
   api.post<{ data: PlatformTenantInvite }>(`/platform/tenants/${id}/invites`, data);
+export const platformListTenantInvites = (id: number) =>
+  api.get<{ data: PlatformTenantInviteItem[] }>(`/platform/tenants/${id}/invites`);
+export const platformRevokeTenantInvite = (tenantId: number, inviteId: number) =>
+  api.post<{ data: PlatformTenantInviteItem }>(`/platform/tenants/${tenantId}/invites/${inviteId}/revoke`);
+export const platformResendTenantInvite = (tenantId: number, inviteId: number) =>
+  api.post<{ data: PlatformTenantInvite }>(`/platform/tenants/${tenantId}/invites/${inviteId}/resend`);
+export const platformCreateTenantPasswordReset = (tenantId: number, userId: number) =>
+  api.post<{ data: { resetUrl: string; emailDelivered?: boolean } }>(`/platform/tenants/${tenantId}/users/${userId}/password-reset`);
 
 // Audit Logs
 export const listAuditLogs = (params?: Record<string, unknown>) => api.get('/admin/audit-logs', { params });
@@ -577,7 +644,7 @@ export const suggestModel = (description: string) => api.post('/ai-builder/sugge
 export const suggestPage = (modelName: string) => api.post('/ai-builder/suggest-page', { model_name: modelName });
 
 // Platform Forms
-export type PlatformFormStatus = 'draft' | 'active' | 'archived';
+export type PlatformFormStatus = 'draft' | 'active' | 'published' | 'archived';
 export type PlatformFieldType =
   | 'string'
   | 'text'
@@ -620,8 +687,43 @@ export interface PlatformForm {
   status: PlatformFormStatus | string;
   config?: Record<string, unknown> | null;
   owner_id?: number | null;
+  schema_mode?: 'draft' | 'published';
+  published_version?: number | null;
+  published_at?: string | null;
   fields?: PlatformFormField[];
   applications?: Array<Record<string, unknown>>;
+}
+
+export interface PlatformFormPublishImpactItem {
+  level: 'blocking' | 'warning' | 'info';
+  type: string;
+  field_name?: string;
+  label?: string;
+  detail: string;
+  affected_count?: number;
+}
+
+export interface PlatformFormPublishReport {
+  form_id?: number;
+  next_version: number;
+  latest_version?: number | null;
+  record_count: number;
+  blocking_count: number;
+  warning_count: number;
+  items: PlatformFormPublishImpactItem[];
+}
+
+export interface PlatformFormVersion {
+  id: number;
+  form_id: number;
+  version: number;
+  status: string;
+  snapshot: Record<string, unknown>;
+  impact_report?: PlatformFormPublishReport | Record<string, unknown>;
+  published_by?: number | null;
+  published_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface PlatformMenuNode {
@@ -642,6 +744,7 @@ export interface PlatformMenuNode {
 export interface PlatformDynamicRecord {
   id: number;
   form_id: number;
+  schema_version?: number;
   data: Record<string, unknown>;
   status: string;
   created_by?: number | null;
@@ -670,12 +773,20 @@ export const listPlatformForms = (params?: { application_id?: number }) =>
   api.get('/forms', { params });
 export const createPlatformForm = (data: Record<string, unknown>) =>
   api.post('/forms', data);
-export const getPlatformForm = (id: number | string) =>
-  api.get(`/forms/${id}`);
+export const getPlatformForm = (id: number | string, params?: { schema?: 'draft' | 'published' }) =>
+  api.get(`/forms/${id}`, { params });
 export const updatePlatformForm = (id: number | string, data: Record<string, unknown>) =>
   api.put(`/forms/${id}`, data);
 export const deletePlatformForm = (id: number | string) =>
   api.delete(`/forms/${id}`);
+export const previewPlatformFormPublish = (id: number | string) =>
+  api.get(`/forms/${id}/publish/preview`);
+export const publishPlatformForm = (id: number | string) =>
+  api.post(`/forms/${id}/publish`);
+export const listPlatformFormVersions = (id: number | string) =>
+  api.get(`/forms/${id}/versions`);
+export const getPlatformFormVersion = (id: number | string, version: number | string) =>
+  api.get(`/forms/${id}/versions/${version}`);
 
 export const listApplicationFormBindings = (applicationId: number | string) =>
   api.get(`/forms/applications/${applicationId}/forms`);

@@ -47,13 +47,6 @@ import {
   wfMarkAllRead,
   wfMarkNotificationRead,
 } from './services/api';
-import {
-  APP_ASSEMBLY_MENU_EVENT,
-  APP_ASSEMBLY_MENUS_STORAGE_KEY,
-  getAssemblyMenuDefaultRoute,
-  loadAssemblyMenus,
-  savedAssemblyMenusToDynamicMenus,
-} from './config/appAssemblyMenus';
 
 const WorkspacePage = lazy(() => import('./pages/Workspace'));
 const DashboardPage = lazy(() => import('./pages/Dashboard'));
@@ -76,8 +69,6 @@ const TemplateMarketPage = lazy(() => import('./pages/TemplateMarket'));
 const RuleEnginePage = lazy(() => import('./pages/RuleEngine'));
 
 const { Header, Sider, Content } = Layout;
-const isProductionMode = import.meta.env.VITE_APP_MODE === 'production';
-
 interface DynamicMenu {
   id: number;
   parent_id: number | null;
@@ -112,176 +103,75 @@ interface ReleaseInfo {
 const RELEASE_SEEN_STORAGE_KEY = 'mf_seen_release_version';
 
 const businessMenuItems: NonNullable<MenuProps['items']> = [
-  { key: '/', icon: <HomeOutlined />, label: '我的工作台' },
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '生产态势' },
-  { key: '/maintenance', icon: <ToolOutlined />, label: '设备维护' },
-  { key: '/quality', icon: <SafetyCertificateOutlined />, label: '质量分析' },
-  { key: '/supply-chain', icon: <ShopOutlined />, label: '供应链风险' },
+  { key: '/', icon: <HomeOutlined />, label: '\u6211\u7684\u5de5\u4f5c\u53f0' },
+  { key: '/dashboard', icon: <DashboardOutlined />, label: '\u751f\u4ea7\u6001\u52bf' },
+  { key: '/maintenance', icon: <ToolOutlined />, label: '\u8bbe\u5907\u7ef4\u62a4' },
+  { key: '/quality', icon: <SafetyCertificateOutlined />, label: '\u8d28\u91cf\u5206\u6790' },
+  { key: '/supply-chain', icon: <ShopOutlined />, label: '\u4f9b\u5e94\u94fe\u98ce\u9669' },
 ];
 
 const workspaceMenuItem: NonNullable<MenuProps['items']>[number] = {
   key: '/',
   icon: <HomeOutlined />,
-  label: '我的工作台',
-};
-
-const fallbackApplications: ApplicationInfo[] = [
-  { id: 1, name: '生产态势', code: 'production-dashboard', description: '生产效率、OEE、产线告警和班次趋势。', icon: 'DashboardOutlined', default_route: '/program/production-overview', status: 'published', is_pinned: true },
-  { id: 2, name: '预测性维护', code: 'maintenance-analysis', description: '设备健康总览、健康分析、故障预测和工单管理。', icon: 'ToolOutlined', default_route: '/program/device-health-dashboard', status: 'published', is_pinned: true },
-  { id: 3, name: '质量分析', code: 'quality-control', description: '质量缺陷、检验批次、异常追溯和过程能力分析。', icon: 'SafetyCertificateOutlined', default_route: '/program/quality-overview', status: 'published' },
-  { id: 4, name: '供应链风险', code: 'supply-risk', description: '供应商交付、库存水位、风险预警和替代方案。', icon: 'ShopOutlined', default_route: '/program/supply-overview', status: 'published' },
-];
-
-const fallbackMenusByApplication: Record<number, DynamicMenu[]> = {
-  1: [{ id: 1001, parent_id: null, title: '生产态势', icon: 'DashboardOutlined', route_path: '/dashboard', is_visible: true }],
-  2: [{ id: 1002, parent_id: null, title: '预测性维护', icon: 'ToolOutlined', route_path: '/maintenance', is_visible: true }],
-  3: [{ id: 1003, parent_id: null, title: '质量分析', icon: 'SafetyCertificateOutlined', route_path: '/quality', is_visible: true }],
-  4: [{ id: 1004, parent_id: null, title: '供应链风险', icon: 'ShopOutlined', route_path: '/supply-chain', is_visible: true }],
-};
-
-const richFallbackMenusByApplication: Record<number, DynamicMenu[]> = {
-  1: [
-    { id: 1100, parent_id: null, title: '生产态势', icon: 'DashboardOutlined', route_path: '/dashboard', is_visible: true, children: [
-      { id: 1101, parent_id: 1100, title: '生产总览', icon: 'DashboardOutlined', route_path: '/program/production-overview', is_visible: true },
-      { id: 1102, parent_id: 1100, title: '产线状态', icon: 'DashboardOutlined', route_path: '/program/line-status', is_visible: true },
-      { id: 1103, parent_id: 1100, title: '设备运行', icon: 'ToolOutlined', route_path: '/program/device-health', is_visible: true },
-      { id: 1104, parent_id: 1100, title: '活动告警', icon: 'SafetyCertificateOutlined', route_path: '/program/alert-center', is_visible: true },
-    ] },
-  ],
-  2: [
-    { id: 1200, parent_id: null, title: '预测性维护', icon: 'ToolOutlined', route_path: '/maintenance', is_visible: true, children: [
-      { id: 1201, parent_id: 1200, title: '设备健康', icon: 'ToolOutlined', route_path: '/program/device-health', is_visible: true },
-      { id: 1202, parent_id: 1200, title: '故障预测', icon: 'ToolOutlined', route_path: '/program/fault-prediction', is_visible: true },
-      { id: 1203, parent_id: 1200, title: '维修工单', icon: 'AppstoreOutlined', route_path: '/program/maintenance-order', is_visible: true },
-      { id: 1204, parent_id: 1200, title: '告警中心', icon: 'SafetyCertificateOutlined', route_path: '/program/alert-center', is_visible: true },
-    ] },
-  ],
-  3: [
-    { id: 1300, parent_id: null, title: '质量分析', icon: 'SafetyCertificateOutlined', route_path: '/quality', is_visible: true, children: [
-      { id: 1301, parent_id: 1300, title: '质量总览', icon: 'SafetyCertificateOutlined', route_path: '/program/quality-overview', is_visible: true },
-      { id: 1302, parent_id: 1300, title: '检验批次', icon: 'SafetyCertificateOutlined', route_path: '/program/inspection-batch', is_visible: true },
-      { id: 1303, parent_id: 1300, title: '缺陷分析', icon: 'SafetyCertificateOutlined', route_path: '/program/defect-analysis', is_visible: true },
-      { id: 1304, parent_id: 1300, title: '料号追踪', icon: 'AppstoreOutlined', route_path: '/program/quality-event', is_visible: true },
-    ] },
-  ],
-  4: [
-    { id: 1400, parent_id: null, title: '供应链风险', icon: 'ShopOutlined', route_path: '/supply-chain', is_visible: true, children: [
-      { id: 1401, parent_id: 1400, title: '风险总览', icon: 'ShopOutlined', route_path: '/program/supply-overview', is_visible: true },
-      { id: 1402, parent_id: 1400, title: '供应商风险', icon: 'ShopOutlined', route_path: '/program/supplier-risk', is_visible: true },
-      { id: 1403, parent_id: 1400, title: '物料影响', icon: 'AppstoreOutlined', route_path: '/program/material-impact', is_visible: true },
-      { id: 1404, parent_id: 1400, title: '风险复核', icon: 'SafetyCertificateOutlined', route_path: '/program/risk-review', is_visible: true },
-    ] },
-  ],
-};
-
-const groupedFallbackMenusByApplication: Record<number, DynamicMenu[]> = {
-  1: [
-    { id: 1100, parent_id: null, title: '生产态势', icon: 'DashboardOutlined', route_path: '/dashboard', is_visible: true, children: [
-      { id: 1110, parent_id: 1100, title: '生产监控', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
-        { id: 1111, parent_id: 1110, title: '生产总览', icon: 'DashboardOutlined', route_path: '/program/production-overview', is_visible: true },
-        { id: 1112, parent_id: 1110, title: '产线状态', icon: 'DashboardOutlined', route_path: '/program/line-status', is_visible: true },
-        { id: 1113, parent_id: 1110, title: '设备运行', icon: 'ToolOutlined', route_path: '/program/device-health', is_visible: true },
-      ] },
-      { id: 1120, parent_id: 1100, title: '异常处理', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
-        { id: 1121, parent_id: 1120, title: '活动告警', icon: 'SafetyCertificateOutlined', route_path: '/program/alert-center', is_visible: true },
-      ] },
-    ] },
-  ],
-  2: [
-    { id: 1200, parent_id: null, title: '预测性维护', icon: 'ToolOutlined', route_path: '/maintenance', is_visible: true, children: [
-      { id: 1210, parent_id: 1200, title: '健康与预测', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
-        { id: 1211, parent_id: 1210, title: '设备健康', icon: 'ToolOutlined', route_path: '/program/device-health', is_visible: true },
-        { id: 1212, parent_id: 1210, title: '故障预测', icon: 'ToolOutlined', route_path: '/program/fault-prediction', is_visible: true },
-      ] },
-      { id: 1220, parent_id: 1200, title: '维护执行', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
-        { id: 1221, parent_id: 1220, title: '维修工单', icon: 'AppstoreOutlined', route_path: '/program/maintenance-order', is_visible: true },
-        { id: 1222, parent_id: 1220, title: '告警中心', icon: 'SafetyCertificateOutlined', route_path: '/program/alert-center', is_visible: true },
-      ] },
-    ] },
-  ],
-  3: [
-    { id: 1300, parent_id: null, title: '质量分析', icon: 'SafetyCertificateOutlined', route_path: '/quality', is_visible: true, children: [
-      { id: 1310, parent_id: 1300, title: '质量监控', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
-        { id: 1311, parent_id: 1310, title: '质量总览', icon: 'SafetyCertificateOutlined', route_path: '/program/quality-overview', is_visible: true },
-        { id: 1312, parent_id: 1310, title: '检验批次', icon: 'SafetyCertificateOutlined', route_path: '/program/inspection-batch', is_visible: true },
-      ] },
-      { id: 1320, parent_id: 1300, title: '问题改进', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
-        { id: 1321, parent_id: 1320, title: '缺陷分析', icon: 'SafetyCertificateOutlined', route_path: '/program/defect-analysis', is_visible: true },
-        { id: 1322, parent_id: 1320, title: '料号追踪', icon: 'AppstoreOutlined', route_path: '/program/quality-event', is_visible: true },
-      ] },
-    ] },
-  ],
-  4: [
-    { id: 1400, parent_id: null, title: '供应链风险', icon: 'ShopOutlined', route_path: '/supply-chain', is_visible: true, children: [
-      { id: 1410, parent_id: 1400, title: '风险监控', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
-        { id: 1411, parent_id: 1410, title: '风险总览', icon: 'ShopOutlined', route_path: '/program/supply-overview', is_visible: true },
-        { id: 1412, parent_id: 1410, title: '供应商风险', icon: 'ShopOutlined', route_path: '/program/supplier-risk', is_visible: true },
-      ] },
-      { id: 1420, parent_id: 1400, title: '影响与复核', icon: 'AppstoreOutlined', route_path: '', is_visible: true, children: [
-        { id: 1421, parent_id: 1420, title: '物料影响', icon: 'AppstoreOutlined', route_path: '/program/material-impact', is_visible: true },
-        { id: 1422, parent_id: 1420, title: '风险复核', icon: 'SafetyCertificateOutlined', route_path: '/program/risk-review', is_visible: true },
-      ] },
-    ] },
-  ],
+  label: '\u6211\u7684\u5de5\u4f5c\u53f0',
 };
 
 const pageTitleMap: Record<string, string> = {
-  '/': '我的工作台',
-  '/dashboard': '生产态势',
-  '/maintenance': '设备维护',
-  '/quality': '质量分析',
-  '/supply-chain': '供应链风险',
-  '/ontology': '数据模型',
-  '/reports': '报表中心',
-  '/templates': '模板市场',
-  '/rules': '规则引擎',
+  '/': '\u6211\u7684\u5de5\u4f5c\u53f0',
+  '/dashboard': '\u751f\u4ea7\u6001\u52bf',
+  '/maintenance': '\u8bbe\u5907\u7ef4\u62a4',
+  '/quality': '\u8d28\u91cf\u5206\u6790',
+  '/supply-chain': '\u4f9b\u5e94\u94fe\u98ce\u9669',
+  '/ontology': '\u6570\u636e\u6a21\u578b',
+  '/reports': '\u62a5\u8868\u4e2d\u5fc3',
+  '/templates': '\u6a21\u677f\u5e02\u573a',
+  '/rules': '\u89c4\u5219\u5f15\u64ce',
   '/ai-assistant': 'AI Assistant',
-  '/account-center': '账户中心',
-  '/data-sources': '数据源管理',
-  '/graph': '图谱探索',
-  '/pipeline': '数据管道',
-  '/form-settings': '表单设置',
-  '/system-admin': '系统管理',
-  '/workflow': '流程中心',
+  '/account-center': '\u8d26\u6237\u4e2d\u5fc3',
+  '/data-sources': '\u6570\u636e\u6e90\u7ba1\u7406',
+  '/graph': '\u56fe\u8c31\u63a2\u7d22',
+  '/pipeline': '\u6570\u636e\u7ba1\u9053',
+  '/form-settings': '\u8868\u5355\u8bbe\u7f6e',
+  '/system-admin': '\u7cfb\u7edf\u7ba1\u7406',
+  '/workflow': '\u6d41\u7a0b\u4e2d\u5fc3',
 };
 
 const programTitleMap: Record<string, string> = {
-  'production-overview': '生产总览',
-  'oee-trend-report': 'OEE 趋势报表',
-  'line-status': '产线状态',
-  'line-load-analysis': '产线负荷分析',
-  'production-plan-entry': '生产计划填报',
-  'device-health': '设备健康',
-  'device-health-dashboard': '设备健康看板',
-  'fault-prediction': '故障预测',
-  'failure-trend-analysis': '故障趋势分析',
-  'maintenance-order': '维修工单',
-  'alert-center': '告警中心',
-  'quality-overview': '质量总览',
-  'inspection-batch': '检验批次',
-  'defect-analysis-report': '缺陷分析报表',
-  'process-capability-dashboard': '过程能力看板',
-  'defect-analysis': '缺陷分析',
-  'quality-event': '料号追踪',
-  'supplier-risk': '供应商风险',
-  'supply-overview': '供应总览',
-  'material-impact-report': '物料影响报表',
-  'supply-risk-dashboard': '供应风险看板',
-  'material-impact': '物料影响',
-  'risk-review': '风险复核',
+  'production-overview': '\u751f\u4ea7\u603b\u89c8',
+  'oee-trend-report': 'OEE Trend Report',
+  'line-status': '\u4ea7\u7ebf\u72b6\u6001',
+  'line-load-analysis': 'Line Load Analysis',
+  'production-plan-entry': 'Production Plan Entry',
+  'device-health': '\u8bbe\u5907\u5065\u5eb7',
+  'device-health-dashboard': 'Device Health Dashboard',
+  'fault-prediction': 'Fault Prediction',
+  'failure-trend-analysis': 'Failure Trend Analysis',
+  'maintenance-order': 'Maintenance Order',
+  'alert-center': '\u544a\u8b66\u4e2d\u5fc3',
+  'quality-overview': '\u8d28\u91cf\u603b\u89c8',
+  'inspection-batch': '\u68c0\u9a8c\u6279\u6b21',
+  'defect-analysis-report': 'Defect Analysis Report',
+  'process-capability-dashboard': 'Process Capability Dashboard',
+  'defect-analysis': 'Defect Analysis',
+  'quality-event': 'Quality Traceability',
+  'supplier-risk': '\u4f9b\u5e94\u5546\u98ce\u9669',
+  'supply-overview': '\u4f9b\u5e94\u603b\u89c8',
+  'material-impact-report': 'Material Impact Report',
+  'supply-risk-dashboard': 'Supply Risk Dashboard',
+  'material-impact': '\u7269\u6599\u5f71\u54cd',
+  'risk-review': '\u98ce\u9669\u590d\u6838',
 };
 
 function getRuntimePageTitle(pathname: string): string {
   if (pathname.startsWith('/dynamic/')) {
-    return '动态页面';
+    return 'Dynamic Page';
   }
   if (pathname.startsWith('/program/')) {
     const programId = pathname.split('/').filter(Boolean)[1];
-    return programTitleMap[programId] || '业务页面';
+    return programTitleMap[programId] || 'Business Page';
   }
-  return pageTitleMap[pathname] || '业务页面';
-}
-function iconFor(name?: string) {
+  return pageTitleMap[pathname] || 'Business Page';
+}function iconFor(name?: string) {
   const icons: Record<string, React.ReactNode> = {
     DashboardOutlined: <DashboardOutlined />,
     ToolOutlined: <ToolOutlined />,
@@ -296,7 +186,7 @@ function iconFor(name?: string) {
 function PageLoader() {
   return (
     <div style={{ padding: 40 }}>
-      <Spin size="large" tip="加载工作台...">
+      <Spin size="large" tip="鍔犺浇宸ヤ綔鍙?..">
         <div style={{ minHeight: 200 }} />
       </Spin>
     </div>
@@ -314,11 +204,11 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
     if (this.state.error) {
       return (
         <div style={{ padding: 40 }}>
-          <Typography.Title level={4} type="danger">页面渲染失败</Typography.Title>
+          <Typography.Title level={4} type="danger">椤甸潰娓叉煋澶辫触</Typography.Title>
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12, background: '#fff', padding: 16, borderRadius: 6 }}>
             {this.state.error}
           </pre>
-          <Button type="primary" onClick={() => window.location.reload()}>重新加载页面</Button>
+          <Button type="primary" onClick={() => window.location.reload()}>閲嶆柊鍔犺浇椤甸潰</Button>
         </div>
       );
     }
@@ -377,15 +267,6 @@ function findFirstDynamicMenuRoute(items: DynamicMenu[]): string | undefined {
   return undefined;
 }
 
-function getFallbackApplicationDefaultRoute(app: ApplicationInfo): string {
-  const fallbackItems =
-    groupedFallbackMenusByApplication[app.id]
-    || richFallbackMenusByApplication[app.id]
-    || fallbackMenusByApplication[app.id]
-    || [];
-  return findFirstDynamicMenuRoute(fallbackItems) || app.default_route || '/';
-}
-
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -416,11 +297,11 @@ function AppContent() {
   useEffect(() => {
     listApplications()
       .then((res) => {
-        const apps: ApplicationInfo[] = (res.data?.data || []).length ? res.data.data : fallbackApplications;
+        const apps: ApplicationInfo[] = res.data?.data || [];
         setApplications(apps);
         if (!apps.length) {
           setCurrentApplication(null);
-          setDynamicMenus(businessMenuItems);
+          setDynamicMenus([]);
           return;
         }
         const storedId = Number(localStorage.getItem('mf_current_app_id'));
@@ -429,62 +310,25 @@ function AppContent() {
         localStorage.setItem('mf_current_app_id', String(matched.id));
       })
       .catch(() => {
-        if (isProductionMode) {
-          message.error('应用列表加载失败');
-          setApplications([]);
-          setCurrentApplication(null);
-          setDynamicMenus([]);
-          return;
-        }
-        const storedId = Number(localStorage.getItem('mf_current_app_id'));
-        const matched = fallbackApplications.find((app) => app.id === storedId) || fallbackApplications[0];
-        setApplications(fallbackApplications);
-        setCurrentApplication(matched);
-        localStorage.setItem('mf_current_app_id', String(matched.id));
+        message.error('搴旂敤鍒楄〃鍔犺浇澶辫触');
+        setApplications([]);
+        setCurrentApplication(null);
+        setDynamicMenus([]);
       });
   }, []);
 
   useEffect(() => {
     if (!currentApplication) return;
-    const loadLocalAssemblyMenus = () => {
-      const localMenus = loadAssemblyMenus()[currentApplication.id];
-      if (!localMenus?.length) return false;
-      setDynamicMenus(buildDynamicMenuTree(savedAssemblyMenusToDynamicMenus(currentApplication.id, localMenus)));
-      return true;
-    };
-
-    if (loadLocalAssemblyMenus()) {
-      const handleAssemblyMenuUpdate = () => {
-        loadLocalAssemblyMenus();
-      };
-      const handleStorage = (event: StorageEvent) => {
-        if (event.key === APP_ASSEMBLY_MENUS_STORAGE_KEY) {
-          loadLocalAssemblyMenus();
-        }
-      };
-      window.addEventListener(APP_ASSEMBLY_MENU_EVENT, handleAssemblyMenuUpdate);
-      window.addEventListener('storage', handleStorage);
-      return () => {
-        window.removeEventListener(APP_ASSEMBLY_MENU_EVENT, handleAssemblyMenuUpdate);
-        window.removeEventListener('storage', handleStorage);
-      };
-    }
-
     listApplicationMenus(currentApplication.id)
       .then((res) => {
         const apiItems = res.data?.data || [];
-        const localItems = groupedFallbackMenusByApplication[currentApplication.id] || richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || [];
-        const items = (apiItems.length > 1 || apiItems.some((item: DynamicMenu) => item.children?.length) ? apiItems : localItems)
+        const items = apiItems
           .filter((m: DynamicMenu) => m.is_visible !== false);
         setDynamicMenus(buildDynamicMenuTree(items));
       })
       .catch(() => {
-        if (isProductionMode) {
-          message.error('应用菜单加载失败');
-          setDynamicMenus([]);
-          return;
-        }
-        setDynamicMenus(buildDynamicMenuTree(groupedFallbackMenusByApplication[currentApplication.id] || richFallbackMenusByApplication[currentApplication.id] || fallbackMenusByApplication[currentApplication.id] || []));
+        message.error('搴旂敤鑿滃崟鍔犺浇澶辫触');
+        setDynamicMenus([]);
       });
   }, [currentApplication]);
 
@@ -526,7 +370,7 @@ function AppContent() {
   };
 
   const allMenuItems = useMemo<MenuProps['items']>(() => {
-    const appItems = dynamicMenus?.length ? unwrapApplicationMenuRoot(dynamicMenus) : businessMenuItems.slice(1);
+    const appItems = dynamicMenus?.length ? unwrapApplicationMenuRoot(dynamicMenus) : [];
     return [workspaceMenuItem, { type: 'divider' }, ...(appItems || [])];
   }, [dynamicMenus]);
   const openMenuKeys = useMemo(() => {
@@ -553,18 +397,18 @@ function AppContent() {
   const handleApproval = (instId: number, action: string) => {
     const commentRef = React.createRef<any>();
     Modal.confirm({
-      title: action === 'approve' ? '审批通过' : '驳回申请',
-      content: <Input.TextArea ref={commentRef} rows={3} placeholder="请输入审批意见" />,
+      title: action === 'approve' ? 'Approve request' : 'Reject request',
+      content: <Input.TextArea ref={commentRef} rows={3} placeholder="Approval comment" />,
       onOk: async () => {
         const comment = commentRef.current?.resizableTextArea?.textArea?.value
           ?? commentRef.current?.input?.value
           ?? '';
         try {
           await wfApproveOrReject(instId, { action, comment });
-          message.success(action === 'approve' ? '已审批通过' : '已驳回');
+          message.success(action === 'approve' ? 'Approved' : 'Rejected');
           loadNotifications();
         } catch {
-          message.error('审批操作失败');
+          message.error('Approval action failed');
         }
       },
     });
@@ -573,10 +417,7 @@ function AppContent() {
   const switchApplication = (app: ApplicationInfo) => {
     setCurrentApplication(app);
     localStorage.setItem('mf_current_app_id', String(app.id));
-    const localMenus = loadAssemblyMenus()[app.id];
-    const defaultRoute = localMenus?.length
-      ? getAssemblyMenuDefaultRoute(localMenus) || getFallbackApplicationDefaultRoute(app)
-      : getFallbackApplicationDefaultRoute(app);
+    const defaultRoute = app.default_route || '/';
     navigate(defaultRoute);
   };
 
@@ -594,19 +435,11 @@ function AppContent() {
     })),
   };
 
-  const fallbackNotifications = [
-    { id: 'demo-pending-1', type: 'approval', category: 'action', title: '设备维修审批待处理', content: '产线 A03 设备维修申请需要你审批', created_at: '2026-05-20 09:45', is_read: false, target_path: '/workflow?tab=pending&itemId=demo-pending-1' },
-    { id: 'demo-returned-1', type: 'returned', category: 'action', title: '采购申请退回待修改', content: '预算口径待补充后重新提交', created_at: '2026-05-20 08:30', is_read: false, target_path: '/workflow?tab=returned&itemId=demo-returned-1' },
-    { id: 'demo-system-1', type: 'system', category: 'system', title: '应用菜单配置已更新', content: '设备维护分析新增质量复核入口', created_at: '2026-05-19 17:20', is_read: true, target_path: '/account-center?section=app-menu' },
-    { id: 'demo-system-2', type: 'system', category: 'system', title: '角色权限发生变更', content: '业务负责人角色新增导出权限', created_at: '2026-05-19 15:12', is_read: true, target_path: '/account-center?section=roles' },
-    { id: 'demo-ai-1', type: 'ai', category: 'ai', title: 'AI 供应风险摘要已生成', content: '发现 3 个供应商交付延迟风险', created_at: '2026-05-20 10:10', is_read: false, target_path: '/ai-assistant' },
-  ];
-
-  const notificationSource = notifications.length ? notifications : fallbackNotifications;
+  const notificationSource = notifications;
   const notificationGroups = [
-    { key: 'action', title: '待处理', empty: '暂无待处理事项', items: notificationSource.filter((n: any) => n.category === 'action' || n.type === 'approval' || n.type === 'returned') },
-    { key: 'system', title: '系统提醒', empty: '暂无系统提醒', items: notificationSource.filter((n: any) => n.category === 'system' || n.type === 'system') },
-    { key: 'ai', title: 'AI 与分析', empty: '暂无 AI 与分析通知', items: notificationSource.filter((n: any) => n.category === 'ai' || n.type === 'ai') },
+    { key: 'action', title: 'Action', empty: 'No action items', items: notificationSource.filter((n: any) => n.category === 'action' || n.type === 'approval' || n.type === 'returned') },
+    { key: 'system', title: 'System', empty: 'No system notifications', items: notificationSource.filter((n: any) => n.category === 'system' || n.type === 'system') },
+    { key: 'ai', title: 'AI', empty: 'No AI notifications', items: notificationSource.filter((n: any) => n.category === 'ai' || n.type === 'ai') },
   ];
 
   const renderNotificationLabel = (n: any) => (
@@ -625,7 +458,7 @@ function AppContent() {
               handleApproval(n.related_id || n.id, 'approve');
             }}
           >
-            通过
+            閫氳繃
           </Button>
           <Button
             size="small"
@@ -637,7 +470,7 @@ function AppContent() {
               handleApproval(n.related_id || n.id, 'reject');
             }}
           >
-            驳回
+            椹冲洖
           </Button>
         </div>
       )}
@@ -645,7 +478,7 @@ function AppContent() {
   );
 
   const notificationMenuItems: NonNullable<MenuProps['items']> = [
-    { key: 'header', label: <strong>通知中心</strong>, disabled: true },
+    { key: 'header', label: <strong>閫氱煡涓績</strong>, disabled: true },
     { type: 'divider' },
   ];
 
@@ -663,7 +496,7 @@ function AppContent() {
 
   notificationMenuItems.push({
     key: 'mark-all',
-    label: '全部标记为已读',
+    label: 'Mark all as read',
     onClick: async () => {
       if (!user) return;
       await wfMarkAllRead(user.id);
@@ -730,7 +563,7 @@ function AppContent() {
             />
             <Dropdown menu={applicationMenu} trigger={['click']} disabled={!applications.length}>
               <Button className="application-switch-button" icon={iconFor(currentApplication?.icon)}>
-                <span>{currentApplication?.name || '选择应用'}</span>
+                <span>{currentApplication?.name || '閫夋嫨搴旂敤'}</span>
                 <DownOutlined />
               </Button>
             </Dropdown>
@@ -743,7 +576,7 @@ function AppContent() {
               icon={<SearchOutlined />}
               onClick={() => setSearchOpen(true)}
             >
-              搜索应用、数据资产或配置 Ctrl+K
+              鎼滅储搴旂敤銆佹暟鎹祫浜ф垨閰嶇疆 Ctrl+K
             </Button>
             <Dropdown menu={notificationMenu} trigger={['click']}>
               <Badge count={unread} size="small">
@@ -769,9 +602,9 @@ function AppContent() {
                   <Typography.Title level={3}>{runtimeTitle}</Typography.Title>
                 </div>
                 <Space wrap>
-                  <Button icon={<PlusOutlined />}>新增</Button>
-                  <Button icon={<ReloadOutlined />}>刷新</Button>
-                  <Button icon={<DownloadOutlined />}>导出</Button>
+                  <Button icon={<PlusOutlined />}>鏂板</Button>
+                  <Button icon={<ReloadOutlined />}>鍒锋柊</Button>
+                  <Button icon={<DownloadOutlined />}>瀵煎嚭</Button>
                 </Space>
               </div>
             )}
@@ -810,29 +643,29 @@ function AppContent() {
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <Modal
-        title={releaseInfo?.title || '版本更新'}
+        title={releaseInfo?.title || 'Release update'}
         open={releaseModalOpen}
         onCancel={acknowledgeRelease}
         footer={[
           <Button key="ok" type="primary" onClick={acknowledgeRelease}>
-            知道了
+            Got it
           </Button>,
         ]}
       >
         <Space direction="vertical" size={14} style={{ width: '100%' }}>
           <div>
-            <Typography.Text type="secondary">当前版本</Typography.Text>
+            <Typography.Text type="secondary">Current version</Typography.Text>
             <Typography.Title level={4} style={{ margin: '4px 0 0' }}>
               v{releaseInfo?.version}
             </Typography.Title>
             {releaseInfo?.released_at && (
-              <Typography.Text type="secondary">发布时间：{releaseInfo.released_at}</Typography.Text>
+              <Typography.Text type="secondary">Released at: {releaseInfo.released_at}</Typography.Text>
             )}
           </div>
           {releaseInfo?.summary && <Typography.Paragraph>{releaseInfo.summary}</Typography.Paragraph>}
           {!!releaseInfo?.highlights?.length && (
             <div>
-              <Typography.Text strong>本次优化</Typography.Text>
+              <Typography.Text strong>Highlights</Typography.Text>
               <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
                 {releaseInfo.highlights.map((item) => (
                   <li key={item}>{item}</li>
@@ -842,7 +675,7 @@ function AppContent() {
           )}
           {!!releaseInfo?.details?.length && (
             <div>
-              <Typography.Text strong>更新细节</Typography.Text>
+              <Typography.Text strong>Details</Typography.Text>
               <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
                 {releaseInfo.details.map((item) => (
                   <li key={item}>{item}</li>

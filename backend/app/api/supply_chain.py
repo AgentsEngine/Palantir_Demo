@@ -3,9 +3,11 @@
 import random
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 router = APIRouter()
+
+from app.api.deps import current_tenant_id, get_current_user  # noqa: E402
 
 
 # ── Mock data ──────────────────────────────────────────────
@@ -91,12 +93,13 @@ from app.core.db import safe_db_call as _try_db  # noqa: E402
 # ── Endpoints ──────────────────────────────────────────────
 
 @router.get("/suppliers")
-async def list_suppliers(rating_min: float | None = None):
+async def list_suppliers(rating_min: float | None = None, user: dict = Depends(get_current_user)):
     """供应商列表 — 附加上游 SUPPLIES 关系数据."""
     async def _query(db):
         from app.models.relational import Supplier
         from sqlalchemy import select
-        query = select(Supplier).order_by(Supplier.rating.desc())
+        tenant_id = current_tenant_id(user)
+        query = select(Supplier).where(Supplier.tenant_id == tenant_id).order_by(Supplier.rating.desc())
         if rating_min is not None:
             query = query.where(Supplier.rating >= rating_min)
         result = await db.execute(query)
@@ -104,6 +107,7 @@ async def list_suppliers(rating_min: float | None = None):
         data = [
             {
                 "id": s.id,
+                "tenant_id": s.tenant_id,
                 "name": s.name,
                 "location": s.location,
                 "rating": s.rating,
@@ -128,14 +132,16 @@ async def list_suppliers(rating_min: float | None = None):
 
 
 @router.get("/inventory")
-async def inventory_overview():
+async def inventory_overview(user: dict = Depends(get_current_user)):
     """库存总览."""
     async def _query(db):
         from app.models.relational import Inventory, Material
         from sqlalchemy import select
+        tenant_id = current_tenant_id(user)
         result = await db.execute(
             select(Inventory, Material.name.label("material_name"))
             .join(Material, Inventory.material_id == Material.id)
+            .where(Inventory.tenant_id == tenant_id, Material.tenant_id == tenant_id)
         )
         rows = result.fetchall()
 
@@ -184,12 +190,13 @@ async def inventory_overview():
 
 
 @router.get("/shipments")
-async def list_shipments(status: str | None = None):
+async def list_shipments(status: str | None = None, user: dict = Depends(get_current_user)):
     """物流追踪."""
     async def _query(db):
         from app.models.relational import Shipment
         from sqlalchemy import select
-        query = select(Shipment).order_by(Shipment.created_at.desc())
+        tenant_id = current_tenant_id(user)
+        query = select(Shipment).where(Shipment.tenant_id == tenant_id).order_by(Shipment.created_at.desc())
         if status:
             query = query.where(Shipment.status == status)
         result = await db.execute(query)
@@ -198,6 +205,7 @@ async def list_shipments(status: str | None = None):
             "data": [
                 {
                     "id": s.id,
+                    "tenant_id": s.tenant_id,
                     "origin_id": s.origin_id,
                     "destination_id": s.destination_id,
                     "status": s.status,
@@ -220,12 +228,13 @@ async def list_shipments(status: str | None = None):
 
 
 @router.get("/risk-assessment")
-async def risk_assessment():
+async def risk_assessment(user: dict = Depends(get_current_user)):
     """供应链风险评估 — 用图影响分析评估连锁风险."""
     async def _query(db):
         from app.models.relational import Supplier
         from sqlalchemy import select
-        result = await db.execute(select(Supplier))
+        tenant_id = current_tenant_id(user)
+        result = await db.execute(select(Supplier).where(Supplier.tenant_id == tenant_id))
         suppliers = result.scalars().all()
 
         risks = []
@@ -263,18 +272,19 @@ async def risk_assessment():
 
 
 @router.get("/analytics")
-async def supply_chain_analytics():
+async def supply_chain_analytics(user: dict = Depends(get_current_user)):
     """供应链分析数据."""
     async def _query(db):
         from app.models.relational import Supplier
         from sqlalchemy import func, select
+        tenant_id = current_tenant_id(user)
         random.seed(42)
         monthly_turnover = [
             {"month": (datetime.now() - timedelta(days=30 * i)).strftime("%Y-%m"), "turnover_rate": round(random.uniform(3.5, 6.5), 2)}
             for i in range(6)
         ][::-1]
 
-        supplier_count = await db.scalar(select(func.count(Supplier.id)))
+        supplier_count = await db.scalar(select(func.count(Supplier.id)).where(Supplier.tenant_id == tenant_id))
         delivery_performance = {
             "on_time": round(random.uniform(85, 95), 1),
             "early": round(random.uniform(3, 8), 1),

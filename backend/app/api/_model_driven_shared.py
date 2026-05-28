@@ -116,6 +116,9 @@ SAFE_COLUMNS: dict[str, set[str]] = {
     "defects": {"id", "inspection_id", "defect_type", "severity", "description", "root_cause", "correction"},
 }
 
+for _tenant_table in SAFE_COLUMNS:
+    SAFE_COLUMNS[_tenant_table].add("tenant_id")
+
 ENTITY_TABLE_MAP = {
     "Factory": "factories", "Workshop": "workshops", "ProductionLine": "production_lines",
     "Equipment": "equipment", "Sensor": "sensors", "Product": "products",

@@ -13,6 +13,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    Index,
     func,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -41,8 +42,10 @@ class SystemSetting(TimestampMixin, Base):
 
 class Factory(TimestampMixin, Base):
     __tablename__ = "factories"
+    __table_args__ = (Index("ix_factories_tenant_status", "tenant_id", "status"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     location: Mapped[str] = mapped_column(String(500))
     capacity: Mapped[float] = mapped_column(Float, default=0)
@@ -54,8 +57,10 @@ class Factory(TimestampMixin, Base):
 
 class Workshop(TimestampMixin, Base):
     __tablename__ = "workshops"
+    __table_args__ = (Index("ix_workshops_tenant_factory", "tenant_id", "factory_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     factory_id: Mapped[int] = mapped_column(ForeignKey("factories.id"))
     area: Mapped[float] = mapped_column(Float, default=0)
@@ -67,8 +72,10 @@ class Workshop(TimestampMixin, Base):
 
 class ProductionLine(TimestampMixin, Base):
     __tablename__ = "production_lines"
+    __table_args__ = (Index("ix_production_lines_tenant_status", "tenant_id", "status"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     workshop_id: Mapped[int] = mapped_column(ForeignKey("workshops.id"))
     capacity: Mapped[float] = mapped_column(Float, default=0)
@@ -89,8 +96,10 @@ class EquipmentStatus(str, enum.Enum):
 
 class Equipment(TimestampMixin, Base):
     __tablename__ = "equipment"
+    __table_args__ = (Index("ix_equipment_tenant_status", "tenant_id", "status"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     line_id: Mapped[int] = mapped_column(ForeignKey("production_lines.id"))
     model: Mapped[str] = mapped_column(String(200))
@@ -105,8 +114,10 @@ class Equipment(TimestampMixin, Base):
 
 class Sensor(TimestampMixin, Base):
     __tablename__ = "sensors"
+    __table_args__ = (Index("ix_sensors_tenant_equipment", "tenant_id", "equipment_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     equipment_id: Mapped[int] = mapped_column(ForeignKey("equipment.id"))
     sensor_type: Mapped[str] = mapped_column(String(100))
@@ -119,8 +130,10 @@ class Sensor(TimestampMixin, Base):
 
 class SensorReading(Base):
     __tablename__ = "sensor_readings"
+    __table_args__ = (Index("ix_sensor_readings_tenant_sensor_time", "tenant_id", "sensor_id", "timestamp"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     sensor_id: Mapped[int] = mapped_column(ForeignKey("sensors.id"))
     value: Mapped[float] = mapped_column(Float)
     timestamp: Mapped[datetime] = mapped_column(DateTime, index=True)
@@ -132,10 +145,12 @@ class SensorReading(Base):
 
 class Product(TimestampMixin, Base):
     __tablename__ = "products"
+    __table_args__ = (UniqueConstraint("tenant_id", "sku", name="uq_products_tenant_sku"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
-    sku: Mapped[str] = mapped_column(String(100), unique=True)
+    sku: Mapped[str] = mapped_column(String(100))
     category: Mapped[str] = mapped_column(String(100))
     specs: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     unit: Mapped[str] = mapped_column(String(50), default="个")
@@ -143,8 +158,10 @@ class Product(TimestampMixin, Base):
 
 class Material(TimestampMixin, Base):
     __tablename__ = "materials"
+    __table_args__ = (Index("ix_materials_tenant_type", "tenant_id", "material_type"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     material_type: Mapped[str] = mapped_column(String(100))
     specs: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -154,8 +171,10 @@ class Material(TimestampMixin, Base):
 
 class BOM(TimestampMixin, Base):
     __tablename__ = "bom"
+    __table_args__ = (Index("ix_bom_tenant_product", "tenant_id", "product_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
     material_id: Mapped[int] = mapped_column(ForeignKey("materials.id"))
     quantity: Mapped[float] = mapped_column(Float)
@@ -164,8 +183,10 @@ class BOM(TimestampMixin, Base):
 
 class ProcessRoute(TimestampMixin, Base):
     __tablename__ = "process_routes"
+    __table_args__ = (Index("ix_process_routes_tenant_product", "tenant_id", "product_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
     step_order: Mapped[int] = mapped_column(Integer)
     operation: Mapped[str] = mapped_column(String(200))
@@ -185,9 +206,11 @@ class OrderStatus(str, enum.Enum):
 
 class SalesOrder(TimestampMixin, Base):
     __tablename__ = "sales_orders"
+    __table_args__ = (UniqueConstraint("tenant_id", "order_no", name="uq_sales_orders_tenant_order_no"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    order_no: Mapped[str] = mapped_column(String(100), unique=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    order_no: Mapped[str] = mapped_column(String(100))
     customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"))
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
     quantity: Mapped[float] = mapped_column(Float)
@@ -200,9 +223,11 @@ class SalesOrder(TimestampMixin, Base):
 
 class WorkOrder(TimestampMixin, Base):
     __tablename__ = "work_orders"
+    __table_args__ = (UniqueConstraint("tenant_id", "order_no", name="uq_work_orders_tenant_order_no"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    order_no: Mapped[str] = mapped_column(String(100), unique=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    order_no: Mapped[str] = mapped_column(String(100))
     sales_order_id: Mapped[int] = mapped_column(ForeignKey("sales_orders.id"))
     line_id: Mapped[int] = mapped_column(ForeignKey("production_lines.id"))
     planned_start: Mapped[datetime] = mapped_column(DateTime)
@@ -219,8 +244,10 @@ class WorkOrder(TimestampMixin, Base):
 
 class Operation(TimestampMixin, Base):
     __tablename__ = "operations"
+    __table_args__ = (Index("ix_operations_tenant_work_order", "tenant_id", "work_order_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     work_order_id: Mapped[int] = mapped_column(ForeignKey("work_orders.id"))
     step: Mapped[int] = mapped_column(Integer)
     equipment_id: Mapped[int] = mapped_column(ForeignKey("equipment.id"))
@@ -236,8 +263,10 @@ class Operation(TimestampMixin, Base):
 
 class Supplier(TimestampMixin, Base):
     __tablename__ = "suppliers"
+    __table_args__ = (Index("ix_suppliers_tenant_rating", "tenant_id", "rating"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     location: Mapped[str] = mapped_column(String(500))
     rating: Mapped[float] = mapped_column(Float, default=0)
@@ -247,8 +276,10 @@ class Supplier(TimestampMixin, Base):
 
 class Customer(TimestampMixin, Base):
     __tablename__ = "customers"
+    __table_args__ = (Index("ix_customers_tenant_region", "tenant_id", "region"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     industry: Mapped[str] = mapped_column(String(200))
     region: Mapped[str] = mapped_column(String(200))
@@ -256,8 +287,10 @@ class Customer(TimestampMixin, Base):
 
 class Warehouse(TimestampMixin, Base):
     __tablename__ = "warehouses"
+    __table_args__ = (Index("ix_warehouses_tenant_location", "tenant_id", "location"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     location: Mapped[str] = mapped_column(String(500))
     capacity: Mapped[float] = mapped_column(Float)
@@ -266,8 +299,10 @@ class Warehouse(TimestampMixin, Base):
 
 class Inventory(TimestampMixin, Base):
     __tablename__ = "inventory"
+    __table_args__ = (Index("ix_inventory_tenant_material_warehouse", "tenant_id", "material_id", "warehouse_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     material_id: Mapped[int] = mapped_column(ForeignKey("materials.id"))
     warehouse_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id"))
     quantity: Mapped[float] = mapped_column(Float, default=0)
@@ -283,8 +318,10 @@ class ShipmentStatus(str, enum.Enum):
 
 class Shipment(TimestampMixin, Base):
     __tablename__ = "shipments"
+    __table_args__ = (Index("ix_shipments_tenant_status", "tenant_id", "status"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     origin_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id"))
     destination_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id"))
     status: Mapped[str] = mapped_column(String(50), default="pending")
@@ -302,8 +339,10 @@ class InspectionType(str, enum.Enum):
 
 class Inspection(TimestampMixin, Base):
     __tablename__ = "inspections"
+    __table_args__ = (Index("ix_inspections_tenant_type_result", "tenant_id", "inspection_type", "result"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     inspection_type: Mapped[str] = mapped_column(String(50))
     target_type: Mapped[str] = mapped_column(String(100))
     target_id: Mapped[int] = mapped_column(Integer)
@@ -320,8 +359,10 @@ class DefectSeverity(str, enum.Enum):
 
 class Defect(TimestampMixin, Base):
     __tablename__ = "defects"
+    __table_args__ = (Index("ix_defects_tenant_severity", "tenant_id", "severity"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     inspection_id: Mapped[int] = mapped_column(ForeignKey("inspections.id"))
     defect_type: Mapped[str] = mapped_column(String(200))
     severity: Mapped[str] = mapped_column(String(50))
@@ -332,8 +373,10 @@ class Defect(TimestampMixin, Base):
 
 class SPCPoint(TimestampMixin, Base):
     __tablename__ = "spc_points"
+    __table_args__ = (Index("ix_spc_points_tenant_parameter_time", "tenant_id", "parameter", "timestamp"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     parameter: Mapped[str] = mapped_column(String(200))
     value: Mapped[float] = mapped_column(Float)
     ucl: Mapped[float] = mapped_column(Float)
@@ -351,8 +394,10 @@ class CAPAStatus(str, enum.Enum):
 
 class CAPA(TimestampMixin, Base):
     __tablename__ = "capa"
+    __table_args__ = (Index("ix_capa_tenant_status", "tenant_id", "status"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     defect_id: Mapped[int] = mapped_column(ForeignKey("defects.id"))
     action_type: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(Text)
@@ -365,8 +410,10 @@ class CAPA(TimestampMixin, Base):
 
 class Worker(TimestampMixin, Base):
     __tablename__ = "workers"
+    __table_args__ = (Index("ix_workers_tenant_role", "tenant_id", "role"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     role: Mapped[str] = mapped_column(String(100))
     department: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
@@ -374,8 +421,10 @@ class Worker(TimestampMixin, Base):
 
 class DataSource(TimestampMixin, Base):
     __tablename__ = "data_sources"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_data_sources_tenant_name"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     source_type: Mapped[str] = mapped_column(String(100))
     connection_config: Mapped[str] = mapped_column(Text)
@@ -386,8 +435,10 @@ class DataSource(TimestampMixin, Base):
 
 class Pipeline(TimestampMixin, Base):
     __tablename__ = "pipelines"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_pipelines_tenant_name"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     config: Mapped[str] = mapped_column(Text)
@@ -397,8 +448,10 @@ class Pipeline(TimestampMixin, Base):
 
 class PipelineRun(TimestampMixin, Base):
     __tablename__ = "pipeline_runs"
+    __table_args__ = (Index("ix_pipeline_runs_tenant_pipeline", "tenant_id", "pipeline_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     pipeline_id: Mapped[int] = mapped_column(ForeignKey("pipelines.id"))
     status: Mapped[str] = mapped_column(String(50), default="running")
     started_at: Mapped[datetime] = mapped_column(DateTime)
@@ -452,8 +505,27 @@ class TenantInvite(TimestampMixin, Base):
     token_hash: Mapped[str] = mapped_column(String(128), index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
     accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    revoked_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    replaced_by_invite_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     invited_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+
+class TenantExport(TimestampMixin, Base):
+    __tablename__ = "tenant_exports"
+    __table_args__ = (Index("ix_tenant_exports_tenant_status", "tenant_id", "status"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, index=True)
+    requested_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="pending")
+    format: Mapped[str] = mapped_column(String(20), default="zip")
+    file_path: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    checksum: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 class PasswordResetToken(TimestampMixin, Base):
@@ -647,6 +719,7 @@ class Form(TimestampMixin, Base):
     actions: Mapped[list["FormAction"]] = relationship(back_populates="form", cascade="all, delete-orphan")
     permissions: Mapped[list["FormPermission"]] = relationship(back_populates="form", cascade="all, delete-orphan")
     records: Mapped[list["DynamicRecord"]] = relationship(back_populates="form", cascade="all, delete-orphan")
+    versions: Mapped[list["FormVersion"]] = relationship(back_populates="form", cascade="all, delete-orphan")
     workflow_bindings: Mapped[list["WorkflowBinding"]] = relationship(back_populates="form", cascade="all, delete-orphan")
 
 
@@ -763,6 +836,25 @@ class FormPermission(TimestampMixin, Base):
     form: Mapped["Form"] = relationship(back_populates="permissions")
 
 
+class FormVersion(TimestampMixin, Base):
+    __tablename__ = "form_versions"
+    __table_args__ = (
+        UniqueConstraint("form_id", "version", name="uq_form_versions_form_version"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(50), default="published")
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    impact_report: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    published_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    form: Mapped["Form"] = relationship(back_populates="versions")
+
+
 class DynamicRecord(TimestampMixin, Base):
     __tablename__ = "dynamic_records"
 
@@ -771,6 +863,7 @@ class DynamicRecord(TimestampMixin, Base):
     form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"))
     model_id: Mapped[Optional[int]] = mapped_column(ForeignKey("meta_models.id"), nullable=True)
     data: Mapped[dict] = mapped_column(JSON, default=dict)
+    schema_version: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(50), default="active")
     created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     updated_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -995,8 +1088,10 @@ class WorkflowApproval(TimestampMixin, Base):
 
 class Notification(TimestampMixin, Base):
     __tablename__ = "notifications"
+    __table_args__ = (Index("ix_notifications_tenant_user_read", "tenant_id", "user_id", "is_read"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     title: Mapped[str] = mapped_column(String(200))
     content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -1029,8 +1124,10 @@ class ModelVersion(Base):
 
 class Rule(Base):
     __tablename__ = "rules"
+    __table_args__ = (Index("ix_rules_tenant_model_type", "tenant_id", "model_id", "rule_type"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     model_id: Mapped[int] = mapped_column(Integer, ForeignKey("meta_models.id"))
     name: Mapped[str] = mapped_column(String(100))
     rule_type: Mapped[str] = mapped_column(String(20))  # 'validation' | 'trigger' | 'visibility'
@@ -1059,8 +1156,10 @@ class AuditLog(Base):
 
 class ScheduledJob(TimestampMixin, Base):
     __tablename__ = "scheduled_jobs"
+    __table_args__ = (Index("ix_scheduled_jobs_tenant_active", "tenant_id", "is_active"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     name: Mapped[str] = mapped_column(String(200))
     cron: Mapped[str] = mapped_column(String(50))
     job_type: Mapped[str] = mapped_column(String(20))
@@ -1071,9 +1170,11 @@ class ScheduledJob(TimestampMixin, Base):
 
 class KnowledgeDocument(TimestampMixin, Base):
     __tablename__ = "knowledge_documents"
+    __table_args__ = (UniqueConstraint("tenant_id", "document_id", name="uq_knowledge_documents_tenant_document_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    document_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    document_id: Mapped[str] = mapped_column(String(100), index=True)
     source_file_name: Mapped[str] = mapped_column(String(500))
     source_type: Mapped[str] = mapped_column(String(50))
     title: Mapped[str] = mapped_column(String(300))
@@ -1087,9 +1188,11 @@ class KnowledgeDocument(TimestampMixin, Base):
 
 class KnowledgeChunk(TimestampMixin, Base):
     __tablename__ = "knowledge_chunks"
+    __table_args__ = (UniqueConstraint("tenant_id", "chunk_id", name="uq_knowledge_chunks_tenant_chunk_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    chunk_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    chunk_id: Mapped[str] = mapped_column(String(100), index=True)
     document_id: Mapped[str] = mapped_column(String(100), index=True)
     title: Mapped[str] = mapped_column(String(300))
     chunk_text: Mapped[str] = mapped_column(Text)
@@ -1101,9 +1204,11 @@ class KnowledgeChunk(TimestampMixin, Base):
 
 class KnowledgeIngestionJob(TimestampMixin, Base):
     __tablename__ = "knowledge_ingestion_jobs"
+    __table_args__ = (UniqueConstraint("tenant_id", "job_id", name="uq_knowledge_ingestion_jobs_tenant_job_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    job_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    job_id: Mapped[str] = mapped_column(String(100), index=True)
     asset_id: Mapped[str] = mapped_column(String(100), index=True)
     document_id: Mapped[str] = mapped_column(String(100), index=True)
     status: Mapped[str] = mapped_column(String(50), default="running")
@@ -1112,9 +1217,11 @@ class KnowledgeIngestionJob(TimestampMixin, Base):
 
 class KnowledgeExtractionResult(TimestampMixin, Base):
     __tablename__ = "knowledge_extraction_results"
+    __table_args__ = (UniqueConstraint("tenant_id", "job_id", name="uq_knowledge_extraction_results_tenant_job_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    job_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    job_id: Mapped[str] = mapped_column(String(100), index=True)
     document_id: Mapped[str] = mapped_column(String(100), index=True)
     domain: Mapped[str] = mapped_column(String(100), default="manufacturing")
     prompt_name: Mapped[str] = mapped_column(String(200), default="manufacturing_ontology_v1")
@@ -1128,8 +1235,10 @@ class KnowledgeExtractionResult(TimestampMixin, Base):
 
 class KnowledgeObjectLink(TimestampMixin, Base):
     __tablename__ = "knowledge_object_links"
+    __table_args__ = (Index("ix_knowledge_object_links_tenant_object", "tenant_id", "object_type", "object_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
     document_id: Mapped[str] = mapped_column(String(100), index=True)
     job_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
     object_type: Mapped[str] = mapped_column(String(100))
@@ -1142,9 +1251,11 @@ class KnowledgeObjectLink(TimestampMixin, Base):
 
 class AIConversation(TimestampMixin, Base):
     __tablename__ = "ai_conversations"
+    __table_args__ = (UniqueConstraint("tenant_id", "conversation_id", name="uq_ai_conversations_tenant_conversation_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    conversation_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    conversation_id: Mapped[str] = mapped_column(String(100), index=True)
     user_id: Mapped[str] = mapped_column(String(100), index=True)
     page: Mapped[str] = mapped_column(String(100), default="knowledge-center")
     document_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
@@ -1156,9 +1267,11 @@ class AIConversation(TimestampMixin, Base):
 
 class AIMessage(TimestampMixin, Base):
     __tablename__ = "ai_messages"
+    __table_args__ = (UniqueConstraint("tenant_id", "message_id", name="uq_ai_messages_tenant_message_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    message_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    message_id: Mapped[str] = mapped_column(String(100), index=True)
     conversation_id: Mapped[str] = mapped_column(String(100), ForeignKey("ai_conversations.conversation_id"), index=True)
     role: Mapped[str] = mapped_column(String(30))
     content: Mapped[str] = mapped_column(Text)
@@ -1171,9 +1284,11 @@ class AIMessage(TimestampMixin, Base):
 
 class AIAgentRun(TimestampMixin, Base):
     __tablename__ = "ai_agent_runs"
+    __table_args__ = (UniqueConstraint("tenant_id", "run_id", name="uq_ai_agent_runs_tenant_run_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    run_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    run_id: Mapped[str] = mapped_column(String(100), index=True)
     conversation_id: Mapped[str] = mapped_column(String(100), ForeignKey("ai_conversations.conversation_id"), index=True)
     user_message_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     assistant_message_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -1191,9 +1306,11 @@ class AIAgentRun(TimestampMixin, Base):
 
 class AIToolCall(TimestampMixin, Base):
     __tablename__ = "ai_tool_calls"
+    __table_args__ = (UniqueConstraint("tenant_id", "call_id", name="uq_ai_tool_calls_tenant_call_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    call_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    call_id: Mapped[str] = mapped_column(String(100), index=True)
     run_id: Mapped[str] = mapped_column(String(100), ForeignKey("ai_agent_runs.run_id"), index=True)
     tool_name: Mapped[str] = mapped_column(String(200))
     skill_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)

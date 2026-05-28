@@ -23,6 +23,7 @@ from app.services.ai.memory import memory_service
 from app.services.ai.orchestrator import run_agent
 from app.services.ai.policies import decide_ai_permission, decide_skill_permission
 from app.services.ai.providers import ProviderConfigurationError
+from app.services.ai.low_code_tools import execute_create_form_definition
 from app.services.ai.runtime import agent_runtime
 from app.services.ai.schemas import AIProviderConfig, AgentRequest, AgentResponse, ChatMessage, ChatOptions, DraftSaveRequest
 from app.services.ai.settings import (
@@ -112,6 +113,7 @@ def _now_iso(value: Any) -> str | None:
 def _serialize_conversation(row: AIConversation) -> dict[str, Any]:
     return {
         "id": row.conversation_id,
+        "tenant_id": row.tenant_id,
         "conversation_id": row.conversation_id,
         "user_id": row.user_id,
         "page": row.page,
@@ -128,6 +130,7 @@ def _serialize_conversation(row: AIConversation) -> dict[str, Any]:
 def _serialize_message(row: AIMessage) -> dict[str, Any]:
     return {
         "id": row.message_id,
+        "tenant_id": row.tenant_id,
         "message_id": row.message_id,
         "conversation_id": row.conversation_id,
         "role": row.role,
@@ -145,6 +148,7 @@ def _serialize_message(row: AIMessage) -> dict[str, Any]:
 def _serialize_run(row: AIAgentRun) -> dict[str, Any]:
     return {
         "id": row.run_id,
+        "tenant_id": row.tenant_id,
         "run_id": row.run_id,
         "conversation_id": row.conversation_id,
         "user_message_id": row.user_message_id,
@@ -171,6 +175,34 @@ def _raise_for_ai_decision(decision):
 
 def _audit_ai_event(user: dict, event_type: str, payload: dict):
     return record_ai_event(user, event_type, payload)
+
+
+async def _execute_confirmed_agent_run(run: dict[str, Any], current_user: dict[str, Any]) -> dict[str, Any]:
+    """Execute supported confirmed Agent actions through registered backend tools."""
+
+    if run.get("status") != "confirmed":
+        return run
+    results: list[dict[str, Any]] = []
+    for action in run.get("actions") or []:
+        skill = action.get("skill")
+        if skill != "low_code.create_form_definition":
+            results.append({"skill": skill, "status": "skipped", "reason": "No executor is registered for this skill"})
+            continue
+
+        async with db_session() as session:
+            result = await execute_create_form_definition(session, user=current_user, payload=action.get("payload") or {})
+        results.append({
+            "skill": skill,
+            "tool": "forms.create_form_definition",
+            "status": "completed",
+            "result": result,
+        })
+        _audit_ai_event(current_user, "agent_tool_executed", {"skill": skill, "tool": "forms.create_form_definition", "result": result})
+
+    run["tool_results"] = results
+    if any(item.get("status") == "completed" for item in results):
+        run["status"] = "completed"
+    return run
 
 
 # Simulated AI responses based on intent detection
@@ -328,6 +360,33 @@ async def _run_agent_for_user(body: AgentRequest, current_user: dict):
     context["_current_user"] = current_user
     context["_tenant_id"] = current_tenant_id(current_user)
     context["_user_key"] = _user_key(current_user)
+    conversation_id = context.get("conversation_id") or context.get("conversationId")
+    if conversation_id and not context.get("recentMessages"):
+        tenant_id = current_tenant_id(current_user)
+        user_key = _user_key(current_user)
+        async with db_session() as session:
+            conversation = await session.scalar(
+                select(AIConversation).where(
+                    AIConversation.tenant_id == tenant_id,
+                    AIConversation.conversation_id == str(conversation_id),
+                    AIConversation.user_id == user_key,
+                    AIConversation.status == "active",
+                )
+            )
+            if conversation:
+                rows = (
+                    await session.execute(
+                        select(AIMessage)
+                        .where(AIMessage.tenant_id == tenant_id, AIMessage.conversation_id == str(conversation_id))
+                        .order_by(desc(AIMessage.id))
+                        .limit(8)
+                    )
+                ).scalars().all()
+                context["recentMessages"] = [
+                    {"role": row.role, "content": row.content}
+                    for row in reversed(rows)
+                    if row.role in {"user", "assistant"}
+                ]
     body.context = context
     if (body.context or {}).get("surface") == "knowledge":
         result = await _run_knowledge_agent_surface_with_context(body)
@@ -554,9 +613,11 @@ async def _persist_agent_turn(body: AgentRequest, result: AgentResponse, current
         return None
 
     user_key = _user_key(current_user)
+    tenant_id = current_tenant_id(current_user)
     async with db_session() as session:
         conversation = await session.scalar(
             select(AIConversation).where(
+                AIConversation.tenant_id == tenant_id,
                 AIConversation.conversation_id == conversation_id,
                 AIConversation.user_id == user_key,
                 AIConversation.status == "active",
@@ -566,6 +627,7 @@ async def _persist_agent_turn(body: AgentRequest, result: AgentResponse, current
             raise HTTPException(status_code=404, detail="Agent conversation not found")
 
         user_message = AIMessage(
+            tenant_id=tenant_id,
             message_id=f"msg-{uuid.uuid4().hex[:12]}",
             conversation_id=conversation_id,
             role="user",
@@ -574,6 +636,7 @@ async def _persist_agent_turn(body: AgentRequest, result: AgentResponse, current
             status="completed",
         )
         assistant_message = AIMessage(
+            tenant_id=tenant_id,
             message_id=f"msg-{uuid.uuid4().hex[:12]}",
             conversation_id=conversation_id,
             role="assistant",
@@ -591,6 +654,7 @@ async def _persist_agent_turn(body: AgentRequest, result: AgentResponse, current
             status="completed",
         )
         run = AIAgentRun(
+            tenant_id=tenant_id,
             run_id=result.run_id or f"run-{uuid.uuid4().hex[:12]}",
             conversation_id=conversation_id,
             user_message_id=user_message.message_id,
@@ -610,6 +674,7 @@ async def _persist_agent_turn(body: AgentRequest, result: AgentResponse, current
         if result.evidence or (body.context or {}).get("surface") == "knowledge":
             records.append(
                 AIToolCall(
+                    tenant_id=tenant_id,
                     call_id=f"call-{uuid.uuid4().hex[:12]}",
                     run_id=run.run_id,
                     tool_name="knowledge.search",
@@ -633,7 +698,7 @@ async def _persist_agent_turn(body: AgentRequest, result: AgentResponse, current
         await memory_service.maybe_compact_conversation(
             session,
             conversation=conversation,
-            tenant_id=current_tenant_id(current_user),
+            tenant_id=tenant_id,
             user_key=user_key,
             settings=AI_SYSTEM_SETTINGS,
         )
@@ -671,6 +736,7 @@ async def get_ai_tools(user: dict = Depends(get_current_user)):
 async def create_agent_conversation(body: AgentConversationRequest, user: dict = Depends(get_current_user)):
     current_user = _normalize_user(user)
     user_key = _user_key(current_user)
+    tenant_id = current_tenant_id(current_user)
     context = body.context or {}
     page = body.page or str(context.get("route") or context.get("page") or "global")
     document_id = body.document_id or context.get("document_id") or context.get("documentId")
@@ -682,6 +748,7 @@ async def create_agent_conversation(body: AgentConversationRequest, user: dict =
     }
     async with db_session() as session:
         record = AIConversation(
+            tenant_id=tenant_id,
             conversation_id=f"conv-{uuid.uuid4().hex[:12]}",
             user_id=user_key,
             page=page,
@@ -707,8 +774,9 @@ async def list_agent_conversations(
 ):
     current_user = _normalize_user(user)
     user_key = _user_key(current_user)
+    tenant_id = current_tenant_id(current_user)
     async with db_session() as session:
-        stmt = select(AIConversation).where(AIConversation.user_id == user_key)
+        stmt = select(AIConversation).where(AIConversation.tenant_id == tenant_id, AIConversation.user_id == user_key)
         if not include_closed:
             stmt = stmt.where(AIConversation.status == "active")
         if page:
@@ -726,9 +794,11 @@ async def list_agent_conversations(
 async def list_agent_conversation_messages(conversation_id: str, user: dict = Depends(get_current_user)):
     current_user = _normalize_user(user)
     user_key = _user_key(current_user)
+    tenant_id = current_tenant_id(current_user)
     async with db_session() as session:
         conversation = await session.scalar(
             select(AIConversation).where(
+                AIConversation.tenant_id == tenant_id,
                 AIConversation.conversation_id == conversation_id,
                 AIConversation.user_id == user_key,
             )
@@ -738,7 +808,7 @@ async def list_agent_conversation_messages(conversation_id: str, user: dict = De
         rows = (
             await session.execute(
                 select(AIMessage)
-                .where(AIMessage.conversation_id == conversation_id)
+                .where(AIMessage.tenant_id == tenant_id, AIMessage.conversation_id == conversation_id)
                 .order_by(AIMessage.id)
             )
         ).scalars().all()
@@ -749,9 +819,11 @@ async def list_agent_conversation_messages(conversation_id: str, user: dict = De
 async def close_agent_conversation(conversation_id: str, user: dict = Depends(get_current_user)):
     current_user = _normalize_user(user)
     user_key = _user_key(current_user)
+    tenant_id = current_tenant_id(current_user)
     async with db_session() as session:
         conversation = await session.scalar(
             select(AIConversation).where(
+                AIConversation.tenant_id == tenant_id,
                 AIConversation.conversation_id == conversation_id,
                 AIConversation.user_id == user_key,
             )
@@ -764,7 +836,7 @@ async def close_agent_conversation(conversation_id: str, user: dict = Depends(ge
             await memory_service.maybe_compact_conversation(
                 session,
                 conversation=conversation,
-                tenant_id=current_tenant_id(current_user),
+                tenant_id=tenant_id,
                 user_key=user_key,
                 settings=AI_SYSTEM_SETTINGS,
                 force=True,
@@ -885,6 +957,7 @@ async def confirm_ai_agent_run(run_id: str, body: AgentRunConfirmRequest, user: 
     except ValueError as exc:
         status_code = 404 if "not found" in str(exc).lower() else 400
         raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+    run = await _execute_confirmed_agent_run(run, current_user)
     _audit_ai_event(current_user, "agent_run_confirmed", {"run_id": run_id})
     return {"data": run, "ok": True}
 

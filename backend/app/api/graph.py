@@ -8,13 +8,14 @@ import asyncio
 import re
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from app.api.deps import get_current_user
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 QUALITY_BUSINESS_ID_MAP = {
     "event-qe-001": "quality-event-qe-20260521-001",

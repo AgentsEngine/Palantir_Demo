@@ -200,6 +200,58 @@ def test_field_change_compatibility_flags_existing_bad_values():
     assert _field_value_is_compatible(Field("boolean"), "true") is False
 
 
+def test_publish_preview_blocks_new_required_field_with_existing_records():
+    pytest.importorskip("fastapi")
+    from app.api.forms import _publish_impact_report
+
+    snapshot = {
+        "fields": [
+            {"field_name": "title", "label": "Title", "field_type": "string", "required": True},
+            {"field_name": "owner", "label": "Owner", "field_type": "string", "required": True},
+        ]
+    }
+
+    report = _publish_impact_report(None, 1, snapshot, [{"title": "Fix pump"}])
+    blocking = [item for item in report["items"] if item["level"] == "blocking"]
+
+    assert report["blocking_count"] == 1
+    assert blocking[0]["type"] == "new_required_field_missing"
+    assert blocking[0]["field_name"] == "owner"
+
+
+def test_publish_preview_blocks_incompatible_type_change():
+    pytest.importorskip("fastapi")
+    from app.api.forms import _publish_impact_report
+
+    class Version:
+        version = 1
+        snapshot = {"fields": [{"field_name": "amount", "label": "Amount", "field_type": "string"}]}
+
+    snapshot = {"fields": [{"field_name": "amount", "label": "Amount", "field_type": "integer"}]}
+
+    report = _publish_impact_report(Version(), 2, snapshot, [{"amount": "42"}])
+
+    assert report["blocking_count"] == 1
+    assert report["items"][0]["type"] == "field_type_incompatible"
+
+
+def test_publish_preview_warns_when_archived_field_has_data():
+    pytest.importorskip("fastapi")
+    from app.api.forms import _publish_impact_report
+
+    class Version:
+        version = 1
+        snapshot = {"fields": [{"field_name": "legacy_note", "label": "Legacy Note", "field_type": "string"}]}
+
+    snapshot = {"fields": [{"field_name": "legacy_note", "label": "Legacy Note", "field_type": "string", "archived": True}]}
+
+    report = _publish_impact_report(Version(), 2, snapshot, [{"legacy_note": "keep this"}])
+
+    assert report["blocking_count"] == 0
+    assert report["warning_count"] == 1
+    assert report["items"][0]["type"] == "field_archived_with_data"
+
+
 def test_production_dynamic_query_requires_pushed_search(monkeypatch):
     pytest.importorskip("fastapi")
     from fastapi import HTTPException

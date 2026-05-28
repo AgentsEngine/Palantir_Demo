@@ -2,9 +2,11 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
+
+from app.api.deps import current_tenant_id, get_current_user
 
 router = APIRouter()
 
@@ -78,11 +80,13 @@ from app.core.db import safe_db_call as _try_db  # noqa: E402
 async def list_data_sources(
     source_type: str | None = None,
     status: str | None = None,
+    user: dict = Depends(get_current_user),
 ):
     """列出所有数据源."""
     async def _query(db):
         from app.models.relational import DataSource
-        query = select(DataSource).order_by(DataSource.created_at.desc())
+        tenant_id = current_tenant_id(user)
+        query = select(DataSource).where(DataSource.tenant_id == tenant_id).order_by(DataSource.created_at.desc())
         if source_type:
             query = query.where(DataSource.source_type == source_type)
         if status:
@@ -93,6 +97,7 @@ async def list_data_sources(
             "data": [
                 {
                     "id": s.id,
+                    "tenant_id": s.tenant_id,
                     "name": s.name,
                     "source_type": s.source_type,
                     "status": s.status,
@@ -113,15 +118,17 @@ async def list_data_sources(
         filtered = [s for s in filtered if s["source_type"] == source_type]
     if status:
         filtered = [s for s in filtered if s["status"] == status]
-    return {"data": filtered}
+    return {"data": filtered, "source": "fallback"}
 
 
 @router.post("")
-async def create_data_source(body: DataSourceCreate):
+async def create_data_source(body: DataSourceCreate, user: dict = Depends(get_current_user)):
     """创建数据源."""
     async def _query(db):
         from app.models.relational import DataSource
+        tenant_id = current_tenant_id(user)
         ds = DataSource(
+            tenant_id=tenant_id,
             name=body.name,
             source_type=body.source_type,
             connection_config=body.connection_config,
@@ -131,13 +138,13 @@ async def create_data_source(body: DataSourceCreate):
         db.add(ds)
         await db.commit()
         await db.refresh(ds)
-        return {"id": ds.id, "name": ds.name, "status": ds.status}
+        return {"id": ds.id, "tenant_id": ds.tenant_id, "name": ds.name, "status": ds.status, "source": "database"}
 
     result = await _try_db(_query)
     if result is not None:
         return result
     # Mock fallback
-    return {"id": 9, "name": body.name, "status": "active"}
+    return {"id": 9, "tenant_id": current_tenant_id(user), "name": body.name, "status": "active", "source": "fallback"}
 
 
 @router.post("/test-config")
@@ -205,15 +212,17 @@ async def test_connection_config(body: DataSourceConnectionTest):
 
 
 @router.get("/{source_id}")
-async def get_data_source(source_id: int):
+async def get_data_source(source_id: int, user: dict = Depends(get_current_user)):
     """获取数据源详情."""
     async def _query(db):
         from app.models.relational import DataSource
+        tenant_id = current_tenant_id(user)
         ds = await db.get(DataSource, source_id)
-        if not ds:
-            return None
+        if not ds or ds.tenant_id != tenant_id:
+            raise HTTPException(404, "Data source not found")
         return {
             "id": ds.id,
+            "tenant_id": ds.tenant_id,
             "name": ds.name,
             "source_type": ds.source_type,
             "connection_config": ds.connection_config,
@@ -229,18 +238,19 @@ async def get_data_source(source_id: int):
         return result
 
     # Return mock detail (adjust id to match)
-    mock = {**MOCK_SOURCE_DETAIL, "id": source_id}
+    mock = {**MOCK_SOURCE_DETAIL, "id": source_id, "tenant_id": current_tenant_id(user), "source": "fallback"}
     return mock
 
 
 @router.put("/{source_id}")
-async def update_data_source(source_id: int, body: DataSourceUpdate):
+async def update_data_source(source_id: int, body: DataSourceUpdate, user: dict = Depends(get_current_user)):
     """更新数据源."""
     async def _query(db):
         from app.models.relational import DataSource
+        tenant_id = current_tenant_id(user)
         ds = await db.get(DataSource, source_id)
-        if not ds:
-            return None
+        if not ds or ds.tenant_id != tenant_id:
+            raise HTTPException(404, "Data source not found")
         if body.name is not None:
             ds.name = body.name
         if body.connection_config is not None:
@@ -255,17 +265,18 @@ async def update_data_source(source_id: int, body: DataSourceUpdate):
     result = await _try_db(_query)
     if result is not None:
         return result
-    return {"id": source_id, "status": "updated"}
+    return {"id": source_id, "tenant_id": current_tenant_id(user), "status": "updated", "source": "fallback"}
 
 
 @router.delete("/{source_id}")
-async def delete_data_source(source_id: int):
+async def delete_data_source(source_id: int, user: dict = Depends(get_current_user)):
     """删除数据源."""
     async def _query(db):
         from app.models.relational import DataSource
+        tenant_id = current_tenant_id(user)
         ds = await db.get(DataSource, source_id)
-        if not ds:
-            return None
+        if not ds or ds.tenant_id != tenant_id:
+            raise HTTPException(404, "Data source not found")
         await db.delete(ds)
         await db.commit()
         return {"status": "deleted"}
@@ -273,17 +284,18 @@ async def delete_data_source(source_id: int):
     result = await _try_db(_query)
     if result is not None:
         return result
-    return {"status": "deleted"}
+    return {"status": "deleted", "source": "fallback"}
 
 
 @router.post("/{source_id}/test")
-async def test_connection(source_id: int):
+async def test_connection(source_id: int, user: dict = Depends(get_current_user)):
     """测试数据源连接."""
     async def _query(db):
         from app.models.relational import DataSource
+        tenant_id = current_tenant_id(user)
         ds = await db.get(DataSource, source_id)
-        if not ds:
-            return None
+        if not ds or ds.tenant_id != tenant_id:
+            raise HTTPException(404, "Data source not found")
         return {
             "status": "success",
             "message": f"成功连接到 {ds.name}",
@@ -302,13 +314,14 @@ async def test_connection(source_id: int):
     }
 
 @router.post("/{source_id}/sync")
-async def trigger_sync(source_id: int):
+async def trigger_sync(source_id: int, user: dict = Depends(get_current_user)):
     """触发数据同步."""
     async def _query(db):
         from app.models.relational import DataSource
+        tenant_id = current_tenant_id(user)
         ds = await db.get(DataSource, source_id)
-        if not ds:
-            return None
+        if not ds or ds.tenant_id != tenant_id:
+            raise HTTPException(404, "Data source not found")
         ds.last_sync = datetime.now()
         ds.status = "syncing"
         await db.commit()
@@ -321,13 +334,14 @@ async def trigger_sync(source_id: int):
 
 
 @router.get("/{source_id}/status")
-async def get_sync_status(source_id: int):
+async def get_sync_status(source_id: int, user: dict = Depends(get_current_user)):
     """获取同步状态."""
     async def _query(db):
         from app.models.relational import DataSource
+        tenant_id = current_tenant_id(user)
         ds = await db.get(DataSource, source_id)
-        if not ds:
-            return None
+        if not ds or ds.tenant_id != tenant_id:
+            raise HTTPException(404, "Data source not found")
         return {
             "status": ds.status,
             "last_sync": ds.last_sync.isoformat() if ds.last_sync else None,
@@ -345,13 +359,15 @@ async def get_sync_status(source_id: int):
 async def preview_data(
     source_id: int,
     limit: int = Query(10, ge=1, le=100),
+    user: dict = Depends(get_current_user),
 ):
     """数据预览."""
     async def _query(db):
         from app.models.relational import DataSource
+        tenant_id = current_tenant_id(user)
         ds = await db.get(DataSource, source_id)
-        if not ds:
-            return None
+        if not ds or ds.tenant_id != tenant_id:
+            raise HTTPException(404, "Data source not found")
         sample_columns = ["id", "timestamp", "value", "status"]
         sample_rows = [
             {"id": i, "timestamp": f"2026-04-21T{10+i:02d}:00:00", "value": round(25.5 + i * 0.3, 1), "status": "normal"}

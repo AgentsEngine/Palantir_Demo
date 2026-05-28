@@ -312,9 +312,12 @@ export default function DynamicPage() {
         const numericFormId = Number(slug);
         let dbForm: PlatformForm | null = null;
         if (!Number.isNaN(numericFormId)) {
-          dbForm = unwrapApiData<PlatformForm>(await getPlatformForm(numericFormId));
+          dbForm = unwrapApiData<PlatformForm>(await getPlatformForm(numericFormId, { schema: 'published' }));
         } else {
-          dbForm = unwrapApiList<PlatformForm>(await listPlatformForms()).find((item) => item.code === slug) ?? null;
+          const matchedForm = unwrapApiList<PlatformForm>(await listPlatformForms()).find((item) => item.code === slug) ?? null;
+          dbForm = matchedForm
+            ? unwrapApiData<PlatformForm>(await getPlatformForm(matchedForm.id, { schema: 'published' }))
+            : null;
         }
         if (dbForm) {
           setPlatformForm(dbForm);

@@ -278,6 +278,20 @@ def test_production_mode_rejects_sqlite_backend_on_import():
     assert "SQLite fallback is disabled when APP_MODE=production" in (result.stderr + result.stdout)
 
 
+def test_production_admin_db_fallback_returns_503(monkeypatch):
+    from fastapi import HTTPException
+
+    from app.api import admin
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "APP_MODE", "production")
+
+    with pytest.raises(HTTPException) as exc_info:
+        admin._admin_db_fallback({"data": admin._MOCK_USERS_ADMIN})
+
+    assert exc_info.value.status_code == 503
+
+
 def test_production_mode_rejects_unindexed_dynamic_record_search(monkeypatch):
     from app.config import settings
     from app.main import app

@@ -596,7 +596,7 @@ def build_quality_report(result: dict[str, Any], *, parse_error: str | None = No
     return report
 
 
-async def persist_ingestion_result(result: dict[str, Any]) -> None:
+async def persist_ingestion_result(result: dict[str, Any], tenant_id: int = 1) -> None:
     """Best-effort persistence for uploaded source material."""
     try:
         async with db_session() as session:
@@ -605,10 +605,14 @@ async def persist_ingestion_result(result: dict[str, Any]) -> None:
             document = result.get("document") or {}
             if document:
                 existing_doc = await session.scalar(
-                    select(KnowledgeDocument).where(KnowledgeDocument.document_id == document["document_id"])
+                    select(KnowledgeDocument).where(
+                        KnowledgeDocument.tenant_id == tenant_id,
+                        KnowledgeDocument.document_id == document["document_id"],
+                    )
                 )
                 if not existing_doc:
                     session.add(KnowledgeDocument(
+                        tenant_id=tenant_id,
                         document_id=document["document_id"],
                         source_file_name=document["source_file_name"],
                         source_type=document["source_type"],
@@ -627,10 +631,14 @@ async def persist_ingestion_result(result: dict[str, Any]) -> None:
                     existing_doc.status = document["status"]
                 for chunk in result.get("chunks") or []:
                     existing_chunk = await session.scalar(
-                        select(KnowledgeChunk).where(KnowledgeChunk.chunk_id == chunk["chunk_id"])
+                        select(KnowledgeChunk).where(
+                            KnowledgeChunk.tenant_id == tenant_id,
+                            KnowledgeChunk.chunk_id == chunk["chunk_id"],
+                        )
                     )
                     if not existing_chunk:
                         session.add(KnowledgeChunk(
+                            tenant_id=tenant_id,
                             chunk_id=chunk["chunk_id"],
                             document_id=chunk["document_id"],
                             title=chunk["title"],
@@ -642,10 +650,14 @@ async def persist_ingestion_result(result: dict[str, Any]) -> None:
                         ))
             if job:
                 existing_job = await session.scalar(
-                    select(KnowledgeIngestionJob).where(KnowledgeIngestionJob.job_id == job["job_id"])
+                    select(KnowledgeIngestionJob).where(
+                        KnowledgeIngestionJob.tenant_id == tenant_id,
+                        KnowledgeIngestionJob.job_id == job["job_id"],
+                    )
                 )
                 if not existing_job:
                     session.add(KnowledgeIngestionJob(
+                        tenant_id=tenant_id,
                         job_id=job["job_id"],
                         asset_id=job.get("asset_id") or asset.get("asset_id") or "",
                         document_id=job.get("document_id") or document.get("document_id") or "",
@@ -666,6 +678,7 @@ async def create_extraction_job(
     model_name: str = "mock-chat",
     owner_user_id: str = "demo-user",
     permission_scope: str = "enterprise",
+    tenant_id: int = 1,
 ) -> dict[str, Any]:
     source_path = save_original_asset(file_name, content)
     source_type, markdown, metadata = parse_to_markdown_with_metadata(file_name, content)
@@ -734,17 +747,22 @@ async def create_extraction_job(
         "created_at": _now(),
         "updated_at": _now(),
         "committed_at": None,
+        "tenant_id": tenant_id,
     }
     EXTRACTION_JOBS[extraction_job_id] = job
-    await persist_extraction_job(job)
+    await persist_extraction_job(job, tenant_id=tenant_id)
     return {"job": job, "document": document, "chunks": chunks}
 
 
-async def persist_extraction_job(job: dict[str, Any]) -> None:
+async def persist_extraction_job(job: dict[str, Any], tenant_id: int | None = None) -> None:
+    tenant_id = int(tenant_id or job.get("tenant_id") or 1)
     try:
         async with db_session() as session:
             existing = await session.scalar(
-                select(KnowledgeExtractionResult).where(KnowledgeExtractionResult.job_id == job["job_id"])
+                select(KnowledgeExtractionResult).where(
+                    KnowledgeExtractionResult.tenant_id == tenant_id,
+                    KnowledgeExtractionResult.job_id == job["job_id"],
+                )
             )
             if existing:
                 existing.status = job["status"]
@@ -754,6 +772,7 @@ async def persist_extraction_job(job: dict[str, Any]) -> None:
                 existing.committed_at = datetime.fromisoformat(job["committed_at"]) if job.get("committed_at") else None
             else:
                 session.add(KnowledgeExtractionResult(
+                    tenant_id=tenant_id,
                     job_id=job["job_id"],
                     document_id=job["document_id"],
                     domain=job["domain"],
@@ -770,13 +789,16 @@ async def persist_extraction_job(job: dict[str, Any]) -> None:
         logger.warning("Knowledge extraction persistence skipped: %s", exc)
 
 
-async def get_extraction_job(job_id: str) -> dict[str, Any] | None:
-    if job_id in EXTRACTION_JOBS:
+async def get_extraction_job(job_id: str, tenant_id: int = 1) -> dict[str, Any] | None:
+    if job_id in EXTRACTION_JOBS and int(EXTRACTION_JOBS[job_id].get("tenant_id") or tenant_id) == tenant_id:
         return EXTRACTION_JOBS[job_id]
     try:
         async with db_session() as session:
             row = await session.scalar(
-                select(KnowledgeExtractionResult).where(KnowledgeExtractionResult.job_id == job_id)
+                select(KnowledgeExtractionResult).where(
+                    KnowledgeExtractionResult.tenant_id == tenant_id,
+                    KnowledgeExtractionResult.job_id == job_id,
+                )
             )
             if not row:
                 return None
@@ -793,6 +815,7 @@ async def get_extraction_job(job_id: str) -> dict[str, Any] | None:
                 "created_at": row.created_at.isoformat() if row.created_at else None,
                 "updated_at": row.updated_at.isoformat() if row.updated_at else None,
                 "committed_at": row.committed_at.isoformat() if row.committed_at else None,
+                "tenant_id": row.tenant_id,
             }
             EXTRACTION_JOBS[job_id] = job
             return job
@@ -801,8 +824,8 @@ async def get_extraction_job(job_id: str) -> dict[str, Any] | None:
         return None
 
 
-async def approve_extraction_job(job_id: str, approved_result: dict[str, Any] | None = None) -> dict[str, Any] | None:
-    job = await get_extraction_job(job_id)
+async def approve_extraction_job(job_id: str, approved_result: dict[str, Any] | None = None, tenant_id: int = 1) -> dict[str, Any] | None:
+    job = await get_extraction_job(job_id, tenant_id=tenant_id)
     if not job:
         return None
     result = approved_result or job["result"]
@@ -814,12 +837,12 @@ async def approve_extraction_job(job_id: str, approved_result: dict[str, Any] | 
         "updated_at": _now(),
     })
     EXTRACTION_JOBS[job_id] = job
-    await persist_extraction_job(job)
+    await persist_extraction_job(job, tenant_id=tenant_id)
     return job
 
 
-async def commit_extraction_to_graph(job_id: str) -> dict[str, Any] | None:
-    job = await get_extraction_job(job_id)
+async def commit_extraction_to_graph(job_id: str, tenant_id: int = 1) -> dict[str, Any] | None:
+    job = await get_extraction_job(job_id, tenant_id=tenant_id)
     if not job:
         return None
     if job["quality_report"].get("blocking"):
@@ -877,6 +900,7 @@ async def commit_extraction_to_graph(job_id: str) -> dict[str, Any] | None:
         async with db_session() as session:
             for entity in result.get("entities", []):
                 session.add(KnowledgeObjectLink(
+                    tenant_id=tenant_id,
                     document_id=job["document_id"],
                     job_id=job_id,
                     object_type=entity.get("entity_type") or "KnowledgeEntity",
@@ -897,7 +921,7 @@ async def commit_extraction_to_graph(job_id: str) -> dict[str, Any] | None:
         committed["relations"] = len(result.get("relations", []))
     job.update({"status": "committed", "committed_at": _now(), "updated_at": _now()})
     EXTRACTION_JOBS[job_id] = job
-    await persist_extraction_job(job)
+    await persist_extraction_job(job, tenant_id=tenant_id)
     return {"job": job, "commit": committed}
 
 

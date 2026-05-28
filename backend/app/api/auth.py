@@ -380,7 +380,12 @@ async def get_me(user: dict = Depends(get_current_user), db: AsyncSession = Depe
             payload["org_unit_ids"] = [int(item[0]) for item in org_rows.fetchall()]
             return payload
     except Exception as exc:
+        if settings.IS_PRODUCTION:
+            raise HTTPException(503, "Authentication database unavailable") from exc
         logger.debug("/me DB lookup failed, using mock: %s", exc)
+
+    if settings.IS_PRODUCTION:
+        raise HTTPException(401, "User not found")
 
     for mock_user in _MOCK_USERS:
         if mock_user["username"] == username:
@@ -432,7 +437,13 @@ async def accept_invite(
     from app.models.relational import Role, Tenant, TenantInvite, User, UserRole
 
     invite = await db.scalar(select(TenantInvite).where(TenantInvite.token_hash == hash_token(body.token)))
-    if not invite or invite.accepted_at is not None or invite.expires_at < datetime.utcnow():
+    if (
+        not invite
+        or invite.accepted_at is not None
+        or getattr(invite, "revoked_at", None) is not None
+        or getattr(invite, "replaced_by_invite_id", None) is not None
+        or invite.expires_at < datetime.utcnow()
+    ):
         raise HTTPException(400, "Invalid or expired invite")
     tenant = await db.get(Tenant, invite.tenant_id)
     if not tenant or tenant.status != "active":

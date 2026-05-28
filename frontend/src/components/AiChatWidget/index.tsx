@@ -12,6 +12,7 @@ import {
 import { useLocation } from 'react-router-dom';
 import {
   closeAgentConversation,
+  confirmAgentRun,
   createAgentConversation,
   listAgentConversationMessages,
   listAgentConversations,
@@ -34,14 +35,27 @@ interface MockSkillAction {
   nextSteps: string[];
 }
 
+interface AgentProcessStep {
+  id: string;
+  label: string;
+  status: string;
+  detail?: string;
+}
+
 interface ChatMessage {
   id: string;
   role: ChatRole;
   content: string;
+  fullContent?: string;
+  typing?: boolean;
   createdAt: string;
   actions?: MockSkillAction[];
+  steps?: AgentProcessStep[];
   source?: string;
   contextSources?: Record<string, number | boolean | string>;
+  runId?: string;
+  requiresConfirmation?: boolean;
+  confirmationPayload?: Record<string, unknown>;
 }
 
 interface AgentSession {
@@ -106,7 +120,9 @@ interface AgentChatResponse {
   actions?: AgentSkillAction[];
   evidence?: Array<Record<string, unknown>>;
   mode?: string;
+  run_id?: string;
   requires_confirmation?: boolean;
+  confirmation_payload?: Record<string, unknown>;
   steps?: Array<Record<string, unknown>>;
   conversation?: AgentConversationPayload;
   user_message?: AgentMessagePayload;
@@ -120,10 +136,7 @@ function getClientContextNeed(message: string, hasKnowledgeContext: boolean): st
   const normalized = message.trim().toLowerCase();
   if (!normalized) return 'none';
   if (hasKnowledgeContext || /文档|sop|知识|证据|这篇|当前文档|抽取|发布清单/.test(normalized)) return 'knowledge_rag';
-  if (/表单|字段|记录|这条|这张表|列表|数据|指标|图表|分析|异常|风险|供应商|物料|工单|设备|质量|capa|spc|oee/.test(normalized)) return 'business_query';
-  if (/当前页|这个页面|这里|配置|菜单|权限|页面/.test(normalized)) return 'ui_page';
-  if (/草稿|生成.*建议|创建|发起|提交|保存|发布/.test(normalized)) return 'draft_action';
-  return 'none';
+  return 'auto';
 }
 
 function buildMessageContext(options: {
@@ -143,7 +156,6 @@ function buildMessageContext(options: {
     conversation_id: options.sessionId,
     conversationId: options.sessionId,
   };
-  if (contextNeed === 'none') return base;
   return {
     ...base,
     route: options.route,
@@ -286,6 +298,63 @@ function mapServerMessage(message: AgentMessagePayload): ChatMessage {
   };
 }
 
+function stringifyStepValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '';
+  if (Array.isArray(value)) return value.map((item) => String(item)).join(', ');
+  if (typeof value === 'object') return Object.values(value as Record<string, unknown>).filter(Boolean).join(' / ');
+  return String(value);
+}
+
+function getAgentStepLabel(step: Record<string, unknown>): string {
+  const id = String(step.id || '');
+  const type = String(step.type || '');
+  if (id === 'step-identity') return '识别当前用户';
+  if (id === 'step-ai-permission') return '检查 AI 授权';
+  if (id === 'step-context-intent') return '判断上下文需求';
+  if (id === 'step-context-builder') return '组装对话上下文';
+  if (id === 'step-planner') return '规划任务路径';
+  if (id === 'step-knowledge-search') return '检索知识与证据';
+  if (id === 'step-skill-selection') return '选择可用工具';
+  if (id === 'step-confirmation') return '等待人工确认';
+  if (id.startsWith('step-skill-policy')) return '复核工具权限';
+  if (id === 'step-answer') return '生成回答';
+  if (type === 'tool') return `调用工具 ${stringifyStepValue(step.tool) || ''}`.trim();
+  if (type === 'policy') return '执行策略检查';
+  if (type === 'plan') return '规划下一步';
+  if (type === 'respond') return '生成回答';
+  return '处理步骤';
+}
+
+function getAgentStepDetail(step: Record<string, unknown>): string | undefined {
+  const parts = [
+    stringifyStepValue(step.intent),
+    stringifyStepValue(step.skill),
+    stringifyStepValue(step.capability),
+    stringifyStepValue(step.matched_role),
+    stringifyStepValue(step.tool),
+    step.result_count !== undefined ? `结果 ${step.result_count}` : '',
+    step.semantic_objects !== undefined ? `对象 ${step.semantic_objects}` : '',
+    step.semantic_records !== undefined ? `记录 ${step.semantic_records}` : '',
+    stringifyStepValue(step.model),
+    stringifyStepValue(step.summary),
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : undefined;
+}
+
+function mapAgentSteps(steps?: Array<Record<string, unknown>>): AgentProcessStep[] | undefined {
+  const visible = (steps || []).filter((step) => {
+    const id = String(step.id || '');
+    return id !== 'step-intent';
+  });
+  if (!visible.length) return undefined;
+  return visible.map((step, index) => ({
+    id: String(step.id || `step-${index}`),
+    label: getAgentStepLabel(step),
+    status: String(step.status || 'completed'),
+    detail: getAgentStepDetail(step),
+  }));
+}
+
 function mapServerConversation(
   conversation: AgentConversationPayload,
   contextKey: string,
@@ -362,6 +431,15 @@ function getContextSources(payload: AgentChatResponse): Record<string, number | 
     : undefined;
 }
 
+function getConfirmationToken(payload?: Record<string, unknown>): string | undefined {
+  const token = payload?.confirmation_token;
+  return typeof token === 'string' ? token : undefined;
+}
+
+function isStepComplete(status: string): boolean {
+  return ['completed', 'skipped', 'waiting_confirmation'].includes(status);
+}
+
 function getStatusLabel(status: MockSkillStatus) {
   return status === 'draft_created' ? '草稿已生成' : '待复核';
 }
@@ -381,6 +459,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   const [activeSessionId, setActiveSessionId] = useState<string>();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [confirmingRunId, setConfirmingRunId] = useState<string>();
   const bodyRef = useRef<HTMLDivElement>(null);
   const promptScrollerRef = useRef<HTMLDivElement>(null);
   const promptDragRef = useRef<{ pointerId: number; startX: number; scrollLeft: number; dragging: boolean } | null>(null);
@@ -481,6 +560,31 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     )));
   };
 
+  useEffect(() => {
+    if (!activeSession?.id) return;
+    const typingMessage = messages.find((message) => message.role === 'assistant' && message.typing && message.fullContent !== undefined);
+    if (!typingMessage) return;
+    const fullContent = typingMessage.fullContent || '';
+    if (typingMessage.content.length >= fullContent.length) {
+      setSessionMessages(activeSession.id, messages.map((message) => (
+        message.id === typingMessage.id
+          ? { ...message, content: fullContent, typing: false, fullContent: undefined }
+          : message
+      )));
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const nextSize = fullContent.charCodeAt(typingMessage.content.length) > 255 ? 1 : 2;
+      setSessionMessages(activeSession.id, messages.map((message) => (
+        message.id === typingMessage.id
+          ? { ...message, content: fullContent.slice(0, message.content.length + nextSize) }
+          : message
+      )));
+      bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' });
+    }, 26);
+    return () => window.clearTimeout(timer);
+  }, [activeSession?.id, messages]);
+
   const startNewSession = async () => {
     const title = `窗口 ${sessions.length + 1}`;
     const contextPayload = {
@@ -562,13 +666,35 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
         actions: mapAgentActions(payload.actions),
       }, getAgentResponseSource(payload));
       assistantMessage.contextSources = getContextSources(payload);
+      assistantMessage.steps = mapAgentSteps(payload.steps);
+      assistantMessage.runId = payload.run_id;
+      assistantMessage.requiresConfirmation = Boolean(payload.requires_confirmation);
+      assistantMessage.confirmationPayload = payload.confirmation_payload;
       const persistedAssistantMessage = payload.assistant_message
-        ? { ...mapServerMessage(payload.assistant_message), actions: assistantMessage.actions, source: assistantMessage.source, contextSources: assistantMessage.contextSources }
+        ? {
+          ...mapServerMessage(payload.assistant_message),
+          content: '',
+          fullContent: payload.answer || payload.assistant_message.content || '',
+          typing: true,
+          actions: assistantMessage.actions,
+          steps: assistantMessage.steps,
+          source: assistantMessage.source,
+          contextSources: assistantMessage.contextSources,
+          runId: assistantMessage.runId,
+          requiresConfirmation: assistantMessage.requiresConfirmation,
+          confirmationPayload: assistantMessage.confirmationPayload,
+        }
         : undefined;
+      const animatedAssistantMessage = persistedAssistantMessage || {
+        ...assistantMessage,
+        content: '',
+        fullContent: assistantMessage.content,
+        typing: true,
+      };
       setSessionMessages(sessionId, [
         ...messages,
         persistedUserMessage,
-        persistedAssistantMessage || assistantMessage,
+        animatedAssistantMessage,
       ]);
       if (payload.conversation) {
         const updated = mapServerConversation(payload.conversation, contextKey, intro);
@@ -582,6 +708,50 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
       setSessionMessages(sessionId, [...pending, createAssistantMessage(generateUnavailableReply(), '无法连接后端 AI 服务')]);
     } finally {
       setSending(false);
+    }
+  };
+
+  const confirmAgentAction = async (message: ChatMessage) => {
+    const runId = message.runId;
+    const token = getConfirmationToken(message.confirmationPayload);
+    if (!runId || !token || !activeSession) return;
+    setConfirmingRunId(runId);
+    try {
+      const response = await confirmAgentRun(runId, {
+        confirmation_token: token,
+        confirmed: true,
+      });
+      const run = (response.data?.data || {}) as Record<string, unknown>;
+      const results = Array.isArray(run.tool_results) ? run.tool_results : [];
+      const completed = results.find((item) => (
+        item && typeof item === 'object' && (item as Record<string, unknown>).status === 'completed'
+      )) as Record<string, unknown> | undefined;
+      const result = completed?.result && typeof completed.result === 'object'
+        ? completed.result as Record<string, unknown>
+        : {};
+      const routePath = typeof result.route_path === 'string' ? result.route_path : '';
+      const nextMessages = messages.map((item) => (
+        item.id === message.id
+          ? {
+            ...item,
+            content: routePath
+              ? `${item.content}\n\n已确认执行，表单已创建：${routePath}`
+              : `${item.content}\n\n已确认执行。`,
+            requiresConfirmation: false,
+            source: 'backend Agent: confirmed execution',
+          }
+          : item
+      ));
+      setSessionMessages(activeSession.id, nextMessages);
+    } catch {
+      const nextMessages = messages.map((item) => (
+        item.id === message.id
+          ? { ...item, content: `${item.content}\n\n确认执行失败，请检查权限或稍后重试。` }
+          : item
+      ));
+      setSessionMessages(activeSession.id, nextMessages);
+    } finally {
+      setConfirmingRunId(undefined);
     }
   };
 
@@ -634,7 +804,23 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
             {messages.map((message) => (
               <div className={`ai-chat-message ${message.role}`} key={message.id}>
                 <div className="ai-chat-bubble">
-                  <Typography.Text>{message.content}</Typography.Text>
+                  {message.role === 'assistant' && message.steps?.length ? (
+                    <div className="ai-agent-process">
+                      {message.steps.map((step) => (
+                        <div className={`ai-agent-process-step ${isStepComplete(step.status) ? 'done' : 'active'}`} key={step.id}>
+                          <span className="ai-agent-process-dot" />
+                          <div>
+                            <span>{step.label}</span>
+                            {step.detail ? <small>{step.detail}</small> : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  <Typography.Text>
+                    {message.content}
+                    {message.typing ? <span className="ai-typing-cursor" /> : null}
+                  </Typography.Text>
                   {message.role === 'assistant' && message.source ? (
                     <span className="ai-chat-source">{message.source}</span>
                   ) : null}
@@ -682,6 +868,17 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                               ))}
                             </ol>
                           </div>
+                          {message.requiresConfirmation && message.runId ? (
+                            <Button
+                              type="primary"
+                              size="small"
+                              icon={<CheckCircleOutlined />}
+                              loading={confirmingRunId === message.runId}
+                              onClick={() => { void confirmAgentAction(message); }}
+                            >
+                              确认执行
+                            </Button>
+                          ) : null}
                         </article>
                       ))}
                     </div>
@@ -693,7 +890,16 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
             {sending ? (
               <div className="ai-chat-message assistant">
                 <div className="ai-chat-bubble">
-                  <Typography.Text type="secondary">正在连接 AI Agent...</Typography.Text>
+                  <div className="ai-agent-process">
+                    <div className="ai-agent-process-step active">
+                      <span className="ai-agent-process-dot" />
+                      <div>
+                        <span>连接 AI Agent</span>
+                        <small>正在提交问题并等待后端返回可见步骤</small>
+                      </div>
+                    </div>
+                  </div>
+                  <Typography.Text type="secondary">正在处理...</Typography.Text>
                 </div>
                 <span>{nowText()}</span>
               </div>

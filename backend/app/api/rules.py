@@ -10,10 +10,11 @@ import json
 import re
 from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from app.api.deps import current_tenant_id, get_current_user
 from app.config import settings
 from app.core.logging import get_logger
 
@@ -165,6 +166,7 @@ def _rule_to_dict(r) -> dict:
     """Convert a Rule ORM object to a dict."""
     return {
         "id": r.id,
+        "tenant_id": r.tenant_id,
         "model_id": r.model_id,
         "name": r.name,
         "rule_type": r.rule_type,
@@ -180,11 +182,13 @@ def _rule_to_dict(r) -> dict:
 # ── CRUD endpoints ────────────────────────────────────────
 
 @router.get("/")
-async def list_rules(model_id: Optional[int] = Query(None)):
+async def list_rules(model_id: Optional[int] = Query(None), user: dict = Depends(get_current_user)):
     """List rules, optionally filtered by model_id."""
+    tenant_id = current_tenant_id(user)
+
     async def _query(db):
         from app.models.relational import Rule
-        stmt = select(Rule).order_by(Rule.priority.desc(), Rule.id)
+        stmt = select(Rule).where(Rule.tenant_id == tenant_id).order_by(Rule.priority.desc(), Rule.id)
         if model_id is not None:
             stmt = stmt.where(Rule.model_id == model_id)
         result = await db.execute(stmt)
@@ -196,11 +200,11 @@ async def list_rules(model_id: Optional[int] = Query(None)):
         _production_db_unavailable()
     if not _use_mock_when_empty(result):
         return result
-    return {"data": _mock_rules(model_id=model_id)}
+    return {"data": _mock_rules(model_id=model_id), "source": "fallback"}
 
 
 @router.post("/")
-async def create_rule(body: RuleCreate):
+async def create_rule(body: RuleCreate, user: dict = Depends(get_current_user)):
     """Create a new validation rule."""
     # Validate condition JSON if provided
     if body.condition:
@@ -217,9 +221,12 @@ async def create_rule(body: RuleCreate):
         except json.JSONDecodeError as exc:
             raise HTTPException(400, f"Invalid action JSON: {exc}")
 
+    tenant_id = current_tenant_id(user)
+
     async def _query(db):
         from app.models.relational import Rule
         r = Rule(
+            tenant_id=tenant_id,
             model_id=body.model_id, name=body.name, rule_type=body.rule_type,
             field_name=body.field_name, condition=body.condition,
             action=body.action, message=body.message,
@@ -240,6 +247,7 @@ async def create_rule(body: RuleCreate):
     _next_mock_id += 1
     mock_rule = {
         "id": new_id, "model_id": body.model_id, "name": body.name,
+        "tenant_id": tenant_id, "source": "fallback",
         "rule_type": body.rule_type, "field_name": body.field_name,
         "condition": body.condition, "action": body.action,
         "message": body.message, "is_active": body.is_active,
@@ -250,7 +258,7 @@ async def create_rule(body: RuleCreate):
 
 
 @router.put("/{rule_id}")
-async def update_rule(rule_id: int, body: RuleUpdate):
+async def update_rule(rule_id: int, body: RuleUpdate, user: dict = Depends(get_current_user)):
     """Update an existing rule."""
     # Validate condition JSON if provided
     if body.condition is not None:
@@ -267,11 +275,13 @@ async def update_rule(rule_id: int, body: RuleUpdate):
         except json.JSONDecodeError as exc:
             raise HTTPException(400, f"Invalid action JSON: {exc}")
 
+    tenant_id = current_tenant_id(user)
+
     async def _query(db):
         from app.models.relational import Rule
         r = await db.get(Rule, rule_id)
-        if not r:
-            return None
+        if not r or r.tenant_id != tenant_id:
+            raise HTTPException(404, "Rule not found")
         updates = body.model_dump(exclude_unset=True)
         for key, val in updates.items():
             setattr(r, key, val)
@@ -293,13 +303,15 @@ async def update_rule(rule_id: int, body: RuleUpdate):
 
 
 @router.delete("/{rule_id}")
-async def delete_rule(rule_id: int):
+async def delete_rule(rule_id: int, user: dict = Depends(get_current_user)):
     """Delete a rule."""
+    tenant_id = current_tenant_id(user)
+
     async def _query(db):
         from app.models.relational import Rule
         r = await db.get(Rule, rule_id)
-        if not r:
-            return None
+        if not r or r.tenant_id != tenant_id:
+            raise HTTPException(404, "Rule not found")
         await db.delete(r)
         await db.commit()
         return {"ok": True}
@@ -390,7 +402,7 @@ def _evaluate_rule(rule: dict, data: dict) -> Optional[str]:
     return None
 
 
-async def _get_rules_for_model(model_name: str) -> list[dict]:
+async def _get_rules_for_model(model_name: str, tenant_id: int = 1) -> list[dict]:
     """Fetch active validation rules for a model by name.
 
     Looks up model_id from model_name, then fetches active rules.
@@ -406,7 +418,7 @@ async def _get_rules_for_model(model_name: str) -> list[dict]:
             return []
         result = await db.execute(
             select(Rule)
-            .where(Rule.model_id == m.id, Rule.is_active == True, Rule.rule_type == "validation")
+            .where(Rule.tenant_id == tenant_id, Rule.model_id == m.id, Rule.is_active == True, Rule.rule_type == "validation")
             .order_by(Rule.priority.desc(), Rule.id)
         )
         rules = result.scalars().all()
@@ -421,13 +433,13 @@ async def _get_rules_for_model(model_name: str) -> list[dict]:
 
 
 @router.post("/validate")
-async def validate_data(body: ValidateRequest):
+async def validate_data(body: ValidateRequest, user: dict = Depends(get_current_user)):
     """Validate data against all active rules for a model.
 
     Body: {"model_name": "equipment", "data": {"name": "CNC-01", "health_score": 95}}
     Returns: {"valid": true/false, "errors": [{"field": "...", "message": "..."}]}
     """
-    rules = await _get_rules_for_model(body.model_name)
+    rules = await _get_rules_for_model(body.model_name, current_tenant_id(user))
     errors: list[dict] = []
 
     for rule in rules:
@@ -493,7 +505,7 @@ def _evaluate_condition(condition: dict, record: dict) -> bool:
     return False
 
 
-async def _get_triggers_for_model(model_name: str) -> list[dict]:
+async def _get_triggers_for_model(model_name: str, tenant_id: int = 1) -> list[dict]:
     """Fetch active trigger rules for a model by name.
 
     Looks up model_id from model_name, then fetches active trigger-type rules.
@@ -508,7 +520,7 @@ async def _get_triggers_for_model(model_name: str) -> list[dict]:
             return []
         result = await db.execute(
             select(Rule)
-            .where(Rule.model_id == m.id, Rule.is_active == True, Rule.rule_type == "trigger")
+            .where(Rule.tenant_id == tenant_id, Rule.model_id == m.id, Rule.is_active == True, Rule.rule_type == "trigger")
             .order_by(Rule.priority.desc(), Rule.id)
         )
         rules = result.scalars().all()
@@ -657,22 +669,23 @@ async def _execute_trigger_action(action: dict, record: dict) -> dict:
 # ── Trigger API endpoints ─────────────────────────────────
 
 @router.get("/triggers")
-async def list_triggers(model_name: str = Query(..., description="Model name to list triggers for")):
+async def list_triggers(model_name: str = Query(..., description="Model name to list triggers for"), user: dict = Depends(get_current_user)):
     """List active triggers for a given model."""
-    triggers = await _get_triggers_for_model(model_name)
+    triggers = await _get_triggers_for_model(model_name, current_tenant_id(user))
     return {"data": triggers}
 
 
 @router.get("/rules/triggers", include_in_schema=False)
 async def list_triggers_standalone_compat(
     model_name: str = Query(..., description="Model name to list triggers for"),
+    user: dict = Depends(get_current_user),
 ):
     """Compatibility path for tests that mount this router without its app prefix."""
-    return await list_triggers(model_name=model_name)
+    return await list_triggers(model_name=model_name, user=user)
 
 
 @router.post("/evaluate-triggers")
-async def evaluate_triggers(body: EvaluateTriggersRequest):
+async def evaluate_triggers(body: EvaluateTriggersRequest, user: dict = Depends(get_current_user)):
     """Evaluate triggers against a data change event.
 
     For each active trigger whose condition matches the record, execute the
@@ -686,7 +699,7 @@ async def evaluate_triggers(body: EvaluateTriggersRequest):
     }
     Returns: {"triggered": [{"rule_name": "...", "action_type": "...", "result": {...}}]}
     """
-    triggers = await _get_triggers_for_model(body.model_name)
+    triggers = await _get_triggers_for_model(body.model_name, current_tenant_id(user))
     triggered: list[dict] = []
 
     for rule in triggers:
@@ -723,9 +736,9 @@ async def evaluate_triggers(body: EvaluateTriggersRequest):
 
 
 @router.post("/rules/evaluate-triggers", include_in_schema=False)
-async def evaluate_triggers_standalone_compat(body: EvaluateTriggersRequest):
+async def evaluate_triggers_standalone_compat(body: EvaluateTriggersRequest, user: dict = Depends(get_current_user)):
     """Compatibility path for tests that mount this router without its app prefix."""
-    return await evaluate_triggers(body)
+    return await evaluate_triggers(body, user=user)
 
 
 async def _evaluate_triggers_sync(
@@ -740,11 +753,11 @@ async def _evaluate_triggers_sync(
     block the main data operation.
     """
     try:
-        await evaluate_triggers(EvaluateTriggersRequest(
-            model_name=model_name,
-            action=action,
-            record=record,
-            old_record=old_record,
-        ))
+        triggers = await _get_triggers_for_model(model_name, tenant_id=int(record.get("tenant_id") or 1))
+        for rule in triggers:
+            cond = _parse_condition(rule.get("condition"))
+            action_raw = _parse_condition(rule.get("action"))
+            if cond and action_raw and _evaluate_condition(cond, record):
+                await _execute_trigger_action(action_raw, record)
     except Exception as exc:
         logger.warning("Trigger evaluation failed (non-blocking): %s", exc)

@@ -196,232 +196,6 @@ const analyticsModeOptions = [
   { label: '驾驶舱', value: 'cockpit' },
 ];
 
-const fallbackRoles: RoleRecord[] = [
-  { id: 1, name: 'admin', label: '平台管理员' },
-  { id: 2, name: 'production_manager', label: '生产经理' },
-  { id: 3, name: 'quality_engineer', label: '质量工程师' },
-];
-
-const fallbackApplications: AppRecord[] = [
-  {
-    id: 1,
-    name: '生产态势',
-    code: 'production-situation',
-    description: '生产运行、OEE、产线状态和告警工作包。',
-    icon: 'DashboardOutlined',
-    default_route: '/program/production-overview',
-    sort_order: 1,
-    status: 'published',
-    is_pinned: true,
-    roles: [fallbackRoles[0], fallbackRoles[1]],
-  },
-  {
-    id: 2,
-    name: '预测性维护',
-    code: 'predictive-maintenance',
-    description: '设备健康、故障预测和维修工单工作包。',
-    icon: 'ToolOutlined',
-    default_route: '/program/device-health-dashboard',
-    sort_order: 2,
-    status: 'published',
-    is_pinned: true,
-    roles: [fallbackRoles[0], fallbackRoles[1]],
-  },
-  {
-    id: 3,
-    name: '质量分析',
-    code: 'quality-analytics',
-    description: '质量事件、SPC、缺陷和 CAPA 工作包。',
-    icon: 'SafetyCertificateOutlined',
-    default_route: '/program/quality-overview',
-    sort_order: 3,
-    status: 'published',
-    is_pinned: false,
-    roles: [fallbackRoles[0], fallbackRoles[2]],
-  },
-  {
-    id: 4,
-    name: '供应链风险',
-    code: 'supply-chain-risk',
-    description: '供应商、物料、交付和风险复核工作包。',
-    icon: 'ShopOutlined',
-    default_route: '/program/supply-overview',
-    sort_order: 4,
-    status: 'published',
-    is_pinned: false,
-    roles: [fallbackRoles[0], fallbackRoles[1]],
-  },
-];
-
-const fallbackForms: FormRecord[] = [
-  { id: "device-health", name: "\u4e1a\u52a1\u8868\u5355 1", code: "device-health", category: "interaction", mode: "detail_editor", structureLocked: true, entity: "Device", source: "equipment", status: "published", owner: "\u8bbe\u5907\u56e2\u961f", description: "\u7528\u4e8e\u4e1a\u52a1\u5f55\u5165\u548c\u8be6\u60c5\u7ef4\u62a4\u3002", fields: 8 },
-  { id: "device-health-dashboard", name: "\u8bbe\u5907\u5065\u5eb7\u770b\u677f", code: "device-health-dashboard", category: "analytics", mode: "metric_dashboard", structureLocked: true, entity: "DeviceHealthDashboard", source: "equipment_health_summary", status: "published", owner: "\u8bbe\u5907\u56e2\u961f", description: "\u7528\u4e8e\u8bbe\u5907\u5065\u5eb7\u5ea6\u3001\u98ce\u9669\u5206\u5e03\u548c\u4fdd\u517b\u5efa\u8bae\u7684\u770b\u677f\u5c55\u793a\u3002", fields: 8 },
-  { id: "fault-prediction", name: "\u5206\u6790\u62a5\u8868 1", code: "fault-prediction", category: "analytics", mode: "bi_report", structureLocked: true, entity: "Device", source: "equipment_health", status: "published", owner: "\u7b97\u6cd5\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u3001\u8d8b\u52bf\u548c\u62a5\u8868\u5206\u6790\u3002", fields: 10 },
-  { id: "failure-trend-analysis", name: "\u6545\u969c\u8d8b\u52bf\u5206\u6790", code: "failure-trend-analysis", category: "analytics", mode: "bi_report", structureLocked: true, entity: "FailureTrend", source: "maintenance_failures", status: "published", owner: "\u7ef4\u62a4\u56e2\u961f", description: "\u7528\u4e8e\u6545\u969c\u6b21\u6570\u3001\u4e3b\u8981\u7c7b\u578b\u548c\u8d8b\u52bf\u5206\u6790\u3002", fields: 9 },
-  { id: "maintenance-order", name: "\u6d41\u7a0b\u8868\u5355 1", code: "maintenance-order", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "WorkOrder", source: "work_orders", status: "published", owner: "\u7ef4\u62a4\u56e2\u961f", description: "\u7528\u4e8e\u5de5\u5355\u6d41\u8f6c\u548c\u4e1a\u52a1\u5904\u7406\u3002", fields: 12 },
-  { id: "alert-center", name: "\u4e1a\u52a1\u8868\u5355 2", code: "alert-center", category: "interaction", mode: "entry_form", structureLocked: true, entity: "Alert", source: "alerts", status: "published", owner: "\u5e73\u53f0\u56e2\u961f", description: "\u7528\u4e8e\u4e1a\u52a1\u5f55\u5165\u548c\u5904\u7406\u3002", fields: 7 },
-  { id: "supplier-risk", name: "\u6d41\u7a0b\u8868\u5355 2", code: "supplier-risk", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "Supplier", source: "suppliers", status: "published", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u98ce\u9669\u590d\u6838\u548c\u4e1a\u52a1\u6d41\u7a0b\u3002", fields: 9 },
-  { id: "quality-event", name: "\u6d41\u7a0b\u8868\u5355 3", code: "quality-event", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "QualityEvent", source: "defects", status: "draft", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u8d28\u91cf\u590d\u6838\u548c\u95ee\u9898\u6539\u8fdb\u3002", fields: 11 },
-];
-
-const supplementalForms: FormRecord[] = [
-  { id: "production-overview", name: "\u6307\u6807\u770b\u677f 1", code: "production-overview", category: "analytics", mode: "metric_dashboard", structureLocked: true, entity: "ProductionOverview", source: "dashboard_summary", status: "published", owner: "\u751f\u4ea7\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u76d1\u63a7\u548c\u770b\u677f\u5c55\u793a\u3002", fields: 10 },
-  { id: "oee-trend-report", name: "OEE \u8d8b\u52bf\u62a5\u8868", code: "oee-trend-report", category: "analytics", mode: "bi_report", structureLocked: true, entity: "OeeTrend", source: "oee_daily", status: "published", owner: "\u751f\u4ea7\u56e2\u961f", description: "\u7528\u4e8e OEE \u8d8b\u52bf\u3001\u8fbe\u6210\u7387\u548c\u4ea7\u7ebf\u5bf9\u6bd4\u5206\u6790\u3002", fields: 8 },
-  { id: "line-status", name: "\u5217\u8868\u5206\u6790 1", code: "line-status", category: "analytics", mode: "list_analysis", structureLocked: true, entity: "ProductionLine", source: "production_lines", status: "published", owner: "\u751f\u4ea7\u56e2\u961f", description: "\u7528\u4e8e\u5217\u8868\u67e5\u8be2\u548c\u7ef4\u5ea6\u5206\u6790\u3002", fields: 9 },
-  { id: "line-load-analysis", name: "\u4ea7\u7ebf\u8d1f\u8377\u5206\u6790", code: "line-load-analysis", category: "analytics", mode: "list_analysis", structureLocked: true, entity: "LineLoad", source: "line_load_snapshots", status: "published", owner: "\u751f\u4ea7\u56e2\u961f", description: "\u7528\u4e8e\u4ea7\u7ebf\u8d1f\u8377\u3001\u74f6\u9888\u548c\u73ed\u6b21\u5bf9\u6bd4\u3002", fields: 9 },
-  { id: "production-plan-entry", name: "\u751f\u4ea7\u8ba1\u5212\u586b\u62a5", code: "production-plan-entry", category: "interaction", mode: "entry_form", structureLocked: true, entity: "ProductionPlan", source: "production_plans", status: "published", owner: "\u751f\u4ea7\u56e2\u961f", description: "\u7528\u4e8e\u751f\u4ea7\u8ba1\u5212\u7684\u5f55\u5165\u3001\u8c03\u6574\u548c\u786e\u8ba4\u3002", fields: 11 },
-  { id: "quality-overview", name: "\u6307\u6807\u770b\u677f 2", code: "quality-overview", category: "analytics", mode: "metric_dashboard", structureLocked: true, entity: "QualityOverview", source: "quality_metrics", status: "published", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u76d1\u63a7\u548c\u770b\u677f\u5c55\u793a\u3002", fields: 8 },
-  { id: "inspection-batch", name: "\u4e1a\u52a1\u8868\u5355 3", code: "inspection-batch", category: "interaction", mode: "entry_form", structureLocked: true, entity: "Inspection", source: "inspections", status: "published", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u4e1a\u52a1\u5f55\u5165\u548c\u7ed3\u679c\u8ffd\u8e2a\u3002", fields: 12 },
-  { id: "defect-analysis", name: "\u5206\u6790\u62a5\u8868 2", code: "defect-analysis", category: "analytics", mode: "bi_report", structureLocked: true, entity: "Defect", source: "defects", status: "published", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u3001\u8d8b\u52bf\u548c\u62a5\u8868\u5206\u6790\u3002", fields: 11 },
-  { id: "defect-analysis-report", name: "\u7f3a\u9677\u5206\u6790\u62a5\u8868", code: "defect-analysis-report", category: "analytics", mode: "bi_report", structureLocked: true, entity: "DefectReport", source: "defect_reports", status: "published", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u7f3a\u9677 Pareto\u3001\u8d23\u4efb\u5de5\u4f4d\u548c\u6539\u5584\u6548\u679c\u5206\u6790\u3002", fields: 10 },
-  { id: "process-capability-dashboard", name: "\u8fc7\u7a0b\u80fd\u529b\u770b\u677f", code: "process-capability-dashboard", category: "analytics", mode: "metric_dashboard", structureLocked: true, entity: "ProcessCapability", source: "spc_capability", status: "published", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e CPK\u3001PPK\u3001\u8fc7\u7a0b\u7a33\u5b9a\u6027\u548c\u8d85\u9650\u5206\u6790\u3002", fields: 8 },
-  { id: "supply-overview", name: "\u6307\u6807\u770b\u677f 3", code: "supply-overview", category: "analytics", mode: "metric_dashboard", structureLocked: true, entity: "SupplyOverview", source: "supply_summary", status: "published", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u76d1\u63a7\u548c\u770b\u677f\u5c55\u793a\u3002", fields: 8 },
-  { id: "material-impact", name: "\u5206\u6790\u62a5\u8868 3", code: "material-impact", category: "analytics", mode: "bi_report", structureLocked: true, entity: "Material", source: "materials", status: "published", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u6307\u6807\u3001\u8d8b\u52bf\u548c\u62a5\u8868\u5206\u6790\u3002", fields: 10 },
-  { id: "material-impact-report", name: "\u7269\u6599\u5f71\u54cd\u62a5\u8868", code: "material-impact-report", category: "analytics", mode: "bi_report", structureLocked: true, entity: "MaterialImpactReport", source: "material_shortage_impacts", status: "published", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u7f3a\u6599\u5bf9\u4ea7\u7ebf\u3001\u5de5\u5355\u548c\u5ba2\u6237\u8ba2\u5355\u7684\u5f71\u54cd\u5206\u6790\u3002", fields: 10 },
-  { id: "supply-risk-dashboard", name: "\u4f9b\u5e94\u98ce\u9669\u770b\u677f", code: "supply-risk-dashboard", category: "analytics", mode: "metric_dashboard", structureLocked: true, entity: "SupplyRiskDashboard", source: "supply_risk_summary", status: "published", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u4f9b\u5e94\u98ce\u9669\u6307\u6807\u3001\u9ad8\u98ce\u9669\u54c1\u7c7b\u548c\u66ff\u4ee3\u65b9\u6848\u770b\u677f\u5c55\u793a\u3002", fields: 8 },
-  { id: "risk-review", name: "\u6d41\u7a0b\u8868\u5355 4", code: "risk-review", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "RiskReview", source: "risk_reviews", status: "draft", owner: "\u4f9b\u5e94\u94fe\u56e2\u961f", description: "\u7528\u4e8e\u98ce\u9669\u590d\u6838\u548c\u4e1a\u52a1\u6d41\u7a0b\u3002", fields: 9 },
-  { id: "customer-complaint", name: "\u6d41\u7a0b\u8868\u5355 5", code: "customer-complaint", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "CustomerComplaint", source: "customer_complaints", status: "draft", owner: "\u8d28\u91cf\u56e2\u961f", description: "\u7528\u4e8e\u5ba2\u6237\u6295\u8bc9\u548c\u95ee\u9898\u6539\u8fdb\u6d41\u7a0b\u3002", fields: 13 },
-  { id: "change-request", name: "\u6d41\u7a0b\u8868\u5355 6", code: "change-request", category: "interaction", mode: "workflow_form", structureLocked: true, entity: "EngineeringChange", source: "engineering_changes", status: "draft", owner: "\u5de5\u7a0b\u56e2\u961f", description: "\u7528\u4e8e\u53d8\u66f4\u7533\u8bf7\u548c\u5ba1\u6279\u6d41\u7a0b\u3002", fields: 14 },
-];
-
-const initialConfigs: AppFormConfig[] = [
-  { appId: 2, formId: 'device-health', alias: '设备健康总览', enabled: true, defaultView: '列表 + 详情', dataScope: 'health_score < 95', allowCreate: false, allowEdit: true, allowExport: true },
-  { appId: 2, formId: 'device-health-dashboard', alias: '设备健康看板', enabled: true, defaultView: '健康 KPI + 风险排行', dataScope: 'current_factory', allowCreate: false, allowEdit: false, allowExport: true },
-  { appId: 2, formId: 'fault-prediction', alias: '故障预测', enabled: true, defaultView: '风险看板', dataScope: 'risk_level >= medium', allowCreate: false, allowEdit: false, allowExport: true },
-  { appId: 2, formId: 'maintenance-order', alias: '工单管理', enabled: true, defaultView: '列表', dataScope: 'current_app', allowCreate: true, allowEdit: true, allowExport: true },
-  { appId: 2, formId: 'alert-center', alias: '告警中心', enabled: true, defaultView: '列表', dataScope: 'source = maintenance', allowCreate: false, allowEdit: true, allowExport: false },
-  { appId: 4, formId: 'supplier-risk', alias: '供应商风险', enabled: true, defaultView: '风险看板', dataScope: 'risk_score > 60', allowCreate: true, allowEdit: true, allowExport: true },
-];
-
-const supplementalConfigs: AppFormConfig[] = [
-  { appId: 1, formId: 'production-overview', alias: '生产总览表单', enabled: true, defaultView: 'KPI 看板', dataScope: 'factory = current', allowCreate: false, allowEdit: false, allowExport: true },
-  { appId: 1, formId: 'line-status', alias: '产线状态表单', enabled: true, defaultView: '看板 + 趋势', dataScope: 'line.status != offline', allowCreate: false, allowEdit: true, allowExport: true },
-  { appId: 1, formId: 'device-health', alias: '设备运行表单', enabled: true, defaultView: '列表 + 详情', dataScope: 'current_factory', allowCreate: false, allowEdit: false, allowExport: true },
-  { appId: 1, formId: 'alert-center', alias: '活动告警表单', enabled: true, defaultView: '告警列表', dataScope: 'source = production', allowCreate: false, allowEdit: true, allowExport: false },
-  { appId: 3, formId: 'quality-overview', alias: '质量总览表单', enabled: true, defaultView: '质量看板', dataScope: 'inspection_date >= this_month', allowCreate: false, allowEdit: false, allowExport: true },
-  { appId: 3, formId: 'inspection-batch', alias: '检验批次表单', enabled: true, defaultView: '批次列表', dataScope: 'current_app', allowCreate: true, allowEdit: true, allowExport: true },
-  { appId: 3, formId: 'defect-analysis', alias: '缺陷分析表单', enabled: true, defaultView: '图表 + 明细', dataScope: 'severity >= minor', allowCreate: true, allowEdit: true, allowExport: true },
-  { appId: 3, formId: 'quality-event', alias: 'CAPA 跟踪表单', enabled: true, defaultView: '流程列表', dataScope: 'status != closed', allowCreate: true, allowEdit: true, allowExport: true },
-  { appId: 4, formId: 'supply-overview', alias: '供应链总览表单', enabled: true, defaultView: '风险看板', dataScope: 'current_app', allowCreate: false, allowEdit: false, allowExport: true },
-  { appId: 4, formId: 'material-impact', alias: '物料影响表单', enabled: true, defaultView: '图谱 + 列表', dataScope: 'shortage_risk > low', allowCreate: false, allowEdit: true, allowExport: true },
-  { appId: 4, formId: 'risk-review', alias: '风险复核表单', enabled: true, defaultView: '流程列表', dataScope: 'review_status = pending', allowCreate: true, allowEdit: true, allowExport: true },
-];
-
-const initialMenus: Record<number, MenuNode[]> = {
-  1: [
-    menuNode('prod-root', '生产态势', undefined, [
-      menuNode('prod-device', '设备运行总览', 'device-health'),
-      menuNode('prod-alerts', '活动告警', 'alert-center'),
-    ], true),
-  ],
-  2: [
-    menuNode('pm-root', '预测性维护', undefined, [
-      menuNode('pm-health', '设备健康', 'device-health', undefined, true),
-      menuNode('pm-predict', '故障预测', 'fault-prediction'),
-      menuNode('pm-orders', '工单管理', 'maintenance-order'),
-      menuNode('pm-alerts', '告警中心', 'alert-center'),
-    ], true),
-  ],
-  3: [
-    menuNode('quality-root', '质量分析', undefined, [
-      menuNode('quality-event', '质量事件', 'quality-event'),
-    ], true),
-  ],
-  4: [
-    menuNode('supply-root', '供应链风险', undefined, [
-      menuNode('supply-risk', '供应商风险', 'supplier-risk', undefined, true),
-    ], true),
-  ],
-};
-
-const richMenusByApp: Record<number, MenuNode[]> = {
-  ...initialMenus,
-  1: [
-    menuNode('prod-root', '生产态势', undefined, [
-      menuNode('prod-overview', '生产总览', 'production-overview', undefined, true),
-      menuNode('prod-lines', '产线状态', 'line-status'),
-      menuNode('prod-device', '设备运行', 'device-health'),
-      menuNode('prod-alerts', '活动告警', 'alert-center'),
-    ], true),
-  ],
-  3: [
-    menuNode('quality-root', '质量分析', undefined, [
-      menuNode('quality-overview', '质量总览', 'quality-overview', undefined, true),
-      menuNode('quality-inspection', '检验批次', 'inspection-batch'),
-      menuNode('quality-defect', '缺陷分析', 'defect-analysis'),
-      menuNode('quality-capa', 'CAPA 跟踪', 'quality-event'),
-    ], true),
-  ],
-  4: [
-    menuNode('supply-root', '供应链风险', undefined, [
-      menuNode('supply-overview', '风险总览', 'supply-overview', undefined, true),
-      menuNode('supply-risk', '供应商风险', 'supplier-risk'),
-      menuNode('supply-material', '物料影响', 'material-impact'),
-      menuNode('supply-review', '风险复核', 'risk-review'),
-    ], true),
-  ],
-};
-
-const enhancedMenusByApp: Record<number, MenuNode[]> = {
-  1: [
-    menuNode("prod-monitoring", "\u751f\u4ea7\u76d1\u63a7", undefined, [
-      menuNode("prod-overview", "\u751f\u4ea7\u603b\u89c8\u770b\u677f", "production-overview", undefined, true),
-      menuNode("prod-lines", "\u4ea7\u7ebf\u72b6\u6001\u62a5\u8868", "line-status"),
-      menuNode("prod-device", "\u8bbe\u5907\u8fd0\u884c", "device-health"),
-    ], true),
-    menuNode("prod-reports", "\u751f\u4ea7\u62a5\u8868", undefined, [
-      menuNode("prod-oee-report", "OEE \u8d8b\u52bf\u62a5\u8868", "oee-trend-report"),
-      menuNode("prod-line-report", "\u4ea7\u7ebf\u8d1f\u8377\u5206\u6790", "line-load-analysis"),
-      menuNode("prod-plan-entry", "\u751f\u4ea7\u8ba1\u5212\u586b\u62a5", "production-plan-entry"),
-    ]),
-    menuNode("prod-exceptions", "\u5f02\u5e38\u5904\u7406", undefined, [
-      menuNode("prod-alerts", "\u6d3b\u52a8\u544a\u8b66", "alert-center"),
-    ]),
-  ],
-  2: [
-    menuNode("pm-health-group", "\u5065\u5eb7\u4e0e\u9884\u6d4b", undefined, [
-      menuNode("pm-health", "\u8bbe\u5907\u5065\u5eb7", "device-health", undefined, true),
-      menuNode("pm-predict", "\u6545\u969c\u9884\u6d4b\u62a5\u8868", "fault-prediction"),
-    ], true),
-    menuNode("pm-report-group", "\u7ef4\u62a4\u62a5\u8868", undefined, [
-      menuNode("pm-failure-trend", "\u6545\u969c\u8d8b\u52bf\u5206\u6790", "failure-trend-analysis"),
-      menuNode("pm-health-dashboard", "\u8bbe\u5907\u5065\u5eb7\u770b\u677f", "device-health-dashboard"),
-    ]),
-    menuNode("pm-execution-group", "\u7ef4\u62a4\u6267\u884c", undefined, [
-      menuNode("pm-orders", "\u7ef4\u4fee\u5de5\u5355", "maintenance-order"),
-      menuNode("pm-alerts", "\u544a\u8b66\u4e2d\u5fc3", "alert-center"),
-    ]),
-  ],
-  3: [
-    menuNode("quality-control-group", "\u8d28\u91cf\u76d1\u63a7", undefined, [
-      menuNode("quality-overview", "\u8d28\u91cf\u603b\u89c8\u770b\u677f", "quality-overview", undefined, true),
-      menuNode("quality-inspection", "\u68c0\u9a8c\u6279\u6b21", "inspection-batch"),
-    ], true),
-    menuNode("quality-report-group", "\u8d28\u91cf\u62a5\u8868", undefined, [
-      menuNode("quality-defect-report", "\u7f3a\u9677\u5206\u6790\u62a5\u8868", "defect-analysis-report"),
-      menuNode("quality-capability-report", "\u8fc7\u7a0b\u80fd\u529b\u770b\u677f", "process-capability-dashboard"),
-    ]),
-    menuNode("quality-improve-group", "\u95ee\u9898\u6539\u8fdb", undefined, [
-      menuNode("quality-defect", "\u7f3a\u9677\u5206\u6790", "defect-analysis"),
-      menuNode("quality-capa", "CAPA \u8ddf\u8e2a", "quality-event"),
-    ]),
-  ],
-  4: [
-    menuNode("supply-risk-group", "\u98ce\u9669\u76d1\u63a7", undefined, [
-      menuNode("supply-overview", "\u98ce\u9669\u603b\u89c8\u770b\u677f", "supply-overview", undefined, true),
-      menuNode("supply-risk", "\u4f9b\u5e94\u5546\u98ce\u9669", "supplier-risk"),
-    ], true),
-    menuNode("supply-report-group", "\u4f9b\u5e94\u94fe\u62a5\u8868", undefined, [
-      menuNode("supply-material-report", "\u7269\u6599\u5f71\u54cd\u62a5\u8868", "material-impact-report"),
-      menuNode("supply-risk-dashboard", "\u4f9b\u5e94\u98ce\u9669\u770b\u677f", "supply-risk-dashboard"),
-    ]),
-    menuNode("supply-impact-group", "\u5f71\u54cd\u4e0e\u590d\u6838", undefined, [
-      menuNode("supply-material", "\u7269\u6599\u5f71\u54cd", "material-impact"),
-      menuNode("supply-review", "\u98ce\u9669\u590d\u6838", "risk-review"),
-    ]),
-  ],
-};
-
 function menuNode(
   key: string,
   label: string,
@@ -678,33 +452,22 @@ export default function AppMenuManagement() {
   const [appForm] = Form.useForm();
   const [formForm] = Form.useForm();
   const [menuForm] = Form.useForm();
-  const [applications, setApplications] = useState<AppRecord[]>(fallbackApplications);
-  const [roles, setRoles] = useState<RoleRecord[]>(fallbackRoles);
-  const [forms, setForms] = useState<FormRecord[]>([...fallbackForms, ...supplementalForms]);
-  const [configs, setConfigs] = useState<AppFormConfig[]>([...initialConfigs, ...supplementalConfigs]);
-  const [menusByApp, setMenusByApp] = useState<Record<number, MenuNode[]>>(enhancedMenusByApp);
-  const [selectedAppId, setSelectedAppId] = useState(2);
-  const [selectedFormId, setSelectedFormId] = useState('device-health');
-  const [selectedMenuKey, setSelectedMenuKey] = useState('pm-health');
+  const [applications, setApplications] = useState<AppRecord[]>([]);
+  const [roles, setRoles] = useState<RoleRecord[]>([]);
+  const [forms, setForms] = useState<FormRecord[]>([]);
+  const [configs, setConfigs] = useState<AppFormConfig[]>([]);
+  const [menusByApp, setMenusByApp] = useState<Record<number, MenuNode[]>>({});
+  const [selectedAppId, setSelectedAppId] = useState(0);
+  const [selectedFormId, setSelectedFormId] = useState('');
+  const [selectedMenuKey, setSelectedMenuKey] = useState('');
   const [appDrawerOpen, setAppDrawerOpen] = useState(false);
   const [formDrawerOpen, setFormDrawerOpen] = useState(false);
   const [menuSyncing, setMenuSyncing] = useState(false);
 
-  useEffect(() => {
-    const stored = loadAssemblyMenus();
-    if (!Object.keys(stored).length) return;
-    setMenusByApp((prev) => {
-      const restored = Object.fromEntries(
-        Object.entries(stored).map(([appId, nodes]) => [Number(appId), restoreMenuNodes(nodes)]),
-      );
-      return { ...prev, ...restored };
-    });
-  }, []);
-
   const selectedApp = applications.find((item) => item.id === selectedAppId) ?? applications[0];
   const selectedForm = forms.find((item) => item.id === selectedFormId) ?? forms[0];
-  const appConfigs = configs.filter((item) => item.appId === selectedApp.id);
-  const currentMenus = menusByApp[selectedApp.id] ?? [];
+  const appConfigs = selectedApp ? configs.filter((item) => item.appId === selectedApp.id) : [];
+  const currentMenus = selectedApp ? menusByApp[selectedApp.id] ?? [] : [];
   const selectedMenu = findMenuNode(currentMenus, selectedMenuKey);
 
   useEffect(() => {
@@ -714,7 +477,10 @@ export default function AppMenuManagement() {
         const apiRoles = rolesRes.data?.data ?? [];
         const ontologyObjects = objectsRes.data?.data ?? [];
         const platformForms = unwrapApiList<PlatformForm>(formsRes);
-        if (apiApps.length) setApplications(apiApps);
+        if (apiApps.length) {
+          setApplications(apiApps);
+          setSelectedAppId((current) => current || apiApps[0].id);
+        }
         if (apiRoles.length) setRoles(apiRoles);
         if (platformForms.length) {
           const mappedPlatformForms = platformForms.map(mapPlatformFormToRecord);
@@ -726,7 +492,7 @@ export default function AppMenuManagement() {
         }
       })
       .catch(() => {
-        // Demo data is intentionally enough for this first product pass.
+        message.error('菜单管理数据加载失败');
       });
   }, []);
 
@@ -760,16 +526,13 @@ export default function AppMenuManagement() {
         setSelectedMenuKey(tree[0]?.key ?? '');
       })
       .catch(() => {
-        const stored = loadAssemblyMenus();
-        const fallback = stored[selectedAppId];
-        if (fallback?.length) {
-          setMenusByApp((prev) => ({ ...prev, [selectedAppId]: restoreMenuNodes(fallback) }));
-        }
+        message.error('应用菜单加载失败');
       })
       .finally(() => setMenuSyncing(false));
   }, [forms, selectedAppId]);
 
   useEffect(() => {
+    if (!selectedApp) return;
     appForm.setFieldsValue({
       name: selectedApp.name,
       code: selectedApp.code,
@@ -784,6 +547,7 @@ export default function AppMenuManagement() {
   }, [appForm, selectedApp]);
 
   useEffect(() => {
+    if (!selectedForm) return;
     formForm.setFieldsValue({
       category: 'interaction',
       mode: 'entry_form',
@@ -1210,6 +974,10 @@ export default function AppMenuManagement() {
       setMenuSyncing(false);
     }
   };
+
+  if (!selectedApp) {
+    return <Empty description="暂无可管理应用" />;
+  }
 
   return (
     <div className="app-admin-workspace" aria-busy={menuSyncing}>

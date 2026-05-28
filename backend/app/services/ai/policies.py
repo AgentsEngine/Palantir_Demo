@@ -23,6 +23,7 @@ CAPABILITY_BY_SKILL = {
     "material.create_material_application_draft": "draft",
     "quality.create_capa_draft": "draft",
     "low_code.suggest_model_or_page": "config",
+    "low_code.create_form_definition": "config",
     "workflow.submit_after_confirmation": "workflow",
 }
 
@@ -32,6 +33,7 @@ DOMAIN_BY_SKILL = {
     "material.create_material_application_draft": "supply-chain",
     "quality.create_capa_draft": "quality",
     "low_code.suggest_model_or_page": "low-code",
+    "low_code.create_form_definition": "low-code",
     "workflow.submit_after_confirmation": "workflow",
 }
 

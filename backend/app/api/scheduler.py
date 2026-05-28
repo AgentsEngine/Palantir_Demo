@@ -9,9 +9,10 @@ import copy
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.api.deps import current_tenant_id, get_current_user
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -66,33 +67,40 @@ async def _try_db(fn):
 # ── CRUD endpoints ────────────────────────────────────────
 
 @router.get("/jobs")
-async def list_jobs():
+async def list_jobs(user: dict = Depends(get_current_user)):
     """List all scheduled jobs."""
+    tenant_id = current_tenant_id(user)
+
     async def _query(db):
         from sqlalchemy import text
-        rows = (await db.execute(text("SELECT * FROM scheduled_jobs ORDER BY id"))).mappings().all()
+        rows = (await db.execute(
+            text("SELECT * FROM scheduled_jobs WHERE tenant_id = :tenant_id ORDER BY id"),
+            {"tenant_id": tenant_id},
+        )).mappings().all()
         return {"data": [dict(r) for r in rows]}
 
     result = await _try_db(_query)
     if result is not None:
         return result
-    return {"data": copy.deepcopy(MOCK_JOBS)}
+    return {"data": copy.deepcopy(MOCK_JOBS), "source": "fallback"}
 
 
 @router.post("/jobs")
-async def create_job(body: JobCreate):
+async def create_job(body: JobCreate, user: dict = Depends(get_current_user)):
     """Create a new scheduled job."""
     if body.job_type not in ("report", "sync", "cleanup"):
         raise HTTPException(400, "job_type must be one of: report, sync, cleanup")
+    tenant_id = current_tenant_id(user)
 
     async def _query(db):
         from sqlalchemy import text
         import json as _json
         sql = (
-            "INSERT INTO scheduled_jobs (name, cron, job_type, config, is_active, last_run) "
-            "VALUES (:name, :cron, :job_type, :config, :is_active, NULL) RETURNING id"
+            "INSERT INTO scheduled_jobs (tenant_id, name, cron, job_type, config, is_active, last_run) "
+            "VALUES (:tenant_id, :name, :cron, :job_type, :config, :is_active, NULL) RETURNING id"
         )
         row = (await db.execute(text(sql), {
+            "tenant_id": tenant_id,
             "name": body.name, "cron": body.cron, "job_type": body.job_type,
             "config": _json.dumps(body.config) if body.config else None,
             "is_active": body.is_active,
@@ -100,7 +108,7 @@ async def create_job(body: JobCreate):
         await db.commit()
         new_id = int(row["id"]) if row else None
         return {
-            "id": new_id, "name": body.name, "cron": body.cron,
+            "id": new_id, "tenant_id": tenant_id, "name": body.name, "cron": body.cron,
             "job_type": body.job_type, "config": body.config,
             "is_active": body.is_active, "last_run": None,
         }
@@ -114,23 +122,25 @@ async def create_job(body: JobCreate):
     _next_mock_id += 1
     mock_job = {
         "id": new_id, "name": body.name, "cron": body.cron,
+        "tenant_id": tenant_id,
         "job_type": body.job_type, "config": body.config,
-        "is_active": body.is_active, "last_run": None,
+        "is_active": body.is_active, "last_run": None, "source": "fallback",
     }
     MOCK_JOBS.append(mock_job)
     return mock_job
 
 
 @router.put("/jobs/{job_id}")
-async def update_job(job_id: int, body: JobUpdate):
+async def update_job(job_id: int, body: JobUpdate, user: dict = Depends(get_current_user)):
     """Update an existing scheduled job."""
     if body.job_type is not None and body.job_type not in ("report", "sync", "cleanup"):
         raise HTTPException(400, "job_type must be one of: report, sync, cleanup")
+    tenant_id = current_tenant_id(user)
 
     async def _query(db):
         from sqlalchemy import text
         import json as _json
-        sets, params = [], {"id": job_id}
+        sets, params = [], {"id": job_id, "tenant_id": tenant_id}
         for key, val in body.model_dump(exclude_unset=True).items():
             if key == "config":
                 sets.append(f"{key} = :{key}")
@@ -140,7 +150,7 @@ async def update_job(job_id: int, body: JobUpdate):
                 params[key] = val
         if not sets:
             return None
-        sql = f"UPDATE scheduled_jobs SET {','.join(sets)} WHERE id = :id RETURNING id"
+        sql = f"UPDATE scheduled_jobs SET {','.join(sets)} WHERE id = :id AND tenant_id = :tenant_id RETURNING id"
         row = (await db.execute(text(sql), params)).mappings().first()
         await db.commit()
         return row is not None
@@ -161,12 +171,19 @@ async def update_job(job_id: int, body: JobUpdate):
 
 
 @router.delete("/jobs/{job_id}")
-async def delete_job(job_id: int):
+async def delete_job(job_id: int, user: dict = Depends(get_current_user)):
     """Delete a scheduled job."""
+    tenant_id = current_tenant_id(user)
+
     async def _query(db):
         from sqlalchemy import text
-        await db.execute(text("DELETE FROM scheduled_jobs WHERE id = :id"), {"id": job_id})
+        result = await db.execute(
+            text("DELETE FROM scheduled_jobs WHERE id = :id AND tenant_id = :tenant_id"),
+            {"id": job_id, "tenant_id": tenant_id},
+        )
         await db.commit()
+        if result.rowcount == 0:
+            raise HTTPException(404, "Job not found")
         return {"ok": True}
 
     result = await _try_db(_query)
@@ -183,12 +200,14 @@ async def delete_job(job_id: int):
 
 
 @router.post("/jobs/{job_id}/trigger")
-async def trigger_job(job_id: int):
+async def trigger_job(job_id: int, user: dict = Depends(get_current_user)):
     """Manually trigger a scheduled job (logs execution)."""
+    tenant_id = current_tenant_id(user)
     # Find job in mock data (DB or mock)
     job = None
     for j in MOCK_JOBS:
-        if j["id"] == job_id:
+        mock_tenant_id = j.get("tenant_id")
+        if j["id"] == job_id and mock_tenant_id is not None and int(mock_tenant_id) == tenant_id:
             job = j
             break
 
@@ -197,8 +216,8 @@ async def trigger_job(job_id: int):
         async def _lookup(db):
             from sqlalchemy import text
             row = (await db.execute(
-                text("SELECT id, name, job_type FROM scheduled_jobs WHERE id = :id"),
-                {"id": job_id},
+                text("SELECT id, name, job_type FROM scheduled_jobs WHERE id = :id AND tenant_id = :tenant_id"),
+                {"id": job_id, "tenant_id": tenant_id},
             )).mappings().first()
             return dict(row) if row else None
 

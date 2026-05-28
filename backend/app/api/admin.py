@@ -10,6 +10,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_tenant_id, current_user_id, get_db, require_admin
+from app.config import settings
 from app.core.audit import write_audit_log
 from app.core.permissions import evaluate_form_permission, has_permission
 from app.core.security import hash_password
@@ -188,6 +189,17 @@ def _hash_password(password: str) -> str:
 from app.core.db import safe_db_call as _try_db  # noqa: E402
 
 
+def _admin_db_fallback(default):
+    """Return demo fallback only outside production.
+
+    In production, an admin/IAM database error must be visible to operators
+    instead of being converted into mock data or a fake success response.
+    """
+    if settings.IS_PRODUCTION:
+        raise HTTPException(503, "Admin database unavailable")
+    return default
+
+
 # ── User CRUD ────────────────────────────────────────────
 
 @router.get("/users")
@@ -250,7 +262,7 @@ async def list_users(user_ctx: dict = Depends(require_admin)):
         return {"data": out}
 
     result = await _try_db(_query)
-    return result or {"data": _MOCK_USERS_ADMIN}
+    return result if result is not None else _admin_db_fallback({"data": _MOCK_USERS_ADMIN})
 
 
 @router.post("/users")
@@ -301,7 +313,7 @@ async def create_user(body: UserCreate, user_ctx: dict = Depends(require_admin))
     result = await _try_db(_query)
     if result is not None:
         return result
-    return {"id": len(_MOCK_USERS_ADMIN) + 10, "username": body.username}
+    return _admin_db_fallback({"id": len(_MOCK_USERS_ADMIN) + 10, "username": body.username})
 
 
 @router.put("/users/{user_id}")
@@ -366,7 +378,7 @@ async def update_user(user_id: int, body: UserUpdate, user_ctx: dict = Depends(r
         return {"id": user.id}
 
     result = await _try_db(_query)
-    return result or {"id": user_id}
+    return result if result is not None else _admin_db_fallback({"id": user_id})
 
 
 @router.delete("/users/{user_id}")
@@ -388,7 +400,7 @@ async def delete_user(user_id: int, user_ctx: dict = Depends(require_admin)):
         return {"ok": True}
 
     result = await _try_db(_query)
-    return result or {"ok": True}
+    return result if result is not None else _admin_db_fallback({"ok": True})
 
 
 @router.put("/users/{user_id}/security")
@@ -457,7 +469,7 @@ async def list_user_sessions(user_id: int, user_ctx: dict = Depends(require_admi
         }
 
     result = await _try_db(_query)
-    return result or {"data": []}
+    return result if result is not None else _admin_db_fallback({"data": []})
 
 
 @router.post("/sessions/{session_id}/revoke")
@@ -475,7 +487,7 @@ async def revoke_user_session(session_id: str, user_ctx: dict = Depends(require_
         return {"ok": ok}
 
     result = await _try_db(_query)
-    return result or {"ok": False}
+    return result if result is not None else _admin_db_fallback({"ok": False})
 
 
 # ── Role CRUD ────────────────────────────────────────────
@@ -517,7 +529,7 @@ async def list_org_units(user_ctx: dict = Depends(require_admin)):
         }
 
     result = await _try_db(_query)
-    return result or {"data": []}
+    return result if result is not None else _admin_db_fallback({"data": []})
 
 
 @router.post("/org-units")
@@ -543,7 +555,7 @@ async def create_org_unit(body: OrgUnitCreate, user_ctx: dict = Depends(require_
     result = await _try_db(_query)
     if result is not None:
         return result
-    return {"id": 0, "code": body.code}
+    return _admin_db_fallback({"id": 0, "code": body.code})
 
 
 @router.put("/org-units/{org_id}")
@@ -569,7 +581,7 @@ async def update_org_unit(org_id: int, body: OrgUnitUpdate, user_ctx: dict = Dep
         return {"id": org.id}
 
     result = await _try_db(_query)
-    return result or {"id": org_id}
+    return result if result is not None else _admin_db_fallback({"id": org_id})
 
 
 @router.delete("/org-units/{org_id}")
@@ -596,7 +608,7 @@ async def delete_org_unit(org_id: int, user_ctx: dict = Depends(require_admin)):
         return {"ok": True}
 
     result = await _try_db(_query)
-    return result or {"ok": True}
+    return result if result is not None else _admin_db_fallback({"ok": True})
 
 
 @router.get("/roles")
@@ -634,7 +646,7 @@ async def list_roles(user_ctx: dict = Depends(require_admin)):
         return {"data": out}
 
     result = await _try_db(_query)
-    return result or {"data": _MOCK_ROLES}
+    return result if result is not None else _admin_db_fallback({"data": _MOCK_ROLES})
 
 
 @router.post("/roles")
@@ -655,7 +667,7 @@ async def create_role(body: RoleCreate, user_ctx: dict = Depends(require_admin))
     result = await _try_db(_query)
     if result is not None:
         return result
-    return {"id": len(_MOCK_ROLES) + 10, "name": body.name}
+    return _admin_db_fallback({"id": len(_MOCK_ROLES) + 10, "name": body.name})
 
 
 @router.put("/roles/{role_id}/permissions")
@@ -694,7 +706,7 @@ async def set_permissions(role_id: int, body: PermissionSet, user_ctx: dict = De
         return {"ok": True}
 
     result = await _try_db(_query)
-    return result or {"ok": True}
+    return result if result is not None else _admin_db_fallback({"ok": True})
 
 
 @router.delete("/roles/{role_id}")
@@ -711,7 +723,7 @@ async def delete_role(role_id: int, user_ctx: dict = Depends(require_admin)):
         return {"ok": True}
 
     result = await _try_db(_query)
-    return result or {"ok": True}
+    return result if result is not None else _admin_db_fallback({"ok": True})
 
 
 @router.get("/role-templates")
@@ -859,4 +871,10 @@ async def list_audit_logs(
         }
 
     result = await _try_db(_query)
-    return result or {"data": [], "total": 0, "page": page, "page_size": page_size, "summary": {"resource_counts": {}, "action_counts": {}}}
+    return result if result is not None else _admin_db_fallback({
+        "data": [],
+        "total": 0,
+        "page": page,
+        "page_size": page_size,
+        "summary": {"resource_counts": {}, "action_counts": {}},
+    })

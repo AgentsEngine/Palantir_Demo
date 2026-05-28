@@ -13,7 +13,8 @@ from .prompt_builder import PromptBuildInput, PromptBuilder
 from .schemas import AgentRequest, AgentResponse, ChatMessage, ChatOptions
 from .settings import settings_snapshot, settings_to_provider_config
 from .tenant_profile import TenantProfile, default_tenant_profile
-from .tools import choose_draft_actions
+from .planner import plan_agent_turn
+from .tools import choose_draft_actions, create_low_code_form_definition_action
 from .client import get_provider
 from .agent_context_router import classify_context_need
 
@@ -120,7 +121,19 @@ class AgentRuntime:
                 "summary": request.message[:160],
             }
         ]
-        context_need = classify_context_need(request.message, request.context)
+        planner_result = plan_agent_turn(request.message, request.context)
+        steps.append(
+            {
+                "id": "step-planner",
+                "type": "plan",
+                "status": "completed",
+                "intent": planner_result.intent,
+                "skill": planner_result.skill,
+                "confidence": planner_result.confidence,
+                "reason": planner_result.reason,
+            }
+        )
+        context_need = "draft_action" if planner_result.intent == "action" else classify_context_need(request.message, request.context)
         evidence = search_ingested_knowledge(request.message, limit=3) if context_need in {"knowledge_rag", "business_query", "semantic_graph", "draft_action"} else []
         if context_need in {"knowledge_rag", "business_query", "semantic_graph", "draft_action"}:
             steps.append(
@@ -132,7 +145,15 @@ class AgentRuntime:
                     "result_count": len(evidence),
                 }
             )
-        actions = choose_draft_actions(request.message, evidence=evidence)
+        actions = []
+        if planner_result.skill == "low_code.create_form_definition":
+            action_context = {
+                **(request.context or {}),
+                **planner_result.extracted_context,
+            }
+            actions.append(create_low_code_form_definition_action(planner_result.source_message, evidence=evidence, context=action_context))
+        elif planner_result.intent == "qa":
+            actions = choose_draft_actions(request.message, evidence=evidence, context=request.context)
         if actions:
             steps.append(
                 {

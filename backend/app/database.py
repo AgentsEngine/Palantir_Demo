@@ -136,6 +136,8 @@ async def init_db():
         await _ensure_sqlite_knowledge_columns(conn)
         await _ensure_sqlite_identity_access_columns(conn)
         await _ensure_sqlite_tenant_onboarding(conn)
+        await _ensure_sqlite_business_tenant_columns(conn)
+        await _ensure_sqlite_saas_hardening_columns(conn)
     logger.info("SQLite schema ensured")
 
     from sqlalchemy import func, select
@@ -330,6 +332,56 @@ async def _ensure_sqlite_knowledge_columns(conn) -> None:
             await conn.execute(text(f"ALTER TABLE knowledge_object_links ADD COLUMN {column_name} {definition}"))
 
 
+async def _ensure_sqlite_saas_hardening_columns(conn) -> None:
+    """Patch old demo SQLite schemas with SaaS tenant hardening fields."""
+    from sqlalchemy import text
+
+    tenant_tables = {
+        "notifications": ["CREATE INDEX IF NOT EXISTS ix_notifications_tenant_user_read ON notifications (tenant_id, user_id, is_read)"],
+        "rules": ["CREATE INDEX IF NOT EXISTS ix_rules_tenant_model_type ON rules (tenant_id, model_id, rule_type)"],
+        "scheduled_jobs": ["CREATE INDEX IF NOT EXISTS ix_scheduled_jobs_tenant_active ON scheduled_jobs (tenant_id, is_active)"],
+        "knowledge_documents": [],
+        "knowledge_chunks": [],
+        "knowledge_ingestion_jobs": [],
+        "knowledge_extraction_results": [],
+        "knowledge_object_links": ["CREATE INDEX IF NOT EXISTS ix_knowledge_object_links_tenant_object ON knowledge_object_links (tenant_id, object_type, object_id)"],
+        "ai_conversations": [],
+        "ai_messages": [],
+        "ai_agent_runs": [],
+        "ai_tool_calls": [],
+    }
+    for table_name, indexes in tenant_tables.items():
+        existing = await conn.execute(text(f"PRAGMA table_info({table_name})"))
+        columns = {row[1] for row in existing.fetchall()}
+        if columns and "tenant_id" not in columns:
+            await conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN tenant_id INTEGER NOT NULL DEFAULT 1"))
+        for index_sql in indexes:
+            await conn.execute(text(index_sql))
+
+    await conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS tenant_exports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tenant_id INTEGER NOT NULL,
+                requested_by INTEGER,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                format VARCHAR(20) NOT NULL DEFAULT 'zip',
+                file_path VARCHAR(1000),
+                checksum VARCHAR(128),
+                size_bytes INTEGER,
+                error TEXT,
+                completed_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+    )
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_exports_tenant_id ON tenant_exports (tenant_id)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_exports_tenant_status ON tenant_exports (tenant_id, status)"))
+
+
 async def _ensure_sqlite_identity_access_columns(conn) -> None:
     """Patch old demo SQLite schemas with identity/access-center fields."""
     from sqlalchemy import text
@@ -507,6 +559,15 @@ async def _ensure_sqlite_tenant_onboarding(conn) -> None:
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_invites_tenant_id ON tenant_invites (tenant_id)"))
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_invites_email ON tenant_invites (email)"))
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tenant_invites_token_hash ON tenant_invites (token_hash)"))
+    existing = await conn.execute(text("PRAGMA table_info(tenant_invites)"))
+    invite_columns = {row[1] for row in existing.fetchall()}
+    for column_name, definition in {
+        "revoked_at": "DATETIME",
+        "revoked_by": "INTEGER",
+        "replaced_by_invite_id": "INTEGER",
+    }.items():
+        if column_name not in invite_columns:
+            await conn.execute(text(f"ALTER TABLE tenant_invites ADD COLUMN {column_name} {definition}"))
 
     await conn.execute(
         text(
@@ -527,3 +588,43 @@ async def _ensure_sqlite_tenant_onboarding(conn) -> None:
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_password_reset_tokens_tenant_id ON password_reset_tokens (tenant_id)"))
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_password_reset_tokens_user_id ON password_reset_tokens (user_id)"))
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_password_reset_tokens_token_hash ON password_reset_tokens (token_hash)"))
+
+
+async def _ensure_sqlite_business_tenant_columns(conn) -> None:
+    """Patch old demo SQLite schemas with tenant_id for business modules."""
+    from sqlalchemy import text
+
+    tables = [
+        "factories",
+        "workshops",
+        "production_lines",
+        "equipment",
+        "sensors",
+        "sensor_readings",
+        "products",
+        "materials",
+        "bom",
+        "process_routes",
+        "customers",
+        "sales_orders",
+        "work_orders",
+        "operations",
+        "workers",
+        "suppliers",
+        "warehouses",
+        "inventory",
+        "shipments",
+        "inspections",
+        "defects",
+        "spc_points",
+        "capa",
+        "data_sources",
+        "pipelines",
+        "pipeline_runs",
+    ]
+    for table_name in tables:
+        existing = await conn.execute(text(f"PRAGMA table_info({table_name})"))
+        columns = {row[1] for row in existing.fetchall()}
+        if columns and "tenant_id" not in columns:
+            await conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN tenant_id INTEGER NOT NULL DEFAULT 1"))
+        await conn.execute(text(f"CREATE INDEX IF NOT EXISTS ix_{table_name}_tenant_id ON {table_name} (tenant_id)"))

@@ -245,6 +245,22 @@ def _field_payload(field) -> dict:
     }
 
 
+def _form_version_payload(version) -> dict:
+    return {
+        "id": version.id,
+        "tenant_id": getattr(version, "tenant_id", None),
+        "form_id": version.form_id,
+        "version": version.version,
+        "status": version.status,
+        "snapshot": version.snapshot or {},
+        "impact_report": version.impact_report or {},
+        "published_by": version.published_by,
+        "published_at": version.published_at.isoformat() if version.published_at else None,
+        "created_at": version.created_at.isoformat() if version.created_at else None,
+        "updated_at": version.updated_at.isoformat() if version.updated_at else None,
+    }
+
+
 def _application_form_payload(binding) -> dict:
     return {
         "id": binding.id,
@@ -271,6 +287,7 @@ def _record_payload(record, *, visible_fields: Optional[set[str]] = None) -> dic
         "id": record.id,
         "form_id": record.form_id,
         "model_id": record.model_id,
+        "schema_version": getattr(record, "schema_version", 1),
         "data": data,
         "status": record.status,
         "created_by": record.created_by,
@@ -564,6 +581,290 @@ async def _dynamic_record_field_impact(db: AsyncSession, tenant_id: int, form_id
     }
 
 
+def _field_cfg_value(field, key: str, default=None):
+    return field.get(key, default) if isinstance(field, dict) else getattr(field, key, default)
+
+
+def _field_cfg_name(field) -> str:
+    return str(_field_cfg_value(field, "field_name") or "")
+
+
+def _field_cfg_label(field) -> str:
+    return str(_field_cfg_value(field, "label") or _field_cfg_name(field))
+
+
+def _field_cfg_is_active(field) -> bool:
+    return not bool(_field_cfg_value(field, "archived", False))
+
+
+def _field_cfg_allowed_values(field) -> Optional[set[str]]:
+    proxy = type("FieldProxy", (), {})()
+    proxy.enum_values = _field_cfg_value(field, "enum_values")
+    return _field_allowed_values(proxy)
+
+
+def _field_cfg_value_is_compatible(field, value) -> bool:
+    proxy = type("FieldProxy", (), {})()
+    proxy.field_type = _field_cfg_value(field, "field_type", "string")
+    proxy.enum_values = _field_cfg_value(field, "enum_values")
+    return _field_value_is_compatible(proxy, value)
+
+
+def _record_field_impact(rows: list[dict], field) -> dict:
+    field_name = _field_cfg_name(field)
+    required = bool(_field_cfg_value(field, "required", False))
+    total = len(rows)
+    filled = 0
+    missing_required = 0
+    incompatible = 0
+    for row in rows:
+        values = row or {}
+        value = values.get(field_name)
+        if value not in (None, ""):
+            filled += 1
+        if required and value in (None, ""):
+            missing_required += 1
+        if not _field_cfg_value_is_compatible(field, value):
+            incompatible += 1
+    return {
+        "record_count": total,
+        "filled_count": filled,
+        "missing_required_count": missing_required,
+        "incompatible_count": incompatible,
+    }
+
+
+async def _latest_form_version(db: AsyncSession, tenant_id: int, form_id: int):
+    from app.models.relational import FormVersion
+
+    return await db.scalar(
+        select(FormVersion)
+        .where(FormVersion.form_id == form_id, FormVersion.tenant_id == tenant_id)
+        .order_by(FormVersion.version.desc(), FormVersion.id.desc())
+        .limit(1)
+    )
+
+
+def _field_proxy_from_payload(payload: dict):
+    proxy = type("PublishedField", (), {})()
+    for key, default in {
+        "id": None,
+        "form_id": None,
+        "meta_field_id": None,
+        "field_name": "",
+        "label": "",
+        "field_type": "string",
+        "required": False,
+        "visible_in_list": True,
+        "visible_in_form": True,
+        "searchable": False,
+        "sortable": False,
+        "archived": False,
+        "default_value": None,
+        "enum_values": None,
+        "validation": None,
+        "ui_config": None,
+        "sort_order": 0,
+    }.items():
+        setattr(proxy, key, payload.get(key, default))
+    return proxy
+
+
+async def _runtime_form_fields(db: AsyncSession, tenant_id: int, form_id: int) -> list:
+    from app.models.relational import FormField
+
+    version = await _latest_form_version(db, tenant_id, form_id)
+    if version:
+        return [
+            _field_proxy_from_payload(field)
+            for field in (version.snapshot or {}).get("fields", [])
+            if isinstance(field, dict)
+        ]
+    return (await db.execute(
+        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
+    )).scalars().all()
+
+
+async def _form_snapshot(db: AsyncSession, tenant_id: int, form) -> dict:
+    from app.models.relational import FormAction, FormField, FormLayout, FormPermission, WorkflowBinding
+
+    fields = (await db.execute(
+        select(FormField).where(FormField.form_id == form.id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
+    )).scalars().all()
+    layouts = (await db.execute(
+        select(FormLayout).where(FormLayout.form_id == form.id, FormLayout.tenant_id == tenant_id).order_by(FormLayout.layout_type)
+    )).scalars().all()
+    actions = (await db.execute(
+        select(FormAction).where(FormAction.form_id == form.id, FormAction.tenant_id == tenant_id).order_by(FormAction.sort_order, FormAction.id)
+    )).scalars().all()
+    permissions = (await db.execute(
+        select(FormPermission).where(FormPermission.form_id == form.id, FormPermission.tenant_id == tenant_id).order_by(FormPermission.id)
+    )).scalars().all()
+    bindings = (await db.execute(
+        select(WorkflowBinding).where(WorkflowBinding.form_id == form.id, WorkflowBinding.tenant_id == tenant_id).order_by(WorkflowBinding.id)
+    )).scalars().all()
+    return {
+        "form": _form_payload(form),
+        "fields": [_field_payload(field) for field in fields],
+        "layouts": [_layout_payload(layout) for layout in layouts],
+        "actions": [_action_payload(action) for action in actions],
+        "permissions": [_permission_payload(permission) for permission in permissions],
+        "workflow_bindings": [_workflow_binding_payload(binding) for binding in bindings],
+    }
+
+
+def _published_form_payload(form, version, *, applications: Optional[list] = None) -> dict:
+    snapshot = version.snapshot or {}
+    form_snapshot = snapshot.get("form") or {}
+    payload = {
+        **_form_payload(form),
+        **{key: value for key, value in form_snapshot.items() if key in {"name", "code", "description", "model_id", "table_name", "storage_mode", "status", "owner_id", "config"}},
+        "schema_mode": "published",
+        "published_version": version.version,
+        "published_at": version.published_at.isoformat() if version.published_at else None,
+        "fields": [field for field in snapshot.get("fields", []) if _field_cfg_is_active(field)],
+    }
+    if applications is not None:
+        payload["applications"] = applications
+    return payload
+
+
+def _promote_snapshot_config(snapshot: dict, published_at: str, version: int) -> dict:
+    promoted = {**snapshot}
+    form_payload = {**(promoted.get("form") or {})}
+    config = {**(form_payload.get("config") or {})}
+    draft_view = config.get("viewConfigDraft")
+    if draft_view is not None:
+        config["viewConfig"] = draft_view
+    view_meta = {**(config.get("viewConfigMeta") or {})}
+    if view_meta:
+        view_meta["publishedVersion"] = version
+        view_meta["publishedAt"] = published_at
+        view_meta["status"] = "published"
+        config["viewConfigMeta"] = view_meta
+    config["publishedSchemaVersion"] = version
+    config["publishedAt"] = published_at
+    form_payload["status"] = "published"
+    form_payload["config"] = config
+    promoted["form"] = form_payload
+    return promoted
+
+
+def _publish_impact_report(latest_version, next_version: int, draft_snapshot: dict, record_rows: list[dict]) -> dict:
+    previous_fields = {
+        _field_cfg_name(field): field
+        for field in ((latest_version.snapshot or {}).get("fields", []) if latest_version else [])
+        if _field_cfg_name(field)
+    }
+    draft_fields = {
+        _field_cfg_name(field): field
+        for field in draft_snapshot.get("fields", [])
+        if _field_cfg_name(field)
+    }
+    items: list[dict] = []
+
+    for field_name, field in draft_fields.items():
+        if not _field_cfg_is_active(field):
+            continue
+        previous = previous_fields.get(field_name)
+        impact = _record_field_impact(record_rows, field)
+        if previous is None:
+            if _field_cfg_value(field, "required", False) and impact["missing_required_count"] > 0:
+                items.append({
+                    "level": "blocking",
+                    "type": "new_required_field_missing",
+                    "field_name": field_name,
+                    "label": _field_cfg_label(field),
+                    "detail": "New required field would make existing records invalid",
+                    "affected_count": impact["missing_required_count"],
+                })
+            else:
+                items.append({
+                    "level": "info",
+                    "type": "field_added",
+                    "field_name": field_name,
+                    "label": _field_cfg_label(field),
+                    "detail": "Field will be available in the next published schema",
+                    "affected_count": 0,
+                })
+            continue
+
+        if _field_cfg_value(previous, "field_type") != _field_cfg_value(field, "field_type") and impact["incompatible_count"] > 0:
+            items.append({
+                "level": "blocking",
+                "type": "field_type_incompatible",
+                "field_name": field_name,
+                "label": _field_cfg_label(field),
+                "detail": "Type change is incompatible with existing record values",
+                "affected_count": impact["incompatible_count"],
+            })
+        if not _field_cfg_value(previous, "required", False) and _field_cfg_value(field, "required", False) and impact["missing_required_count"] > 0:
+            items.append({
+                "level": "blocking",
+                "type": "required_field_missing",
+                "field_name": field_name,
+                "label": _field_cfg_label(field),
+                "detail": "Required change would make existing records invalid",
+                "affected_count": impact["missing_required_count"],
+            })
+
+        old_allowed = _field_cfg_allowed_values(previous)
+        new_allowed = _field_cfg_allowed_values(field)
+        if old_allowed and new_allowed and not old_allowed.issubset(new_allowed):
+            invalid = sum(1 for row in record_rows if row.get(field_name) not in (None, "") and str(row.get(field_name)) not in new_allowed)
+            if invalid:
+                items.append({
+                    "level": "blocking",
+                    "type": "enum_values_narrowed",
+                    "field_name": field_name,
+                    "label": _field_cfg_label(field),
+                    "detail": "Enum choices no longer include values already used by records",
+                    "affected_count": invalid,
+                })
+
+    for field_name, previous in previous_fields.items():
+        draft = draft_fields.get(field_name)
+        if draft is None or not _field_cfg_is_active(draft):
+            filled = _record_field_impact(record_rows, previous)["filled_count"]
+            if filled:
+                items.append({
+                    "level": "warning",
+                    "type": "field_archived_with_data",
+                    "field_name": field_name,
+                    "label": _field_cfg_label(previous),
+                    "detail": "Archived or removed field has historical values; data will be retained but hidden from new forms",
+                    "affected_count": filled,
+                })
+
+    blocking_count = sum(1 for item in items if item["level"] == "blocking")
+    warning_count = sum(1 for item in items if item["level"] == "warning")
+    return {
+        "next_version": next_version,
+        "latest_version": latest_version.version if latest_version else None,
+        "record_count": len(record_rows),
+        "blocking_count": blocking_count,
+        "warning_count": warning_count,
+        "items": items,
+    }
+
+
+async def _build_publish_preview(db: AsyncSession, tenant_id: int, form) -> tuple[dict, dict]:
+    from app.models.relational import DynamicRecord
+
+    latest = await _latest_form_version(db, tenant_id, form.id)
+    next_version = (latest.version + 1) if latest else 1
+    snapshot = await _form_snapshot(db, tenant_id, form)
+    rows = (await db.execute(
+        select(DynamicRecord.data).where(
+            DynamicRecord.form_id == form.id,
+            DynamicRecord.tenant_id == tenant_id,
+            DynamicRecord.deleted_at.is_(None),
+        )
+    )).scalars().all()
+    report = _publish_impact_report(latest, next_version, snapshot, [row or {} for row in rows])
+    return report, snapshot
+
+
 async def _ensure_application_form_binding(db: AsyncSession, application_id: int, form_id: int) -> None:
     from app.models.relational import ApplicationForm
     from app.models.relational import Form
@@ -715,6 +1016,103 @@ DEFAULT_BUSINESS_FORMS = [
     },
 ]
 
+BUSINESS_FORM_RECORD_TARGETS = {
+    "alert-center": 360,
+    "risk-review": 260,
+}
+
+
+def _iso_day(day: int, hour: int, minute: int = 0) -> str:
+    return f"2026-05-{day:02d}T{hour:02d}:{minute:02d}:00+08:00"
+
+
+def _generated_alert_record(index: int) -> dict:
+    devices = [
+        "\u603b\u88c5 A \u7ebf",
+        "\u603b\u88c5 B \u7ebf",
+        "SMT-01 \u8d34\u7247\u673a",
+        "SMT-03 \u56de\u6d41\u710a",
+        "\u7a7a\u538b\u7ad9 2#",
+        "\u7535\u63a7\u88c5\u914d\u7ebf",
+        "\u7ec8\u68c0 E \u7ebf",
+        "\u5305\u88c5 F \u7ebf",
+    ]
+    titles = [
+        "\u8282\u62cd\u4f4e\u4e8e\u76ee\u6807",
+        "\u6e29\u533a\u6ce2\u52a8\u8d85\u9608\u503c",
+        "\u8bbe\u5907\u5065\u5eb7\u5206\u4e0b\u964d",
+        "\u5b89\u5168\u5e93\u5b58\u4f4e\u4e8e\u9608\u503c",
+        "\u8d28\u68c0\u8fde\u7eed\u68c0\u51fa\u5f02\u5e38",
+        "\u5de5\u5355\u5b8c\u5de5\u8fdb\u5ea6\u6ede\u540e",
+    ]
+    owners = ["\u674e\u660e", "\u738b\u78ca", "\u5468\u5f3a", "\u9648\u6668", "\u5b59\u6d69", "\u8d75\u654f"]
+    statuses = ["\u5f85\u5904\u7406", "\u786e\u8ba4\u4e2d", "\u5904\u7406\u4e2d", "\u5df2\u5173\u95ed"]
+    device = devices[index % len(devices)]
+    level = "\u4e25\u91cd" if index % 11 == 0 else "\u4e00\u822c" if index % 3 else "\u63d0\u9192"
+    status = statuses[index % len(statuses)]
+    day = 1 + index % 27
+    hour = 7 + index % 12
+    return {
+        "status": "active",
+        "data": {
+            "alertId": f"AL-202605{day:02d}-{index + 1:04d}",
+            "title": f"{device} {titles[index % len(titles)]}",
+            "device": device,
+            "level": level,
+            "source": "\u7cfb\u7edf\u76d1\u6d4b" if index % 4 else "\u5916\u90e8\u63a5\u53e3",
+            "occurredAt": _iso_day(day, hour, index % 60),
+            "owner": owners[index % len(owners)],
+            "dueAt": _iso_day(day, min(hour + (2 if level == "\u4e25\u91cd" else 6), 23), index % 60),
+            "status": status,
+            "resolution": "\u5df2\u590d\u4f4d\u5e76\u9a8c\u8bc1\u8d8b\u52bf\u6062\u590d\u7a33\u5b9a\u3002" if status == "\u5df2\u5173\u95ed" else "",
+            "evidence": [],
+            "processStatus": "\u5df2\u5b8c\u6210" if status == "\u5df2\u5173\u95ed" else "\u5904\u7406\u4e2d",
+            "currentNode": "\u5173\u95ed\u5f52\u6863" if status == "\u5df2\u5173\u95ed" else "\u7ef4\u4fee\u5904\u7406",
+            "currentHandler": "" if status == "\u5df2\u5173\u95ed" else owners[index % len(owners)],
+            "completedAt": _iso_day(day, min(hour + 3, 23), index % 60) if status == "\u5df2\u5173\u95ed" else "",
+            "interactionLog": [
+                {"time": f"{hour:02d}:{index % 60:02d}", "actor": "\u7cfb\u7edf", "action": "\u521b\u5efa\u544a\u8b66"},
+            ],
+        },
+    }
+
+
+def _generated_risk_review_record(index: int) -> dict:
+    subjects = [
+        "\u5173\u952e\u7269\u6599\u5230\u6599\u5ef6\u8fdf",
+        "\u4f9b\u5e94\u5546\u8d28\u91cf\u6ce2\u52a8",
+        "\u5ba2\u6237\u4ea4\u4ed8\u7a97\u53e3\u538b\u7f29",
+        "\u66ff\u4ee3\u6599\u8ba4\u8bc1\u672a\u5b8c\u6210",
+        "\u8fd0\u8f93\u5e72\u7ebf\u65f6\u6548\u6ce2\u52a8",
+    ]
+    owners = ["\u5218\u6d0b", "\u674e\u660e", "\u8d75\u654f", "\u5468\u5f3a", "\u738b\u78ca"]
+    levels = ["\u9ad8", "\u4e2d", "\u4f4e"]
+    statuses = ["\u5f85\u590d\u6838", "\u5b9a\u7ea7\u4e2d", "\u5904\u7406\u4e2d", "\u5df2\u5173\u95ed"]
+    return {
+        "status": "active",
+        "data": {
+            "riskNo": f"SR-202605{1 + index % 27:02d}-{index + 1:04d}",
+            "subject": subjects[index % len(subjects)],
+            "level": levels[index % len(levels)],
+            "owner": owners[index % len(owners)],
+            "reason": "\u6839\u636e\u4ea4\u4ed8\u3001\u8d28\u91cf\u548c\u5e93\u5b58\u6eda\u52a8\u6570\u636e\u81ea\u52a8\u751f\u6210\u98ce\u9669\u590d\u6838\u4efb\u52a1\u3002",
+            "status": statuses[index % len(statuses)],
+            "processStatus": "\u5df2\u5b8c\u6210" if index % len(statuses) == 3 else "\u5904\u7406\u4e2d",
+            "currentNode": "\u5904\u7406\u5173\u95ed" if index % len(statuses) == 3 else "\u8d23\u4efb\u5206\u6d3e",
+            "currentHandler": "" if index % len(statuses) == 3 else owners[index % len(owners)],
+            "completedAt": _iso_day(1 + index % 27, 18) if index % len(statuses) == 3 else "",
+            "interactionLog": [{"time": "09:00", "actor": "\u7cfb\u7edf", "action": "\u521b\u5efa\u98ce\u9669"}],
+        },
+    }
+
+
+def _generated_business_record(form_code: str, index: int) -> Optional[dict]:
+    if form_code == "alert-center":
+        return _generated_alert_record(index)
+    if form_code == "risk-review":
+        return _generated_risk_review_record(index)
+    return None
+
 
 def _default_view_config(fields: list[dict]) -> dict:
     visible_fields = [field for field in fields if field.get("visible_in_list", True)]
@@ -854,9 +1252,18 @@ async def _ensure_default_business_forms(db: AsyncSession, tenant_id: int) -> No
             if action_cfg["action_key"] not in existing_actions:
                 db.add(FormAction(tenant_id=tenant_id, form_id=form.id, sort_order=index, **action_cfg))
 
-        if await db.scalar(select(func.count(DynamicRecord.id)).where(DynamicRecord.form_id == form.id, DynamicRecord.tenant_id == tenant_id)) == 0:
+        record_count = await db.scalar(select(func.count(DynamicRecord.id)).where(DynamicRecord.form_id == form.id, DynamicRecord.tenant_id == tenant_id)) or 0
+        if record_count == 0:
             for record_cfg in form_cfg["records"]:
                 db.add(DynamicRecord(tenant_id=tenant_id, form_id=form.id, model_id=form.model_id, created_by=None, updated_by=None, **record_cfg))
+            record_count = len(form_cfg["records"])
+
+        target_count = BUSINESS_FORM_RECORD_TARGETS.get(form_cfg["code"], 0)
+        if record_count < target_count:
+            for seed_index in range(record_count, target_count):
+                generated = _generated_business_record(form_cfg["code"], seed_index)
+                if generated is not None:
+                    db.add(DynamicRecord(tenant_id=tenant_id, form_id=form.id, model_id=form.model_id, created_by=None, updated_by=None, **generated))
 
         roles = (await db.execute(select(Role).where(Role.tenant_id == tenant_id))).scalars().all()
         for role in roles:
@@ -1188,9 +1595,117 @@ async def delete_application_menu_node(
     return {"ok": True}
 
 
+@router.get("/{form_id}/publish/preview")
+async def preview_form_publish(
+    form_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(require_admin),
+):
+    from app.models.relational import Form
+
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
+        raise HTTPException(404, "Form not found")
+    report, _snapshot = await _build_publish_preview(db, tenant_id, form)
+    return {"data": {"form_id": form_id, **report}}
+
+
+@router.post("/{form_id}/publish")
+async def publish_form(
+    form_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(require_admin),
+):
+    from app.models.relational import Form, FormVersion
+
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
+        raise HTTPException(404, "Form not found")
+    report, snapshot = await _build_publish_preview(db, tenant_id, form)
+    if report["blocking_count"] > 0:
+        raise HTTPException(409, {"message": "Publish blocked by incompatible form changes", "report": report})
+    now = datetime.now()
+    published_at = now.isoformat()
+    snapshot = _promote_snapshot_config(snapshot, published_at, report["next_version"])
+    version = FormVersion(
+        tenant_id=tenant_id,
+        form_id=form.id,
+        version=report["next_version"],
+        status="published",
+        snapshot=snapshot,
+        impact_report=report,
+        published_by=_uid(user),
+        published_at=now,
+    )
+    form.status = "published"
+    form.config = (snapshot.get("form") or {}).get("config") or form.config
+    db.add(version)
+    await db.commit()
+    await db.refresh(version)
+    await write_audit_log(
+        tenant_id=tenant_id,
+        user_id=current_user_id(user),
+        action="publish",
+        resource_type="form",
+        resource_id=form.id,
+        new_values={"version": version.version, "impact_report": report},
+    )
+    return {"data": _form_version_payload(version)}
+
+
+@router.get("/{form_id}/versions")
+async def list_form_versions(
+    form_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    from app.models.relational import Form, FormVersion
+
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
+        raise HTTPException(404, "Form not found")
+    await _ensure_form_permission(db, user, form_id, "view")
+    versions = (await db.execute(
+        select(FormVersion)
+        .where(FormVersion.form_id == form_id, FormVersion.tenant_id == tenant_id)
+        .order_by(FormVersion.version.desc(), FormVersion.id.desc())
+    )).scalars().all()
+    return {"data": [_form_version_payload(version) for version in versions]}
+
+
+@router.get("/{form_id}/versions/{version_number}")
+async def get_form_version(
+    form_id: int,
+    version_number: int,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    from app.models.relational import Form, FormVersion
+
+    tenant_id = current_tenant_id(user)
+    form = await db.get(Form, form_id)
+    if not form or form.tenant_id != tenant_id:
+        raise HTTPException(404, "Form not found")
+    await _ensure_form_permission(db, user, form_id, "view")
+    version = await db.scalar(
+        select(FormVersion).where(
+            FormVersion.form_id == form_id,
+            FormVersion.tenant_id == tenant_id,
+            FormVersion.version == version_number,
+        )
+    )
+    if not version:
+        raise HTTPException(404, "Form version not found")
+    return {"data": _form_version_payload(version)}
+
+
 @router.get("/{form_id}")
 async def get_form(
     form_id: int,
+    schema: str = Query(default="draft", pattern="^(draft|published)$"),
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
@@ -1201,9 +1716,7 @@ async def get_form(
     if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "view")
-    fields = (await db.execute(
-        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
-    )).scalars().all()
+    fields = await _runtime_form_fields(db, tenant_id, form_id)
     if not user.get("is_admin"):
         visible_names = await allowed_form_fields(user, form_id, "view", fields, db)
         fields = [field for field in fields if field.field_name in visible_names]
@@ -1224,6 +1737,14 @@ async def get_form(
         }
         for app, binding in app_rows.fetchall()
     ]
+    if schema == "published":
+        version = await _latest_form_version(db, tenant_id, form_id)
+        if version:
+            payload = _published_form_payload(form, version, applications=applications)
+            if not user.get("is_admin"):
+                visible_names = await allowed_form_fields(user, form_id, "view", fields, db)
+                payload["fields"] = [field for field in payload["fields"] if field.get("field_name") in visible_names]
+            return {"data": payload}
     return {"data": _form_payload(form, fields=fields, applications=applications)}
 
 
@@ -1701,16 +2222,14 @@ async def list_dynamic_records(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    from app.models.relational import DynamicRecord, Form, FormField
+    from app.models.relational import DynamicRecord, Form
 
     tenant_id = current_tenant_id(user)
     form = await db.get(Form, form_id)
     if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "view")
-    fields = (await db.execute(
-        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
-    )).scalars().all()
+    fields = await _runtime_form_fields(db, tenant_id, form_id)
     visible_fields = await allowed_form_fields(user, form_id, "view", fields, db)
     query_fields = _visible_field_subset(fields, visible_fields)
     db_filters = [DynamicRecord.form_id == form_id, DynamicRecord.tenant_id == tenant_id]
@@ -1800,7 +2319,7 @@ async def get_dynamic_record(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    from app.models.relational import DynamicRecord, Form, FormField
+    from app.models.relational import DynamicRecord, Form
 
     tenant_id = current_tenant_id(user)
     form = await db.get(Form, form_id)
@@ -1815,9 +2334,7 @@ async def get_dynamic_record(
         or (record.deleted_at is not None and not include_deleted)
     ):
         raise HTTPException(404, "Record not found")
-    fields = (await db.execute(
-        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
-    )).scalars().all()
+    fields = await _runtime_form_fields(db, tenant_id, form_id)
     visible_fields = await allowed_form_fields(user, form_id, "view", fields, db)
     return {"data": _record_payload(record, visible_fields=visible_fields)}
 
@@ -1829,7 +2346,7 @@ async def create_dynamic_record(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    from app.models.relational import DynamicRecord, Form, FormField
+    from app.models.relational import DynamicRecord, Form
 
     tenant_id = current_tenant_id(user)
     form = await db.get(Form, form_id)
@@ -1837,19 +2354,19 @@ async def create_dynamic_record(
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "create")
     await assert_tenant_quota(db, tenant_id, "dynamicRecords")
-    fields = (await db.execute(
-        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
-    )).scalars().all()
+    fields = await _runtime_form_fields(db, tenant_id, form_id)
     editable_fields = await allowed_form_fields(user, form_id, "create", fields, db)
     denied_fields = sorted(set(body.data.keys()) - editable_fields)
     if denied_fields:
         raise HTTPException(403, f"Field permission denied: {', '.join(denied_fields)}")
     _validate_record_data(fields, body.data)
+    latest_version = await _latest_form_version(db, tenant_id, form_id)
     record = DynamicRecord(
         tenant_id=tenant_id,
         form_id=form_id,
         model_id=form.model_id,
         data=body.data,
+        schema_version=latest_version.version if latest_version else 1,
         status=body.status,
         created_by=_uid(user),
         updated_by=_uid(user),
@@ -1876,7 +2393,7 @@ async def update_dynamic_record(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    from app.models.relational import DynamicRecord, FormField
+    from app.models.relational import DynamicRecord
 
     tenant_id = current_tenant_id(user)
     record = await db.get(DynamicRecord, record_id)
@@ -1885,9 +2402,7 @@ async def update_dynamic_record(
     await _ensure_form_permission(db, user, form_id, "edit")
     updates = body.dict(exclude_unset=True)
     if "data" in updates and updates["data"] is not None:
-        fields = (await db.execute(
-            select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
-        )).scalars().all()
+        fields = await _runtime_form_fields(db, tenant_id, form_id)
         editable_fields = await allowed_form_fields(user, form_id, "edit", fields, db)
         denied_fields = sorted(set(updates["data"].keys()) - editable_fields)
         if denied_fields:

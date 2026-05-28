@@ -81,6 +81,17 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
         permission_check="save_draft",
         audit_required=True,
     ),
+    "forms.create_form_definition": ToolDefinition(
+        name="forms.create_form_definition",
+        title="Create form definition",
+        description="Create a low-code form definition, fields, layouts, and optional application menu binding.",
+        side_effect="configuration_write",
+        risk_level="high",
+        input_schema={"form": "object", "fields": "array", "menu": "object"},
+        output_schema={"form": "object", "fields": "array", "route_path": "string"},
+        permission_check="config",
+        audit_required=True,
+    ),
     "workflow.start": ToolDefinition(
         name="workflow.start",
         title="Start workflow",

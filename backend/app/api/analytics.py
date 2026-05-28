@@ -10,7 +10,7 @@ import json
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
 from app.api._model_driven_shared import (
@@ -18,6 +18,7 @@ from app.api._model_driven_shared import (
     SAFE_COLUMNS,
     assert_safe_identifier,
 )
+from app.api.deps import current_tenant_id, get_current_user
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -103,10 +104,13 @@ def _parse_filters(filters_json: Optional[str]) -> list[tuple[str, str]]:
 
 
 def _build_where_clause(
-    table_name: str, filters: list[tuple[str, str]], params: dict
+    table_name: str, filters: list[tuple[str, str]], params: dict, tenant_id: int | None = None
 ) -> tuple[str, dict]:
     """Build a WHERE clause from filter pairs, validating each field name."""
     if not filters:
+        if tenant_id is not None and "tenant_id" in SAFE_COLUMNS.get(table_name, set()):
+            params["tenant_id"] = tenant_id
+            return " WHERE tenant_id = :tenant_id", params
         return "", params
 
     allowed = SAFE_COLUMNS.get(table_name, set())
@@ -119,29 +123,34 @@ def _build_where_clause(
         clauses.append(f"{field} = :{param_key}")
         params[param_key] = value
 
+    if tenant_id is not None and "tenant_id" in allowed:
+        clauses.append("tenant_id = :tenant_id")
+        params["tenant_id"] = tenant_id
+
     return " WHERE " + " AND ".join(clauses), params
 
 
 # ── Endpoints ──────────────────────────────────────────────
 
 @router.get("/overview")
-async def analytics_overview():
+async def analytics_overview(user: dict = Depends(get_current_user)):
     """分析总览数据."""
     async def _query(db):
         from app.models.relational import Equipment, ProductionLine, WorkOrder
         from sqlalchemy import func, select
+        tenant_id = current_tenant_id(user)
 
-        lines = await db.execute(select(ProductionLine))
+        lines = await db.execute(select(ProductionLine).where(ProductionLine.tenant_id == tenant_id))
         line_list = lines.scalars().all()
 
-        eq_total = await db.scalar(select(func.count(Equipment.id)))
+        eq_total = await db.scalar(select(func.count(Equipment.id)).where(Equipment.tenant_id == tenant_id))
         eq_running = await db.scalar(
-            select(func.count(Equipment.id)).where(Equipment.status == "running")
+            select(func.count(Equipment.id)).where(Equipment.tenant_id == tenant_id, Equipment.status == "running")
         )
 
-        wo_total = await db.scalar(select(func.count(WorkOrder.id)))
+        wo_total = await db.scalar(select(func.count(WorkOrder.id)).where(WorkOrder.tenant_id == tenant_id))
         wo_completed = await db.scalar(
-            select(func.count(WorkOrder.id)).where(WorkOrder.status == "completed")
+            select(func.count(WorkOrder.id)).where(WorkOrder.tenant_id == tenant_id, WorkOrder.status == "completed")
         )
 
         return {
@@ -156,7 +165,7 @@ async def analytics_overview():
         return result
 
     # Mock fallback
-    return MOCK_OVERVIEW
+    return {**MOCK_OVERVIEW, "source": "fallback"}
 
 
 # ── Chart-binding aggregation endpoints ───────────────────
@@ -168,6 +177,7 @@ async def aggregate(
     field: Optional[str] = Query(None, description="Field for sum/avg/min/max"),
     group_by: Optional[str] = Query(None, description="Field to group results by"),
     filters: Optional[str] = Query(None, description="JSON filter string"),
+    user: dict = Depends(get_current_user),
 ):
     """Aggregate data for chart widgets.
 
@@ -202,7 +212,7 @@ async def aggregate(
 
     async def _query(db):
         params: dict = {}
-        where_clause, params = _build_where_clause(table_name, filter_pairs, params)
+        where_clause, params = _build_where_clause(table_name, filter_pairs, params, current_tenant_id(user))
 
         # Build SQL expression for the aggregate value
         if metric == "count":
@@ -251,6 +261,7 @@ async def timeseries(
     start: Optional[str] = Query(None, description="Start datetime (ISO)"),
     end: Optional[str] = Query(None, description="End datetime (ISO)"),
     filters: Optional[str] = Query(None, description="JSON filter string"),
+    user: dict = Depends(get_current_user),
 ):
     """Time-series data for trend charts.
 
@@ -284,7 +295,7 @@ async def timeseries(
 
     async def _query(db):
         params: dict = {}
-        where_clause, params = _build_where_clause(table_name, filter_pairs, params)
+        where_clause, params = _build_where_clause(table_name, filter_pairs, params, current_tenant_id(user))
 
         # Add time range filters
         time_conditions = []
@@ -341,6 +352,7 @@ async def distribution(
     field: str = Query(..., description="Field to compute distribution on"),
     limit: int = Query(10, ge=1, le=100, description="Max number of groups"),
     filters: Optional[str] = Query(None, description="JSON filter string"),
+    user: dict = Depends(get_current_user),
 ):
     """Field value distribution for pie / donut charts.
 
@@ -358,7 +370,7 @@ async def distribution(
 
     async def _query(db):
         params: dict = {}
-        where_clause, params = _build_where_clause(table_name, filter_pairs, params)
+        where_clause, params = _build_where_clause(table_name, filter_pairs, params, current_tenant_id(user))
 
         sql = (
             f"SELECT CAST({field} AS TEXT) AS label, COUNT(*) AS cnt "

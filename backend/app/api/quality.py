@@ -5,9 +5,10 @@ import math
 import random
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from app.api.deps import current_tenant_id, get_current_user
 from app.services.graph_fallback import try_graph_or_mock
 
 router = APIRouter()
@@ -285,13 +286,16 @@ async def get_spc_data(
     parameter: str,
     equipment_id: int | None = None,
     hours: int = Query(24, ge=1, le=168),
+    user: dict = Depends(get_current_user),
 ):
     """SPC 控制图数据."""
     async def _query(db):
         from app.models.relational import SPCPoint
         from sqlalchemy import select
+        tenant_id = current_tenant_id(user)
         since = datetime.now() - timedelta(hours=hours)
         query = select(SPCPoint).where(
+            SPCPoint.tenant_id == tenant_id,
             SPCPoint.parameter == parameter,
             SPCPoint.timestamp >= since,
         ).order_by(SPCPoint.timestamp)
@@ -382,19 +386,21 @@ async def list_defects(
     severity: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    user: dict = Depends(get_current_user),
 ):
     """缺陷列表."""
     async def _query(db):
         from app.models.relational import Defect
         from sqlalchemy import func, select
-        query = select(Defect).order_by(Defect.created_at.desc())
+        tenant_id = current_tenant_id(user)
+        query = select(Defect).where(Defect.tenant_id == tenant_id).order_by(Defect.created_at.desc())
         if severity:
             query = query.where(Defect.severity == severity)
 
         result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
         defects = result.scalars().all()
 
-        count_result = await db.execute(select(func.count(Defect.id)))
+        count_result = await db.execute(select(func.count(Defect.id)).where(Defect.tenant_id == tenant_id))
         total = count_result.scalar() or 0
 
         return {
@@ -437,51 +443,17 @@ async def list_defects(
 
 
 @router.get("/defects/pareto")
-async def defect_pareto_analysis(days: int = Query(30, ge=1, le=365)):
+async def defect_pareto_analysis(days: int = Query(30, ge=1, le=365), user: dict = Depends(get_current_user)):
     """缺陷帕累托分析."""
-    # Graph-first: try Cypher aggregation on Neo4j (with timeout)
-    try:
-        from app.services.graph_service import graph_service
-        graph_service._check_driver()
-        async def _graph_pareto():
-            from app.database import neo4j_driver
-            async with neo4j_driver.session() as session:
-                result = await session.run(
-                    "MATCH (d:Defect) "
-                    "RETURN d.defect_type AS type, count(*) AS count "
-                    "ORDER BY count DESC"
-                )
-                records = await result.data()
-                if not records:
-                    return None
-                total = sum(r["count"] for r in records)
-                cumulative = 0
-                pareto_data = []
-                for r in records:
-                    count = r["count"]
-                    cumulative += count
-                    pareto_data.append({
-                        "defect_type": r["type"],
-                        "count": count,
-                        "percentage": round(count / max(total, 1) * 100, 1),
-                        "cumulative_percentage": round(cumulative / max(total, 1) * 100, 1),
-                    })
-                return {"data": pareto_data, "total_defects": total}
-
-        graph_result = await asyncio.wait_for(_graph_pareto(), timeout=3)
-        if graph_result is not None:
-            return graph_result
-    except asyncio.TimeoutError:
-        pass
-    except Exception:
-        pass
-
-    # PG fallback
+    # Graph aggregation is global in the current Neo4j model, so use PG first
+    # here to keep tenant isolation strict.
     async def _query(db):
         from app.models.relational import Defect
         from sqlalchemy import func, select
+        tenant_id = current_tenant_id(user)
         result = await db.execute(
             select(Defect.defect_type, func.count(Defect.id).label("count"))
+            .where(Defect.tenant_id == tenant_id)
             .group_by(Defect.defect_type)
             .order_by(func.count(Defect.id).desc())
         )
@@ -513,11 +485,13 @@ async def defect_pareto_analysis(days: int = Query(30, ge=1, le=365)):
 async def quality_traceability(
     entity_id: int,
     entity_type: str = Query("product", enum=["product", "equipment", "material"]),
+    user: dict = Depends(get_current_user),
 ):
     """质量追溯链 — graph-first via trace_chain, then PG, then mock."""
 
     # ── Graph-first: try trace_chain on Neo4j (with timeout) ──
     try:
+        raise RuntimeError("tenant-scoped traceability requires PG fallback")
         from app.services.graph_service import graph_service
         trace_records = await asyncio.wait_for(
             graph_service.trace_chain(entity_id=entity_id, max_hops=5, limit=100),
@@ -593,12 +567,14 @@ async def quality_traceability(
     async def _query(db):
         from app.models.relational import Inspection, Defect
         from sqlalchemy import select
+        tenant_id = current_tenant_id(user)
 
         trace = []
         if entity_type == "product":
             # Find inspections targeting this product
             result = await db.execute(
                 select(Inspection).where(
+                    Inspection.tenant_id == tenant_id,
                     Inspection.target_type == "Product",
                     Inspection.target_id == entity_id,
                 ).order_by(Inspection.inspected_at)
@@ -616,6 +592,7 @@ async def quality_traceability(
         elif entity_type == "equipment":
             result = await db.execute(
                 select(Inspection).where(
+                    Inspection.tenant_id == tenant_id,
                     Inspection.target_type == "Equipment",
                     Inspection.target_id == entity_id,
                 ).order_by(Inspection.inspected_at.desc()).limit(5)
@@ -632,6 +609,7 @@ async def quality_traceability(
         elif entity_type == "material":
             result = await db.execute(
                 select(Inspection).where(
+                    Inspection.tenant_id == tenant_id,
                     Inspection.target_type == "Material",
                     Inspection.target_id == entity_id,
                 ).order_by(Inspection.inspected_at)
@@ -686,18 +664,20 @@ async def list_inspections(
     result: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    user: dict = Depends(get_current_user),
 ):
     """检验记录."""
     async def _query(db):
         from app.models.relational import Inspection
         from sqlalchemy import func, select
-        query = select(Inspection).order_by(Inspection.inspected_at.desc())
+        tenant_id = current_tenant_id(user)
+        query = select(Inspection).where(Inspection.tenant_id == tenant_id).order_by(Inspection.inspected_at.desc())
         if inspection_type:
             query = query.where(Inspection.inspection_type == inspection_type)
         if result:
             query = query.where(Inspection.result == result)
 
-        total_result = await db.execute(select(func.count(Inspection.id)))
+        total_result = await db.execute(select(func.count(Inspection.id)).where(Inspection.tenant_id == tenant_id))
         total = total_result.scalar() or 0
 
         db_result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
@@ -867,15 +847,20 @@ async def execute_quality_event_action(event_id: str, body: QualityEventAction):
 
 
 @router.post("/capa")
-async def create_capa(body: CAPACreate):
+async def create_capa(body: CAPACreate, user: dict = Depends(get_current_user)):
     """创建 CAPA (纠正与预防措施)."""
     due_date = body.due_date
     if due_date.tzinfo is not None:
         due_date = due_date.replace(tzinfo=None)
 
     async def _query(db):
-        from app.models.relational import CAPA
+        from app.models.relational import CAPA, Defect
+        tenant_id = current_tenant_id(user)
+        defect = await db.get(Defect, body.defect_id)
+        if not defect or defect.tenant_id != tenant_id:
+            raise HTTPException(404, "Defect not found")
         capa = CAPA(
+            tenant_id=tenant_id,
             defect_id=body.defect_id,
             action_type=body.action_type,
             description=body.description,

@@ -3,13 +3,14 @@
 import asyncio
 import re
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from app.api.deps import get_current_user
 from app.models.graph_models import ENTITY_SCHEMAS, CYPHER_TEMPLATES, NodeLabel, RelType
 from app.services.graph_fallback import try_graph_then_db
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 # Whitelist of allowed column names for dynamic SQL to prevent injection
 _SAFE_COLUMNS = {

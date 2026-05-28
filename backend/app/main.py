@@ -1,4 +1,8 @@
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+from time import perf_counter
+from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +15,7 @@ from app.core.logging import get_logger, setup_logging
 setup_logging(level=settings.LOG_LEVEL)
 logger = get_logger(__name__)
 settings.validate_runtime()
+METRICS = {"requests_total": 0, "errors_total": 0, "route_counts": {}, "route_errors": {}, "route_latency_ms": {}}
 
 
 @asynccontextmanager
@@ -55,6 +60,35 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def observability_middleware(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or uuid4().hex
+    start = perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        response.headers["x-request-id"] = request_id
+        return response
+    finally:
+        elapsed_ms = round((perf_counter() - start) * 1000, 2)
+        route_key = f"{request.method} {request.url.path}"
+        METRICS["requests_total"] += 1
+        METRICS["route_counts"][route_key] = METRICS["route_counts"].get(route_key, 0) + 1
+        METRICS["route_latency_ms"][route_key] = elapsed_ms
+        if status_code >= 500:
+            METRICS["errors_total"] += 1
+            METRICS["route_errors"][route_key] = METRICS["route_errors"].get(route_key, 0) + 1
+        logger.info(
+            "request_completed request_id=%s method=%s path=%s status=%s duration_ms=%s",
+            request_id,
+            request.method,
+            request.url.path,
+            status_code,
+            elapsed_ms,
+        )
+
+
 # ── Global exception handler ──────────────────────────────
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
@@ -78,6 +112,70 @@ async def root():
 @app.get("/health", tags=["系统"])
 async def health():
     return {"status": "healthy"}
+
+
+@app.get("/api/v1/system/readiness", tags=["system"])
+async def readiness():
+    checks: dict[str, dict] = {}
+
+    try:
+        from sqlalchemy import text
+
+        from app.database import AsyncSessionLocal, DB_TYPE
+
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+            try:
+                version = await session.scalar(text("SELECT version_num FROM alembic_version LIMIT 1"))
+            except Exception:
+                version = None
+        checks["database"] = {"status": "ready", "backend": DB_TYPE}
+        checks["migrations"] = {"status": "ready" if version else "degraded", "version": version}
+    except Exception as exc:
+        checks["database"] = {"status": "not_ready", "error": str(exc)}
+        checks["migrations"] = {"status": "not_ready", "error": str(exc)}
+
+    smtp_ready = bool(settings.SMTP_HOST)
+    if settings.IS_PRODUCTION:
+        checks["smtp"] = {"status": "ready" if smtp_ready else "not_ready", "host": settings.SMTP_HOST or None}
+    else:
+        checks["smtp"] = {"status": "ready" if smtp_ready else "degraded", "host": settings.SMTP_HOST or None}
+
+    storage_dir = Path(__file__).resolve().parent.parent / "storage"
+    try:
+        storage_dir.mkdir(parents=True, exist_ok=True)
+        probe = storage_dir / ".readiness"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+        checks["storage"] = {"status": "ready", "path": str(storage_dir)}
+    except Exception as exc:
+        checks["storage"] = {"status": "not_ready", "path": str(storage_dir), "error": str(exc)}
+
+    production_checks = {
+        "appMode": settings.APP_MODE,
+        "demoAuthOptional": settings.DEMO_AUTH_OPTIONAL,
+        "explicitCors": "*" not in settings.CORS_ORIGINS,
+        "strongSecret": len(settings.SECRET_KEY or "") >= 32 and settings.SECRET_KEY not in {"change-me", "secret", "dev-secret"},
+        "postgresRequired": not settings.IS_PRODUCTION or settings.DATABASE_BACKEND.lower() == "postgresql",
+    }
+    checks["productionConfig"] = {
+        "status": "ready" if all(production_checks.values()) else ("not_ready" if settings.IS_PRODUCTION else "degraded"),
+        "checks": production_checks,
+    }
+
+    statuses = [item["status"] for item in checks.values()]
+    status = "not_ready" if "not_ready" in statuses else ("degraded" if "degraded" in statuses else "ready")
+    return {
+        "status": status,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "appMode": settings.APP_MODE,
+        "checks": checks,
+    }
+
+
+@app.get("/api/v1/system/metrics", tags=["system"])
+async def metrics():
+    return {"data": METRICS}
 
 
 # ── Routers ───────────────────────────────────────────────

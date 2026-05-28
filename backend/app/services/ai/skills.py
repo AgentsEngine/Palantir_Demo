@@ -106,6 +106,17 @@ SKILL_REGISTRY: dict[str, SkillDefinition] = {
         confirmation_policy="confirm_token",
         output_schema={"type": "configuration_suggestion", "diff_required": True},
     ),
+    "low_code.create_form_definition": SkillDefinition(
+        name="low_code.create_form_definition",
+        title="Create low-code form",
+        description="Create a low-code form definition from an approved AI plan.",
+        capability_level="agentic",
+        risk_level="high",
+        allowed_tools=["forms.create_form_definition"],
+        required_permissions=["config"],
+        confirmation_policy="confirm_token",
+        output_schema={"type": "configuration_write", "resource": "form"},
+    ),
     "workflow.submit_after_confirmation": SkillDefinition(
         name="workflow.submit_after_confirmation",
         title="Workflow submission",

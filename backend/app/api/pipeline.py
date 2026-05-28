@@ -2,9 +2,11 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
+
+from app.api.deps import current_tenant_id, get_current_user
 
 router = APIRouter()
 
@@ -48,11 +50,12 @@ from app.core.db import safe_db_call as _try_db  # noqa: E402
 # ── Endpoints ──────────────────────────────────────────────
 
 @router.get("")
-async def list_pipelines(status: str | None = None):
+async def list_pipelines(status: str | None = None, user: dict = Depends(get_current_user)):
     """列出所有管线."""
     async def _query(db):
         from app.models.relational import Pipeline
-        query = select(Pipeline).order_by(Pipeline.created_at.desc())
+        tenant_id = current_tenant_id(user)
+        query = select(Pipeline).where(Pipeline.tenant_id == tenant_id).order_by(Pipeline.created_at.desc())
         if status:
             query = query.where(Pipeline.status == status)
         result = await db.execute(query)
@@ -61,6 +64,7 @@ async def list_pipelines(status: str | None = None):
             "data": [
                 {
                     "id": p.id,
+                    "tenant_id": p.tenant_id,
                     "name": p.name,
                     "description": p.description,
                     "status": p.status,
@@ -83,11 +87,13 @@ async def list_pipelines(status: str | None = None):
 
 
 @router.post("")
-async def create_pipeline(body: PipelineCreate):
+async def create_pipeline(body: PipelineCreate, user: dict = Depends(get_current_user)):
     """创建管线."""
     async def _query(db):
         from app.models.relational import Pipeline
+        tenant_id = current_tenant_id(user)
         p = Pipeline(
+            tenant_id=tenant_id,
             name=body.name,
             description=body.description,
             config=body.config,
@@ -97,7 +103,7 @@ async def create_pipeline(body: PipelineCreate):
         db.add(p)
         await db.commit()
         await db.refresh(p)
-        return {"id": p.id, "name": p.name, "status": p.status}
+        return {"id": p.id, "tenant_id": p.tenant_id, "name": p.name, "status": p.status, "source": "database"}
 
     result = await _try_db(_query)
     if result is not None:
@@ -106,15 +112,17 @@ async def create_pipeline(body: PipelineCreate):
 
 
 @router.get("/{pipeline_id}")
-async def get_pipeline(pipeline_id: int):
+async def get_pipeline(pipeline_id: int, user: dict = Depends(get_current_user)):
     """管线详情."""
     async def _query(db):
         from app.models.relational import Pipeline
+        tenant_id = current_tenant_id(user)
         p = await db.get(Pipeline, pipeline_id)
-        if not p:
-            return None
+        if not p or p.tenant_id != tenant_id:
+            raise HTTPException(404, "Pipeline not found")
         return {
             "id": p.id,
+            "tenant_id": p.tenant_id,
             "name": p.name,
             "description": p.description,
             "config": p.config,
@@ -143,15 +151,17 @@ async def get_pipeline(pipeline_id: int):
 
 
 @router.post("/{pipeline_id}/run")
-async def run_pipeline(pipeline_id: int):
+async def run_pipeline(pipeline_id: int, user: dict = Depends(get_current_user)):
     """执行管线."""
     async def _query(db):
         from app.models.relational import Pipeline, PipelineRun
+        tenant_id = current_tenant_id(user)
         p = await db.get(Pipeline, pipeline_id)
-        if not p:
-            return None
+        if not p or p.tenant_id != tenant_id:
+            raise HTTPException(404, "Pipeline not found")
 
         run = PipelineRun(
+            tenant_id=tenant_id,
             pipeline_id=pipeline_id,
             status="running",
             started_at=datetime.now(),
@@ -196,13 +206,18 @@ async def run_pipeline(pipeline_id: int):
 async def list_pipeline_runs(
     pipeline_id: int,
     limit: int = Query(20, ge=1, le=100),
+    user: dict = Depends(get_current_user),
 ):
     """管线执行历史."""
     async def _query(db):
-        from app.models.relational import PipelineRun
+        from app.models.relational import Pipeline, PipelineRun
+        tenant_id = current_tenant_id(user)
+        pipeline = await db.get(Pipeline, pipeline_id)
+        if not pipeline or pipeline.tenant_id != tenant_id:
+            raise HTTPException(404, "Pipeline not found")
         result = await db.execute(
             select(PipelineRun)
-            .where(PipelineRun.pipeline_id == pipeline_id)
+            .where(PipelineRun.tenant_id == tenant_id, PipelineRun.pipeline_id == pipeline_id)
             .order_by(PipelineRun.started_at.desc())
             .limit(limit)
         )
@@ -231,15 +246,17 @@ async def list_pipeline_runs(
 
 
 @router.get("/{pipeline_id}/runs/{run_id}")
-async def get_pipeline_run(pipeline_id: int, run_id: int):
+async def get_pipeline_run(pipeline_id: int, run_id: int, user: dict = Depends(get_current_user)):
     """管线执行详情."""
     async def _query(db):
         from app.models.relational import PipelineRun
+        tenant_id = current_tenant_id(user)
         r = await db.get(PipelineRun, run_id)
-        if not r or r.pipeline_id != pipeline_id:
-            return None
+        if not r or r.tenant_id != tenant_id or r.pipeline_id != pipeline_id:
+            raise HTTPException(404, "Pipeline run not found")
         return {
             "id": r.id,
+            "tenant_id": r.tenant_id,
             "pipeline_id": r.pipeline_id,
             "status": r.status,
             "records_processed": r.records_processed,

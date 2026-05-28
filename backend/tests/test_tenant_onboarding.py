@@ -183,3 +183,135 @@ def test_tenant_domain_status_and_quota_guards():
             json={"username": f"owner@quota-{suffix}.example.com", "password": "Quota123!!"},
         )
         assert suspended_login.status_code == 403
+
+
+def test_platform_tenant_operations_invite_history_resend_revoke_and_reset():
+    from app.main import app
+
+    suffix = uuid.uuid4().hex[:8]
+    with TestClient(app) as client:
+        token = _ok(
+            client.post("/api/v1/auth/login", json={"username": "admin", "password": "admin123"}),
+            "platform login",
+        )["token"]
+        headers = _headers(token)
+        tenant = _ok(
+            client.post(
+                "/api/v1/platform/tenants",
+                headers=headers,
+                json={
+                    "name": f"Ops Tenant {suffix}",
+                    "slug": f"ops-{suffix}",
+                    "domains": [f"ops-{suffix}.example.com"],
+                    "admin_email": f"owner@ops-{suffix}.example.com",
+                },
+            ),
+            "create ops tenant",
+        )["data"]
+        old_token = tenant["adminInvite"]["inviteUrl"].split("token=", 1)[1]
+
+        invites = _ok(
+            client.get(f"/api/v1/platform/tenants/{tenant['id']}/invites", headers=headers),
+            "list invites",
+        )["data"]
+        assert len([item for item in invites if item["tenantId"] == tenant["id"]]) == len(invites)
+        invite = next(item for item in invites if item["email"] == f"owner@ops-{suffix}.example.com")
+        assert invite["status"] == "pending"
+
+        resent = _ok(
+            client.post(f"/api/v1/platform/tenants/{tenant['id']}/invites/{invite['id']}/resend", headers=headers),
+            "resend invite",
+        )["data"]
+        replaced = client.post(
+            "/api/v1/auth/invite/accept",
+            json={"token": old_token, "password": "OpsTenant123!"},
+        )
+        assert replaced.status_code == 400
+
+        accepted = _ok(
+            client.post(
+                "/api/v1/auth/invite/accept",
+                json={"token": resent["inviteUrl"].split("token=", 1)[1], "password": "OpsTenant123!"},
+            ),
+            "accept resent invite",
+        )
+        user_id = accepted["user"]["id"]
+
+        extra = _ok(
+            client.post(
+                f"/api/v1/platform/tenants/{tenant['id']}/invites",
+                headers=headers,
+                json={"email": f"member@ops-{suffix}.example.com", "role": "member"},
+            ),
+            "create member invite",
+        )["data"]
+        revoked = _ok(
+            client.post(f"/api/v1/platform/tenants/{tenant['id']}/invites/{extra['id']}/revoke", headers=headers),
+            "revoke invite",
+        )["data"]
+        assert revoked["status"] == "revoked"
+        revoked_accept = client.post(
+            "/api/v1/auth/invite/accept",
+            json={"token": extra["inviteUrl"].split("token=", 1)[1], "password": "Member123!"},
+        )
+        assert revoked_accept.status_code == 400
+
+        detail = _ok(client.get(f"/api/v1/platform/tenants/{tenant['id']}", headers=headers), "tenant detail")["data"]
+        assert detail["usage"]["forms"] >= 0
+        assert detail["pendingInvitesCount"] >= 0
+        assert any(item["email"] == f"owner@ops-{suffix}.example.com" for item in detail["recentInvites"])
+
+        reset = _ok(
+            client.post(f"/api/v1/platform/tenants/{tenant['id']}/users/{user_id}/password-reset", headers=headers),
+            "platform reset",
+        )["data"]
+        assert "resetUrl" in reset
+        _ok(
+            client.post(
+                "/api/v1/auth/password-reset/confirm",
+                json={"token": reset["resetUrl"].split("token=", 1)[1], "new_password": "OpsTenant456!"},
+            ),
+            "confirm platform reset",
+        )
+
+        tenant_admin_headers = _headers(accepted["token"])
+        forbidden = client.get("/api/v1/platform/tenants", headers=tenant_admin_headers)
+        assert forbidden.status_code == 403
+
+        _ok(
+            client.put(
+                f"/api/v1/platform/tenants/{tenant['id']}",
+                headers=headers,
+                json={"status": "suspended", "suspended_reason": "ops test"},
+            ),
+            "suspend ops tenant",
+        )
+        blocked_invite = client.post(
+            f"/api/v1/platform/tenants/{tenant['id']}/invites",
+            headers=headers,
+            json={"email": f"blocked@ops-{suffix}.example.com", "role": "member"},
+        )
+        assert blocked_invite.status_code == 403
+        blocked_reset = client.post(f"/api/v1/platform/tenants/{tenant['id']}/users/{user_id}/password-reset", headers=headers)
+        assert blocked_reset.status_code == 403
+
+        _ok(
+            client.put(
+                f"/api/v1/platform/tenants/{tenant['id']}",
+                headers=headers,
+                json={"status": "archived", "limits": {"users": None}, "domains": []},
+            ),
+            "archive ops tenant",
+        )
+        direct_restore = client.put(
+            f"/api/v1/platform/tenants/{tenant['id']}",
+            headers=headers,
+            json={"status": "active"},
+        )
+        assert direct_restore.status_code == 422
+
+        audit_detail = _ok(client.get(f"/api/v1/platform/tenants/{tenant['id']}", headers=headers), "tenant detail audit")["data"]
+        serialized = "\n".join(str(item) for item in audit_detail["recentAuditLogs"])
+        assert "revoke_invite" in serialized
+        assert "resend_invite" in serialized
+        assert "token=" not in serialized

@@ -34,13 +34,6 @@ const iconMap: Record<string, ReactNode> = {
   AppstoreOutlined: <AppstoreOutlined />,
 };
 
-const fallbackApplications: ApplicationEntry[] = [
-  { id: 1, name: '生产态势', code: 'production-dashboard', description: '生产效率、OEE、产线告警和班次趋势。', icon: 'DashboardOutlined', default_route: '/program/production-overview', status: 'published', is_pinned: true },
-  { id: 2, name: '预测性维护', code: 'maintenance-analysis', description: '设备健康总览、健康分析、故障预测和工单管理。', icon: 'ToolOutlined', default_route: '/program/device-health-dashboard', status: 'published', is_pinned: true },
-  { id: 3, name: '质量分析', code: 'quality-control', description: '质量缺陷、检验批次、异常追溯和过程能力分析。', icon: 'SafetyCertificateOutlined', default_route: '/program/quality-overview', status: 'published' },
-  { id: 4, name: '供应链风险', code: 'supply-risk', description: '供应商交付、库存水位、风险预警和替代方案。', icon: 'ShopOutlined', default_route: '/program/supply-overview', status: 'published' },
-];
-
 function renderIcon(name?: string) {
   return iconMap[name || ''] || <AppstoreOutlined />;
 }
@@ -55,12 +48,11 @@ export default function MyApplications() {
     setLoading(true);
     listApplications()
       .then((res) => {
-        const data = res.data?.data || [];
-        setApplications(data.length ? data : fallbackApplications);
+        setApplications(res.data?.data || []);
       })
       .catch(() => {
-        setApplications(fallbackApplications);
-        message.warning('应用目录使用本地默认配置');
+        setApplications([]);
+        message.error('应用目录加载失败');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -146,7 +138,7 @@ export default function MyApplications() {
                     <Typography.Title level={5}>{app.name}</Typography.Title>
                     <Typography.Text type="secondary">{app.code}</Typography.Text>
                     <Typography.Paragraph className="application-description">
-                      {app.description || '业务工作包'}
+                      {app.description || '业务工作区'}
                     </Typography.Paragraph>
                     <div className="application-meta-block">
                       <span>默认首页</span>

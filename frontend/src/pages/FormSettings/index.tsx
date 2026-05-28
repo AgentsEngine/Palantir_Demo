@@ -42,17 +42,23 @@ import {
   adminListRoles,
   createPlatformForm,
   createPlatformFormField,
+  deletePlatformFormPermission,
   listPlatformFormLayouts,
+  listPlatformFormPermissions,
   listPlatformForms,
   listWorkflowBindings,
+  previewPlatformFormPublish,
+  publishPlatformForm,
   updatePlatformForm,
   updateWorkflowBinding,
+  upsertPlatformFormPermission,
   upsertPlatformFormLayout,
   upsertWorkflowBinding,
   wfCreateDefinition,
   wfGetDefinition,
   wfUpdateDefinition,
   type PlatformForm,
+  type PlatformFormPublishReport,
 } from '@/services/api';
 import {
   makeDefaultViewConfig,
@@ -987,6 +993,7 @@ export default function FormSettingsPage() {
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
   const [previewFlowNodeId, setPreviewFlowNodeId] = useState('');
   const [publishCheckOpen, setPublishCheckOpen] = useState(false);
+  const [serverPublishReport, setServerPublishReport] = useState<PlatformFormPublishReport | null>(null);
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
   const [draggedControlId, setDraggedControlId] = useState('');
   const [dropHint, setDropHint] = useState<{ controlId: string; position: DropPosition } | null>(null);
@@ -997,6 +1004,8 @@ export default function FormSettingsPage() {
   const [platformForm, setPlatformForm] = useState<PlatformForm | null>(null);
   const [workflowMeta, setWorkflowMeta] = useState<WorkflowDesignerMeta>({});
   const [isPersistingFlow, setPersistingFlow] = useState(false);
+  const [isPersistingPermissions, setPersistingPermissions] = useState(false);
+  const [identityRoleRecords, setIdentityRoleRecords] = useState<Array<{ id: number; name: string; label: string }>>([]);
   const [identityRoles, setIdentityRoles] = useState<string[]>([]);
   const [identityOrgUnits, setIdentityOrgUnits] = useState<string[]>([]);
   const permissionRoles = identityRoles.length ? identityRoles : baseConfig.roles;
@@ -1035,7 +1044,13 @@ export default function FormSettingsPage() {
   useEffect(() => {
     Promise.all([adminListRoles(), adminListOrgUnits()])
       .then(([roleRes, orgRes]) => {
-        setIdentityRoles((roleRes.data?.data || []).map((role: any) => role.label || role.name).filter(Boolean));
+        const roleRecords = (roleRes.data?.data || []).map((role: any) => ({
+          id: Number(role.id),
+          name: String(role.name || ''),
+          label: String(role.label || role.name || ''),
+        })).filter((role: { id: number; label: string }) => Number.isFinite(role.id) && role.label);
+        setIdentityRoleRecords(roleRecords);
+        setIdentityRoles(roleRecords.map((role: { label: string }) => role.label));
         setIdentityOrgUnits((orgRes.data?.data || []).map((org: any) => org.name).filter(Boolean));
       })
       .catch(() => {
@@ -1273,8 +1288,28 @@ export default function FormSettingsPage() {
     });
     return checks;
   }, [baseConfig.fields, baseConfig.id, hiddenRequiredControls, layoutControls, professionalFlowConfig, searchableFieldCount, viewConfig]);
-  const publishErrorCount = publishChecks.filter((item) => item.level === 'error').length;
-  const publishWarningCount = publishChecks.filter((item) => item.level === 'warning').length;
+  const serverPublishChecks = useMemo<PublishCheckItem[]>(() => {
+    if (!serverPublishReport) return [];
+    const items = serverPublishReport.items.map((item) => ({
+      level: item.level === 'blocking' ? 'error' : item.level === 'warning' ? 'warning' : 'suggestion',
+      title: item.label ? `${item.label} / ${item.type}` : item.type,
+      detail: `${item.detail}${item.affected_count ? ` (${item.affected_count} affected)` : ''}`,
+    } as PublishCheckItem));
+    if (!items.length) {
+      items.push({
+        level: 'suggestion',
+        title: 'Backend impact report',
+        detail: `No blocking schema impact found across ${serverPublishReport.record_count} existing records.`,
+      });
+    }
+    return items;
+  }, [serverPublishReport]);
+  const combinedPublishChecks = useMemo(
+    () => [...publishChecks, ...serverPublishChecks],
+    [publishChecks, serverPublishChecks],
+  );
+  const publishErrorCount = combinedPublishChecks.filter((item) => item.level === 'error').length;
+  const publishWarningCount = combinedPublishChecks.filter((item) => item.level === 'warning').length;
 
   const updateSelectedControlRule = (ruleKey: ControlRuleKey, patch: Partial<ControlRule>) => {
     if (!selectedControl) return;
@@ -1441,6 +1476,64 @@ export default function FormSettingsPage() {
     return createdForm;
   };
 
+  const savePermissionDesign = async () => {
+    const role = identityRoleRecords.find((item) => item.label === activePermissionRole || item.name === activePermissionRole);
+    if (!role) {
+      message.warning('请先在用户与权限中创建并同步角色');
+      return;
+    }
+    setPersistingPermissions(true);
+    try {
+      const form = await ensurePlatformForm();
+      const existingResponse = await listPlatformFormPermissions(form.id);
+      const existing = (existingResponse.data?.data || []) as Array<{ id: number; role_id: number }>;
+      await Promise.all(
+        existing
+          .filter((permission) => permission.role_id === role.id)
+          .map((permission) => deletePlatformFormPermission(form.id, permission.id)),
+      );
+
+      const actionPermissions = [
+        ['view', true],
+        ['create', true],
+        ['edit', true],
+        ['delete', false],
+        ['import', true],
+        ['export', true],
+        ['configure', false],
+        ['approve', true],
+      ] as const;
+      await Promise.all(actionPermissions.map(([action, enabled]) => (
+        upsertPlatformFormPermission(form.id, {
+          role_id: role.id,
+          action,
+          effect: enabled ? 'allow' : 'deny',
+        })
+      )));
+
+      const fieldPermissions = baseConfig.fields.flatMap((field, index) => {
+        const permissions = [
+          { action: 'view', effect: 'allow' },
+          { action: 'edit', effect: field.locked || index >= 2 ? 'deny' : 'allow' },
+        ];
+        if (field.required) permissions.push({ action: 'create', effect: 'allow' });
+        return permissions.map((permission) => ({
+          role_id: role.id,
+          action: permission.action,
+          effect: permission.effect,
+          field_name: field.key,
+        }));
+      });
+      await Promise.all(fieldPermissions.map((permission) => upsertPlatformFormPermission(form.id, permission)));
+      message.success('权限配置已保存到后台数据库');
+    } catch (error) {
+      console.error('save permissions failed', error);
+      message.error('保存权限失败');
+    } finally {
+      setPersistingPermissions(false);
+    }
+  };
+
   const updateFormWorkflowMeta = async (form: PlatformForm, nextMeta: WorkflowDesignerMeta) => {
     const nextConfig = { ...(form.config || {}), workflowDesigner: nextMeta };
     const response = await updatePlatformForm(form.id, { config: nextConfig });
@@ -1545,8 +1638,21 @@ export default function FormSettingsPage() {
     }
   };
 
-  const publishConfig = () => {
-    setPublishCheckOpen(true);
+  const publishConfig = async () => {
+    if (isPersistingFlow) return;
+    setPersistingFlow(true);
+    try {
+      const form = await ensurePlatformForm();
+      const formWithView = await updateFormViewConfig(form, viewConfig, 'draft');
+      const response = await previewPlatformFormPublish(formWithView.id);
+      setServerPublishReport(response.data?.data as PlatformFormPublishReport);
+      setPublishCheckOpen(true);
+    } catch (error) {
+      console.error('form publish preview failed', error);
+      message.error('发布影响报告生成失败，请检查后端服务或登录状态');
+    } finally {
+      setPersistingFlow(false);
+    }
   };
 
   const confirmPublish = async () => {
@@ -1558,7 +1664,7 @@ export default function FormSettingsPage() {
     setPersistingFlow(true);
     try {
       const form = await ensurePlatformForm();
-      const formWithView = await updateFormViewConfig(form, viewConfig, 'published');
+      const formWithView = await updateFormViewConfig(form, viewConfig, 'draft');
       const meta = getWorkflowDesignerMeta(formWithView);
       const saved = await saveWorkflowDefinition('published', formWithView, meta.draftWorkflowId || meta.publishedWorkflowId);
       const publishedAt = new Date().toISOString();
@@ -1588,12 +1694,21 @@ export default function FormSettingsPage() {
           ? updateWorkflowBinding(updatedForm.id, existing.id, payload)
           : upsertWorkflowBinding(updatedForm.id, payload);
       }));
-      setVersion(`v${saved.version}`);
+      const formVersionResponse = await publishPlatformForm(updatedForm.id);
+      const schemaVersion = Number(formVersionResponse.data?.data?.version || saved.version);
+      setServerPublishReport((formVersionResponse.data?.data?.impact_report || null) as PlatformFormPublishReport | null);
+      setVersion(`v${schemaVersion}`);
       setPublishCheckOpen(false);
       setHasUnsavedChanges(false);
       message.success('配置已发布，运行页会读取新的数据筛选和表格配置');
     } catch (error) {
       console.error('workflow publish failed', error);
+      const report = (error as any)?.response?.data?.detail?.report as PlatformFormPublishReport | undefined;
+      if (report) {
+        setServerPublishReport(report);
+        message.error('发布被后端影响报告阻断，请先处理不兼容字段变更');
+        return;
+      }
       message.error('发布失败，请检查流程定义或绑定接口');
     } finally {
       setPersistingFlow(false);
@@ -2702,7 +2817,15 @@ export default function FormSettingsPage() {
                   <Tag color="processing">当前：{activePermissionRole}</Tag>
                   <Tag color="blue">{baseConfig.fields.length} 个字段</Tag>
                   <Tag color="green">{permissionRoles.length} 个角色</Tag>
-                  <Button size="small" type="primary" icon={<SaveOutlined />}>保存权限</Button>
+                  <Button
+                    size="small"
+                    type="primary"
+                    icon={<SaveOutlined />}
+                    loading={isPersistingPermissions}
+                    onClick={savePermissionDesign}
+                  >
+                    保存权限
+                  </Button>
                 </Space>
               </div>
 
@@ -3049,10 +3172,10 @@ export default function FormSettingsPage() {
         <div className="designer-check-summary">
           <Tag color={publishErrorCount ? 'red' : 'success'}>{publishErrorCount} 个阻断项</Tag>
           <Tag color={publishWarningCount ? 'orange' : 'default'}>{publishWarningCount} 个提醒</Tag>
-          <Tag color="blue">{publishChecks.filter((item) => item.level === 'suggestion').length} 个建议</Tag>
+          <Tag color="blue">{combinedPublishChecks.filter((item) => item.level === 'suggestion').length} 个建议</Tag>
         </div>
         <div className="designer-check-list">
-          {publishChecks.map((item) => (
+          {combinedPublishChecks.map((item) => (
             <div className={`designer-check-item designer-check-${item.level}`} key={item.title}>
               <span>{item.level === 'error' ? <AlertOutlined /> : item.level === 'warning' ? <WarningOutlined /> : <CheckCircleOutlined />}</span>
               <div>
@@ -3078,7 +3201,7 @@ export default function FormSettingsPage() {
           <Space wrap>
             <Button onClick={saveDraft} loading={isPersistingFlow} icon={<SaveOutlined />}>保存草稿</Button>
             <Button danger onClick={() => { setHasUnsavedChanges(false); setVersionPanelOpen(false); message.success('已回滚到上一发布版本'); }}>回滚上一版</Button>
-            <Button type="primary" onClick={() => { setVersionPanelOpen(false); setPublishCheckOpen(true); }}>发布当前草稿</Button>
+            <Button type="primary" onClick={() => { setVersionPanelOpen(false); void publishConfig(); }}>发布当前草稿</Button>
           </Space>
         </div>
       </Modal>

@@ -179,6 +179,88 @@
   font-size: 11px;
 }
 
+.ai-agent-process {
+  margin: 0 0 10px;
+  padding: 8px 9px;
+  display: grid;
+  gap: 7px;
+  border: 1px solid #dce8ec;
+  border-radius: 8px;
+  background: #f8fbfc;
+}
+
+.ai-agent-process-step {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 7px;
+  align-items: start;
+  color: #263b44;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.ai-agent-process-step small {
+  display: block;
+  overflow: hidden;
+  color: #667a83;
+  font-size: 11px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-agent-process-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #2f5f73;
+  box-shadow: 0 0 0 3px rgba(47, 95, 115, 0.12);
+}
+
+.ai-agent-process-step.active .ai-agent-process-dot {
+  animation: ai-process-pulse 1s ease-in-out infinite;
+}
+
+.ai-agent-process-step.done .ai-agent-process-dot {
+  background: #2f7d52;
+  box-shadow: 0 0 0 3px rgba(47, 125, 82, 0.12);
+}
+
+.ai-typing-cursor {
+  width: 1px;
+  height: 1em;
+  margin-left: 2px;
+  display: inline-block;
+  vertical-align: -2px;
+  background: currentColor;
+  animation: ai-cursor-blink 0.9s steps(2, start) infinite;
+}
+
+@keyframes ai-process-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ai-cursor-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+
 .ai-skill-action-card {
   width: 100%;
   padding: 10px;
