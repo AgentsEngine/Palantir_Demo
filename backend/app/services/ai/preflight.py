@@ -60,18 +60,6 @@ def classify_preflight(message: str, context: dict[str, Any] | None = None) -> t
         return "draft", "medium", None
     if _contains(text, ["\u5206\u6790", "\u67e5\u8be2", "\u7edf\u8ba1", "\u67e5\u770b", "records", "record", "analyze", "query"]):
         return "business_query", "low", None
-    if _contains(text, ["删除", "delete", "改权限", "权限变更", "change permission"]):
-        return "config", "critical", "low-code"
-    if _contains(text, ["新建表单", "创建表单", "新增字段", "新建字段", "low-code", "low code", "form creation"]):
-        return "config", "high", "low-code"
-    if _contains(text, ["启动流程", "提交审批", "发起流程", "workflow", "submit"]):
-        return "workflow", "high", "workflow"
-    if _contains(text, ["下单", "订单", "采购", "purchase order", "order"]):
-        return "workflow", "high", "supply-chain"
-    if _contains(text, ["草稿", "新建数据", "创建记录", "create record", "draft"]):
-        return "draft", "medium", None
-    if _contains(text, ["分析", "查询", "统计", "查看", "records", "record", "analyze", "query"]):
-        return "business_query", "low", None
     return "qa", "low", None
 
 
