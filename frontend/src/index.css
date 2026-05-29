@@ -51,6 +51,74 @@ button {
   font-family: inherit;
 }
 
+.release-update-modal .ant-modal-body {
+  padding-top: 12px;
+}
+
+.release-update-content {
+  width: 100%;
+}
+
+.release-update-head {
+  padding: 12px 14px;
+  border: 1px solid var(--mf-border);
+  border-radius: 8px;
+  background: var(--mf-panel-soft);
+}
+
+.release-update-version.ant-typography {
+  margin: 4px 0 2px;
+}
+
+.release-update-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.release-update-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.release-update-list-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.release-update-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--mf-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.release-update-item span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(47, 95, 115, 0.1);
+  color: var(--mf-primary-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.release-update-item p {
+  margin: 1px 0 0;
+  color: var(--mf-text);
+  line-height: 1.6;
+}
+
 .density-compact {
   --density-gap: 10px;
   --density-card-pad: 12px;

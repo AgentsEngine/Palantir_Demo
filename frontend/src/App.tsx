@@ -100,8 +100,6 @@ interface ReleaseInfo {
   show_popup?: boolean;
 }
 
-const RELEASE_SEEN_STORAGE_KEY = 'mf_seen_release_version';
-
 const businessMenuItems: NonNullable<MenuProps['items']> = [
   { key: '/', icon: <HomeOutlined />, label: '\u6211\u7684\u5de5\u4f5c\u53f0' },
   { key: '/dashboard', icon: <DashboardOutlined />, label: '\u751f\u4ea7\u6001\u52bf' },
@@ -353,8 +351,6 @@ function AppContent() {
       .then((res) => {
         const release = res.data;
         if (!release?.version || release.show_popup === false) return;
-        const seenVersion = localStorage.getItem(RELEASE_SEEN_STORAGE_KEY);
-        if (seenVersion === release.version) return;
         setReleaseInfo(release);
         setReleaseModalOpen(true);
       })
@@ -362,9 +358,6 @@ function AppContent() {
   }, []);
 
   const acknowledgeRelease = () => {
-    if (releaseInfo?.version) {
-      localStorage.setItem(RELEASE_SEEN_STORAGE_KEY, releaseInfo.version);
-    }
     setReleaseModalOpen(false);
   };
 
@@ -383,6 +376,8 @@ function AppContent() {
     && !location.pathname.startsWith('/form-settings/')
     && !['/', '/workflow', '/system-admin', '/account-center'].includes(location.pathname);
   const runtimeTitle = getRuntimePageTitle(location.pathname);
+  const releaseUpdates = [...(releaseInfo?.highlights || []), ...(releaseInfo?.details || [])];
+  const releaseUpdatesScrollable = releaseUpdates.length > 10;
 
 
   const breadcrumbItems = useMemo(() => {
@@ -642,44 +637,39 @@ function AppContent() {
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <Modal
+        className="release-update-modal"
         title={releaseInfo?.title || 'Release update'}
         open={releaseModalOpen}
         onCancel={acknowledgeRelease}
+        width={680}
         footer={[
           <Button key="ok" type="primary" onClick={acknowledgeRelease}>
-            Got it
+            我知道了
           </Button>,
         ]}
       >
-        <Space direction="vertical" size={14} style={{ width: '100%' }}>
-          <div>
-            <Typography.Text type="secondary">Current version</Typography.Text>
-            <Typography.Title level={4} style={{ margin: '4px 0 0' }}>
+        <Space direction="vertical" size={14} className="release-update-content">
+          <div className="release-update-head">
+            <Typography.Text type="secondary">当前版本</Typography.Text>
+            <Typography.Title level={4} className="release-update-version">
               v{releaseInfo?.version}
             </Typography.Title>
             {releaseInfo?.released_at && (
-              <Typography.Text type="secondary">Released at: {releaseInfo.released_at}</Typography.Text>
+              <Typography.Text type="secondary">发布日期：{releaseInfo.released_at}</Typography.Text>
             )}
           </div>
           {releaseInfo?.summary && <Typography.Paragraph>{releaseInfo.summary}</Typography.Paragraph>}
-          {!!releaseInfo?.highlights?.length && (
-            <div>
-              <Typography.Text strong>Highlights</Typography.Text>
-              <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-                {releaseInfo.highlights.map((item) => (
-                  <li key={item}>{item}</li>
+          {!!releaseUpdates.length && (
+            <div className="release-update-section">
+              <Typography.Text strong>本次更新</Typography.Text>
+              <div className={releaseUpdatesScrollable ? 'release-update-list release-update-list-scroll' : 'release-update-list'}>
+                {releaseUpdates.map((item, index) => (
+                  <div className="release-update-item" key={`${index}-${item}`}>
+                    <span>{index + 1}</span>
+                    <p>{item}</p>
+                  </div>
                 ))}
-              </ul>
-            </div>
-          )}
-          {!!releaseInfo?.details?.length && (
-            <div>
-              <Typography.Text strong>Details</Typography.Text>
-              <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-                {releaseInfo.details.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+              </div>
             </div>
           )}
         </Space>
