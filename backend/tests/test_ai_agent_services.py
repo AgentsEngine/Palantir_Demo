@@ -214,6 +214,37 @@ def test_preflight_blocks_viewer_business_query_without_capability():
     assert decision.capability == "business_query"
 
 
+def test_form_record_analysis_summarizes_visible_records():
+    from app.services.ai.form_analysis import (
+        build_form_record_evidence,
+        build_local_form_analysis_answer,
+        summarize_form_record_result,
+    )
+
+    query_result = {
+        "form": {"id": 10, "name": "Material Master", "code": "material_master"},
+        "visible_fields": ["material_code", "status", "owner"],
+        "record_count": 3,
+        "records": [
+            {"id": 1, "status": "active", "data": {"material_code": "M-001", "status": "open", "owner": "QA"}},
+            {"id": 2, "status": "active", "data": {"material_code": "M-002", "status": "open", "owner": "SQE"}},
+            {"id": 3, "status": "archived", "data": {"material_code": "M-003", "status": "closed", "owner": "QA"}},
+        ],
+    }
+
+    summary = summarize_form_record_result(query_result)
+    evidence = build_form_record_evidence(query_result, limit=2)
+    answer = build_local_form_analysis_answer(summary)
+
+    assert summary["record_count"] == 3
+    assert summary["status_counts"] == {"active": 2, "archived": 1}
+    assert summary["field_non_empty"]["material_code"] == 3
+    assert summary["field_top_values"]["owner"][0] == {"value": "QA", "count": 2}
+    assert [item["record_id"] for item in evidence] == [1, 2]
+    assert "Material Master" in answer
+    assert "\u786e\u8ba4\u6e05\u5355" in answer
+
+
 def test_prompt_builder_includes_tenant_context_memory_and_evidence():
     from app.services.ai.prompt_builder import PromptBuildInput, PromptBuilder
     from app.services.ai.schemas import ChatMessage

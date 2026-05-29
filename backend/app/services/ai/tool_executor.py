@@ -9,7 +9,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.core.db import db_session
 
 from .dynamic_record_drafts import create_dynamic_record_draft_from_agent
-from .form_record_tools import get_form_record, query_form_records
+from .form_analysis import analyze_form_records
+from .form_record_tools import get_form_record
 from .low_code_tools import execute_add_form_field, execute_create_form_definition
 
 
@@ -82,8 +83,15 @@ class AgentToolExecutor:
 
         if skill == "analysis.analyze_form_records":
             async with db_session() as session:
-                result = await query_form_records(session, user=current_user, payload=payload)
-            audit_ai_event(current_user, "agent_tool_executed", {"skill": skill, "tool": "forms.query_records", "result": {"record_count": result.get("record_count")}})
+                result = await analyze_form_records(
+                    session,
+                    user=current_user,
+                    payload=payload,
+                    question=str(payload.get("question") or payload.get("source_message") or ""),
+                    provider_config=None,
+                )
+            summary = result.get("summary") or {}
+            audit_ai_event(current_user, "agent_tool_executed", {"skill": skill, "tool": "forms.query_records", "result": {"record_count": summary.get("record_count")}})
             return {"skill": skill, "tool": "forms.query_records", "status": "completed", "result": result}
 
         if skill == "forms.get_record":
