@@ -209,6 +209,11 @@ Behavior:
 - A user cannot fetch menus for an application they cannot access, even if they
   know the `app_id`.
 - Non-admin users cannot fetch disabled/unpublished applications.
+- Database-backed application menu nodes can also define JSON `config`
+  permission rules. For non-admin users, `/api/v1/applications/{app_id}/menus`
+  evaluates those rules before returning a menu node. Supported subject sources
+  include inherited application-role access, explicit role ids, and explicit
+  user keys; deny rules win over allow rules.
 
 This means application visibility is enforced independently from the frontend
 application switcher.
@@ -313,6 +318,11 @@ Runtime action mapping:
 | Create dynamic record | `create` |
 | Update dynamic record | `edit` |
 | Delete dynamic record | `delete` |
+
+`GET /forms/{form_id}` also returns a `runtime_permissions` summary for common
+actions (`view`, `create`, `edit`, `delete`, `import`, `export`, `configure`,
+`approve`). The summary helps dynamic pages render the right controls, but the
+record APIs still call backend permission helpers for enforcement.
 
 ## Form Permission Resolution
 

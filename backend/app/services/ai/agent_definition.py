@@ -33,7 +33,21 @@ def load_agent_system_prompt() -> str:
 
 @lru_cache(maxsize=8)
 def load_action_contracts() -> dict[str, dict[str, Any]]:
-    content = _read_agent_file("action-contracts.md")
+    return _load_json_block("action-contracts.md")
+
+
+@lru_cache(maxsize=8)
+def load_skill_registry() -> dict[str, dict[str, Any]]:
+    return _load_json_block("skills.md")
+
+
+@lru_cache(maxsize=8)
+def load_tool_registry() -> dict[str, dict[str, Any]]:
+    return _load_json_block("tools.md")
+
+
+def _load_json_block(name: str) -> dict[str, dict[str, Any]]:
+    content = _read_agent_file(name)
     match = re.search(r"```json\s*(.*?)\s*```", content, flags=re.S)
     if not match:
         return {}

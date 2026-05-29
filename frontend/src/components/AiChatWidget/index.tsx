@@ -4,6 +4,7 @@ import {
   CheckCircleOutlined,
   CloseOutlined,
   CodeOutlined,
+  FileTextOutlined,
   HistoryOutlined,
   MessageOutlined,
   PlusOutlined,
@@ -11,9 +12,11 @@ import {
 } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
 import {
+  cancelAgentRun,
   closeAgentConversation,
   confirmAgentRun,
   createAgentConversation,
+  listAIDrafts,
   listAgentConversationMessages,
   listAgentConversations,
   streamAgentChat,
@@ -43,6 +46,22 @@ interface AgentProcessStep {
   detail?: string;
 }
 
+interface AgentActionState {
+  skill?: string;
+  status?: string;
+  target?: string;
+  collected_slots?: Record<string, unknown>;
+  missing_slots?: string[];
+}
+
+interface AgentExecutionResult {
+  kind: 'dynamic_record' | 'ai_draft' | 'form_definition' | 'generic';
+  title: string;
+  detail?: string;
+  href?: string;
+  id?: string | number;
+}
+
 interface ChatMessage {
   id: string;
   role: ChatRole;
@@ -57,6 +76,8 @@ interface ChatMessage {
   runId?: string;
   requiresConfirmation?: boolean;
   confirmationPayload?: Record<string, unknown>;
+  actionState?: AgentActionState;
+  executionResult?: AgentExecutionResult;
 }
 
 interface AgentSession {
@@ -131,10 +152,24 @@ interface AgentChatResponse {
   run_id?: string;
   requires_confirmation?: boolean;
   confirmation_payload?: Record<string, unknown>;
+  action_state?: AgentActionState;
   steps?: Array<Record<string, unknown>>;
   conversation?: AgentConversationPayload;
   user_message?: AgentMessagePayload;
   assistant_message?: AgentMessagePayload;
+}
+
+interface AIDraftItem {
+  draft_id?: string;
+  skill?: string;
+  status?: string;
+  source?: string;
+  run_id?: string;
+  persisted?: boolean;
+  created_at?: string | null;
+  payload?: Record<string, unknown>;
+  evidence?: Array<Record<string, unknown>>;
+  metadata?: Record<string, unknown>;
 }
 
 const nowText = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
@@ -323,6 +358,10 @@ function stringifyStepValue(value: unknown): string {
 function getAgentStepLabel(step: Record<string, unknown>): string {
   const id = String(step.id || '');
   const type = String(step.type || '');
+  if (id === 'step-draft-resume') return '载入 AI 草稿';
+  if (id === 'step-action-permission') return '复核动作权限';
+  if (id === 'step-tool-contract') return '读取工具合约';
+  if (id === 'step-requirement-gap') return '检查缺失参数';
   if (id === 'step-identity') return '识别当前用户';
   if (id === 'step-ai-permission') return '检查 AI 授权';
   if (id === 'step-context-intent') return '判断上下文需求';
@@ -435,6 +474,109 @@ function getLowCodeReview(action: MockSkillAction) {
   };
 }
 
+function formatSlotName(slot: string): string {
+  const labels: Record<string, string> = {
+    'form.name': '表单名称',
+    fields: '字段清单',
+    menu: '菜单入口',
+    target: '目标对象',
+    scope: '处理范围',
+    reason: '业务原因',
+    problem: '问题',
+    containment: '临时措施',
+    owner_or_due_date: '责任人/截止时间',
+    asset: '设备/资产',
+    problem_or_risk: '问题/风险',
+    priority_or_window: '优先级/时间窗口',
+    item: '物料/对象',
+    quantity: '数量',
+    usage: '用途',
+  };
+  return labels[slot] || slot;
+}
+
+function getActionStateReview(state?: AgentActionState) {
+  if (!state) return undefined;
+  const collected = asRecord(state.collected_slots);
+  const missing = Array.isArray(state.missing_slots) ? state.missing_slots : [];
+  const collectedEntries = Object.entries(collected).slice(0, 4).map(([key, value]) => ({
+    label: formatSlotName(key),
+    value: formatActionValue(value),
+  }));
+  return {
+    skill: state.skill || 'agent.action',
+    status: state.status || 'collecting',
+    target: state.target ? formatActionValue(state.target) : '',
+    collectedEntries,
+    missing: missing.map(formatSlotName),
+  };
+}
+
+function getDraftStatusLabel(status?: string): string {
+  const labels: Record<string, string> = {
+    draft: '草稿',
+    reviewing: '复核中',
+    confirmed: '已确认',
+    executed: '已执行',
+    cancelled: '已取消',
+  };
+  return labels[status || ''] || status || '草稿';
+}
+
+function getDraftTitle(draft: AIDraftItem): string {
+  const payload = draft.payload || {};
+  return typeof payload.title === 'string'
+    ? payload.title
+    : typeof payload.name === 'string'
+      ? payload.name
+      : typeof payload.problem === 'string'
+        ? payload.problem
+        : draft.skill || 'AI 草稿';
+}
+
+function getDraftPreviewFields(payload?: Record<string, unknown>) {
+  return Object.entries(payload || {})
+    .filter(([key]) => !key.startsWith('_'))
+    .slice(0, 4)
+    .map(([label, value]) => ({ label: formatSlotName(label), value: formatActionValue(value) }));
+}
+
+function getGenericActionReview(action: MockSkillAction) {
+  if (action.skill === 'low_code.create_form_definition') return undefined;
+  const payload = asRecord(action.payload);
+  const fields = getDraftPreviewFields(payload);
+  return {
+    title: action.title,
+    sourceDraftId: typeof payload._source_draft_id === 'string' ? payload._source_draft_id : '',
+    fields,
+  };
+}
+
+function getPendingStateFromAction(action: MockSkillAction): AgentActionState {
+  const payload = asRecord(action.payload);
+  let collectedSlots: Record<string, unknown> = payload;
+  if (action.skill === 'low_code.create_form_definition') {
+    const form = asRecord(payload.form);
+    const menu = asRecord(payload.menu);
+    collectedSlots = {
+      formName: form.name,
+      formCode: form.code,
+      form_name: form.name,
+      form_code: form.code,
+      description: form.description,
+      fields: Array.isArray(payload.fields) ? payload.fields : [],
+      createMenu: Boolean(menu.create),
+      menuTitle: menu.title,
+    };
+  }
+  return {
+    skill: action.skill,
+    status: 'collecting',
+    collected_slots: collectedSlots,
+    missing_slots: [],
+  };
+}
+
 function mapAgentActions(actions?: AgentSkillAction[]): MockSkillAction[] | undefined {
   if (!actions?.length) return undefined;
   return actions.map((action) => {
@@ -494,6 +636,43 @@ function getConfirmationToken(payload?: Record<string, unknown>): string | undef
   return typeof token === 'string' ? token : undefined;
 }
 
+function getExecutionResult(result: Record<string, unknown>): AgentExecutionResult {
+  const routePath = typeof result.route_path === 'string' ? result.route_path : '';
+  if (routePath) {
+    return {
+      kind: 'form_definition',
+      title: '表单已创建',
+      detail: routePath,
+      href: routePath,
+    };
+  }
+  const recordId = result.record_id;
+  const formCode = typeof result.form_code === 'string' ? result.form_code : '';
+  const formName = typeof result.form_name === 'string' ? result.form_name : formCode;
+  if (recordId !== undefined && formCode) {
+    return {
+      kind: 'dynamic_record',
+      title: '动态记录草稿已创建',
+      detail: [formName, `记录 ${recordId}`].filter(Boolean).join(' · '),
+      href: `/dynamic/${formCode}?recordId=${recordId}`,
+      id: recordId as string | number,
+    };
+  }
+  const draftId = typeof result.draft_id === 'string' ? result.draft_id : '';
+  if (draftId) {
+    return {
+      kind: 'ai_draft',
+      title: 'AI 草稿已保存',
+      detail: draftId,
+      id: draftId,
+    };
+  }
+  return {
+    kind: 'generic',
+    title: '已确认执行',
+  };
+}
+
 function isStepComplete(status: string): boolean {
   return ['completed', 'skipped', 'waiting_confirmation'].includes(status);
 }
@@ -534,6 +713,9 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   const [sessions, setSessions] = useState<AgentSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [draftsOpen, setDraftsOpen] = useState(false);
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [drafts, setDrafts] = useState<AIDraftItem[]>([]);
   const [sending, setSending] = useState(false);
   const [confirmingRunId, setConfirmingRunId] = useState<string>();
   const [confirmationNotes, setConfirmationNotes] = useState<Record<string, string>>({});
@@ -628,6 +810,18 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     document.body.classList.toggle('ai-workbench-open', open);
     return () => document.body.classList.remove('ai-workbench-open');
   }, [open]);
+
+  const loadDrafts = async () => {
+    setDraftsLoading(true);
+    try {
+      const response = await listAIDrafts({ limit: 20 });
+      setDrafts((response.data?.data || []) as AIDraftItem[]);
+    } catch {
+      setDrafts([]);
+    } finally {
+      setDraftsLoading(false);
+    }
+  };
 
   const setSessionMessages = (sessionId: string, nextMessages: ChatMessage[]) => {
     setSessions((prev) => prev.map((session) => (
@@ -737,7 +931,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     setHistoryOpen(false);
   };
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, extraContext?: Record<string, unknown>) => {
     const trimmed = content.trim();
     if (!trimmed || sending || !activeSession) return;
 
@@ -770,6 +964,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
         applicationName,
         knowledgeContext,
       });
+      Object.assign(runtimeContext, extraContext || {});
       await streamAgentChat({
         message: trimmed,
         page: AI_WORKBENCH_PAGE,
@@ -817,6 +1012,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
             runId: payload.run_id,
             requiresConfirmation: Boolean(payload.requires_confirmation),
             confirmationPayload: payload.confirmation_payload,
+            actionState: payload.action_state,
           }));
           if (payload.conversation) {
             const updated = mapServerConversation(payload.conversation, contextKey, intro);
@@ -870,7 +1066,8 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
       const result = completed?.result && typeof completed.result === 'object'
         ? completed.result as Record<string, unknown>
         : {};
-      const routePath = typeof result.route_path === 'string' ? result.route_path : '';
+      const executionResult = getExecutionResult(result);
+      const routePath = executionResult.href || '';
       const nextMessages = messages.map((item) => (
         item.id === message.id
           ? (() => {
@@ -883,9 +1080,52 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
               fullContent: undefined,
               typing: false,
               requiresConfirmation: false,
+              actionState: undefined,
+              executionResult,
               source: 'backend Agent: confirmed execution',
             };
           })()
+          : item
+      ));
+      setSessionMessages(activeSession.id, nextMessages);
+      if (executionResult.kind === 'ai_draft') void loadDrafts();
+    } catch (error) {
+      const detail = (error as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
+        || (error as { message?: string })?.message
+        || 'unknown error';
+      const nextMessages = messages.map((item) => (
+        item.id === message.id
+          ? {
+            ...item,
+            content: `${item.fullContent || item.content}\n\n确认执行失败：${detail}`,
+            fullContent: undefined,
+            typing: false,
+          }
+          : item
+      ));
+      setSessionMessages(activeSession.id, nextMessages);
+    } finally {
+      setConfirmingRunId(undefined);
+    }
+  };
+
+  const cancelAgentAction = async (message: ChatMessage) => {
+    const runId = message.runId;
+    if (!runId || !activeSession) return;
+    setConfirmingRunId(runId);
+    try {
+      await cancelAgentRun(runId);
+      const nextMessages = messages.map((item) => (
+        item.id === message.id
+          ? {
+            ...item,
+            content: `${item.fullContent || item.content}\n\n已取消执行。`,
+            fullContent: undefined,
+            typing: false,
+            requiresConfirmation: false,
+            actionState: undefined,
+            source: 'backend Agent: cancelled',
+          }
           : item
       ));
       setSessionMessages(activeSession.id, nextMessages);
@@ -894,7 +1134,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
         item.id === message.id
           ? {
             ...item,
-            content: `${item.fullContent || item.content}\n\n确认执行失败，请检查权限或稍后重试。`,
+            content: `${item.fullContent || item.content}\n\n取消失败，请稍后再试。`,
             fullContent: undefined,
             typing: false,
           }
@@ -910,7 +1150,11 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     const note = messageScopedNote(action.id).trim();
     if (!note) return;
     setConfirmationNotes((prev) => ({ ...prev, [action.id]: '' }));
-    void sendMessage(`请调整刚才的 ${action.title}：${note}`);
+    const pendingActionState = getPendingStateFromAction(action);
+    void sendMessage(`请调整刚才的 ${action.title}：${note}`, {
+      pendingActionState,
+      pending_action_state: pendingActionState,
+    });
   };
 
   const messageScopedNote = (actionId: string) => confirmationNotes[actionId] || '';
@@ -970,6 +1214,7 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
               const isPendingAssistant = message.role === 'assistant' && hasProcess && !hasAnswer;
               const canShowAssistantMeta = message.role === 'assistant' && !isTypingAssistant;
               const isProcessActive = hasProcess && isAgentProcessActive(processSteps, hasAnswer);
+              const actionStateReview = message.role === 'assistant' ? getActionStateReview(message.actionState) : undefined;
 
               return (
               <div className={`ai-chat-message ${message.role}`} key={message.id}>
@@ -1009,10 +1254,45 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                       {message.contextSources.semantic_records ? <Tag>数据记录 {message.contextSources.semantic_records}</Tag> : null}
                     </div>
                   ) : null}
+                  {canShowAssistantMeta && actionStateReview && actionStateReview.status !== 'ready_for_confirmation' ? (
+                    <div className="ai-action-state-panel">
+                      <div className="ai-action-state-head">
+                        <span>正在收集动作参数</span>
+                        <code>{actionStateReview.skill}</code>
+                      </div>
+                      {actionStateReview.target ? <small>目标：{actionStateReview.target}</small> : null}
+                      {actionStateReview.collectedEntries.length ? (
+                        <div className="ai-action-state-tags">
+                          {actionStateReview.collectedEntries.map((item) => (
+                            <Tag key={`${item.label}-${item.value}`}>{item.label}: {item.value}</Tag>
+                          ))}
+                        </div>
+                      ) : null}
+                      {actionStateReview.missing.length ? (
+                        <div className="ai-action-state-missing">
+                          还需要：{actionStateReview.missing.join('、')}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {canShowAssistantMeta && message.executionResult ? (
+                    <div className="ai-execution-result">
+                      <div>
+                        <strong>{message.executionResult.title}</strong>
+                        {message.executionResult.detail ? <small>{message.executionResult.detail}</small> : null}
+                      </div>
+                      {message.executionResult.href ? (
+                        <Button size="small" href={message.executionResult.href}>
+                          打开
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {canShowAssistantMeta && message.actions?.length ? (
                     <div className="ai-skill-action-list">
                       {message.actions.map((action) => {
                         const review = getLowCodeReview(action);
+                        const genericReview = getGenericActionReview(action);
                         const note = messageScopedNote(action.id);
                         return (
                         <article className="ai-skill-action-card" key={action.id}>
@@ -1077,6 +1357,13 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                                       提交调整
                                     </Button>
                                     <Button
+                                      size="small"
+                                      disabled={sending || confirmingRunId === message.runId}
+                                      onClick={() => { void cancelAgentAction(message); }}
+                                    >
+                                      取消
+                                    </Button>
+                                    <Button
                                       type="primary"
                                       size="small"
                                       icon={<CheckCircleOutlined />}
@@ -1084,6 +1371,62 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                                       onClick={() => { void confirmAgentAction(message); }}
                                     >
                                       确认写入
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : genericReview ? (
+                            <div className="ai-confirm-review ai-generic-confirm-review">
+                              <div className="ai-confirm-review-head">
+                                <div>
+                                  <Typography.Text strong>{genericReview.title}</Typography.Text>
+                                  <small>{genericReview.sourceDraftId ? `来源草稿 ${genericReview.sourceDraftId}` : action.skill}</small>
+                                </div>
+                                <Tag color="orange">待确认</Tag>
+                              </div>
+                              <div className="ai-confirm-field-list">
+                                {genericReview.fields.map((field) => (
+                                  <div className="ai-confirm-field-item" key={`${action.id}-${field.label}`}>
+                                    <span>{field.label}</span>
+                                    <small>{field.value}</small>
+                                  </div>
+                                ))}
+                              </div>
+                              {message.requiresConfirmation && message.runId ? (
+                                <div className="ai-confirm-adjust">
+                                  <Input.TextArea
+                                    value={note}
+                                    rows={2}
+                                    placeholder="需要补充或调整，就写在这里；Agent 会重新整理确认清单。"
+                                    disabled={sending || confirmingRunId === message.runId}
+                                    onChange={(event) => {
+                                      setConfirmationNotes((prev) => ({ ...prev, [action.id]: event.target.value }));
+                                    }}
+                                  />
+                                  <div className="ai-confirm-actions">
+                                    <Button
+                                      size="small"
+                                      disabled={!note.trim() || sending || confirmingRunId === message.runId}
+                                      onClick={() => sendConfirmationAdjustment(action)}
+                                    >
+                                      提交调整
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      disabled={sending || confirmingRunId === message.runId}
+                                      onClick={() => { void cancelAgentAction(message); }}
+                                    >
+                                      取消
+                                    </Button>
+                                    <Button
+                                      type="primary"
+                                      size="small"
+                                      icon={<CheckCircleOutlined />}
+                                      loading={confirmingRunId === message.runId}
+                                      onClick={() => { void confirmAgentAction(message); }}
+                                    >
+                                      确认执行
                                     </Button>
                                   </div>
                                 </div>
@@ -1107,8 +1450,16 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                               ))}
                             </ol>
                           </div>
-                          {!review && message.requiresConfirmation && message.runId ? (
-                            <Button
+                          {!review && !genericReview && message.requiresConfirmation && message.runId ? (
+                            <Space size={6}>
+                              <Button
+                                size="small"
+                                disabled={confirmingRunId === message.runId}
+                                onClick={() => { void cancelAgentAction(message); }}
+                              >
+                                取消
+                              </Button>
+                              <Button
                               type="primary"
                               size="small"
                               icon={<CheckCircleOutlined />}
@@ -1116,7 +1467,8 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                               onClick={() => { void confirmAgentAction(message); }}
                             >
                               确认执行
-                            </Button>
+                              </Button>
+                            </Space>
                           ) : null}
                         </article>
                         );
@@ -1235,7 +1587,30 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                 <Button
                   type="text"
                   icon={<HistoryOutlined />}
-                  onClick={() => setHistoryOpen((prev) => !prev)}
+                  onClick={() => {
+                    setHistoryOpen((prev) => {
+                      const next = !prev;
+                      if (next) setDraftsOpen(false);
+                      return next;
+                    });
+                  }}
+                />
+              </Tooltip>
+              <Tooltip title="AI 草稿">
+                <Button
+                  type="text"
+                  icon={<FileTextOutlined />}
+                  loading={draftsLoading}
+                  onClick={() => {
+                    setDraftsOpen((prev) => {
+                      const next = !prev;
+                      if (next) {
+                        setHistoryOpen(false);
+                        void loadDrafts();
+                      }
+                      return next;
+                    });
+                  }}
                 />
               </Tooltip>
               <Tooltip title="收起">
@@ -1262,6 +1637,48 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
                   </small>
                 </button>
               ))}
+            </div>
+          ) : null}
+
+          {draftsOpen ? (
+            <div className="ai-draft-history">
+              {draftsLoading ? <div className="ai-draft-empty">正在加载草稿...</div> : null}
+              {!draftsLoading && drafts.length === 0 ? <div className="ai-draft-empty">暂无 AI 草稿</div> : null}
+              {!draftsLoading && drafts.map((draft) => {
+                const payload = draft.payload || {};
+                const title = typeof payload.title === 'string'
+                  ? payload.title
+                  : typeof payload.name === 'string'
+                    ? payload.name
+                    : draft.skill || 'AI 草稿';
+                return (
+                  <button
+                    type="button"
+                    className="ai-draft-history-item"
+                    disabled={sending || ['executed', 'cancelled'].includes(draft.status || '')}
+                    key={draft.draft_id || draft.run_id || `${draft.skill}-${draft.created_at}`}
+                    onClick={() => {
+                      const draftId = draft.draft_id || '';
+                      if (!draftId) return;
+                      setDraftsOpen(false);
+                      void sendMessage(`继续处理草稿 ${draftId}`, { resumeDraftId: draftId });
+                    }}
+                  >
+                    <span>{title}</span>
+                    <div className="ai-draft-history-fields">
+                      {getDraftPreviewFields(draft.payload).map((field) => (
+                        <span key={`${draft.draft_id || draft.run_id}-${field.label}`}>{field.label}: {field.value}</span>
+                      ))}
+                    </div>
+                    <Tag color={draft.status === 'executed' ? 'green' : draft.status === 'cancelled' ? 'default' : 'blue'}>
+                      {getDraftStatusLabel(draft.status)}
+                    </Tag>
+                    <small>
+                      {[draft.skill, draft.status || 'draft', draft.created_at].filter(Boolean).join(' · ')}
+                    </small>
+                  </button>
+                );
+              })}
             </div>
           ) : null}
 

@@ -36,6 +36,13 @@ npm run build
 
 There is currently no dedicated frontend unit-test runner configured. Frontend verification is type-check plus production build.
 
+Deployment diagnostics:
+
+```bash
+python scripts/doctor.py --env .env --compose docker/docker-compose.release.yml --skip-runtime
+SMOKE_USERNAME=<admin-user> SMOKE_PASSWORD=<admin-password> python scripts/production_smoke.py --base-url http://127.0.0.1:8000
+```
+
 ## 2. Backend Test Coverage Map
 
 Current backend tests are under `backend/tests`.
@@ -56,9 +63,9 @@ Current backend tests are under `backend/tests`.
 | `test_templates.py` | template list/detail/instantiate and template schema checks |
 | `test_version.py` | model versioning, publish behavior, impact analysis |
 | `test_workflow.py` | workflow definition CRUD, instance lifecycle, approvals/rejections, notifications, stats |
-| `test_ai_agent_services.py` | provider config defaults, policy decisions, Agent response shape, confirmation/audit helpers |
+| `test_ai_agent_services.py` | provider config defaults, policy decisions, Agent response shape, confirmation/audit helpers, action payload/state behavior |
 | `test_ai_knowledge_api.py` | knowledge APIs, extraction flow, and persisted knowledge Agent conversation/runtime records |
-| `test_ai_low_code_agent.py` | low-code Agent planning and confirmed form-definition creation |
+| `test_ai_low_code_agent.py` | low-code Agent planning, slot filling, confirmation adjustment, and confirmed form-definition creation |
 | `test_dashboard_programs.py` | `/dashboard/programs/{program_id}` database-backed rows and fallback contract |
 | `test_tenant_onboarding.py` | tenant creation, domains, invites, default roles, current tenant profile |
 | `test_business_tenant_isolation.py` | tenant filtering for manufacturing/dashboard/program data |
@@ -80,6 +87,7 @@ High-risk areas currently covered:
 - Config import/export.
 - Scheduler/search/AI builder small module behavior.
 - Knowledge Agent persistence for conversations, messages, runs, tool calls, memory, and audit rows.
+- AI Agent draft-first behavior, pending action state, and confirmed dynamic-record/form-definition execution.
 - Productization readiness endpoint and production-mode fallback guards.
 - Tenant onboarding and tenant-scoped business data isolation.
 - Dashboard program data bridge for `/program/*` pages.
@@ -92,7 +100,7 @@ High-risk areas currently covered:
 | Frontend unit/component tests | No Vitest/React Testing Library setup yet. |
 | Browser E2E | No Playwright flow yet; the backend ready-path smoke now covers the first SaaS flow contract. |
 | Full external DB integration tests | Tenant and SaaS contracts are covered at API/test DB level, but production PostgreSQL + Neo4j integration coverage is still limited. |
-| Docker smoke tests | Compose config is validated manually, but no automated container smoke pipeline is documented. |
+| Docker smoke tests | `scripts/doctor.py` and `scripts/production_smoke.py` exist, but they are not yet wired into CI. |
 | Performance tests | No benchmark for graph queries, dynamic record filtering, or report rendering. |
 | Frontend ready-path test runner | `readyPathSmoke.ts` fails at import time if metadata is wrong, but there is no dedicated frontend test command that imports it yet. |
 
@@ -137,3 +145,21 @@ python -m pytest tests/test_tenant_onboarding.py tests/test_saas_hardening.py te
 cd ../frontend
 npm run type-check
 ```
+
+## 8. GitHub Actions CI
+
+The repository now has `.github/workflows/ci.yml` as the production merge gate.
+
+Triggers:
+
+- pull requests targeting `master`
+- pushes to `master`
+
+Jobs:
+
+- Backend: install Python 3.11 dependencies from `backend/requirements.txt` and run `python -m pytest`.
+- Frontend: install dependencies with `npm ci`, then run `npm run type-check` and `npm run build`.
+- Docker: after backend and frontend jobs pass, build `backend/Dockerfile` and `frontend/Dockerfile` to verify production images can be created.
+- Publish: on pushes to `master`, push backend/frontend images to GHCR with semantic-version and semantic-version-plus-SHA tags, then upload `release-manifest.json` and an offline deployment zip.
+
+The deploy workflow is intentionally separate and only runs after the CI workflow completes successfully for a push to `master`.

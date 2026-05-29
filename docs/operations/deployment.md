@@ -64,6 +64,17 @@ docker compose --env-file .env -f docker/docker-compose.yml -f docker/docker-com
 
 Do not use `docker/docker-compose.prod-full.yml`; that file is not present in the current repository.
 
+For customer/private deployments, prefer the image-based release compose file:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.release.yml up -d
+```
+
+The release compose file does not build from source on the deployment host.
+It pulls `palantir-demo-backend:${IMAGE_TAG}` and
+`palantir-demo-frontend:${IMAGE_TAG}` from the configured image registry.
+See [Private Deployment](private-deployment.md).
+
 ## Runtime Modes
 
 Demo/local mode:
@@ -115,6 +126,40 @@ When the user asks to update or sync the server, use this flow:
 5. Rebuild and restart affected Docker Compose services.
 6. Verify the public frontend and backend health endpoint.
 
+## Automatic CD
+
+Production deployment is automated by `.github/workflows/deploy.yml`.
+
+Triggers:
+
+- automatically after `.github/workflows/ci.yml` succeeds for a push to `master`
+- manually through GitHub Actions `workflow_dispatch`
+
+Required GitHub Secrets:
+
+| Secret | Value |
+| --- | --- |
+| `PROD_SSH_HOST` | `111.229.172.100` |
+| `PROD_SSH_USER` | `root` |
+| `PROD_SSH_KEY` | Private key allowed to SSH into the production server |
+| `PROD_PROJECT_DIR` | `/root/Palantir_Demo` |
+| `PROD_GHCR_USERNAME` | Optional GHCR user for private image pulls |
+| `PROD_GHCR_TOKEN` | Optional GHCR token for private image pulls |
+
+Deployment behavior:
+
+1. SSH into the production server.
+2. Enter `PROD_PROJECT_DIR`.
+3. Fetch and fast-forward `origin/master`.
+4. Set `IMAGE_TAG=<version>-<short-sha>` in the server `.env`.
+5. Pull and restart services with `docker/docker-compose.release.yml`.
+6. Run `alembic upgrade head` inside `manufoundry-backend`.
+7. Verify Docker Compose service state and public HTTP endpoints.
+
+The workflow does not overwrite the server-local `.env` file. Production secrets and runtime-only settings remain managed on the server.
+
+If deployment fails, use the rollback commands below. Automatic rollback is intentionally not enabled in the first version, because failed migrations or data issues should be inspected before moving the server to another commit.
+
 ## Commands
 
 SSH:
@@ -142,10 +187,10 @@ Run migrations:
 docker exec manufoundry-backend alembic upgrade head
 ```
 
-Current migration head includes SaaS hardening and application assembly work up
-through `0024_seed_application_assembly.py`. Run migrations before verifying
-tenant management, form publishing, Knowledge Center chat, and application
-menus.
+Current migration head includes SaaS hardening, application assembly, AI draft
+persistence, and menu-node config up through `0026_menu_node_config.py`. Run
+migrations before verifying tenant management, form publishing, Knowledge
+Center chat, Agent drafts, and application menus.
 
 Seed data when needed:
 
@@ -207,6 +252,14 @@ curl -fsS http://111.229.172.100:8000/api/v1/release/current
 curl -fsS http://111.229.172.100:8000/api/v1/productization/readiness
 curl -fsS "http://111.229.172.100:8000/api/v1/dashboard/programs/line-status?limit=5"
 ```
+
+Authenticated SaaS smoke checks can be run with explicit credentials or environment variables:
+
+```bash
+SMOKE_USERNAME=<admin-user> SMOKE_PASSWORD=<admin-password> python scripts/production_smoke.py --base-url http://111.229.172.100:8000
+```
+
+Do not hard-code production administrator credentials in workflow files or repository-tracked scripts.
 
 Expected backend response:
 

@@ -117,11 +117,11 @@ Rules:
 
 The low-code layer is implemented and persisted:
 
-- Migration lineage: `0006_platform_forms.py`, `0021_form_versions.py`, and
-  `0024_seed_application_assembly.py`.
+- Migration lineage: `0006_platform_forms.py`, `0021_form_versions.py`,
+  `0024_seed_application_assembly.py`, and `0026_menu_node_config.py`.
 - Models: `Form`, `ApplicationForm`, `ApplicationMenuNode`, `FormField`,
   `FormLayout`, `FormAction`, `FormPermission`, `DynamicRecord`,
-  `FormVersion`, `WorkflowBinding`.
+  `FormVersion`, `WorkflowBinding`; AI draft persistence is in `AIDraft`.
 - API: `/api/v1/forms`.
 
 Creating a form or field is metadata-only. Business records are stored in
@@ -189,7 +189,7 @@ The AI assistant currently has two related surfaces:
 
 | Surface | Current behavior |
 | --- | --- |
-| `/api/v1/ai` | General assistant, provider settings, skill/tool registry, in-memory agent-run scaffold, confirmation tokens, and AI audit list. |
+| `/api/v1/ai` | General assistant, provider settings, skill/tool registry, persisted conversations/memories/drafts, confirmation tokens, agent-run confirmation/cancel, and AI audit list. |
 | `/api/v1/knowledge/agent/*` | Knowledge-center conversations persisted in relational AI runtime tables. |
 
 The default provider settings now point at GLM-compatible model names
@@ -206,6 +206,19 @@ The AI layer now also includes deterministic low-code planning and execution
 helpers in `backend/app/services/ai/planner.py` and
 `backend/app/services/ai/low_code_tools.py`. Low-code writes must stay
 admin-only, tenant-scoped, audit logged, and confirmation gated.
+
+Additional Agent action scaffolding:
+
+| Module | Responsibility |
+| --- | --- |
+| `intent_router.py` | Classify each turn into conversation, knowledge, business query, page help, or action preparation. |
+| `action_state.py` | Preserve multi-turn slot-filling state for pending actions. |
+| `action_payloads.py` | Build conservative payloads from action contracts. |
+| `dynamic_record_drafts.py` | Resolve confirmed domain draft actions to platform forms and create `dynamic_records.status = "draft"` rows when possible. |
+
+Non-low-code confirmed actions first try to create a dynamic-record draft. If no
+matching form exists, the backend persists an `ai_drafts` row so the user can
+resume or review the draft later through `/api/v1/ai/drafts`.
 
 ## Productization Boundary
 

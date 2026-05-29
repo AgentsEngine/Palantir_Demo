@@ -211,6 +211,8 @@ Existing routers should remain thin:
 
 - `ai_assistant.py` handles chat and analysis endpoints.
 - `ai_builder.py` handles model/page generation endpoints.
+- Agent routing, slot filling, draft payload construction, and dynamic-record
+  draft writes live under `backend/app/services/ai/*`.
 - Business execution should go through existing services and APIs instead of raw SQL inside prompts.
 
 Knowledge-backed AI answers should use the ingestion chain described in
@@ -239,7 +241,7 @@ For the detailed Skill/Tool contract, risk policy, confirmation payload, phased 
 | Phase | Goal | Main deliverables |
 | --- | --- | --- |
 | Phase 1 | Make AI useful and trustworthy | Fix Chinese text/encoding, connect real LLM client, keep current chat API, add source-aware Q&A |
-| Phase 2 | Add assisted business work | Material number draft, purchase request draft, report generation, low-code model/page suggestions |
+| Phase 2 | Add assisted business work | Material number draft, purchase request draft, report generation, low-code model/page suggestions, persisted AI drafts, and dynamic-record draft helpers |
 | Phase 3 | Add proactive intelligence | Scheduled checks for inventory, equipment health, quality anomalies, approval timeout, supplier risk |
 | Phase 4 | Add controlled agentic execution | Confirmed workflow submission, confirmed purchase request creation, cross-module action plans |
 | Phase 5 | Add policy-based automation | Low-risk auto replenishment, auto reminders, auto task creation under strict policy limits |

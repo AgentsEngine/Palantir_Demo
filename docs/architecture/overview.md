@@ -137,7 +137,7 @@ The persistence layer has two major parts:
 
 2. **Low-code platform metadata**
    - Applications, application menus, roles.
-   - Forms platform tables introduced by migration `0006_platform_forms.py`, versioned by `0021_form_versions.py`, and seeded into production-like application assemblies by `0024_seed_application_assembly.py`.
+   - Forms platform tables introduced by migration `0006_platform_forms.py`, versioned by `0021_form_versions.py`, seeded into production-like application assemblies by `0024_seed_application_assembly.py`, and extended with menu-node config by `0026_menu_node_config.py`.
    - Dynamic form records stored as JSON/JSONB rather than creating a physical table for every user-defined form.
 
 3. **SaaS tenant and identity operations**

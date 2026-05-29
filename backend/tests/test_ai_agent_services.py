@@ -3,6 +3,16 @@
 import pytest
 
 
+class _SemanticFakeProvider:
+    def __init__(self, content: str):
+        self.content = content
+
+    async def chat(self, messages, options=None):
+        from app.services.ai.schemas import ChatResult
+
+        return ChatResult(provider="glm", model="semantic-test", content=self.content, usage={"mode": "test"})
+
+
 @pytest.mark.asyncio
 async def test_glm_provider_requires_api_key():
     from app.services.ai.providers import ProviderConfigurationError, make_provider
@@ -57,6 +67,70 @@ async def test_agent_returns_confirmed_draft_after_guided_requirements():
     assert result.actions
     assert result.actions[0].skill == "maintenance.create_work_order_draft"
     assert result.actions[0].requires_confirmation is True
+    assert "To be confirmed" not in str(result.actions[0].payload)
+    assert result.actions[0].payload["_contract"]["tool"] == "forms.create_dynamic_record_draft"
+
+
+@pytest.mark.asyncio
+async def test_agent_continues_pending_action_slot_state():
+    from app.services.ai.orchestrator import run_agent
+    from app.services.ai.schemas import AgentRequest
+
+    first = await run_agent(AgentRequest(message="生成维修工单草稿"))
+    assert first.action_state
+    assert first.action_state["status"] == "collecting"
+
+    second = await run_agent(AgentRequest(
+        message="设备 A 出现故障异常，优先级高，48 小时内处理",
+        context={"pendingActionState": first.action_state},
+    ))
+
+    assert second.requires_confirmation is True
+    assert second.action_state
+    assert second.action_state["status"] == "ready_for_confirmation"
+    assert second.actions[0].skill == "maintenance.create_work_order_draft"
+    assert "To be confirmed" not in str(second.actions[0].payload)
+
+
+@pytest.mark.asyncio
+async def test_low_code_adjustment_updates_confirmation_payload():
+    from app.services.ai.orchestrator import run_agent
+    from app.services.ai.schemas import AgentRequest
+
+    first = await run_agent(AgentRequest(
+        message="帮我新建一个物料主数据表单，字段包括物料编码、物料名称、物料类型、安全库存；物料编码和物料名称必填；创建菜单入口",
+    ))
+    assert first.requires_confirmation is True
+    assert first.action_state
+
+    second = await run_agent(AgentRequest(
+        message="请调整刚才的 Low-code form creation plan：表单名称改成阀类物料主数据",
+        context={"pendingActionState": first.action_state},
+    ))
+
+    assert second.requires_confirmation is True
+    assert second.action_state
+    assert second.action_state["collected_slots"]["formName"] == "阀类物料主数据"
+    assert second.actions[0].payload["form"]["name"] == "阀类物料主数据"
+
+
+@pytest.mark.asyncio
+async def test_generic_draft_payload_uses_action_contract_slots():
+    from app.services.ai.orchestrator import run_agent
+    from app.services.ai.schemas import AgentRequest
+
+    result = await run_agent(AgentRequest(
+        message="create maintenance work order draft for equipment CNC-17, problem spindle vibration, priority high due in 8 hours",
+    ))
+
+    assert result.requires_confirmation is True
+    assert result.actions[0].skill == "maintenance.create_work_order_draft"
+    payload = result.actions[0].payload
+    assert payload["asset"]
+    assert payload["problem_or_risk"]
+    assert payload["priority_or_window"]
+    assert payload["_contract"]["skill"] == "maintenance.create_work_order_draft"
+    assert "To be confirmed" not in str(payload)
 
 
 def test_policy_blocks_forbidden_action():
@@ -139,6 +213,7 @@ def test_prompt_builder_includes_tenant_context_memory_and_evidence():
 
 def test_agent_runtime_routes_social_turns_away_from_rag():
     from app.services.ai.runtime import AgentRuntime
+    from app.services.ai.intent_router import route_intent
 
     runtime = AgentRuntime()
 
@@ -146,6 +221,88 @@ def test_agent_runtime_routes_social_turns_away_from_rag():
     assert runtime.classify_knowledge_intent("你好呀 请问你是谁呀") == "general"
     assert runtime.classify_knowledge_intent("该文档中都包含什么内容") == "knowledge"
     assert runtime.classify_knowledge_intent("分析这个 SOP 的风险和 CAPA 关系") == "knowledge"
+
+    action_route = route_intent("帮我新建一个供应商准入表单", {})
+    assert action_route.intent == "action_prepare"
+    assert action_route.skill == "low_code.create_form_definition"
+    assert action_route.context_need == "draft_action"
+    assert "tool_contract" in action_route.needs_context
+
+    knowledge_route = route_intent("总结这篇文档", {"surface": "knowledge"})
+    assert knowledge_route.intent == "knowledge"
+    assert knowledge_route.context_need == "knowledge_rag"
+
+
+@pytest.mark.asyncio
+async def test_semantic_planner_cleans_form_name_particle(monkeypatch):
+    from app.services.ai import semantic_planner
+    from app.services.ai.schemas import AIProviderConfig
+
+    monkeypatch.setattr(
+        semantic_planner,
+        "get_provider",
+        lambda config: _SemanticFakeProvider(
+            '{"intent":"action","skill":"low_code.create_form_definition","operation":"rename_form",'
+            '"formName":"物料主数据把","fields":[],"menu":{},"confidence":0.91,"reason":"rename requested"}'
+        ),
+    )
+
+    plan = await semantic_planner.plan_agent_turn_semantic(
+        "表单名称改成物料主数据把",
+        {"pendingActionState": {"skill": "low_code.create_form_definition", "collected_slots": {"formName": "旧表单"}}},
+        provider_config=AIProviderConfig(provider="glm", api_key="semantic-key", chat_model="glm-5.1"),
+    )
+
+    assert plan.intent == "action"
+    assert plan.reason.startswith("llm_semantic")
+    assert plan.extracted_context["formName"] == "物料主数据"
+
+
+@pytest.mark.asyncio
+async def test_semantic_add_field_does_not_rename_pending_form(monkeypatch):
+    from app.services.ai import semantic_planner
+    from app.services.ai.orchestrator import run_agent
+    from app.services.ai.schemas import AIProviderConfig, AgentRequest
+
+    monkeypatch.setattr(
+        semantic_planner,
+        "get_provider",
+        lambda config: _SemanticFakeProvider(
+            '{"intent":"action","skill":"low_code.create_form_definition","operation":"add_field",'
+            '"formName":"","fields":[{"field_name":"supplier_rating","label":"供应商等级",'
+            '"field_type":"string","required":false}],"menu":{},"confidence":0.93,"reason":"add one field"}'
+        ),
+    )
+
+    pending = {
+        "status": "ready_for_confirmation",
+        "skill": "low_code.create_form_definition",
+        "source_message": "创建物料主数据表单",
+        "collected_slots": {
+            "formName": "物料主数据",
+            "form_name": "物料主数据",
+            "fields": [
+                {"field_name": "material_code", "label": "物料编码", "field_type": "string", "required": True},
+                {"field_name": "material_name", "label": "物料名称", "field_type": "string", "required": True},
+            ],
+        },
+        "missing_slots": [],
+        "notes": [],
+    }
+
+    result = await run_agent(
+        AgentRequest(
+            message="新增一个字段：供应商等级",
+            context={"pendingActionState": pending},
+            provider_config=AIProviderConfig(provider="glm", api_key="semantic-key", chat_model="glm-5.1"),
+        )
+    )
+
+    assert result.requires_confirmation is True
+    assert result.action_state["collected_slots"]["formName"] == "物料主数据"
+    payload = result.actions[0].payload
+    assert payload["form"]["name"] == "物料主数据"
+    assert [field["label"] for field in payload["fields"]] == ["物料编码", "物料名称", "供应商等级"]
 
 
 @pytest.mark.asyncio

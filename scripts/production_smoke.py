@@ -7,29 +7,42 @@ and verifies platform-only endpoints are reachable by the platform admin.
 from __future__ import annotations
 
 import argparse
+import json as json_lib
+import os
 import sys
 from typing import Any
-
-import requests
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 
 def _request(method: str, url: str, **kwargs: Any) -> dict[str, Any]:
-    response = requests.request(method, url, timeout=20, **kwargs)
-    if response.status_code >= 400:
-        raise RuntimeError(f"{method} {url} failed: {response.status_code} {response.text[:500]}")
-    if response.text:
-        return response.json()
+    headers = dict(kwargs.get("headers") or {})
+    body = None
+    if "json" in kwargs:
+        body = json_lib.dumps(kwargs["json"]).encode("utf-8")
+        headers.setdefault("Content-Type", "application/json")
+    request = Request(url, data=body, headers=headers, method=method)
+    try:
+        with urlopen(request, timeout=20) as response:
+            text = response.read().decode("utf-8")
+    except HTTPError as exc:
+        error_text = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"{method} {url} failed: {exc.code} {error_text[:500]}") from exc
+    if text:
+        return json_lib.loads(text)
     return {}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--username", default="admin@manufoundry.local")
-    parser.add_argument("--password", default="admin123")
+    parser.add_argument("--username", default=os.getenv("SMOKE_USERNAME"))
+    parser.add_argument("--password", default=os.getenv("SMOKE_PASSWORD"))
     parser.add_argument("--tenant-slug", default="smoke-tenant")
     parser.add_argument("--tenant-domain", default="smoke.local")
     args = parser.parse_args()
+    if not args.username or not args.password:
+        parser.error("provide --username/--password or SMOKE_USERNAME/SMOKE_PASSWORD")
 
     base_url = args.base_url.rstrip("/")
     readiness = _request("GET", f"{base_url}/api/v1/system/readiness")

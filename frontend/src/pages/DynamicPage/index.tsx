@@ -371,6 +371,8 @@ export default function DynamicPage() {
   const formFields = formFieldNames
     .map(fn => fields.find(f => f.field_name === fn))
     .filter((f): f is FieldDef => !!f);
+  const runtimePermissions = platformForm?.runtime_permissions || {};
+  const canRunAction = (action: string) => !platformForm || runtimePermissions[action] !== false;
 
   const tableColumns = listFields.map(field_name => {
     const f = fields.find(x => x.field_name === field_name);
@@ -401,17 +403,21 @@ export default function DynamicPage() {
     };
   });
 
-  (tableColumns as any[]).push({
-    title: '操作', width: 120, fixed: 'right',
-    render: (_val: any, record: any) => (
-      <Space size={4}>
-        <Button size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
-        <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
-          <Button size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
-      </Space>
-    ),
-  });
+  if (canRunAction('edit') || canRunAction('delete')) {
+    (tableColumns as any[]).push({
+      title: '操作', width: 120, fixed: 'right',
+      render: (_val: any, record: any) => (
+        <Space size={4}>
+          {canRunAction('edit') && <Button size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />}
+          {canRunAction('delete') && (
+            <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
+              <Button size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    });
+  }
 
   const openCreateModal = () => {
     setEditingRecord(null);
@@ -519,7 +525,7 @@ export default function DynamicPage() {
             style={{ width: 200 }}
             onSearch={setSearch}
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>新建</Button>
+          {canRunAction('create') && <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>新建</Button>}
         </Space>
       </div>
 

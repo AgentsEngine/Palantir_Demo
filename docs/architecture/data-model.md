@@ -95,7 +95,8 @@ If the project later adopts TimescaleDB, add an explicit migration plan for:
 ## Platform Forms Model
 
 The forms platform started with migration `0006_platform_forms.py` and now also
-uses `0021_form_versions.py` and `0024_seed_application_assembly.py`.
+uses `0021_form_versions.py`, `0024_seed_application_assembly.py`, and
+`0026_menu_node_config.py`.
 
 Core principle: creating an application form is a metadata operation. It does
 not create or alter a physical business table.
@@ -114,6 +115,7 @@ Application
 
 Application
   -> ApplicationMenuNode
+      -> config(permission mode, rules, UI metadata)
 ```
 
 Current behavior:
@@ -124,6 +126,9 @@ Current behavior:
 - Permissions define form/action-level access rules.
 - Workflow bindings connect form actions to workflow definitions.
 - Publishing creates immutable `form_versions.snapshot` records.
+- Application menu nodes may carry JSON `config` for permission rules and UI
+  metadata. Runtime application menus filter nodes against these rules for
+  non-admin users.
 - Records are stored in `dynamic_records.data` as JSON/JSONB and carry
   `schema_version` so older records remain tied to the schema used at write
   time.
@@ -162,6 +167,8 @@ scoping:
 | `0021_tenant_operations.py` | Invite revoke/resend replacement metadata. |
 | `0022_business_tenant_isolation.py` | `tenant_id` columns, tenant-aware indexes, and tenant-scoped unique constraints for core business tables. |
 | `0023_saas_hardening.py` | Tenant scope for notifications, rules, scheduled jobs, knowledge, AI runtime, plus tenant export records. |
+| `0025_ai_drafts.py` | Persistent `ai_drafts` rows for user-reviewed Agent drafts. |
+| `0026_menu_node_config.py` | JSON `application_menu_nodes.config` for menu permissions and configuration metadata. |
 
 The platform-admin tenant management surface is backed by:
 
@@ -208,6 +215,10 @@ AIConversation
 
 AIConversation
   -> AIMemoryEntry
+
+AI Agent action
+  -> AIDraft
+  -> optional DynamicRecord(status=draft)
 ```
 
 Current AI runtime table responsibilities:
@@ -217,12 +228,16 @@ Current AI runtime table responsibilities:
 | `ai_conversations` | User/page/document scoped active conversations. |
 | `ai_messages` | User and assistant messages with evidence, model, usage, status, and error fields. |
 | `ai_agent_runs` | Observable run records with input, answer, steps, evidence, actions, risk, and confirmation payload. |
+| `ai_drafts` | Saved Agent drafts with tenant/user scope, skill, payload, evidence, source, run id, status, and metadata. |
 | `ai_tool_calls` | Tool-call audit trail for a run, including tool/skill names, input/output, status, and duration. |
 | `ai_memory_entries` | Conversation-scoped memory summaries and structured values. |
 
-This runtime persistence is separate from any transient in-process state used
-for fallback or draft behavior. Knowledge Agent APIs write database rows and are
-tenant-scoped in the current schema.
+This runtime persistence is separate from transient in-process fallback state.
+General Agent draft actions now prefer persisted `ai_drafts`; confirmed domain
+draft actions can resolve to a platform form and create a
+`dynamic_records.status = "draft"` row through `forms.create_dynamic_record_draft`.
+Knowledge Agent APIs write database rows and are tenant-scoped in the current
+schema.
 
 Current API concepts:
 

@@ -62,9 +62,11 @@ Read these first when you want the current system truth:
 | Document | Purpose |
 | --- | --- |
 | [Deployment](operations/deployment.md) | Local startup, Docker Compose deployment, server update convention, and verification. |
+| [Private Deployment](operations/private-deployment.md) | Image-based customer/private deployment, offline install, doctor checks, and rollback. |
 | [Testing](operations/testing.md) | Backend/frontend verification strategy and known test gaps. |
 | [Release 0.3.3](operations/release-0.3.3.md) | Server application pages switched from static rows to PostgreSQL-backed manufacturing data. |
 | [Release 0.3.4](operations/release-0.3.4.md) | SaaS tenant hardening, form versions, platform tenant operations, AI low-code tools, and app assembly menus. |
+| [Release 0.3.5](operations/release-0.3.5.md) | AI action drafts, action state, menu-node config, reference data admin, and private deployment tooling. |
 | [Neo4j Beginner Guide](operations/neo4j-beginner-guide.md) | Beginner-friendly Neo4j browser and Cypher walkthrough for this project. |
 | [Demo Knowledge Assets](operations/demo-knowledge-assets.md) | Local scripts for generating and seeding demo knowledge-base files. |
 

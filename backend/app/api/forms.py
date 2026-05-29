@@ -20,7 +20,7 @@ from app.api._model_driven_shared import assert_safe_identifier
 from app.api.deps import current_tenant_id, current_user_id, get_current_user, get_db, require_admin
 from app.config import settings
 from app.core.audit import write_audit_log
-from app.core.permissions import allowed_form_fields, has_form_permission
+from app.core.permissions import allowed_form_fields, evaluate_form_permission, has_form_permission
 from app.services.tenant_onboarding import assert_tenant_quota
 
 router = APIRouter()
@@ -121,6 +121,7 @@ class MenuNodeCreate(BaseModel):
     visible: bool = True
     default_entry: bool = False
     sort_order: int = 0
+    config: dict = Field(default_factory=dict)
 
 
 class MenuNodeUpdate(BaseModel):
@@ -133,6 +134,7 @@ class MenuNodeUpdate(BaseModel):
     visible: Optional[bool] = None
     default_entry: Optional[bool] = None
     sort_order: Optional[int] = None
+    config: Optional[dict] = None
 
 
 class FormLayoutUpsert(BaseModel):
@@ -828,6 +830,16 @@ def _published_form_payload(form, version, *, applications: Optional[list] = Non
     return payload
 
 
+async def _runtime_permission_summary(user: dict, form_id: int, db: AsyncSession) -> dict:
+    actions = ["view", "create", "edit", "delete", "import", "export", "configure", "approve"]
+    cache: dict = {}
+    summary = {}
+    for action in actions:
+        decision = await evaluate_form_permission(user, form_id, action, db, cache=cache)
+        summary[action] = bool(decision["allowed"])
+    return summary
+
+
 def _promote_snapshot_config(snapshot: dict, published_at: str, version: int) -> dict:
     promoted = {**snapshot}
     form_payload = {**(promoted.get("form") or {})}
@@ -997,6 +1009,7 @@ def _menu_node_payload(node) -> dict:
         "visible": node.visible,
         "default_entry": node.default_entry,
         "sort_order": node.sort_order,
+        "config": node.config or {},
     }
 
 
@@ -1843,8 +1856,11 @@ async def get_form(
             if not user.get("is_admin"):
                 visible_names = await allowed_form_fields(user, form_id, "view", fields, db)
                 payload["fields"] = [field for field in payload["fields"] if field.get("field_name") in visible_names]
+            payload["runtime_permissions"] = await _runtime_permission_summary(user, form_id, db)
             return {"data": payload}
-    return {"data": _form_payload(form, fields=fields, applications=applications)}
+    payload = _form_payload(form, fields=fields, applications=applications)
+    payload["runtime_permissions"] = await _runtime_permission_summary(user, form_id, db)
+    return {"data": payload}
 
 
 @router.put("/{form_id}")

@@ -98,9 +98,11 @@ interface KnowledgeEvidence {
   status: string;
   space_name?: string;
   scenario: string;
-  guidance: string[];
-  evidence_refs: Array<{ source_ref: string; document_title?: string; source_name?: string }>;
-  linked_objects: Array<{ type: string; id: string; name: string }>;
+  guidance?: string[];
+  steps?: string[];
+  guardrails?: string[];
+  evidence_refs?: Array<{ source_ref: string; document_title?: string; source_name?: string }>;
+  linked_objects?: Array<{ type: string; id: string; name: string }>;
 }
 
 interface GraphContext {
@@ -138,104 +140,6 @@ interface NodePosition {
   x: number;
   y: number;
 }
-
-const fallbackEvent: QualityEvent = {
-  id: 'QE-20260521-001',
-  title: '电控模块焊点虚焊异常',
-  severity: 'critical',
-  status: 'open',
-  source: '制程检验 / AOI',
-  occurred_at: '2026-05-21T09:40:00',
-  description: 'AOI 连续发现电控模块 V2 批次焊点虚焊，缺陷率达到 6.8%，超过 2.0% 管控线。',
-  risk_score: 92,
-  affected: { orders: 3, work_orders: 5, material_batches: 2, suppliers: 1, customers: 2 },
-  recommended_actions: ['生成 CAPA', '冻结批次', '发起复检', '通知采购'],
-};
-
-const fallbackNodes: ImpactNode[] = [
-  { id: 'event-qe-001', label: '质量异常', type: 'QualityEvent', name: 'QE-20260521-001', status: 'open', risk: 'critical', summary: '电控模块 V2 批次焊点虚焊缺陷率 6.8%。', actions: ['AI 分析影响', '生成 CAPA', '通知相关角色'] },
-  { id: 'defect-001', label: '缺陷', type: 'Defect', name: '焊点虚焊', status: 'confirmed', risk: 'critical', summary: 'AOI 与人工复核均确认虚焊，主要集中在 BGA 区域。', actions: ['查看缺陷明细', '发起复检'] },
-  { id: 'inspection-iqc-088', label: '检验批次', type: 'InspectionBatch', name: 'IPQC-260521-088', status: 'failed', risk: 'critical', summary: '抽检 120 件，发现 8 件虚焊。', actions: ['复检批次', '导出检验记录'] },
-  { id: 'material-batch-mb-7781', label: '物料批次', type: 'MaterialBatch', name: 'MB-7781 / 焊锡膏 S12', status: 'hold', risk: 'major', summary: '同批次焊锡膏用于 5 个工单，建议先冻结待判定库存。', actions: ['冻结批次', '查看库存'] },
-  { id: 'supplier-s-023', label: '供应商', type: 'Supplier', name: '北辰电子材料', status: 'watch', risk: 'major', summary: '近期交付批次质量波动，过去 30 天已有 2 次异常。', actions: ['通知采购', '发起供应商复核'] },
-  { id: 'workorder-260521-017', label: '工单', type: 'WorkOrder', name: 'WO-260521-017', status: 'in_progress', risk: 'major', summary: '装配 A 线工单，已生产 860 件，待隔离 240 件。', actions: ['暂停工单', '调整排产'] },
-  { id: 'equipment-smt-03', label: '设备', type: 'Equipment', name: 'SMT-03 回流焊', status: 'running', risk: 'medium', summary: '温区 5 曲线有轻微偏移，需要设备工程师复核。', actions: ['创建维修工单', '查看传感器趋势'] },
-  { id: 'order-so-8821', label: '客户订单', type: 'CustomerOrder', name: 'SO-8821 / 华东客户', status: 'at_risk', risk: 'major', summary: '预计影响 5 月 23 日交付，需确认替代批次。', actions: ['通知销售', '查看交付承诺'] },
-  { id: 'capa-072', label: 'CAPA', type: 'CAPA', name: 'CAPA-072', status: 'draft', risk: 'medium', summary: '建议由质量工程师牵头，设备、工艺、采购协同处理。', actions: ['提交审批', '补充原因分析'] },
-  { id: 'operation-reflow-01', label: '工序', type: 'Operation', name: '回流焊 / OP-SMT-REFLOW', status: 'running', risk: 'medium', summary: '电控模块 V2 在 SMT 回流焊工序产生焊点质量风险。', actions: ['查看工艺参数', '锁定工序窗口'] },
-  { id: 'product-batch-pb-260521-a', label: '产品批次', type: 'ProductBatch', name: 'PB-260521-A / 电控模块 V2', status: 'quarantine', risk: 'major', summary: '该产品批次由 WO-260521-017 产出，当前待隔离判定。', actions: ['隔离成品', '查看流向'] },
-  { id: 'inventory-lot-inv-7781-a', label: '库存批次', type: 'InventoryLot', name: 'INV-7781-A / 待判定库存', status: 'hold', risk: 'major', summary: 'MB-7781 剩余库存已进入待判定区，禁止继续发料。', actions: ['查看库存', '冻结库存'] },
-  { id: 'inspection-recheck-091', label: '复检批次', type: 'InspectionBatch', name: 'RECHECK-260521-091', status: 'planned', risk: 'medium', summary: '针对隔离产品与剩余物料发起复检，等待质量工程师确认抽样方案。', actions: ['发起复检', '确认抽样方案'] },
-  { id: 'sensor-reflow-temp-05', label: 'TSDB Sensor', type: 'Sensor', name: 'TEMP-REFLOW-05', status: 'online', risk: 'medium', summary: 'SMT-03 回流焊温区 5 的温度传感器，采样数据进入时序库。', actions: ['查看趋势', '打开原始读数'] },
-  { id: 'ts-window-reflow-temp-260521-0930', label: 'TSDB Window', type: 'TimeSeriesWindow', name: '09:30-09:45 / 温区漂移', status: 'anomaly', risk: 'major', summary: 'AOI 发现缺陷前 11 分钟，温区 5 持续高于控制带，可作为根因分析证据。', actions: ['对比 SPC', '作为 RCA 证据'] },
-];
-
-const fallbackEdges: ImpactEdge[] = [
-  { id: 'r1', source: 'event-qe-001', target: 'defect-001', label: '发现' },
-  { id: 'r2', source: 'defect-001', target: 'inspection-iqc-088', label: '属于' },
-  { id: 'r3', source: 'inspection-iqc-088', target: 'material-batch-mb-7781', label: '检验' },
-  { id: 'r4', source: 'material-batch-mb-7781', target: 'supplier-s-023', label: '来自' },
-  { id: 'r5', source: 'material-batch-mb-7781', target: 'workorder-260521-017', label: '用于' },
-  { id: 'r6', source: 'workorder-260521-017', target: 'equipment-smt-03', label: '经过' },
-  { id: 'r7', source: 'workorder-260521-017', target: 'order-so-8821', label: '影响' },
-  { id: 'r8', source: 'event-qe-001', target: 'capa-072', label: '建议生成' },
-  { id: 'r9', source: 'workorder-260521-017', target: 'operation-reflow-01', label: '执行工序', relation_type: 'RUNS_OPERATION' },
-  { id: 'r10', source: 'operation-reflow-01', target: 'equipment-smt-03', label: '使用设备', relation_type: 'USES_EQUIPMENT' },
-  { id: 'r11', source: 'operation-reflow-01', target: 'defect-001', label: '可能导致', relation_type: 'MAY_CAUSE' },
-  { id: 'r12', source: 'workorder-260521-017', target: 'product-batch-pb-260521-a', label: '产出', relation_type: 'PRODUCES_BATCH' },
-  { id: 'r13', source: 'product-batch-pb-260521-a', target: 'order-so-8821', label: '交付', relation_type: 'AFFECTS_ORDER' },
-  { id: 'r14', source: 'material-batch-mb-7781', target: 'inventory-lot-inv-7781-a', label: '库存', relation_type: 'STORED_AS' },
-  { id: 'r15', source: 'capa-072', target: 'inspection-recheck-091', label: '触发复检', relation_type: 'REINSPECTS' },
-  { id: 'r16', source: 'inspection-recheck-091', target: 'product-batch-pb-260521-a', label: '复检', relation_type: 'REINSPECTS' },
-  { id: 'r17', source: 'equipment-smt-03', target: 'sensor-reflow-temp-05', label: '采集', relation_type: 'MEASURED_BY' },
-  { id: 'r18', source: 'sensor-reflow-temp-05', target: 'ts-window-reflow-temp-260521-0930', label: '时序异常', relation_type: 'HAS_TS_ANOMALY' },
-  { id: 'r19', source: 'ts-window-reflow-temp-260521-0930', target: 'defect-001', label: '时间相关', relation_type: 'CORRELATES_WITH' },
-];
-
-const timeSeriesEvidenceNodes: ImpactNode[] = [
-  { id: 'sensor-reflow-temp-05', label: 'TSDB Sensor', type: 'Sensor', name: 'TEMP-REFLOW-05', status: 'online', risk: 'medium', summary: 'SMT-03 回流焊温区 5 的温度传感器，采样数据进入时序库。', actions: ['查看趋势', '打开原始读数'] },
-  { id: 'ts-window-reflow-temp-260521-0930', label: 'TSDB Window', type: 'TimeSeriesWindow', name: '09:30-09:45 / 温区漂移', status: 'anomaly', risk: 'major', summary: 'AOI 发现缺陷前 11 分钟，温区 5 持续高于控制带，可作为根因分析证据。', actions: ['对比 SPC', '作为 RCA 证据'] },
-];
-
-const timeSeriesEvidenceEdges: ImpactEdge[] = [
-  { id: 'r17', source: 'equipment-smt-03', target: 'sensor-reflow-temp-05', label: '采集', relation_type: 'MEASURED_BY' },
-  { id: 'r18', source: 'sensor-reflow-temp-05', target: 'ts-window-reflow-temp-260521-0930', label: '时序异常', relation_type: 'HAS_TS_ANOMALY' },
-  { id: 'r19', source: 'ts-window-reflow-temp-260521-0930', target: 'defect-001', label: '时间相关', relation_type: 'CORRELATES_WITH' },
-];
-
-const fallbackKnowledgeCards: KnowledgeEvidence[] = [
-  {
-    id: 'card-solder-void',
-    title: '焊点虚焊处理策略',
-    status: 'published',
-    space_name: '质量部门知识库',
-    scenario: 'AOI 连续发现 BGA 区域焊点虚焊，缺陷率超过管控线。',
-    guidance: ['冻结同批次物料和在制品', '发起 BGA 区域复检', '检查回流炉温区曲线'],
-    evidence_refs: [
-      { source_ref: 'SOP-QA-014 / 3.2-4.1', document_title: '焊点虚焊复检与冻结流程' },
-      { source_ref: 'CAPA-072 / Root Cause', document_title: '电控模块 V2 虚焊历史处置' },
-    ],
-    linked_objects: [
-      { type: 'Defect', id: 'defect-001', name: '焊点虚焊' },
-      { type: 'MaterialBatch', id: 'material-batch-mb-7781', name: 'MB-7781 / 焊锡膏 S12' },
-    ],
-  },
-  {
-    id: 'card-supplier-risk',
-    title: '供应商批次风险判断',
-    status: 'published',
-    space_name: '质量部门知识库',
-    scenario: '供应商报告、来料记录或批次追溯显示温控、运输或仓储证据缺口。',
-    guidance: ['隔离同批次风险物料', '通知采购和 SQE 补充 8D', '提高后续来料抽检比例'],
-    evidence_refs: [
-      { source_ref: '北辰电子材料 5 月来料整改报告', document_title: '供应商整改报告' },
-    ],
-    linked_objects: [
-      { type: 'Supplier', id: 'supplier-s-023', name: '北辰电子材料' },
-      { type: 'MaterialBatch', id: 'material-batch-mb-7781', name: 'MB-7781 / 焊锡膏 S12' },
-    ],
-  },
-];
 
 const actionConfig = [
   { key: 'expand_center', label: '以此为中心展开', icon: <NodeIndexOutlined />, danger: false },
@@ -669,30 +573,6 @@ function normalizeGraphEdge(edge: Record<string, unknown>, index: number): Impac
   };
 }
 
-function enrichTimeSeriesEvidence(baseNodes: ImpactNode[], baseEdges: ImpactEdge[]) {
-  const nodeIds = new Set(baseNodes.map((node) => node.id));
-  const edgeIds = new Set(baseEdges.map((edge) => edge.id));
-  const canAttachEvidence = nodeIds.has('equipment-smt-03') && nodeIds.has('defect-001');
-  if (!canAttachEvidence) {
-    return { nodes: baseNodes, edges: baseEdges };
-  }
-
-  const nodes = [
-    ...baseNodes,
-    ...timeSeriesEvidenceNodes.filter((node) => !nodeIds.has(node.id)),
-  ];
-  const enrichedNodeIds = new Set(nodes.map((node) => node.id));
-  const edges = [
-    ...baseEdges,
-    ...timeSeriesEvidenceEdges.filter((edge) => (
-      !edgeIds.has(edge.id) &&
-      enrichedNodeIds.has(edge.source) &&
-      enrichedNodeIds.has(edge.target)
-    )),
-  ];
-  return { nodes, edges };
-}
-
 function normalizeGraphPayload(payload: GraphPayload) {
   const rawNodes = payload.root ? [payload.root, ...(payload.nodes || [])] : (payload.nodes || []);
   const nodeById = new Map<string, ImpactNode>();
@@ -716,15 +596,11 @@ function normalizeGraphPayload(payload: GraphPayload) {
       }
     });
   const nextEdges = Array.from(edgeByKey.values());
-  const enriched = enrichTimeSeriesEvidence(
-    nextNodes.length ? nextNodes : fallbackNodes,
-    nextEdges.length ? nextEdges : fallbackEdges,
-  );
 
   return {
     event: payload.event,
-    nodes: enriched.nodes,
-    edges: enriched.edges,
+    nodes: nextNodes,
+    edges: nextEdges,
     source: payload.source || 'graph-api',
   };
 }
@@ -765,7 +641,7 @@ function pickSelectedNodeIdForContext(nextNodes: ImpactNode[], context: GraphCon
     );
   });
 
-  return matched?.id || nextNodes[0]?.id || fallbackNodes[0].id;
+  return matched?.id || nextNodes[0]?.id || '';
 }
 
 function decorateNodesForContext(nextNodes: ImpactNode[], context: GraphContext, eventData?: QualityEvent) {
@@ -790,15 +666,13 @@ function decorateNodesForContext(nextNodes: ImpactNode[], context: GraphContext,
   });
 }
 
-const partFilters = ['全部', '焊锡膏', '电控模块', '待判定'];
+const partFilters = ['全部', '物料', '产品', '库存'];
 
-const objectQuickEntries = [
-  { objectType: 'MaterialBatch', objectId: 'MB-7781 / 焊锡膏 S12', title: 'MB-7781 / 焊锡膏 S12', hint: '供应商 / 检验 / 库存 / 工单' },
-  { objectType: 'InventoryLot', objectId: 'INV-7781-A / 待判定库存', title: 'INV-7781-A / 待判定库存', hint: '物料批次 / 冻结状态 / 复检' },
-  { objectType: 'ProductBatch', objectId: 'PB-260521-A / 电控模块 V2', title: 'PB-260521-A / 电控模块 V2', hint: '工单 / 工序 / 订单 / 异常' },
-];
-
-const defaultGraphContext: GraphContext = objectQuickEntries[0];
+const initialGraphContext: GraphContext = {
+  objectType: 'QualityEvent',
+  objectId: '',
+  title: '暂无后台对象',
+};
 
 const graphViewOptions = [
   {
@@ -873,21 +747,21 @@ export default function QualityImpactWorkbench() {
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ nodeId: string; moved: boolean } | null>(null);
   const suppressClickRef = useRef(false);
-  const [events, setEvents] = useState<QualityEvent[]>([fallbackEvent]);
-  const [event, setEvent] = useState<QualityEvent>(fallbackEvent);
-  const [nodes, setNodes] = useState<ImpactNode[]>(fallbackNodes);
-  const [edges, setEdges] = useState<ImpactEdge[]>(fallbackEdges);
-  const [selectedNodeId, setSelectedNodeId] = useState(fallbackNodes[0].id);
+  const [events, setEvents] = useState<QualityEvent[]>([]);
+  const [event, setEvent] = useState<QualityEvent | null>(null);
+  const [nodes, setNodes] = useState<ImpactNode[]>([]);
+  const [edges, setEdges] = useState<ImpactEdge[]>([]);
+  const [selectedNodeId, setSelectedNodeId] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
   const [loading, setLoading] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [knowledgeEvidence, setKnowledgeEvidence] = useState<KnowledgeEvidence[]>([]);
   const [graphStats, setGraphStats] = useState<GraphStats | null>(null);
-  const [graphSource, setGraphSource] = useState('quality-fallback');
+  const [graphSource, setGraphSource] = useState('backend');
   const [graphView, setGraphView] = useState<GraphViewKey>('part');
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [nodePositionOverrides, setNodePositionOverrides] = useState<Record<string, NodePosition>>({});
-  const [graphContext, setGraphContext] = useState<GraphContext>(defaultGraphContext);
+  const [graphContext, setGraphContext] = useState<GraphContext>(initialGraphContext);
   const [timelinePercent, setTimelinePercent] = useState(100);
   const [draggingTimeline, setDraggingTimeline] = useState(false);
 
@@ -964,9 +838,21 @@ export default function QualityImpactWorkbench() {
 
   const activeGraphView = graphViewOptions.find((item) => item.key === graphView) || graphViewOptions[0];
   const selectedTimelinePercent = getTimelinePercentForNode(selectedNode);
+  const objectQuickEntries = useMemo(() => {
+    const entryTypes = new Set(['MaterialBatch', 'InventoryLot', 'ProductBatch', 'WorkOrder', 'CustomerOrder']);
+    return nodes
+      .filter((node) => entryTypes.has(node.type))
+      .slice(0, 8)
+      .map((node) => ({
+        objectType: node.type,
+        objectId: node.source_id || node.name || node.id,
+        title: node.name,
+        hint: [objectTypeLabel[node.type] || node.type, node.status, node.risk].filter(Boolean).join(' / '),
+      }));
+  }, [nodes]);
 
   const contextualTimeline = useMemo(() => {
-    const sourceLabel = graphSource.includes('fallback') ? '演示子图' : 'Neo4j 子图';
+    const sourceLabel = graphSource || '后端子图';
     return [
       {
         time: '供应',
@@ -1039,27 +925,30 @@ export default function QualityImpactWorkbench() {
       setAiSuggestion(null);
     } catch {
       if (context.objectType === 'QualityEvent') {
-        const impactRes = await getQualityEventImpact(context.objectId);
-        const normalized = normalizeGraphPayload(impactRes.data?.data || {});
-        if (eventOverride || normalized.event) {
-          setEvent((eventOverride || normalized.event) as QualityEvent);
+        try {
+          const impactRes = await getQualityEventImpact(context.objectId);
+          const normalized = normalizeGraphPayload(impactRes.data?.data || {});
+          if (eventOverride || normalized.event) {
+            setEvent((eventOverride || normalized.event) as QualityEvent);
+          }
+          const nextNodes = decorateNodesForContext(normalized.nodes, context, eventOverride || normalized.event);
+          setNodes(nextNodes);
+          setEdges(normalized.edges);
+          setGraphSource(`${normalized.source} / ${view}`);
+          setSelectedNodeId(pickSelectedNodeIdForContext(nextNodes, context));
+        } catch {
+          setNodes([]);
+          setEdges([]);
+          setGraphSource('backend-unavailable');
+          setSelectedNodeId('');
+          message.warning('图谱服务暂时不可用，暂无后台子图数据');
         }
-        const nextNodes = decorateNodesForContext(normalized.nodes, context, eventOverride || normalized.event);
-        setNodes(nextNodes);
-        setEdges(normalized.edges);
-        setGraphSource(`${normalized.source} / ${view}`);
-        setSelectedNodeId(pickSelectedNodeIdForContext(nextNodes, context));
       } else {
-        const fallback = normalizeGraphPayload({
-          nodes: fallbackNodes as unknown as Array<Record<string, unknown>>,
-          edges: fallbackEdges as unknown as Array<Record<string, unknown>>,
-          source: 'fallback',
-        });
-        setNodes(fallback.nodes);
-        setEdges(fallback.edges);
-        setGraphSource(`fallback / ${view}`);
-        setSelectedNodeId(pickSelectedNodeIdForContext(fallback.nodes, context));
-        message.warning('图谱服务暂时不可用，已使用本地演示子图');
+        setNodes([]);
+        setEdges([]);
+        setGraphSource('backend-unavailable');
+        setSelectedNodeId('');
+        message.warning('图谱服务暂时不可用，暂无后台子图数据');
       }
       setGraphContext(context);
     } finally {
@@ -1067,12 +956,21 @@ export default function QualityImpactWorkbench() {
     }
   };
 
-  const loadEvent = async (eventId = event.id) => {
+  const loadEvent = async (eventId = event?.id) => {
     setLoading(true);
     try {
       const eventsRes = await listQualityEvents();
-      const nextEvents = eventsRes.data?.data || [fallbackEvent];
+      const nextEvents = eventsRes.data?.data || [];
       const matched = nextEvents.find((item: QualityEvent) => item.id === eventId) || nextEvents[0];
+      if (!matched) {
+        setEvents([]);
+        setEvent(null);
+        setNodes([]);
+        setEdges([]);
+        setSelectedNodeId('');
+        setGraphSource('backend-empty');
+        return;
+      }
       setEvents(nextEvents);
       setEvent(matched);
       await loadObjectGraph(
@@ -1081,12 +979,13 @@ export default function QualityImpactWorkbench() {
         matched,
       );
     } catch {
-      setEvents([fallbackEvent]);
-      setEvent(fallbackEvent);
-      setNodes(fallbackNodes);
-      setEdges(fallbackEdges);
-      setGraphSource('quality-fallback');
-      setSelectedNodeId(fallbackNodes[0].id);
+      setEvents([]);
+      setEvent(null);
+      setNodes([]);
+      setEdges([]);
+      setGraphSource('backend-unavailable');
+      setSelectedNodeId('');
+      message.warning('质量事件接口暂时不可用，暂无后台事件数据');
     } finally {
       setLoading(false);
     }
@@ -1141,7 +1040,7 @@ export default function QualityImpactWorkbench() {
   }, [layoutNodes]);
 
   useEffect(() => {
-    loadObjectGraph(defaultGraphContext, 'part');
+    loadEvent();
   }, []);
 
   useEffect(() => {
@@ -1162,15 +1061,20 @@ export default function QualityImpactWorkbench() {
     })
       .then((res) => {
         const nextCards = res.data?.data ?? [];
-        setKnowledgeEvidence(nextCards.length ? nextCards : fallbackKnowledgeCards);
+        setKnowledgeEvidence(nextCards);
       })
-      .catch(() => setKnowledgeEvidence(fallbackKnowledgeCards));
+      .catch(() => setKnowledgeEvidence([]));
   }, [selectedNode?.id, selectedNode?.type]);
 
   const runAiAnalysis = async () => {
+    if (!event) {
+      message.warning('暂无后台质量事件数据');
+      return;
+    }
+    const currentEvent = event;
     setLoading(true);
     try {
-      const res = await getQualityEventAiSuggestion(event.id);
+      const res = await getQualityEventAiSuggestion(currentEvent.id);
       setAiSuggestion(res.data?.data || null);
       setAiOpen(true);
     } catch {
@@ -1193,23 +1097,29 @@ export default function QualityImpactWorkbench() {
       expandSelectedNode();
       return;
     }
+    if (!event) {
+      message.warning('暂无后台质量事件数据');
+      return;
+    }
+
+    const currentEvent = event;
 
     if (action === 'generate_capa') {
       try {
         await createCapa({
           defect_id: 1,
           action_type: 'corrective',
-          description: `${event.title} - CAPA 纠正预防措施`,
+          description: `${currentEvent.title} - CAPA 纠正预防措施`,
           due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
           assignee_id: 3,
         });
       } catch {
-        // The demo action endpoint below still records a fallback task.
+        // Keep the CAPA flow non-blocking when the CAPA service is unavailable.
       }
     }
 
     try {
-      const res = await executeQualityEventAction(event.id, {
+      const res = await executeQualityEventAction(currentEvent.id, {
         action,
         node_id: selectedNode?.id,
         comment: selectedNode?.summary,
@@ -1311,21 +1221,25 @@ export default function QualityImpactWorkbench() {
             </div>
             <Space direction="vertical" size={10} style={{ width: '100%' }}>
               <div className="quality-object-entry-title">料号</div>
-              {objectQuickEntries.map((item) => (
-                <button
-                  key={`${item.objectType}-${item.objectId}`}
-                  className={`quality-event-card quality-object-entry ${graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 'active' : ''}`}
-                  onClick={() => openObjectGraph(item)}
-                >
-                  <span>
-                    <Badge color="blue" />
-                    <strong>{item.title}</strong>
-                  </span>
-                  <small>{item.objectType}</small>
-                  <em>{item.hint}</em>
-                  <Progress percent={graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 100 : 36} size="small" strokeColor="#2d7891" />
-                </button>
-              ))}
+              {objectQuickEntries.length ? (
+                objectQuickEntries.map((item) => (
+                  <button
+                    key={`${item.objectType}-${item.objectId}`}
+                    className={`quality-event-card quality-object-entry ${graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 'active' : ''}`}
+                    onClick={() => openObjectGraph(item)}
+                  >
+                    <span>
+                      <Badge color="blue" />
+                      <strong>{item.title}</strong>
+                    </span>
+                    <small>{item.objectType}</small>
+                    <em>{item.hint}</em>
+                    <Progress percent={graphContext.objectType === item.objectType && graphContext.objectId === item.objectId ? 100 : 36} size="small" strokeColor="#2d7891" />
+                  </button>
+                ))
+              ) : (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无后台对象" />
+              )}
             </Space>
           </Card>
         </aside>
@@ -1350,7 +1264,7 @@ export default function QualityImpactWorkbench() {
                       Neo4j {graphStats ? `${graphStats.total_nodes} 节点 / ${graphStats.total_relationships} 关系` : '连接中'}
                     </Tag>
                     <Tag color="blue">当前子图 {nodes.length} 对象 / {edges.length} 关系</Tag>
-                    <Tag>{graphSource === 'fallback' || graphSource === 'quality-fallback' ? '演示子图' : graphSource}</Tag>
+                    <Tag>{graphSource || '后端子图'}</Tag>
                     <Tag color="processing">邻接 {visibleEdges.length} 条</Tag>
                   </Space>
                 </div>
@@ -1488,10 +1402,10 @@ export default function QualityImpactWorkbench() {
                           <Typography.Text strong>{item.title}</Typography.Text>
                           <Typography.Paragraph>{item.scenario}</Typography.Paragraph>
                           <Space wrap size={4}>
-                            {item.guidance.slice(0, 3).map((action) => <Tag key={action}>{action}</Tag>)}
+                            {(item.guidance || item.steps || item.guardrails || []).slice(0, 3).map((action) => <Tag key={action}>{action}</Tag>)}
                           </Space>
                           <Typography.Text type="secondary">
-                            证据：{item.evidence_refs.map((ref) => ref.source_ref).join(' / ')}
+                            证据：{item.evidence_refs?.map((ref) => ref.source_ref).join(' / ') || '暂无'}
                           </Typography.Text>
                         </div>
                       ))}

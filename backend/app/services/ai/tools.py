@@ -4,64 +4,77 @@ from __future__ import annotations
 
 from typing import Any
 
+from .action_payloads import action_title, build_contract_action_payload
 from .low_code_tools import build_low_code_form_payload
 from .policies import apply_policy
 from .schemas import SkillAction
 
 
-def create_work_order_draft(evidence: list[dict[str, Any]] | None = None) -> SkillAction:
+def create_contract_draft_action(
+    skill: str,
+    *,
+    evidence: list[dict[str, Any]] | None = None,
+    context: dict[str, Any] | None = None,
+    source_message: str = "",
+) -> SkillAction:
     return apply_policy(SkillAction(
-        skill="maintenance.create_work_order_draft",
-        title="Maintenance work order draft",
-        payload={
-            "asset": "To be confirmed",
-            "priority": "To be confirmed",
-            "suggested_window": "To be confirmed",
-            "risk_signal": "To be confirmed",
-        },
+        skill=skill,
+        title=action_title(skill),
+        payload=build_contract_action_payload(skill, slots=context or {}, source_message=source_message),
         evidence=evidence or [],
     ))
 
 
-def create_purchase_request_draft(evidence: list[dict[str, Any]] | None = None) -> SkillAction:
-    return apply_policy(SkillAction(
-        skill="supply.create_purchase_request_draft",
-        title="Purchase request draft",
-        payload={
-            "item": "To be confirmed",
-            "quantity": "To be confirmed",
-            "reason": "To be confirmed",
-            "recommended_supplier": "To be confirmed",
-        },
-        evidence=evidence or [],
-    ))
+def create_work_order_draft(
+    evidence: list[dict[str, Any]] | None = None,
+    context: dict[str, Any] | None = None,
+    source_message: str = "",
+) -> SkillAction:
+    return create_contract_draft_action(
+        "maintenance.create_work_order_draft",
+        evidence=evidence,
+        context=context,
+        source_message=source_message,
+    )
 
 
-def create_material_application_draft(evidence: list[dict[str, Any]] | None = None) -> SkillAction:
-    return apply_policy(SkillAction(
-        skill="material.create_material_application_draft",
-        title="Material application draft",
-        payload={
-            "business_unit": "To be confirmed",
-            "item_code": "To be confirmed",
-            "quantity": "To be confirmed",
-            "usage": "To be confirmed",
-        },
-        evidence=evidence or [],
-    ))
+def create_purchase_request_draft(
+    evidence: list[dict[str, Any]] | None = None,
+    context: dict[str, Any] | None = None,
+    source_message: str = "",
+) -> SkillAction:
+    return create_contract_draft_action(
+        "supply.create_purchase_request_draft",
+        evidence=evidence,
+        context=context,
+        source_message=source_message,
+    )
 
 
-def create_capa_draft(evidence: list[dict[str, Any]] | None = None) -> SkillAction:
-    return apply_policy(SkillAction(
-        skill="quality.create_capa_draft",
-        title="CAPA draft",
-        payload={
-            "problem": "To be confirmed",
-            "containment": "To be confirmed",
-            "suspected_root_cause": "To be confirmed",
-        },
-        evidence=evidence or [],
-    ))
+def create_material_application_draft(
+    evidence: list[dict[str, Any]] | None = None,
+    context: dict[str, Any] | None = None,
+    source_message: str = "",
+) -> SkillAction:
+    return create_contract_draft_action(
+        "material.create_material_application_draft",
+        evidence=evidence,
+        context=context,
+        source_message=source_message,
+    )
+
+
+def create_capa_draft(
+    evidence: list[dict[str, Any]] | None = None,
+    context: dict[str, Any] | None = None,
+    source_message: str = "",
+) -> SkillAction:
+    return create_contract_draft_action(
+        "quality.create_capa_draft",
+        evidence=evidence,
+        context=context,
+        source_message=source_message,
+    )
 
 
 def create_low_code_form_definition_action(
@@ -100,11 +113,11 @@ def choose_draft_actions(
     if wants_low_code_form:
         actions.append(create_low_code_form_definition_action(message, evidence, context))
     if any(token in text for token in ["maintenance", "work order", "\u7ef4\u4fee", "\u5de5\u5355", "\u8bbe\u5907"]):
-        actions.append(create_work_order_draft(evidence))
+        actions.append(create_work_order_draft(evidence, context, message))
     if any(token in text for token in ["purchase", "\u91c7\u8d2d"]):
-        actions.append(create_purchase_request_draft(evidence))
+        actions.append(create_purchase_request_draft(evidence, context, message))
     if any(token in text for token in ["material", "\u7269\u6599", "\u6599\u53f7", "\u9886\u6599"]):
-        actions.append(create_material_application_draft(evidence))
+        actions.append(create_material_application_draft(evidence, context, message))
     if any(token in text for token in ["quality", "capa", "\u8d28\u91cf", "\u7f3a\u9677"]):
-        actions.append(create_capa_draft(evidence))
+        actions.append(create_capa_draft(evidence, context, message))
     return actions

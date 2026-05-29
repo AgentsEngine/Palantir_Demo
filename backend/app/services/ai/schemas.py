@@ -89,6 +89,7 @@ class AgentResponse(BaseModel):
     evidence: list[dict[str, Any]] = Field(default_factory=list)
     steps: list[dict[str, Any]] = Field(default_factory=list)
     confirmation_payload: dict[str, Any] = Field(default_factory=dict)
+    action_state: dict[str, Any] | None = None
     risk_level: Literal["low", "medium", "high", "critical"] = "low"
     requires_confirmation: bool = False
     mode: Literal["qa", "assisted", "agentic"] = "qa"

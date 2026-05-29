@@ -143,7 +143,7 @@ metadata.
 - `GET /api/v1/productization/readiness` matches the committed scope.
 - `GET /api/v1/system/readiness` reports expected dependency status.
 - `GET /api/v1/release/current` reports the deployed release.
-- Alembic is upgraded through `0024_seed_application_assembly.py`.
+- Alembic is upgraded through `0026_menu_node_config.py`.
 - `APP_MODE=production`, `DEMO_AUTH_OPTIONAL=false`, and a strong `SECRET_KEY` are set.
 - Default demo credentials are not used for real users.
 - Local runtime artifacts such as `runtime-logs/`, `.db` files, and `.tar` exports are not committed.

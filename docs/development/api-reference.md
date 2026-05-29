@@ -63,8 +63,8 @@ Permission implementation notes are in
 
 | Module | Prefix | Main endpoints |
 | --- | --- | --- |
-| Auth | `/auth` | `/login`, `/logout`, `/me` |
-| Admin | `/admin` | `/users`, `/org-units`, `/roles`, `/audit-logs`, `/applications` |
+| Auth | `/auth` | `/login`, `/logout`, `/me`, `/change-password`, `/invite/accept`, `/password-reset/request`, `/password-reset/confirm`, `/mfa/setup`, `/mfa/enable`, `/mfa/disable`, `/oidc/config`, `/oidc/login-url`, `/oidc/callback` |
+| Admin | `/admin` | `/users`, `/users/{user_id}/security`, `/users/{user_id}/sessions`, `/sessions/{session_id}/revoke`, `/org-units`, `/roles`, `/role-templates`, `/iam/settings`, `/permissions/simulate`, `/audit-logs`, `/applications` |
 | Workflow | `/workflow` | `/definitions`, `/instances`, `/instances/{inst_id}/act`, `/instances/{inst_id}/cancel`, `/notifications`, `/stats` |
 | Platform | `/platform` | `/tenants`, `/tenants/{tenant_id}`, `/tenants/{tenant_id}/invites`, `/tenants/{tenant_id}/invites/{invite_id}/revoke`, `/tenants/{tenant_id}/invites/{invite_id}/resend`, `/tenants/{tenant_id}/users/{user_id}/password-reset`, `/tenants/{tenant_id}/exports` |
 | Tenant | `/tenant` | `/profile/public` |
@@ -75,12 +75,12 @@ Permission implementation notes are in
 | Graph | `/graph` | `/query`, `/neighbors/{entity_id}`, `/path`, `/subgraph/{entity_id}`, `/stats`, `/sync/quality-demo`, `/impact-analysis-by-object`, `/entity/{label}/{entity_id}`, `/entity/{label}/{entity_id}/relationships`, `/impact-analysis/{entity_id}`, `/trace/{entity_id}`, `/analytics/centrality` |
 | Pipelines | `/pipelines` | `/`, `/{pipeline_id}`, `/{pipeline_id}/run`, `/{pipeline_id}/runs` |
 | Semantic assets | `/semantic-assets` | `/data-assets`, `/ontology-objects`, `/ontology-relations`, `/page-contracts`, `/page-contracts/by-route` |
-| Knowledge base | `/knowledge` | `/sources`, `/spaces`, `/directories`, `/documents`, `/assets/upload`, `/ingestion-jobs/{job_id}`, `/documents/{document_id}`, `/documents/{document_id}/markdown`, `/documents/{document_id}/chunks`, `/cards`, `/cards/{card_id}`, `/related-cards`, `/binding-candidates`, `/ocr-pipeline`, `/related`, `/search`, `/agent/conversations`, `/agent/conversations/{conversation_id}/messages` |
+| Knowledge base | `/knowledge` | `/sources`, `/spaces`, `/directories`, `/documents`, `/assets/upload`, `/extraction-jobs`, `/extraction-jobs/{job_id}`, `/extraction-jobs/{job_id}/approve`, `/extraction-jobs/{job_id}/commit-to-graph`, `/extraction-jobs/{job_id}/export`, `/ingestion-jobs/{job_id}`, `/documents/{document_id}`, `/documents/{document_id}/markdown`, `/documents/{document_id}/ocr`, `/documents/{document_id}/ocr/corrections`, `/documents/{document_id}/ocr/enhance`, `/documents/{document_id}/chunks`, `/cards`, `/cards/{card_id}`, `/related-cards`, `/binding-candidates`, `/ocr-pipeline`, `/related`, `/search`, `/agent/conversations`, `/agent/conversations/{conversation_id}/messages` |
 | Analytics | `/analytics` | `/overview`, `/aggregate`, `/timeseries`, `/distribution` |
 | Maintenance | `/maintenance` | `/equipment-health`, `/equipment/{equipment_id}/health`, `/predictions`, `/work-orders` |
 | Quality | `/quality` | `/spc/{parameter}`, `/defects`, `/defects/pareto`, `/traceability/{entity_id}`, `/inspections`, `/events`, `/events/{event_id}/impact`, `/events/{event_id}/ai-suggestion`, `/events/{event_id}/actions`, `/capa` |
 | Supply chain | `/supply-chain` | `/suppliers`, `/inventory`, `/shipments`, `/risk-assessment`, `/analytics` |
-| AI assistant | `/ai` | `/skills`, `/tools`, `/agent/conversations`, `/agent/conversations/{conversation_id}/messages`, `/agent/conversations/{conversation_id}`, `/memories`, `/memories/{memory_id}`, `/chat`, `/agent`, `/agent-runs`, `/agent-runs/{run_id}`, `/agent-runs/{run_id}/confirm`, `/agent-runs/{run_id}/cancel`, `/drafts/save`, `/provider/test`, `/settings`, `/settings/test`, `/audit`, `/sessions`, `/analyze` |
+| AI assistant | `/ai` | `/skills`, `/tools`, `/agent/conversations`, `/agent/conversations/{conversation_id}/messages`, `/agent/conversations/{conversation_id}`, `/memories`, `/memories/{memory_id}`, `/chat`, `/agent`, `/agent-runs`, `/agent-runs/{run_id}`, `/agent-runs/{run_id}/confirm`, `/agent-runs/{run_id}/cancel`, `/drafts/save`, `/drafts`, `/provider/test`, `/settings`, `/settings/test`, `/audit`, `/sessions`, `/analyze` |
 | Dashboard | `/dashboard` | `/overview`, `/oee`, `/production`, `/alerts`, `/programs/{program_id}` |
 | Reports | `/reports` | `/`, `/{report_id}`, `/{report_id}/snapshot`, `/{report_id}/snapshots` |
 | Model-driven | `/model-driven` | `/models`, `/models/{model_id}/fields`, `/models/import-from-ontology`, `/models/{model_id}/versions`, `/models/{model_id}/publish`, `/models/{model_id}/impact`, `/pages`, `/pages/generate`, `/data/{model_name}`, `/data/{model_name}/options`, `/data/{model_name}/{record_id}/children/{child_table}`, `/menus` |
@@ -101,6 +101,9 @@ Permission implementation notes are in
 - `/api/v1/dashboard/programs/{program_id}` is the current data bridge for generated `/program/*` application pages that still use frontend-owned layouts.
 - `/api/v1/system/readiness` is the operational readiness endpoint; `/health` only proves the process is alive.
 - `/api/v1/platform/*` is platform-admin only and requires tenant `1` admin context.
+- `/api/v1/applications/{app_id}/menus` now filters database-backed menu nodes by `application_menu_nodes.config` permission rules for non-admin users.
+- `/api/v1/forms/{form_id}` includes `runtime_permissions` so dynamic pages can hide disallowed actions without replacing backend enforcement.
+- `/api/v1/ai/drafts` lists saved AI drafts for the current user; confirmed non-low-code Agent actions either create a dynamic-record draft when a matching form exists or persist an `ai_drafts` row.
 - Workflow notifications exist under `/api/v1/workflow/notifications`; there is also a newer general notification module under `/api/v1/notifications`.
 - Reports routes are mounted under `/api/v1/reports`; the router uses both `/` and `/{report_id}` paths.
 - The AI assistant route is `/api/v1/ai`; the visible UI entry is the floating AI widget, while `/ai-assistant` redirects to `/`.

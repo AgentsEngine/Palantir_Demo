@@ -95,6 +95,12 @@ export default function AccountMenu({ user, onNavigate, onLogout }: AccountMenuP
               onClick: () => onNavigate('/account-center?section=data-assets'),
             },
             {
+              key: 'reference-data',
+              label: '数据字典与基础档案',
+              icon: <DatabaseOutlined />,
+              onClick: () => onNavigate('/account-center?section=reference-data'),
+            },
+            {
               key: 'ontology-modeling',
               label: '本体建模中心',
               icon: <NodeIndexOutlined />,

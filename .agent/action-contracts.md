@@ -8,49 +8,61 @@ The application loads this file as deployment-level Agent configuration. The Pyt
     "tool": "forms.create_dynamic_record_draft",
     "required": ["asset", "problem_or_risk", "priority_or_window"],
     "questions": [
-      "涉及哪个对象、设备、资产或业务单元？",
+      "涉及哪个设备、资产、产线或业务对象？",
       "触发原因、问题或风险是什么？",
-      "优先级、期望时间窗口或负责人是否明确？"
+      "优先级、时间窗口、截止时间或负责人是否明确？"
     ],
     "slot_terms": {
-      "asset": ["设备", "资产", "对象", "产线", "equipment", "asset", "machine", "line"],
-      "problem_or_risk": ["问题", "风险", "故障", "异常", "problem", "risk", "failure", "issue"],
-      "priority_or_window": ["优先", "紧急", "时间", "截止", "小时", "天", "priority", "urgent", "due", "window"]
+      "asset": ["设备", "资产", "对象", "产线", "机器", "equipment", "asset", "machine", "line"],
+      "problem_or_risk": ["问题", "风险", "故障", "异常", "报警", "problem", "risk", "failure", "issue", "alarm"],
+      "priority_or_window": ["优先级", "紧急", "时间", "截止", "小时", "天", "负责人", "priority", "urgent", "due", "window", "owner"]
     },
-    "example": "对象 A，出现异常风险，优先级高，48 小时内处理。"
+    "example": "设备：SMT-03；问题：温区 5 曲线漂移；优先级：高，8 小时内处理。"
   },
   "supply.create_purchase_request_draft": {
     "tool": "forms.create_dynamic_record_draft",
     "required": ["item", "quantity", "reason"],
-    "questions": ["申请或采购什么对象？", "数量是多少？", "申请原因或需求来源是什么？"],
+    "questions": [
+      "申请或采购什么物料、零件或对象？",
+      "数量是多少？",
+      "申请原因、业务需求或库存风险是什么？"
+    ],
     "slot_terms": {
-      "item": ["物料", "对象", "项目", "item", "material", "part"],
-      "quantity": ["数量", "件", "个", "套", "pcs", "qty"],
-      "reason": ["原因", "需求", "库存", "项目", "reason", "need", "stock"]
+      "item": ["物料", "零件", "对象", "料号", "项目", "item", "material", "part"],
+      "quantity": ["数量", "个", "件", "套", "pcs", "qty", "quantity"],
+      "reason": ["原因", "需求", "库存", "项目", "短缺", "reason", "need", "stock", "shortage"]
     },
-    "example": "申请对象 X 200 件，因为预计库存不足。"
+    "example": "物料：焊锡膏 S12；数量：200 件；原因：预计库存不足。"
   },
   "material.create_material_application_draft": {
     "tool": "forms.create_dynamic_record_draft",
     "required": ["item", "quantity", "usage"],
-    "questions": ["申请或领用什么对象？", "数量是多少？", "用途、业务单元或关联事项是什么？"],
+    "questions": [
+      "申请或领用什么物料、料号或对象？",
+      "数量是多少？",
+      "用途、工单、产线或关联事项是什么？"
+    ],
     "slot_terms": {
-      "item": ["物料", "对象", "料号", "item", "material"],
-      "quantity": ["数量", "件", "个", "套", "pcs", "qty"],
-      "usage": ["用途", "业务", "工单", "产线", "usage", "line", "purpose"]
+      "item": ["物料", "料号", "对象", "零件", "item", "material", "part"],
+      "quantity": ["数量", "个", "件", "套", "pcs", "qty", "quantity"],
+      "usage": ["用途", "业务", "工单", "产线", "补料", "usage", "line", "purpose", "work order"]
     },
-    "example": "领用对象 X 36 套，用于某业务单元补充。"
+    "example": "物料：电控模块外壳；数量：36 套；用途：WO-260521-017 补料。"
   },
   "quality.create_capa_draft": {
     "tool": "forms.create_dynamic_record_draft",
     "required": ["problem", "containment", "owner_or_due_date"],
-    "questions": ["问题是什么？", "临时处理或遏制措施是什么？", "责任人或截止时间是否明确？"],
+    "questions": [
+      "问题、缺陷或异常是什么？",
+      "临时处理、遏制或隔离措施是什么？",
+      "责任人、截止时间或完成窗口是否明确？"
+    ],
     "slot_terms": {
-      "problem": ["问题", "缺陷", "异常", "不良", "problem", "defect", "issue"],
-      "containment": ["遏制", "隔离", "整改", "处理", "containment", "corrective", "action"],
-      "owner_or_due_date": ["责任", "负责人", "截止", "今天", "本周", "owner", "due"]
+      "problem": ["问题", "缺陷", "异常", "不良", "风险", "problem", "defect", "issue", "risk", "quality", "capa", "category"],
+      "containment": ["临时措施", "遏制", "隔离", "整改", "处理", "containment", "corrective", "action"],
+      "owner_or_due_date": ["责任人", "负责人", "截止", "到期", "今天", "本周", "owner", "due"]
     },
-    "example": "问题 X 已确认，先隔离影响范围，负责人本周内完成分析。"
+    "example": "问题：BGA 虚焊缺陷率上升；临时措施：隔离受影响批次；责任人：QE 王工，今天完成。"
   },
   "low_code.create_form_definition": {
     "tool": "forms.create_form_definition",
@@ -62,9 +74,9 @@ The application loads this file as deployment-level Agent configuration. The Pyt
       "表单名称和用途是什么？",
       "需要哪些字段？哪些字段必填？",
       "是否创建菜单入口？如果创建，菜单名称是什么？",
-      "是否有枚举字段或特殊类型字段？"
+      "是否有枚举字段、关联字段或特殊字段类型？"
     ],
-    "example": "表单名称为对象主数据，字段包括编码、名称、类型、状态；编码和名称必填；创建菜单入口。"
+    "example": "表单名称：物料主数据；字段：物料编码、物料名称、物料类型、安全库存；物料编码和物料名称必填；创建菜单入口。"
   }
 }
 ```

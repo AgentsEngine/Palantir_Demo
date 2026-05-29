@@ -109,8 +109,8 @@ Already present:
 - `/api/v1/admin/applications`
 - `/api/v1/forms`
 - migration `backend/alembic/versions/0006_platform_forms.py`
-- migrations through `0024_seed_application_assembly.py`
-- platform tables for forms, fields, layouts, actions, permissions, published versions, workflow bindings, dynamic records, application-form bindings, and application menu nodes
+- migrations through `0026_menu_node_config.py`
+- platform tables for forms, fields, layouts, actions, permissions, published versions, workflow bindings, dynamic records, application-form bindings, application menu nodes, menu-node config, and AI drafts
 
 Current important rule:
 
@@ -146,7 +146,7 @@ Recent code moves the project closer to a SaaS-shaped demo:
 | Dynamic form records | Stored in JSON/JSONB through `dynamic_records`. |
 | Graph data | Neo4j driver exists; graph features degrade when Neo4j is unavailable. |
 | Knowledge base | `/api/v1/knowledge` has persistent documents/chunks/ingestion/extraction/link rows plus demo spaces/directories/cards and TF-IDF retrieval. |
-| AI | Current assistant API is implemented directly with GLM-compatible defaults, skill/tool registry endpoints, conversation/memory APIs, confirmation-token scaffold, low-code planning tools, and persisted Agent runtime rows. |
+| AI | Current assistant API is implemented directly with GLM-compatible defaults, skill/tool registry endpoints, conversation/memory/draft APIs, pending action state, confirmation-token scaffold, low-code planning tools, dynamic-record draft helpers, and persisted Agent runtime rows. |
 | Tenant platform | `/api/v1/platform` manages tenants, domains, invites, password resets, exports, and usage summaries for platform admins. |
 | Productization | `/api/v1/productization/readiness` exposes the current ready path and module maturity contract. |
 

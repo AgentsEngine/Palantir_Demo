@@ -121,6 +121,7 @@ def _recent_low_code_request(context: dict[str, Any]) -> str | None:
 def _extract_form_name(message: str) -> str | None:
     text = message.strip()
     patterns = [
+        r"(?:^|[\n。；;])(?P<name>[\u4e00-\u9fa5A-Za-z0-9_\-\s]{2,40}?)(?:[，,；;]\s*)?(?:字段|栏位|信息|内容)",
         r"(?:关于|有关|为|给)(?P<name>[\u4e00-\u9fa5A-Za-z0-9_\-\s]{2,40}?)(?:的)?表单",
         r"(?P<name>[\u4e00-\u9fa5A-Za-z0-9_\-\s]{2,40}?)(?:的)?表单",
         r"form\s+(?:for|named|called)\s+(?P<name>[A-Za-z0-9_\-\s]{2,60})",
@@ -130,11 +131,26 @@ def _extract_form_name(message: str) -> str | None:
         if not match:
             continue
         name = match.group("name").strip()
+        if "\n" in name:
+            name = [part.strip() for part in name.splitlines() if part.strip()][-1]
         name = re.sub(r"^(请你|请|麻烦|帮我|给我|为我|建立|新建|创建|设计|生成|做|一个|个|关于|有关|\s)+", "", name)
         name = re.sub(r"(就好|即可|就行|吧)$", "", name).strip()
         if name:
             return name[:80]
     return None
+
+
+def _is_field_required(name: str, message: str) -> bool:
+    compact_name = _compact(name)
+    for clause in re.split(r"[。；;\n]", message):
+        if not re.search(r"必填|必须|required", clause, flags=re.IGNORECASE):
+            continue
+        compact_clause = _compact(clause)
+        if "所有字段" in clause or "全部字段" in clause:
+            return True
+        if compact_name and compact_name in compact_clause:
+            return True
+    return False
 
 
 def _extract_fields(message: str) -> list[dict[str, Any]]:
@@ -146,6 +162,7 @@ def _extract_fields(message: str) -> list[dict[str, Any]]:
     if not match:
         return []
     raw = match.group("fields")
+    raw = re.split(r"[；;。][^；;。]*(?:必填|必须|required)", raw, maxsplit=1, flags=re.IGNORECASE)[0]
     raw = re.split(r"(?:菜单|入口|必填|确认|就好|即可|然后|并且)", raw, maxsplit=1)[0]
     names = [
         item.strip(" \t\n\r:：，,、;；。.")
@@ -163,7 +180,7 @@ def _extract_fields(message: str) -> list[dict[str, Any]]:
                 "field_name": f"field_{index + 1}",
                 "label": name[:40],
                 "field_type": "string",
-                "required": bool(re.search(rf"{re.escape(name)}.*?(?:必填|必须)", message)),
+                "required": _is_field_required(name, message),
             }
         )
     return fields

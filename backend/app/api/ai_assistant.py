@@ -9,17 +9,19 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import desc, select
 
 from app.api.deps import current_tenant_id, get_current_user
 from app.core.db import db_session
-from app.models.relational import AIAgentRun, AIConversation, AIMessage, AIToolCall
+from app.models.relational import AIAgentRun, AIConversation, AIDraft, AIMessage, AIToolCall
 from app.services.ai.agent_runs import cancel_agent_run, confirm_agent_run, create_agent_run, get_agent_run
 from app.services.ai.audit import list_ai_audit_logs, record_ai_event
 from app.services.ai.client import get_provider
 from app.services.ai.confirmations import consume_confirmation_token
 from app.services.ai.agent_context_router import agent_context_router
 from app.services.ai.context_builder import context_builder
+from app.services.ai.dynamic_record_drafts import create_dynamic_record_draft_from_agent
 from app.services.ai.memory import memory_service
 from app.services.ai.orchestrator import run_agent
 from app.services.ai.policies import decide_ai_permission, decide_skill_permission
@@ -209,12 +211,63 @@ async def _execute_confirmed_agent_run(run: dict[str, Any], current_user: dict[s
     results: list[dict[str, Any]] = []
     for action in run.get("actions") or []:
         skill = action.get("skill")
+        action_payload = action.get("payload") if isinstance(action.get("payload"), dict) else {}
+        source_draft_id = str(action_payload.get("_source_draft_id") or action_payload.get("_resume_draft_id") or "")
         if skill != "low_code.create_form_definition":
-            results.append({"skill": skill, "status": "skipped", "reason": "No executor is registered for this skill"})
+            payload = action_payload
+            dynamic_result = None
+            try:
+                async with db_session() as session:
+                    dynamic_result = await create_dynamic_record_draft_from_agent(
+                        session,
+                        user=current_user,
+                        skill=str(skill or ""),
+                        payload=payload,
+                        evidence=action.get("evidence") or [],
+                    )
+            except SQLAlchemyError:
+                dynamic_result = None
+            if dynamic_result:
+                results.append({
+                    "skill": skill,
+                    "tool": "forms.create_dynamic_record_draft",
+                    "status": "completed",
+                    "result": dynamic_result,
+                })
+                _audit_ai_event(current_user, "agent_dynamic_record_draft_created", {"skill": skill, "result": dynamic_result})
+                await _update_ai_draft_status(
+                    draft_id=source_draft_id,
+                    current_user=current_user,
+                    status="executed",
+                    metadata={"executed_result": dynamic_result, "run_id": run.get("run_id")},
+                )
+                continue
+
+            draft_record = await _persist_ai_draft(
+                current_user,
+                skill=str(skill or ""),
+                payload=payload,
+                evidence=action.get("evidence") or [],
+                source="agent_run_confirmation",
+                run_id=str(run.get("run_id") or ""),
+            )
+            results.append({
+                "skill": skill,
+                "tool": (payload.get("_contract") or {}).get("tool") or "ai.drafts.save",
+                "status": "completed",
+                "result": draft_record,
+            })
+            _audit_ai_event(current_user, "agent_draft_saved", {"skill": skill, "draft_id": draft_record["draft_id"], "persisted": draft_record.get("persisted")})
+            await _update_ai_draft_status(
+                draft_id=source_draft_id,
+                current_user=current_user,
+                status="confirmed",
+                metadata={"confirmed_result": draft_record, "run_id": run.get("run_id")},
+            )
             continue
 
         async with db_session() as session:
-            result = await execute_create_form_definition(session, user=current_user, payload=action.get("payload") or {})
+            result = await execute_create_form_definition(session, user=current_user, payload=action_payload)
         results.append({
             "skill": skill,
             "tool": "forms.create_form_definition",
@@ -222,11 +275,231 @@ async def _execute_confirmed_agent_run(run: dict[str, Any], current_user: dict[s
             "result": result,
         })
         _audit_ai_event(current_user, "agent_tool_executed", {"skill": skill, "tool": "forms.create_form_definition", "result": result})
+        await _update_ai_draft_status(
+            draft_id=source_draft_id,
+            current_user=current_user,
+            status="executed",
+            metadata={"executed_result": result, "run_id": run.get("run_id")},
+        )
 
     run["tool_results"] = results
     if any(item.get("status") == "completed" for item in results):
         run["status"] = "completed"
     return run
+
+
+async def _persist_ai_draft(
+    current_user: dict[str, Any],
+    *,
+    skill: str,
+    payload: dict[str, Any],
+    evidence: list[dict[str, Any]] | None = None,
+    source: str = "manual_save",
+    run_id: str | None = None,
+) -> dict[str, Any]:
+    draft_id = f"draft-{uuid.uuid4().hex[:12]}"
+    record = {
+        "draft_id": draft_id,
+        "status": "draft",
+        "skill": skill,
+        "payload": payload,
+        "evidence": evidence or [],
+        "created_by": _user_key(current_user),
+        "created_at": datetime.now().isoformat(),
+        "source": source,
+        "run_id": run_id or None,
+        "persisted": False,
+    }
+    try:
+        async with db_session() as session:
+            draft = AIDraft(
+                tenant_id=current_tenant_id(current_user),
+                draft_id=draft_id,
+                skill=skill,
+                status="draft",
+                payload=payload,
+                evidence=evidence or [],
+                source=source,
+                run_id=run_id or None,
+                created_by=_user_key(current_user),
+                metadata_json={},
+            )
+            session.add(draft)
+            await session.commit()
+            await session.refresh(draft)
+            record["persisted"] = True
+            record["id"] = draft.id
+            record["created_at"] = _now_iso(draft.created_at) or record["created_at"]
+    except SQLAlchemyError:
+        record["persisted"] = False
+    AI_DRAFT_STORE[draft_id] = record
+    return record
+
+
+async def _load_ai_draft_for_user(
+    *,
+    draft_id: str,
+    current_user: dict[str, Any],
+) -> dict[str, Any] | None:
+    tenant_id = current_tenant_id(current_user)
+    user_key = _user_key(current_user)
+    try:
+        async with db_session() as session:
+            row = (
+                await session.execute(
+                    select(AIDraft).where(
+                        AIDraft.tenant_id == tenant_id,
+                        AIDraft.draft_id == draft_id,
+                        AIDraft.created_by == user_key,
+                    )
+                )
+            ).scalar_one_or_none()
+            if not row:
+                return None
+            return {
+                "id": row.id,
+                "draft_id": row.draft_id,
+                "status": row.status,
+                "skill": row.skill,
+                "payload": row.payload or {},
+                "evidence": row.evidence or [],
+                "source": row.source,
+                "run_id": row.run_id,
+                "created_by": row.created_by,
+                "created_at": _now_iso(row.created_at),
+                "metadata": row.metadata_json or {},
+                "persisted": True,
+            }
+    except SQLAlchemyError:
+        fallback = AI_DRAFT_STORE.get(draft_id)
+        if fallback and fallback.get("created_by") == user_key:
+            return fallback
+    return None
+
+
+async def _update_ai_draft_status(
+    *,
+    draft_id: str | None,
+    current_user: dict[str, Any],
+    status: str,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    if not draft_id:
+        return
+    tenant_id = current_tenant_id(current_user)
+    user_key = _user_key(current_user)
+    stored = AI_DRAFT_STORE.get(draft_id)
+    if stored and stored.get("created_by") == user_key:
+        stored["status"] = status
+        stored["metadata"] = {**(stored.get("metadata") or {}), **(metadata or {})}
+    try:
+        async with db_session() as session:
+            row = await session.scalar(
+                select(AIDraft).where(
+                    AIDraft.tenant_id == tenant_id,
+                    AIDraft.draft_id == draft_id,
+                    AIDraft.created_by == user_key,
+                )
+            )
+            if not row:
+                return
+            row.status = status
+            row.metadata_json = {**(row.metadata_json or {}), **(metadata or {})}
+            await session.commit()
+    except SQLAlchemyError:
+        return
+
+
+async def _sync_persisted_agent_run_final_state(
+    run_id: str,
+    current_user: dict[str, Any],
+    *,
+    status: str,
+    clear_pending_action_state: bool = True,
+) -> None:
+    tenant_id = current_tenant_id(current_user)
+    try:
+        async with db_session() as session:
+            persisted_run = await session.scalar(
+                select(AIAgentRun).where(
+                    AIAgentRun.tenant_id == tenant_id,
+                    AIAgentRun.run_id == run_id,
+                )
+            )
+            if not persisted_run:
+                return
+            persisted_run.status = status
+            if status in {"completed", "cancelled"}:
+                persisted_run.requires_confirmation = False
+            conversation = await session.scalar(
+                select(AIConversation).where(
+                    AIConversation.tenant_id == tenant_id,
+                    AIConversation.conversation_id == persisted_run.conversation_id,
+                    AIConversation.user_id == _user_key(current_user),
+                )
+            )
+            if conversation and clear_pending_action_state:
+                metadata = dict(conversation.metadata_json or {})
+                metadata.pop("pending_action_state", None)
+                conversation.metadata_json = metadata
+            await session.commit()
+    except SQLAlchemyError:
+        return
+
+
+async def _load_persisted_agent_run_for_confirmation(
+    run_id: str,
+    token: str,
+    current_user: dict[str, Any],
+) -> dict[str, Any]:
+    tenant_id = current_tenant_id(current_user)
+    user_key = _user_key(current_user)
+    async with db_session() as session:
+        row = await session.scalar(
+            select(AIAgentRun).where(
+                AIAgentRun.tenant_id == tenant_id,
+                AIAgentRun.run_id == run_id,
+            )
+        )
+        if not row:
+            raise ValueError("Agent run not found")
+        if row.status == "cancelled":
+            raise ValueError("Cancelled agent runs cannot be confirmed")
+        if row.status in {"confirmed", "completed"}:
+            raise ValueError("Agent run has already been confirmed")
+        confirmation_payload = dict(row.confirmation_payload or {})
+        expected_token = str(confirmation_payload.get("confirmation_token") or "")
+        if not expected_token or expected_token != token:
+            raise ValueError("Confirmation token does not match this agent run")
+        if str(confirmation_payload.get("user") or "") != user_key:
+            raise ValueError("Confirmation token does not belong to the current user")
+        expires_at = confirmation_payload.get("expires_at")
+        if expires_at:
+            try:
+                if datetime.fromisoformat(str(expires_at)) < datetime.now():
+                    raise ValueError("Confirmation token has expired")
+            except ValueError as exc:
+                if "expired" in str(exc):
+                    raise
+        return {
+            "run_id": row.run_id,
+            "status": "confirmed",
+            "mode": row.mode,
+            "message": row.input_message,
+            "page": None,
+            "context": {},
+            "answer": row.answer,
+            "evidence": row.evidence or [],
+            "steps": row.steps or [],
+            "actions": row.actions or [],
+            "requires_confirmation": row.requires_confirmation,
+            "confirmation_payload": confirmation_payload,
+            "risk_level": row.risk_level,
+            "created_by": user_key,
+            "created_at": row.created_at.isoformat() if row.created_at else datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
+            "confirmation": {**confirmation_payload, "status": "confirmed", "confirmed_at": datetime.now().isoformat()},
+        }
 
 
 # Simulated AI responses based on intent detection
@@ -403,6 +676,44 @@ async def _run_agent_for_user(body: AgentRequest, current_user: dict, event_sink
     context["_current_user"] = current_user
     context["_tenant_id"] = current_tenant_id(current_user)
     context["_user_key"] = _user_key(current_user)
+    resume_draft_id = context.get("resumeDraftId") or context.get("resume_draft_id")
+    if resume_draft_id and not context.get("resumeDraft"):
+        draft_record = await _load_ai_draft_for_user(draft_id=str(resume_draft_id), current_user=current_user)
+        if not draft_record:
+            raise HTTPException(status_code=404, detail="AI draft not found")
+        if draft_record.get("status") in {"executed", "cancelled"}:
+            raise HTTPException(status_code=409, detail="AI draft is no longer editable")
+        decision = decide_ai_permission(current_user, AI_SYSTEM_SETTINGS, "draft", risk_level="medium")
+        _raise_for_ai_decision(decision)
+        resume_step = {
+            "id": "step-draft-resume",
+            "type": "context",
+            "status": "completed",
+            "draft_id": draft_record.get("draft_id"),
+            "skill": draft_record.get("skill"),
+            "draft_status": draft_record.get("status"),
+        }
+        await _emit_agent_step(event_sink, resume_step)
+        await _update_ai_draft_status(
+            draft_id=str(resume_draft_id),
+            current_user=current_user,
+            status="reviewing",
+            metadata={"last_resumed_at": datetime.now().isoformat()},
+        )
+        draft_record["status"] = "reviewing"
+        context["resumeDraft"] = draft_record
+        if not context.get("pendingActionState"):
+            payload = draft_record.get("payload") if isinstance(draft_record.get("payload"), dict) else {}
+            payload = {**payload, "_source_draft_id": draft_record.get("draft_id")}
+            context["pendingActionState"] = {
+                "status": "ready_for_confirmation",
+                "skill": draft_record.get("skill"),
+                "source_message": payload.get("source_message") or body.message,
+                "collected_slots": payload,
+                "missing_slots": [],
+                "notes": [f"resume draft {draft_record.get('draft_id')}"],
+            }
+            context["pending_action_state"] = context["pendingActionState"]
     conversation_id = context.get("conversation_id") or context.get("conversationId")
     if conversation_id and not context.get("recentMessages"):
         tenant_id = current_tenant_id(current_user)
@@ -417,6 +728,10 @@ async def _run_agent_for_user(body: AgentRequest, current_user: dict, event_sink
                 )
             )
             if conversation:
+                pending_action_state = (conversation.metadata_json or {}).get("pending_action_state")
+                if pending_action_state and not context.get("pendingActionState"):
+                    context["pendingActionState"] = pending_action_state
+                    context["pending_action_state"] = pending_action_state
                 rows = (
                     await session.execute(
                         select(AIMessage)
@@ -716,6 +1031,10 @@ async def _persist_agent_turn(body: AgentRequest, result: AgentResponse, current
             "last_run_id": run.run_id,
             "last_surface": (body.context or {}).get("surface") or "global",
         }
+        if result.action_state:
+            conversation.metadata_json["pending_action_state"] = result.action_state
+        elif (body.context or {}).get("pendingActionState") and result.requires_confirmation:
+            conversation.metadata_json["pending_action_state"] = (body.context or {}).get("pendingActionState")
         session.add_all(records)
         await memory_service.maybe_compact_conversation(
             session,
@@ -1030,15 +1349,29 @@ async def get_ai_agent_run(run_id: str, user: dict = Depends(get_current_user)):
 async def confirm_ai_agent_run(run_id: str, body: AgentRunConfirmRequest, user: dict = Depends(get_current_user)):
     current_user = _normalize_user(user)
     if not body.confirmed:
-        raise HTTPException(status_code=400, detail="User confirmation is required")
+        try:
+            run = cancel_agent_run(run_id, current_user)
+        except ValueError as exc:
+            status_code = 404 if "not found" in str(exc).lower() else 400
+            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+        await _sync_persisted_agent_run_final_state(run_id, current_user, status="cancelled")
+        _audit_ai_event(current_user, "agent_run_cancelled", {"run_id": run_id, "source": "confirm_endpoint"})
+        return {"data": run, "ok": True}
     if not body.confirmation_token:
         raise HTTPException(status_code=400, detail="Confirmation token is required")
     try:
         run = confirm_agent_run(run_id, body.confirmation_token, current_user)
     except ValueError as exc:
-        status_code = 404 if "not found" in str(exc).lower() else 400
-        raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+        if "not found" not in str(exc).lower():
+            status_code = 404 if "not found" in str(exc).lower() else 400
+            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+        try:
+            run = await _load_persisted_agent_run_for_confirmation(run_id, body.confirmation_token, current_user)
+        except ValueError as persisted_exc:
+            status_code = 404 if "not found" in str(persisted_exc).lower() else 400
+            raise HTTPException(status_code=status_code, detail=str(persisted_exc)) from persisted_exc
     run = await _execute_confirmed_agent_run(run, current_user)
+    await _sync_persisted_agent_run_final_state(run_id, current_user, status=str(run.get("status") or "completed"))
     _audit_ai_event(current_user, "agent_run_confirmed", {"run_id": run_id})
     return {"data": run, "ok": True}
 
@@ -1051,6 +1384,15 @@ async def cancel_ai_agent_run(run_id: str, user: dict = Depends(get_current_user
     except ValueError as exc:
         status_code = 404 if "not found" in str(exc).lower() else 400
         raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+    await _sync_persisted_agent_run_final_state(run_id, current_user, status="cancelled")
+    for action in run.get("actions") or []:
+        payload = action.get("payload") if isinstance(action.get("payload"), dict) else {}
+        await _update_ai_draft_status(
+            draft_id=str(payload.get("_source_draft_id") or payload.get("_resume_draft_id") or ""),
+            current_user=current_user,
+            status="cancelled",
+            metadata={"cancelled_run_id": run_id},
+        )
     _audit_ai_event(current_user, "agent_run_cancelled", {"run_id": run_id})
     return {"data": run, "ok": True}
 
@@ -1081,19 +1423,61 @@ async def save_ai_draft(body: DraftSaveRequest, user: dict = Depends(get_current
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     elif not body.confirmation.get("confirmed"):
         raise HTTPException(status_code=400, detail="User confirmation is required before saving AI draft")
-    draft_id = f"draft-{uuid.uuid4().hex[:12]}"
-    record = {
-        "draft_id": draft_id,
-        "status": "draft",
-        "skill": body.skill,
-        "payload": body.payload,
-        "evidence": body.evidence,
-        "created_by": current_user.get("sub") or current_user.get("username"),
-        "created_at": datetime.now().isoformat(),
-    }
-    AI_DRAFT_STORE[draft_id] = record
-    _audit_ai_event(current_user, "draft_saved", {"draft_id": draft_id, "skill": body.skill})
+    record = await _persist_ai_draft(
+        current_user,
+        skill=body.skill,
+        payload=body.payload,
+        evidence=body.evidence,
+        source="manual_save",
+    )
+    _audit_ai_event(current_user, "draft_saved", {"draft_id": record["draft_id"], "skill": body.skill, "persisted": record.get("persisted")})
     return {"ok": True, "data": record}
+
+
+@router.get("/drafts")
+async def list_ai_drafts(limit: int = Query(30, ge=1, le=100), user: dict = Depends(get_current_user)):
+    current_user = _normalize_user(user)
+    decision = decide_ai_permission(current_user, AI_SYSTEM_SETTINGS, "save_draft", risk_level="low")
+    _raise_for_ai_decision(decision)
+    tenant_id = current_tenant_id(current_user)
+    user_key = _user_key(current_user)
+    try:
+        async with db_session() as session:
+            rows = (
+                await session.execute(
+                    select(AIDraft)
+                    .where(AIDraft.tenant_id == tenant_id, AIDraft.created_by == user_key)
+                    .order_by(desc(AIDraft.id))
+                    .limit(limit)
+                )
+            ).scalars().all()
+            return {
+                "ok": True,
+                "data": [
+                    {
+                        "id": row.id,
+                        "draft_id": row.draft_id,
+                        "status": row.status,
+                        "skill": row.skill,
+                        "payload": row.payload or {},
+                        "evidence": row.evidence or [],
+                        "source": row.source,
+                        "run_id": row.run_id,
+                        "created_by": row.created_by,
+                        "created_at": _now_iso(row.created_at),
+                        "persisted": True,
+                    }
+                    for row in rows
+                ],
+            }
+    except SQLAlchemyError:
+        fallback = [
+            item
+            for item in AI_DRAFT_STORE.values()
+            if item.get("created_by") == user_key
+        ]
+        fallback.sort(key=lambda item: str(item.get("created_at") or ""), reverse=True)
+        return {"ok": True, "data": fallback[:limit]}
 
 
 @router.post("/provider/test")

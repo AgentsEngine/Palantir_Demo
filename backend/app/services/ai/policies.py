@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from .schemas import AIPermissionDecision, SkillAction
+from .skills import get_skill
 
 
 FORBIDDEN_SKILLS = {
@@ -13,30 +14,6 @@ FORBIDDEN_SKILLS = {
     "data.delete_record",
     "supply.auto_order",
 }
-
-CAPABILITY_BY_SKILL = {
-    "knowledge.search": "rag",
-    "knowledge.answer_question": "rag",
-    "knowledge.ingest_for_rag": "rag",
-    "maintenance.create_work_order_draft": "draft",
-    "supply.create_purchase_request_draft": "draft",
-    "material.create_material_application_draft": "draft",
-    "quality.create_capa_draft": "draft",
-    "low_code.suggest_model_or_page": "config",
-    "low_code.create_form_definition": "config",
-    "workflow.submit_after_confirmation": "workflow",
-}
-
-DOMAIN_BY_SKILL = {
-    "maintenance.create_work_order_draft": "maintenance",
-    "supply.create_purchase_request_draft": "supply-chain",
-    "material.create_material_application_draft": "supply-chain",
-    "quality.create_capa_draft": "quality",
-    "low_code.suggest_model_or_page": "low-code",
-    "low_code.create_form_definition": "low-code",
-    "workflow.submit_after_confirmation": "workflow",
-}
-
 
 def apply_policy(action: SkillAction) -> SkillAction:
     if action.skill in FORBIDDEN_SKILLS:
@@ -131,12 +108,13 @@ def decide_ai_permission(
 
 
 def decide_skill_permission(user: dict[str, Any], settings: dict[str, Any], action: SkillAction, capability: str | None = None) -> AIPermissionDecision:
-    selected_capability = capability or CAPABILITY_BY_SKILL.get(action.skill, "qa")
+    skill = get_skill(action.skill)
+    selected_capability = capability or (skill.permission_capability if skill else None) or "qa"
     return decide_ai_permission(
         user,
         settings,
         selected_capability,
         skill=action.skill,
-        domain=DOMAIN_BY_SKILL.get(action.skill),
+        domain=skill.domain if skill else None,
         risk_level=action.risk_level,
     )

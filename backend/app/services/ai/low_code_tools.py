@@ -211,7 +211,17 @@ async def execute_create_form_definition(
     code = _slugify(str(form_data.get("code") or "ai_generated_form"))
     assert_safe_identifier(code)
     if await session.scalar(select(Form.id).where(Form.tenant_id == tenant_id, Form.code == code)):
-        raise HTTPException(status_code=409, detail="Form code already exists")
+        if not (code.startswith("ai_") or (form_data.get("config") or {}).get("createdByAgent")):
+            raise HTTPException(status_code=409, detail="Form code already exists")
+        base_code = code[:56].rstrip("_")
+        for index in range(2, 100):
+            candidate = f"{base_code}_{index}"
+            assert_safe_identifier(candidate)
+            if not await session.scalar(select(Form.id).where(Form.tenant_id == tenant_id, Form.code == candidate)):
+                code = candidate
+                break
+        else:
+            raise HTTPException(status_code=409, detail="Form code already exists")
 
     application_id = form_data.get("application_id")
     app = None

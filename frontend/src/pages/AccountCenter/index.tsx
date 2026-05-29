@@ -44,6 +44,7 @@ import dagre from 'cytoscape-dagre';
 import { useAuthStore } from '../../stores/authStore';
 import AppMenuManagement from '../SystemAdmin/AppMenuManagement';
 import IdentityAccessManagement from '../SystemAdmin/IdentityAccessManagement';
+import ReferenceDataManagement from '../SystemAdmin/ReferenceDataManagement';
 import SemanticAssetCenter, { KnowledgeCenter } from '../SystemAdmin/SemanticAssetCenter';
 import TenantManagement from '../SystemAdmin/TenantManagement';
 import {
@@ -198,6 +199,12 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
         label: '数据资产中心',
         icon: <DatabaseOutlined />,
         children: <SemanticAssetCenter view="data" />,
+      },
+      {
+        key: 'reference-data',
+        label: '数据字典与基础档案',
+        icon: <DatabaseOutlined />,
+        children: <ReferenceDataManagement />,
       },
       {
         key: 'ontology-modeling',

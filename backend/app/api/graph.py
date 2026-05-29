@@ -11,11 +11,19 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from app.config import settings
 from app.api.deps import get_current_user
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(dependencies=[Depends(get_current_user)])
+
+
+def _neo4j_query_timeout(default_seconds: float) -> float:
+    """Keep demo-mode graph fallbacks responsive when Neo4j is unavailable."""
+    if settings.IS_PRODUCTION:
+        return default_seconds
+    return min(default_seconds, 0.8)
 
 QUALITY_BUSINESS_ID_MAP = {
     "event-qe-001": "quality-event-qe-20260521-001",
@@ -63,7 +71,7 @@ def normalize_quality_event_graph_id(event_id: str) -> str:
     return f"quality-event-{event_id.lower()}"
 
 
-def _quality_graph_fallback(event_id: str | None = None, source: str = "fallback") -> dict:
+def _quality_graph_fallback(event_id: str | None = None, source: str = "backend-demo") -> dict:
     from app.api.quality import QUALITY_EVENT_DEMO
 
     event = next((item for item in QUALITY_EVENT_DEMO["events"] if item["id"] == event_id), None)
@@ -132,7 +140,7 @@ def quality_graph_payload_from_result(event_id: str, result: dict, source: str =
     nodes = [_frontend_node_from_graph_node(node) for node in (result.get("nodes") or [])]
     edges = [_frontend_edge_from_graph_edge(edge, index) for index, edge in enumerate(result.get("edges") or [])]
     if not nodes:
-        return _quality_graph_fallback(event_id, source="fallback-empty-graph")
+        return _quality_graph_fallback(event_id, source="backend-demo-empty-graph")
     return {
         "event": event or QUALITY_EVENT_DEMO["events"][0],
         "root": _frontend_node_from_graph_node(result.get("root") or result["nodes"][0]),
@@ -243,6 +251,7 @@ MOCK_STATS = {
 
 async def _try_neo4j(fn):
     """Try Neo4j query; logs and returns None on failure or timeout."""
+    timeout = _neo4j_query_timeout(5)
     try:
         from app.database import get_neo4j
         neo4j_session = None
@@ -251,9 +260,9 @@ async def _try_neo4j(fn):
             break
         if neo4j_session is None:
             return None
-        return await asyncio.wait_for(fn(neo4j_session), timeout=5)
+        return await asyncio.wait_for(fn(neo4j_session), timeout=timeout)
     except asyncio.TimeoutError:
-        logger.warning("Neo4j query timed out (5s), falling back to mock")
+        logger.warning("Neo4j query timed out (%ss), falling back to mock", timeout)
         return None
     except Exception as exc:  # noqa: BLE001 — fallback to mock with log
         logger.warning("Neo4j query failed, falling back to mock: %s", exc)
@@ -617,7 +626,7 @@ async def impact_analysis_by_object(
         from app.services.graph_service import graph_service
         data = await asyncio.wait_for(
             graph_service.impact_analysis_by_object(object_type, object_id, max_hops, limit),
-            timeout=3,
+            timeout=_neo4j_query_timeout(3),
         )
         if data:
             return {"data": {**data, "source": "neo4j"}}
@@ -627,7 +636,7 @@ async def impact_analysis_by_object(
         logger.warning("Business impact analysis failed, falling back: %s", exc)
 
     event_id = object_id if object_type == "QualityEvent" else "QE-20260521-001"
-    return {"data": _quality_graph_fallback(event_id, source="fallback")}
+    return {"data": _quality_graph_fallback(event_id, source="backend-demo")}
 
 
 # ── New graph-first endpoints ─────────────────────────────

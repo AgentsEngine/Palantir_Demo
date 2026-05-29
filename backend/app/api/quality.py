@@ -736,15 +736,85 @@ class QualityEventAction(BaseModel):
 
 
 @router.get("/events")
-async def list_quality_events():
-    """List quality risk events for role workbenches."""
+async def list_quality_events(user: dict = Depends(get_current_user)):
+    """List quality risk events derived from tenant database records."""
+    async def _query(db):
+        from app.models.relational import CAPA, Defect, Inspection
+        from sqlalchemy import func, select
+
+        tenant_id = current_tenant_id(user)
+        result = await db.execute(
+            select(Defect, Inspection)
+            .join(Inspection, Inspection.id == Defect.inspection_id)
+            .where(Defect.tenant_id == tenant_id, Inspection.tenant_id == tenant_id)
+            .order_by(Defect.created_at.desc(), Defect.id.desc())
+            .limit(20)
+        )
+        rows = result.all()
+
+        defect_ids = [defect.id for defect, _inspection in rows]
+        capa_by_defect: dict[int, list[CAPA]] = {}
+        if defect_ids:
+            capa_result = await db.execute(
+                select(CAPA)
+                .where(CAPA.tenant_id == tenant_id, CAPA.defect_id.in_(defect_ids))
+                .order_by(CAPA.due_date.asc())
+            )
+            for capa in capa_result.scalars().all():
+                capa_by_defect.setdefault(capa.defect_id, []).append(capa)
+
+        risk_scores = {"critical": 90, "major": 70, "minor": 40}
+        events = []
+        for defect, inspection in rows:
+            capas = capa_by_defect.get(defect.id, [])
+            has_open_capa = any(capa.status in {"open", "in_progress"} for capa in capas)
+            status = "open" if not capas or has_open_capa else "closed"
+            actions = []
+            if not capas:
+                actions.append("创建 CAPA")
+            if status != "closed":
+                actions.append("复核缺陷处置")
+            if inspection.result == "fail":
+                actions.append("查看检验记录")
+
+            events.append({
+                "id": f"QD-{defect.id}",
+                "title": f"{defect.defect_type}异常",
+                "severity": defect.severity,
+                "status": status,
+                "owner_role": "quality_inspector",
+                "occurred_at": inspection.inspected_at.isoformat() if inspection.inspected_at else None,
+                "source": f"{inspection.inspection_type} / {inspection.target_type}#{inspection.target_id}",
+                "description": defect.description or "",
+                "risk_score": risk_scores.get(defect.severity, 50),
+                "affected": {
+                    "inspection_id": inspection.id,
+                    "target_id": inspection.target_id,
+                    "capa_count": len(capas),
+                },
+                "recommended_actions": actions,
+            })
+
+        open_count = sum(1 for event in events if event["status"] != "closed")
+        critical_count = sum(1 for event in events if event["severity"] == "critical")
+        avg_risk = round(sum(event["risk_score"] for event in events) / len(events), 1) if events else 0
+        return {
+            "data": events,
+            "summary": {
+                "open": open_count,
+                "critical": critical_count,
+                "avg_risk_score": avg_risk,
+            },
+            "source": "database",
+        }
+
+    result = await _try_db(_query)
+    if result is not None:
+        return result
     return {
-        "data": QUALITY_EVENT_DEMO["events"],
-        "summary": {
-            "open": sum(1 for e in QUALITY_EVENT_DEMO["events"] if e["status"] in {"open", "triage"}),
-            "critical": sum(1 for e in QUALITY_EVENT_DEMO["events"] if e["severity"] == "critical"),
-            "avg_risk_score": round(sum(e["risk_score"] for e in QUALITY_EVENT_DEMO["events"]) / len(QUALITY_EVENT_DEMO["events"]), 1),
-        },
+        "data": [],
+        "summary": {"open": 0, "critical": 0, "avg_risk_score": 0},
+        "source": "database_unavailable",
     }
 
 
@@ -788,7 +858,7 @@ async def get_quality_event_impact(event_id: str):
                 "affected": event.get("affected", {}),
                 "risk_score": event.get("risk_score"),
             },
-            "source": "fallback",
+            "source": "backend-demo",
         }
     }
 

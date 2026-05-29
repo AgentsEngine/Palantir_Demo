@@ -13,48 +13,20 @@ from .prompt_builder import PromptBuildInput, PromptBuilder
 from .schemas import AgentRequest, AgentResponse, ChatMessage, ChatOptions
 from .settings import settings_snapshot, settings_to_provider_config
 from .tenant_profile import TenantProfile, default_tenant_profile
-from .planner import plan_agent_turn
-from .tools import choose_draft_actions, create_low_code_form_definition_action
+from .intent_router import route_intent, route_intent_async
+from .tools import choose_draft_actions, create_contract_draft_action, create_low_code_form_definition_action
 from .action_guidance import (
     build_action_guidance_answer,
     describe_action_contract,
     has_minimum_action_requirements,
 )
+from .action_state import create_or_update_action_state
 from .client import get_provider
-from .agent_context_router import classify_context_need
 
 
 EXTERNAL_PROVIDER_NAMES = {"openai-compatible", "openai", "azure-openai", "deepseek", "qwen", "glm"}
 RISK_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 AgentEventSink = Callable[[str, dict[str, Any]], Awaitable[None]]
-KNOWLEDGE_TASK_TERMS = [
-    "文档",
-    "该文档",
-    "这个文档",
-    "内容",
-    "包含",
-    "总结",
-    "概括",
-    "分析",
-    "证据",
-    "来源",
-    "引用",
-    "SOP",
-    "流程",
-    "风险",
-    "CAPA",
-    "本体",
-    "图谱",
-    "关系",
-    "实体",
-    "字段",
-    "document",
-    "content",
-    "contains",
-    "summary",
-    "summarize",
-    "evidence",
-]
 
 
 def _max_risk(actions) -> str:
@@ -84,16 +56,10 @@ class AgentRuntime:
         self.prompt_builder = prompt_builder or PromptBuilder()
 
     def classify_knowledge_intent(self, query: str) -> str:
-        """Route short social turns away from RAG while keeping knowledge tasks grounded."""
+        """Backward-compatible wrapper around structured intent routing."""
 
-        normalized = query.strip().lower()
-        if not normalized:
-            return "general"
-        if any(term.lower() in normalized for term in KNOWLEDGE_TASK_TERMS):
-            return "knowledge"
-        if len(normalized) <= 40:
-            return "general"
-        return "knowledge"
+        route = route_intent(query, {})
+        return "knowledge" if route.intent in {"knowledge", "business_query", "page_help"} else "general"
 
     async def run(
         self,
@@ -120,19 +86,68 @@ class AgentRuntime:
                 "summary": request.message[:160],
             }
         ]
-        planner_result = plan_agent_turn(request.message, request.context)
+        pending_action = (request.context or {}).get("pendingActionState") or (request.context or {}).get("pending_action_state")
+        resume_draft = (request.context or {}).get("resumeDraft") or (request.context or {}).get("resume_draft")
+        if isinstance(resume_draft, dict) and resume_draft.get("draft_id"):
+            resume_step = {
+                "id": "step-draft-resume",
+                "type": "context",
+                "status": "completed",
+                "draft_id": resume_draft.get("draft_id"),
+                "skill": resume_draft.get("skill"),
+                "draft_status": resume_draft.get("status"),
+                "summary": "Loaded saved AI draft for review.",
+            }
+            steps.append(resume_step)
+            await _emit_step(event_sink, resume_step)
+        if isinstance(resume_draft, dict) and resume_draft.get("skill") and not isinstance(pending_action, dict):
+            draft_payload = resume_draft.get("payload") if isinstance(resume_draft.get("payload"), dict) else {}
+            pending_action = {
+                "status": "ready_for_confirmation",
+                "skill": str(resume_draft.get("skill")),
+                "source_message": str(draft_payload.get("source_message") or request.message),
+                "collected_slots": draft_payload,
+                "missing_slots": [],
+                "notes": [f"resume draft {resume_draft.get('draft_id')}"],
+            }
+        config = request.provider_config or settings_to_provider_config(settings_snapshot())
+        intent_route = await route_intent_async(request.message, request.context, provider_config=config)
+        if isinstance(pending_action, dict) and pending_action.get("skill") and intent_route.intent != "action_prepare":
+            intent_route.intent = "action_prepare"
+            intent_route.skill = str(pending_action.get("skill"))
+            intent_route.target = "action"
+            intent_route.context_need = "draft_action"
+            intent_route.needs_context = ["pending_action_state", "skill_contract", "tool_contract", "permission_policy"]
+            intent_route.reason = "pending_action_followup"
+            intent_route.source_message = "\n".join(
+                item for item in [str(pending_action.get("source_message") or ""), request.message] if item
+            )
+            if isinstance(resume_draft, dict) and resume_draft.get("draft_id"):
+                intent_route.reason = "resume_ai_draft"
+        route_step = intent_route.as_step()
+        steps.append(route_step)
+        await _emit_step(event_sink, route_step)
         planner_step = {
             "id": "step-planner",
             "type": "plan",
             "status": "completed",
-            "intent": planner_result.intent,
-            "skill": planner_result.skill,
-            "confidence": planner_result.confidence,
-            "reason": planner_result.reason,
+            "intent": "action" if intent_route.intent == "action_prepare" else "qa",
+            "skill": intent_route.skill,
+            "confidence": intent_route.confidence,
+            "reason": intent_route.reason,
         }
         steps.append(planner_step)
         await _emit_step(event_sink, planner_step)
-        context_need = "draft_action" if planner_result.intent == "action" else classify_context_need(request.message, request.context)
+        permission_context_step = {
+            "id": "step-action-permission",
+            "type": "policy",
+            "status": "completed",
+            "summary": "Permission and risk policy will gate any draft write before execution.",
+            "requires_confirmation": True,
+        }
+        steps.append(permission_context_step)
+        await _emit_step(event_sink, permission_context_step)
+        context_need = intent_route.context_need
         evidence = search_ingested_knowledge(request.message, limit=3) if context_need in {"knowledge_rag", "business_query", "semantic_graph", "draft_action"} else []
         if context_need in {"knowledge_rag", "business_query", "semantic_graph", "draft_action"}:
             knowledge_step = {
@@ -145,12 +160,25 @@ class AgentRuntime:
             steps.append(knowledge_step)
             await _emit_step(event_sink, knowledge_step)
         actions = []
-        if planner_result.skill == "low_code.create_form_definition":
+        action_state: dict[str, Any] | None = None
+        if intent_route.skill == "low_code.create_form_definition":
             action_context = {
                 **(request.context or {}),
-                **planner_result.extracted_context,
+                **(pending_action.get("collected_slots") if isinstance(pending_action, dict) and isinstance(pending_action.get("collected_slots"), dict) else {}),
+                **intent_route.extracted_context,
             }
-            contract = describe_action_contract(planner_result.skill)
+            action_state = create_or_update_action_state(
+                existing=pending_action if isinstance(pending_action, dict) else None,
+                skill=intent_route.skill,
+                source_message=intent_route.source_message,
+                extracted_context=action_context,
+            )
+            effective_action_context = (
+                action_state.get("collected_slots")
+                if isinstance(action_state.get("collected_slots"), dict)
+                else action_context
+            )
+            contract = describe_action_contract(intent_route.skill)
             contract_step = {
                 "id": "step-tool-contract",
                 "type": "observe",
@@ -161,26 +189,40 @@ class AgentRuntime:
             }
             steps.append(contract_step)
             await _emit_step(event_sink, contract_step)
-            if not has_minimum_action_requirements(planner_result.skill, planner_result.source_message, action_context):
+            if action_state.get("missing_slots") or not has_minimum_action_requirements(intent_route.skill, intent_route.source_message, effective_action_context):
                 missing_step = {
                     "id": "step-requirement-gap",
                     "type": "plan",
                     "status": "completed",
                     "summary": "Need more form design details before preparing a write confirmation.",
+                    "missing_slots": action_state.get("missing_slots") or [],
                 }
                 steps.append(missing_step)
                 await _emit_step(event_sink, missing_step)
                 return AgentResponse(
-                    answer=build_action_guidance_answer(planner_result.skill, assistant_name=profile.assistant_name),
+                    answer=build_action_guidance_answer(intent_route.skill, assistant_name=profile.assistant_name),
                     evidence=evidence,
                     steps=steps,
+                    action_state=action_state,
                     mode="qa",
                 )
-            actions.append(create_low_code_form_definition_action(planner_result.source_message, evidence=evidence, context=action_context))
-        elif planner_result.intent == "qa":
+            actions.append(create_low_code_form_definition_action(intent_route.source_message, evidence=evidence, context=effective_action_context))
+        elif intent_route.intent != "action_prepare":
             actions = choose_draft_actions(request.message, evidence=evidence, context=request.context)
             if actions:
                 first_action = actions[0]
+                evidence_text = "\n".join(
+                    str(item.get("snippet") or item.get("chunk_text") or item.get("content") or item.get("summary") or "")
+                    for item in evidence
+                    if isinstance(item, dict)
+                )
+                action_source_message = "\n".join(part for part in [request.message, evidence_text] if part)
+                action_state = create_or_update_action_state(
+                    existing=pending_action if isinstance(pending_action, dict) else None,
+                    skill=first_action.skill,
+                    source_message=action_source_message,
+                    extracted_context={},
+                )
                 contract = describe_action_contract(first_action.skill)
                 contract_step = {
                     "id": "step-tool-contract",
@@ -192,12 +234,13 @@ class AgentRuntime:
                 }
                 steps.append(contract_step)
                 await _emit_step(event_sink, contract_step)
-                if not has_minimum_action_requirements(first_action.skill, request.message, request.context):
+                if action_state.get("missing_slots") or not has_minimum_action_requirements(first_action.skill, action_source_message, request.context):
                     missing_step = {
                         "id": "step-requirement-gap",
                         "type": "plan",
                         "status": "completed",
                         "summary": "Need more action details before preparing a confirmation.",
+                        "missing_slots": action_state.get("missing_slots") or [],
                     }
                     steps.append(missing_step)
                     await _emit_step(event_sink, missing_step)
@@ -205,9 +248,60 @@ class AgentRuntime:
                         answer=build_action_guidance_answer(first_action.skill, assistant_name=profile.assistant_name),
                         evidence=evidence,
                         steps=steps,
+                        action_state=action_state,
                         mode="qa",
                     )
+                actions = choose_draft_actions(
+                    request.message,
+                    evidence=evidence,
+                    context=action_state.get("collected_slots") if isinstance(action_state.get("collected_slots"), dict) else {},
+                )
+        elif intent_route.skill:
+            action_state = create_or_update_action_state(
+                existing=pending_action if isinstance(pending_action, dict) else None,
+                skill=intent_route.skill,
+                source_message=intent_route.source_message or request.message,
+                extracted_context={},
+            )
+            if action_state.get("missing_slots"):
+                missing_step = {
+                    "id": "step-requirement-gap",
+                    "type": "plan",
+                    "status": "completed",
+                    "summary": "Need more action details before preparing a confirmation.",
+                    "missing_slots": action_state.get("missing_slots") or [],
+                }
+                steps.append(missing_step)
+                await _emit_step(event_sink, missing_step)
+                return AgentResponse(
+                    answer=build_action_guidance_answer(intent_route.skill, assistant_name=profile.assistant_name),
+                    evidence=evidence,
+                    steps=steps,
+                    action_state=action_state,
+                    mode="qa",
+                )
+            actions = choose_draft_actions(
+                intent_route.source_message or request.message,
+                evidence=evidence,
+                context=action_state.get("collected_slots") if isinstance(action_state.get("collected_slots"), dict) else {},
+            )
+            if not actions:
+                actions = [
+                    create_contract_draft_action(
+                        intent_route.skill,
+                        evidence=evidence,
+                        context=action_state.get("collected_slots") if isinstance(action_state.get("collected_slots"), dict) else {},
+                        source_message=intent_route.source_message or request.message,
+                    )
+                ]
         if actions:
+            if not action_state:
+                action_state = create_or_update_action_state(
+                    existing=pending_action if isinstance(pending_action, dict) else None,
+                    skill=actions[0].skill,
+                    source_message=intent_route.source_message or request.message,
+                    extracted_context=pending_action.get("collected_slots") if isinstance(pending_action, dict) and isinstance(pending_action.get("collected_slots"), dict) else {},
+                )
             skill_step = {
                 "id": "step-skill-selection",
                 "type": "plan",
@@ -229,12 +323,12 @@ class AgentRuntime:
                 actions=actions,
                 evidence=evidence,
                 steps=steps,
+                action_state={**action_state, "status": "ready_for_confirmation", "missing_slots": []},
                 risk_level=_max_risk(actions),
                 requires_confirmation=any(action.requires_confirmation for action in actions),
                 mode="assisted",
             )
 
-        config = request.provider_config or settings_to_provider_config(settings_snapshot())
         if not _is_real_model_configured(config):
             model_step = {
                 "id": "step-model-config",

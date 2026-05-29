@@ -1,3 +1,6 @@
 @echo off
-pushd "%~dp0..\frontend"
-node_modules\.bin\vite.cmd --host 127.0.0.1 >> "%~dp0..\runtime-logs\frontend.log" 2>> "%~dp0..\runtime-logs\frontend.err.log"
+set "ROOT=%~dp0.."
+if not exist "%ROOT%\runtime-logs" mkdir "%ROOT%\runtime-logs"
+pushd "%ROOT%\frontend"
+"%ROOT%\frontend\node_modules\.bin\vite.cmd" --host 127.0.0.1 >> "%ROOT%\runtime-logs\frontend.log" 2>> "%ROOT%\runtime-logs\frontend.err.log"
+popd

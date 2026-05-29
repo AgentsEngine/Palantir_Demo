@@ -60,10 +60,14 @@ The first OpenClaw-style enterprise scaffold is now present in the backend:
 | Agent Runtime | `backend/app/services/ai/orchestrator.py`, `POST /api/v1/ai/agent-runs` | Creates structured runs with steps, evidence, actions, risk level, and confirmation payloads. |
 | Confirmation | `backend/app/services/ai/confirmations.py` | Server-generated confirmation tokens for write-like AI actions. |
 | Agent Run State | `backend/app/services/ai/agent_runs.py` | In-memory lifecycle for the general AI assistant: create, fetch, confirm, cancel. |
+| Intent Router | `backend/app/services/ai/intent_router.py` | Routes each turn into conversation, knowledge, business query, page help, or action preparation. |
+| Action State | `backend/app/services/ai/action_state.py` | Maintains multi-turn slot filling for pending action preparation. |
+| Action Payloads | `backend/app/services/ai/action_payloads.py` | Builds conservative action payloads from action contracts and collected slots. |
 | Audit | `backend/app/services/ai/audit.py`, `GET /api/v1/ai/audit` | Shared in-memory AI audit helper used by agent and draft flows. |
+| AI Draft Persistence | `backend/app/api/ai_assistant.py`, migration `0025_ai_drafts.py`, `GET /api/v1/ai/drafts` | Persists confirmed or saved Agent drafts by tenant/user/skill/payload/evidence/status. |
 | Knowledge Agent Persistence | `backend/app/api/knowledge.py`, migration `0015_ai_agent_runtime.py` | Relational persistence for knowledge-center conversations, messages, runs, tool calls, and memory entries. |
 | Knowledge Directories | `GET/POST/PUT /api/v1/knowledge/directories`, `POST /api/v1/knowledge/directories/{id}/move` | Demo directory tree API for the Obsidian-style knowledge page. |
-| Low-Code Agent Tools | `backend/app/services/ai/planner.py`, `backend/app/services/ai/low_code_tools.py` | Deterministic planning and confirmed admin-only creation of form definitions, fields, layouts, application bindings, and optional menu nodes. |
+| Low-Code Agent Tools | `backend/app/services/ai/planner.py`, `backend/app/services/ai/low_code_tools.py`, `backend/app/services/ai/dynamic_record_drafts.py` | Deterministic planning, confirmed admin-only form-definition creation, and confirmed domain draft creation into platform dynamic records when a matching form exists. |
 
 The legacy `/api/v1/ai/agent` endpoint remains compatible, but it now also
 creates an observable `run_id` and returns `steps`, `risk_level`, and
@@ -72,15 +76,18 @@ creates an observable `run_id` and returns `steps`, `risk_level`, and
 Durability is currently split:
 
 - `/api/v1/ai/agent-runs` uses the general Agent scaffold and is suitable for
-  demo and contract iteration.
+  demo and contract iteration; persisted run rows are used when available for
+  confirmation fallback and final-state synchronization.
 - `/api/v1/ai/agent/conversations/*` stores general Agent conversations and
-  memories for the floating assistant.
+  memories for the floating assistant, including pending action state.
+- `/api/v1/ai/drafts` stores saved or confirmed Agent drafts in `ai_drafts`
+  with an in-memory fallback when the database is unavailable.
 - `/api/v1/knowledge/agent/conversations/*` writes relational AI runtime rows
   for knowledge-center chat.
 
-Before general-purpose agentic work is considered production-ready, the
-in-memory scaffold should be moved behind the same database-backed repository
-pattern.
+Before general-purpose agentic work is considered production-ready, remaining
+in-memory fallback behavior should be moved behind the same database-backed
+repository pattern.
 
 ## 3. Core Concepts
 

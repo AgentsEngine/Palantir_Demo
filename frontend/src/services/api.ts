@@ -375,6 +375,10 @@ export const streamAgentChat = async (
 };
 export const confirmAgentRun = (runId: string, data: Record<string, unknown>) =>
   api.post(`/ai/agent-runs/${runId}/confirm`, data);
+export const cancelAgentRun = (runId: string) =>
+  api.post(`/ai/agent-runs/${runId}/cancel`);
+export const listAIDrafts = (params?: Record<string, unknown>) =>
+  api.get('/ai/drafts', { params });
 export const createAgentConversation = (data: Record<string, unknown>) =>
   api.post('/ai/agent/conversations', data);
 export const listAgentConversations = (params?: Record<string, unknown>) =>
@@ -635,6 +639,7 @@ export const wfApproveOrReject = (instId: number, data: Record<string, unknown>)
   api.post(`/workflow/instances/${instId}/act`, data);
 export const wfCancelInstance = (instId: number) =>
   api.post(`/workflow/instances/${instId}/cancel`);
+export const wfGetStats = () => api.get('/workflow/stats');
 export const wfListNotifications = (userId: number) =>
   api.get('/workflow/notifications', { params: { user_id: userId } });
 export const wfMarkNotificationRead = (id: number) =>
@@ -740,6 +745,7 @@ export interface PlatformForm {
   published_at?: string | null;
   fields?: PlatformFormField[];
   applications?: Array<Record<string, unknown>>;
+  runtime_permissions?: Record<string, boolean>;
 }
 
 export interface PlatformFormPublishImpactItem {

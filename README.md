@@ -1,47 +1,61 @@
 # ManuFoundry / Palantir Demo
 
-一个面向制造业场景的低代码数据工作台原型。项目目标是把生产、质量、设备、供应链等业务数据组织成可配置的应用、表单、菜单、权限、知识库和图谱探索能力。
+Current version: 0.3.5
 
-当前项目仍处于开发演示阶段，不是可直接商用的完整平台。README 以 2026-05-25 当前代码状态为准。
+ManuFoundry is a manufacturing low-code data workspace prototype. It combines configurable applications, forms, menus, identity access, knowledge assets, graph exploration, quality impact analysis, and an evolving AI Agent layer for assisted business configuration.
 
-## 当前已经包含的内容
+This repository is still in active development and is intended for demo and product exploration work, not direct commercial production use.
 
-- 登录、用户信息、账号中心和应用工作台外壳。
-- 系统管理：用户、角色、权限、组织、应用、菜单、语义资产。
-- 低代码表单：表单定义、字段、布局、动作、权限、动态记录。
-- 制造业演示数据：工厂、车间、产线、设备、传感器、工单、质检、SPC、客户、供应商、物料和订单。
-- 知识库能力：文档上传、Markdown 内容、分块、抽取任务、实体/关系抽取结果持久化。
-- 本体与图谱：本体管理、图谱查询、质量事件影响链路等可视化能力。
-- 业务模块：生产看板、预测性维护、质量分析、供应链风险、报表、规则、工作流、通知、模板市场。
-- AI 相关服务：AI 助手接口、知识摄取、抽取策略、Provider 抽象、提示词和工具层雏形。
-- AI Agent 方向：正在参考 OpenClaw 和 Harness Agent 的架构思路推进，包括模型调用封装、任务编排草稿、知识库上下文接入、工具调用边界和安全策略；目前仍属于进行中的平台能力雏形，后续会继续围绕制造业知识抽取、语义建模和业务操作辅助演进。
+## What Is Included
 
-## 技术栈
+- Login, account center, identity access, organization, role, permission, and tenant-oriented administration flows.
+- System administration for users, roles, permissions, organizations, applications, menus, semantic assets, and reference data.
+- Low-code form configuration for fields, layouts, views, actions, publish states, menu nodes, and dynamic records.
+- Manufacturing demo data for factories, workshops, production lines, equipment, sensors, work orders, quality inspection, suppliers, materials, customers, and orders.
+- Knowledge asset ingestion for documents, spreadsheets, PDFs, Markdown content, chunks, extraction tasks, and persisted entity or relation results.
+- Ontology and graph exploration, including quality event impact analysis and relationship traversal.
+- Business workspaces for production, predictive maintenance, quality analytics, supply chain risk, reports, rules, workflows, notifications, and templates.
+- AI assistant APIs, provider abstraction, prompt/tool scaffolding, knowledge context, and low-code action guidance.
+- AI Agent work in progress, inspired by OpenClaw and Harness Agent style architecture: model invocation boundaries, task planning drafts, tool calls, knowledge context, action review, and safety policies.
 
-| 层 | 技术 |
+## 0.3.5 Focus
+
+- AI Agent action drafts, action state, structured payloads, and dynamic record draft persistence.
+- Improved low-code Agent skills, tool registration, intent routing, and policy checks.
+- Form settings upgrades for fields, views, menu nodes, and publishing workflows.
+- Reference data management entry in system administration.
+- Release popup now shows after refresh and supports long update lists with scrolling.
+- Private deployment, rollback, health check, smoke test, and CI workflow improvements.
+
+See [docs/operations/release-0.3.5.md](docs/operations/release-0.3.5.md) for the detailed release notes.
+
+## Tech Stack
+
+| Layer | Technology |
 | --- | --- |
-| 前端 | React 18, TypeScript, Vite, Ant Design, ECharts, Cytoscape, ReactFlow, Zustand |
-| 后端 | FastAPI, SQLAlchemy 2, Alembic, Pydantic |
-| 数据库 | PostgreSQL, SQLite fallback |
-| 图数据库 | Neo4j 5 Community |
-| 缓存 | Redis |
-| 部署 | Docker Compose |
-| 测试 | pytest, TypeScript build |
+| Frontend | React 18, TypeScript, Vite, Ant Design, ECharts, Cytoscape, ReactFlow, Zustand |
+| Backend | FastAPI, SQLAlchemy 2, Alembic, Pydantic |
+| Databases | PostgreSQL, SQLite fallback |
+| Graph | Neo4j 5 Community |
+| Cache | Redis |
+| Deployment | Docker Compose |
+| Tests | pytest, TypeScript checks, Vite production build |
 
-## 目录结构
+## Repository Layout
 
 ```text
-backend/      FastAPI 后端、模型、迁移、测试和服务层
-frontend/     React 前端工作台
-data/seed/    制造业演示种子数据
-docker/       Docker Compose、Dockerfile、nginx 配置
-docs/         架构、业务、开发和运维文档
-scripts/      数据初始化和辅助脚本
+backend/      FastAPI app, models, migrations, services, and tests
+frontend/     React workspace UI
+data/         Seed data and demo knowledge assets
+docker/       Docker Compose, Dockerfiles, and nginx configuration
+docs/         Architecture, operations, release, and testing notes
+scripts/      Local development, deployment, smoke, and helper scripts
+.agent/       Agent contracts, skills, and tool notes
 ```
 
-## 本地启动
+## Local Development
 
-### 后端
+Backend:
 
 ```bash
 cd backend
@@ -49,7 +63,7 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-### 前端
+Frontend:
 
 ```bash
 cd frontend
@@ -57,127 +71,67 @@ npm install
 npm run dev
 ```
 
-默认地址：
+Default local URLs:
 
-- 前端：`http://localhost:3000`
-- 后端接口文档：`http://localhost:8000/docs`
-- 健康检查：`http://localhost:8000/health`
+- Frontend: `http://localhost:3000`
+- Backend docs: `http://localhost:8000/docs`
+- Backend health: `http://localhost:8000/health`
 
-默认演示账号：
+Default demo account:
 
-- 用户名：`admin`
-- 密码：`admin123`
+- Username: `admin`
+- Password: `admin123`
 
-## Docker 启动
-
-开发模式：
+## Docker Development
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-开发端口：
+Development ports:
 
-- 前端：`http://localhost:3000`
-- 后端：`http://localhost:8000`
-- PostgreSQL：`localhost:5432`
-- Neo4j Browser：`http://localhost:7474`
-- Redis：`localhost:6379`
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8000`
+- PostgreSQL: `localhost:5432`
+- Neo4j Browser: `http://localhost:7474`
+- Redis: `localhost:6379`
 
-生产风格模式：
+Production-style local run:
 
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --build
 ```
 
-生产风格端口：
+The production-style frontend is exposed on host port `80`, and the backend remains available on port `8000`.
 
-- 前端：`http://localhost`，宿主机端口 `80`
-- 后端：`http://localhost:8000`
+## Verification
 
-生产风格模式要求提供 `SECRET_KEY`，并使用 `DEMO_AUTH_OPTIONAL=false`。
-
-## 数据库迁移
-
-在后端环境中执行：
+Backend focused tests:
 
 ```bash
 cd backend
-alembic upgrade head
+python -m pytest tests/test_ai_agent_services.py tests/test_ai_knowledge_api.py tests/test_ai_low_code_agent.py
 ```
 
-当前迁移包含：
-
-- 应用、菜单和角色绑定表。
-- 表单平台、动态记录和工作流绑定。
-- 租户字段和核心列表索引。
-- 演示管理员、用户、角色、权限、组织和应用角色数据。
-- 知识库文档、分块、抽取任务、抽取实体和抽取关系持久化。
-
-## 主要 API 前缀
-
-所有业务接口挂在 `/api/v1` 下。
-
-| 模块 | 前缀 |
-| --- | --- |
-| 认证 | `/api/v1/auth` |
-| 系统管理 | `/api/v1/admin` |
-| 应用管理 | `/api/v1/applications` |
-| 表单平台 | `/api/v1/forms` |
-| 语义资产 | `/api/v1/semantic-assets` |
-| 知识库 | `/api/v1/knowledge` |
-| 数据源 | `/api/v1/data-sources` |
-| 本体 | `/api/v1/ontology` |
-| 图谱 | `/api/v1/graph` |
-| 数据管道 | `/api/v1/pipelines` |
-| 生产总览 | `/api/v1/dashboard` |
-| 分析 | `/api/v1/analytics` |
-| 维护 | `/api/v1/maintenance` |
-| 质量 | `/api/v1/quality` |
-| 供应链 | `/api/v1/supply-chain` |
-| AI 助手 | `/api/v1/ai` |
-| 报表 | `/api/v1/reports` |
-| 模型驱动 | `/api/v1/model-driven` |
-| 规则 | `/api/v1/rules` |
-| 工作流 | `/api/v1/workflow` |
-| 通知 | `/api/v1/notifications` |
-| 模板 | `/api/v1/templates` |
-| 配置导入导出 | `/api/v1/config` |
-| 定时任务 | `/api/v1/scheduler` |
-| 搜索 | `/api/v1/search` |
-| AI Builder | `/api/v1/ai-builder` |
-
-## 验证命令
-
-前端构建：
+Frontend build:
 
 ```bash
 cd frontend
 npm run build
 ```
 
-后端测试：
+Production smoke test:
 
 ```bash
-cd backend
-python -m pytest
+python scripts/production_smoke.py --base-url http://111.229.172.100
 ```
 
-常用的重点测试：
+## Deployment Notes
 
-```bash
-cd backend
-python -m pytest tests/test_ai_agent_services.py tests/test_ai_knowledge_api.py tests/test_knowledge_ingestion.py tests/test_knowledge_extraction.py tests/test_security.py tests/test_forms_platform.py
-```
+Operational notes live in:
 
-## 开发注意事项
+- [docs/operations/deployment.md](docs/operations/deployment.md)
+- [docs/operations/private-deployment.md](docs/operations/private-deployment.md)
+- [docs/operations/testing.md](docs/operations/testing.md)
 
-- `runtime-logs/`、临时 tar 包、本地数据库快照等运行产物不要提交。
-- 生产环境不要使用默认密码，部署后应立即修改管理员密码。
-- Neo4j 不可用时，图谱相关功能应降级，不应影响基础业务 API。
-- 服务器生产前端约定监听宿主机 `80` 端口，容器内 nginx 监听 `80`。
-- 数据结构变化优先通过 Alembic 迁移和 seed 脚本固化，少做手工数据库修改。
-
-## 文档
-
-更多细节见 [docs/README.md](docs/README.md)。
+The configured demo server uses `/root/Palantir_Demo` and Docker Compose. The public frontend listens on host port `80`.

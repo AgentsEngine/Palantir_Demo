@@ -441,7 +441,10 @@ def test_skill_tool_and_agent_run_lifecycle(ai_user_client):
     assert tools.status_code == 200
     assert any(item["name"] == "knowledge.search" for item in tools.json()["data"])
 
-    created = ai_user_client.post("/api/v1/ai/agent-runs", json={"message": "draft a quality CAPA"})
+    created = ai_user_client.post(
+        "/api/v1/ai/agent-runs",
+        json={"message": "draft a quality CAPA for defect issue, containment isolate affected batch, owner due today"},
+    )
     assert created.status_code == 200
     run_payload = created.json()
     token = run_payload["confirmation_payload"]["confirmation_token"]
@@ -456,9 +459,20 @@ def test_skill_tool_and_agent_run_lifecycle(ai_user_client):
         json={"confirmation_token": token, "confirmed": True},
     )
     assert confirmed.status_code == 200
-    assert confirmed.json()["data"]["status"] == "confirmed"
+    confirmed_data = confirmed.json()["data"]
+    assert confirmed_data["status"] == "completed"
+    assert confirmed_data["tool_results"][0]["status"] == "completed"
+    result = confirmed_data["tool_results"][0]["result"]
+    if "record_id" in result:
+        assert result["record_id"]
+        assert result["form_code"]
+    else:
+        assert result["draft_id"].startswith("draft-")
 
-    cancelled_run = ai_user_client.post("/api/v1/ai/agent-runs", json={"message": "draft a quality CAPA"})
+    cancelled_run = ai_user_client.post(
+        "/api/v1/ai/agent-runs",
+        json={"message": "draft a quality CAPA for defect issue, containment isolate affected batch, owner due today"},
+    )
     cancel_response = ai_user_client.post(f"/api/v1/ai/agent-runs/{cancelled_run.json()['run_id']}/cancel")
     assert cancel_response.status_code == 200
     assert cancel_response.json()["data"]["status"] == "cancelled"
@@ -668,10 +682,10 @@ async def _reset_ai_runtime_tables():
     from sqlalchemy import delete
 
     from app.core.db import db_session
-    from app.models.relational import AIAgentRun, AIConversation, AIMemoryEntry, AIMessage, AIToolCall, AuditLog
+    from app.models.relational import AIAgentRun, AIConversation, AIDraft, AIMemoryEntry, AIMessage, AIToolCall, AuditLog
 
     async with db_session() as session:
-        for model in (AIMemoryEntry, AIToolCall, AIAgentRun, AIMessage, AIConversation):
+        for model in (AIDraft, AIMemoryEntry, AIToolCall, AIAgentRun, AIMessage, AIConversation):
             await session.execute(delete(model))
         await session.execute(delete(AuditLog).where(AuditLog.resource_type == "ai_agent_run"))
         await session.commit()
@@ -679,7 +693,7 @@ async def _reset_ai_runtime_tables():
 
 def _ensure_ai_runtime_schema():
     from app.database import DB_TYPE, _engine, init_db
-    from app.models.relational import AIAgentRun, AIConversation, AIMemoryEntry, AIMessage, AIToolCall
+    from app.models.relational import AIAgentRun, AIConversation, AIDraft, AIMemoryEntry, AIMessage, AIToolCall
 
     asyncio.run(init_db())
     if DB_TYPE != "sqlite":
@@ -694,6 +708,7 @@ def _ensure_ai_runtime_schema():
                             AIAgentRun.__table__,
                             AIToolCall.__table__,
                             AIMemoryEntry.__table__,
+                            AIDraft.__table__,
                         ],
                     )
                 )

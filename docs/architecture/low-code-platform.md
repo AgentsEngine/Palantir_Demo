@@ -30,11 +30,13 @@ Implemented:
 - migration `0008_saas_tenants.py`
 - migration `0021_form_versions.py`
 - migration `0024_seed_application_assembly.py`
+- migration `0026_menu_node_config.py`
 - `/api/v1/forms`
 - shared-database tenant isolation with `tenant_id`
 - form metadata
 - application-form bindings
 - application menu nodes
+- menu-node JSON config for permission rules and UI metadata
 - form fields
 - layouts
 - actions
@@ -143,6 +145,11 @@ All endpoints are mounted under `/api/v1/forms`.
 | Records | `GET /{form_id}/records`, `POST /{form_id}/records`, `PUT /{form_id}/records/{record_id}`, `DELETE /{form_id}/records/{record_id}` |
 | Application forms | `GET /applications/{application_id}/forms`, `PUT /applications/{application_id}/forms`, `DELETE /applications/{application_id}/forms/{form_id}` |
 | Application menu nodes | `GET /applications/{application_id}/menu-nodes`, `POST /applications/{application_id}/menu-nodes`, `PUT /applications/{application_id}/menu-nodes/{node_id}`, `DELETE /applications/{application_id}/menu-nodes/{node_id}` |
+
+Menu-node `config` currently supports runtime permission metadata. The
+application menu API evaluates custom role/user/application-role rules in this
+config before returning nodes to non-admin users. The backend remains the source
+of truth; frontend menu hiding is only the user-experience layer.
 
 ## 7. Relationship To Model-Driven Module
 

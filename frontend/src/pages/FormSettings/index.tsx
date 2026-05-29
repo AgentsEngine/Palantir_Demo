@@ -36,7 +36,7 @@ import {
   UserSwitchOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Button, Checkbox, Input, InputNumber, Modal, Popover, Segmented, Select, Space, Switch, Tabs, Tag, Typography, message } from 'antd';
+import { Button, Checkbox, Input, InputNumber, Modal, Popover, Segmented, Select, Space, Switch, Tabs, Tag, Tooltip, Typography, message } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   adminListOrgUnits,
@@ -66,6 +66,7 @@ import {
   defaultOperatorForControl,
   makeDefaultViewConfig,
   normalizeViewConfig,
+  renderTypeForField,
   sortByOrder,
   type ViewColumnRenderType,
   type ViewConfig,
@@ -73,7 +74,6 @@ import {
   type ViewFilterConfig,
   type ViewFilterOperator,
   type ViewTableColumnConfig,
-  type ViewTableDensity,
 } from '@/utils/viewConfig';
 import ProfessionalFlowDesigner, {
   createDefaultFlowConfig,
@@ -95,6 +95,7 @@ type PreviewMode = 'create' | 'edit' | 'list';
 type PreviewDevice = 'desktop' | 'tablet' | 'mobile';
 type PublishCheckLevel = 'error' | 'warning' | 'suggestion';
 type EncodingResetCycle = 'none' | 'day' | 'month' | 'year' | 'dependency';
+type ReferenceSourceKind = 'static' | 'dictionary' | 'masterData' | 'businessForm' | 'organization' | 'externalApi';
 type FieldBusinessType =
   | 'text'
   | 'longText'
@@ -189,6 +190,7 @@ interface LayoutControl {
   placeholder?: string;
   helpText?: string;
   optionSource?: string;
+  dataSourceKind?: ReferenceSourceKind;
   encodingRule?: EncodingRule;
   width: ControlWidth;
   rules: ControlRules;
@@ -246,6 +248,21 @@ interface ViewConfigMeta {
   status?: 'draft' | 'published';
 }
 
+interface PermissionDesignDraft {
+  page: Record<string, boolean>;
+  actions: Record<string, boolean>;
+  data: {
+    scope: string;
+    orgUnits: string[];
+    sensitiveFields: string;
+    ownership: Record<string, boolean>;
+  };
+  workflow: Record<string, boolean>;
+  config: Record<string, boolean>;
+}
+
+type PermissionDraftMap = Record<string, PermissionDesignDraft>;
+
 interface WorkflowDefinitionPayload {
   id: number;
   name: string;
@@ -263,6 +280,91 @@ interface WorkflowBindingPayload {
   trigger_action: string;
   enabled: boolean;
   config?: Record<string, unknown>;
+}
+
+const permissionActionDefinitions = [
+  { key: 'view', name: '查看', desc: '打开页面、查看列表和详情', risk: 'low' },
+  { key: 'create', name: '新增', desc: '创建业务记录或提交申请', risk: 'medium' },
+  { key: 'edit', name: '编辑', desc: '修改已存在的告警记录', risk: 'medium' },
+  { key: 'delete', name: '删除', desc: '移除记录，高风险动作', risk: 'high' },
+  { key: 'import', name: '导入', desc: '批量写入告警数据', risk: 'high' },
+  { key: 'export', name: '导出', desc: '下载列表或报表数据', risk: 'high' },
+  { key: 'configure', name: '配置', desc: '进入表单、流程和权限配置', risk: 'high' },
+  { key: 'approve', name: '审批', desc: '处理流程节点和关闭告警', risk: 'medium' },
+] as const;
+
+const permissionWorkflowDefinitions = [
+  { key: 'submit', title: '提交', desc: '发起告警处理流程' },
+  { key: 'approve', title: '审批', desc: '处理当前节点审批任务' },
+  { key: 'reject', title: '驳回', desc: '退回上一节点或发起人' },
+  { key: 'transfer', title: '转交', desc: '把待办转给同组织人员' },
+  { key: 'logs', title: '查看日志', desc: '查看流程轨迹和处理意见' },
+] as const;
+
+const permissionConfigDefinitions = [
+  { key: 'form', title: '修改表单结构' },
+  { key: 'filter', title: '修改数据筛选' },
+  { key: 'flow', title: '修改流程' },
+  { key: 'permission', title: '修改权限' },
+  { key: 'publish', title: '发布版本' },
+  { key: 'history', title: '查看版本历史' },
+] as const;
+
+function makePermissionDesignDraft(roleKind: 'system' | 'manager' | 'operator', orgUnits: string[]): PermissionDesignDraft {
+  return {
+    page: {
+      menu: true,
+      enter: true,
+      detail: true,
+      designTab: roleKind !== 'operator',
+      preview: roleKind !== 'operator',
+      publish: roleKind === 'system',
+    },
+    actions: {
+      view: true,
+      create: roleKind !== 'operator',
+      edit: roleKind !== 'operator',
+      delete: roleKind === 'system',
+      import: roleKind !== 'operator',
+      export: roleKind !== 'operator',
+      configure: roleKind === 'system',
+      approve: roleKind !== 'operator',
+    },
+    data: {
+      scope: roleKind === 'system' ? 'all' : roleKind === 'manager' ? 'org_tree' : 'assigned',
+      orgUnits: orgUnits.slice(0, 2),
+      sensitiveFields: roleKind === 'system' ? 'full' : 'mask',
+      ownership: {
+        createdByMe: true,
+        assignedToMe: true,
+        sameOrg: roleKind !== 'operator',
+        crossOrg: roleKind === 'system',
+        statistics: roleKind === 'system',
+      },
+    },
+    workflow: {
+      submit: true,
+      approve: roleKind !== 'operator',
+      reject: roleKind !== 'operator',
+      transfer: roleKind !== 'operator',
+      logs: true,
+    },
+    config: {
+      form: roleKind === 'system',
+      filter: roleKind === 'system',
+      flow: roleKind === 'system',
+      permission: roleKind === 'system',
+      publish: roleKind === 'system',
+      history: true,
+    },
+  };
+}
+
+function permissionDraftsFromConfig(config?: Record<string, unknown> | null): PermissionDraftMap {
+  const permissionDesign = config?.permissionDesign;
+  if (!permissionDesign || typeof permissionDesign !== 'object') return {};
+  const roles = (permissionDesign as { roles?: unknown }).roles;
+  return roles && typeof roles === 'object' ? roles as PermissionDraftMap : {};
 }
 
 const controlWidthOptions = [
@@ -325,6 +427,102 @@ const encodingDatePatternOptions = [
   { value: 'none', label: '不使用日期段' },
 ];
 
+const referenceSourceKindOptions: Array<{ value: ReferenceSourceKind; label: string }> = [
+  { value: 'static', label: '静态选项' },
+  { value: 'dictionary', label: '数据字典' },
+  { value: 'masterData', label: '基础档案' },
+  { value: 'businessForm', label: '业务表单' },
+  { value: 'organization', label: '用户组织' },
+  { value: 'externalApi', label: '外部接口' },
+];
+
+const referenceSourceRegistry: Record<ReferenceSourceKind, {
+  setup: string;
+  placeholder: string;
+  objects: Array<{ value: string; label: string }>;
+  valueFields: Array<{ value: string; label: string }>;
+  labelFields: Array<{ value: string; label: string }>;
+  preview: string[];
+}> = {
+  static: {
+    setup: '当前字段属性中维护，适合只服务本字段的小枚举',
+    placeholder: '例如：系统监测、人工上报、外部接口',
+    objects: [{ value: 'inline_options', label: '字段私有选项' }],
+    valueFields: [{ value: 'value', label: '选项值' }],
+    labelFields: [{ value: 'label', label: '选项名称' }],
+    preview: ['系统监测', '人工上报', '外部接口'],
+  },
+  dictionary: {
+    setup: '系统管理 / 数据字典与基础档案 / 数据字典',
+    placeholder: '选择数据字典，例如 alert_level',
+    objects: [
+      { value: 'alert_source', label: '告警来源' },
+      { value: 'alert_level', label: '告警等级' },
+      { value: 'alert_status', label: '告警状态' },
+      { value: 'priority', label: '优先级' },
+    ],
+    valueFields: [{ value: 'item_value', label: '字典项编码' }],
+    labelFields: [{ value: 'item_label', label: '字典项名称' }],
+    preview: ['严重', '一般', '提醒'],
+  },
+  masterData: {
+    setup: '系统管理 / 数据字典与基础档案 / 基础档案',
+    placeholder: '选择基础档案，例如 equipment_master',
+    objects: [
+      { value: 'equipment_master', label: '设备档案' },
+      { value: 'production_line_master', label: '产线档案' },
+      { value: 'material_master', label: '物料档案' },
+      { value: 'supplier_master', label: '供应商档案' },
+      { value: 'alert_type_master', label: '告警类型档案' },
+    ],
+    valueFields: [
+      { value: 'id', label: '内部 ID' },
+      { value: 'code', label: '档案编码' },
+      { value: 'equipment_no', label: '设备编号' },
+    ],
+    labelFields: [
+      { value: 'name', label: '档案名称' },
+      { value: 'equipment_name', label: '设备名称' },
+    ],
+    preview: ['SMT-03 回流焊', '空压站 2#', 'Assembly-A 主线'],
+  },
+  businessForm: {
+    setup: '系统管理 / 应用与菜单 / 表单资产',
+    placeholder: '选择业务表单，例如 alert-center',
+    objects: [
+      { value: 'alert-center', label: '告警中心' },
+      { value: 'risk-review', label: '风险复核' },
+      { value: 'maintenance-order', label: '维修工单' },
+    ],
+    valueFields: [{ value: 'id', label: '记录 ID' }, { value: 'code', label: '业务编号' }],
+    labelFields: [{ value: 'title', label: '标题' }, { value: 'name', label: '名称' }],
+    preview: ['AL-20260529-001', 'AL-20260529-002'],
+  },
+  organization: {
+    setup: '系统管理 / 用户与权限 / 组织管理、用户管理、角色管理',
+    placeholder: '选择组织、角色或人员范围',
+    objects: [
+      { value: 'users', label: '用户' },
+      { value: 'roles', label: '角色' },
+      { value: 'org_units', label: '组织' },
+    ],
+    valueFields: [{ value: 'user_id', label: '用户 ID' }, { value: 'role_id', label: '角色 ID' }],
+    labelFields: [{ value: 'display_name', label: '姓名' }, { value: 'role_label', label: '角色名称' }],
+    preview: ['李明', '孙浩', '周强'],
+  },
+  externalApi: {
+    setup: '数据源管理 / REST API 或系统管理 / 数据资产与本体',
+    placeholder: '选择已接入的 API 数据源',
+    objects: [
+      { value: 'mes-alert-api', label: 'MES 告警接口' },
+      { value: 'erp-material-api', label: 'ERP 物料接口' },
+    ],
+    valueFields: [{ value: 'id', label: '接口返回 ID' }, { value: 'code', label: '接口返回编码' }],
+    labelFields: [{ value: 'name', label: '接口返回名称' }, { value: 'label', label: '接口返回标签' }],
+    preview: ['外部接口项 A', '外部接口项 B'],
+  },
+};
+
 const ruleLabels: Record<ControlRuleKey, string> = {
   visible: '显示',
   readonly: '只读',
@@ -362,12 +560,6 @@ const viewColumnRenderOptions: Array<{ value: ViewColumnRenderType; label: strin
   { value: 'date', label: '日期' },
   { value: 'number', label: '数字' },
   { value: 'progress', label: '进度条' },
-];
-
-const tableDensityOptions: Array<{ value: ViewTableDensity; label: string }> = [
-  { value: 'compact', label: '紧凑' },
-  { value: 'middle', label: '标准' },
-  { value: 'large', label: '宽松' },
 ];
 
 const FLOW_NODE_WIDTH = 220;
@@ -709,6 +901,21 @@ function isDataSourceControlType(controlType?: string) {
   return controlType === 'select' || controlType === 'relation';
 }
 
+function inferReferenceSourceKind(field?: DesignerField, controlType?: string): ReferenceSourceKind {
+  const businessType = getFieldBusinessType(field);
+  if (businessType === 'person') return 'organization';
+  if (businessType === 'relation' || controlType === 'relation') {
+    if (field?.optionSource?.includes('组织') || field?.optionSource?.includes('人员')) return 'organization';
+    return 'masterData';
+  }
+  if (businessType === 'enum') return 'dictionary';
+  return 'static';
+}
+
+function getReferenceConfig(kind?: ReferenceSourceKind) {
+  return referenceSourceRegistry[kind || 'static'];
+}
+
 function fieldInput(field: DesignerField, placeholderOverride?: string, disabled = false, optionSourceOverride?: string, controlTypeOverride?: string) {
   const placeholder = placeholderOverride || field.placeholder;
   const controlType = controlTypeOverride && controlTypeOverride !== 'field' ? controlTypeOverride : inferFieldControlType(field);
@@ -932,6 +1139,7 @@ function makeFieldControl(field: DesignerField): LayoutControl {
     placeholder: field.placeholder,
     helpText: '',
     optionSource: field.optionSource,
+    dataSourceKind: inferReferenceSourceKind(field, inferFieldControlType(field)),
     encodingRule: isEncodingField(field) ? makeEncodingRule(field) : undefined,
     width: getFieldBusinessType(field) === 'longText' ? 'full' : 'half',
     rules: makeControlRules(Boolean(field.required)),
@@ -1128,8 +1336,9 @@ export default function FormSettingsPage() {
   const [viewConfig, setViewConfig] = useState<ViewConfig>(() => makeDesignerViewConfig(baseConfig));
   const [expandedViewRow, setExpandedViewRow] = useState<string>('filter-0');
   const [filterFieldPickerOpen, setFilterFieldPickerOpen] = useState(false);
+  const [tableFieldPickerOpen, setTableFieldPickerOpen] = useState(false);
   const [draggedViewFilterId, setDraggedViewFilterId] = useState('');
-  const [viewPreviewDevice, setViewPreviewDevice] = useState<'desktop' | 'narrow'>('desktop');
+  const [draggedViewColumnId, setDraggedViewColumnId] = useState('');
   const [layoutControls, setLayoutControls] = useState<LayoutControl[]>(baseConfig.fields.map(makeFieldControl));
   const [selectedControlId, setSelectedControlId] = useState<string>('');
   const [selectedAssetKey, setSelectedAssetKey] = useState<string>(baseConfig.fields[0]?.key || '');
@@ -1159,10 +1368,21 @@ export default function FormSettingsPage() {
   const [identityRoleRecords, setIdentityRoleRecords] = useState<Array<{ id: number; name: string; label: string }>>([]);
   const [identityRoles, setIdentityRoles] = useState<string[]>([]);
   const [identityOrgUnits, setIdentityOrgUnits] = useState<string[]>([]);
+  const [permissionDrafts, setPermissionDrafts] = useState<PermissionDraftMap>({});
   const permissionRoles = identityRoles.length ? identityRoles : baseConfig.roles;
   const permissionOrgUnits = identityOrgUnits.length ? identityOrgUnits : ['本部门', '所属工厂', '个人创建'];
   const [selectedPermissionRole, setSelectedPermissionRole] = useState('');
   const activePermissionRole = selectedPermissionRole || permissionRoles[0] || '未配置角色';
+  const activePermissionRoleIndex = Math.max(permissionRoles.indexOf(activePermissionRole), 0);
+  const activePermissionRoleKind = activePermissionRoleIndex === 0 ? 'system' : activePermissionRoleIndex < 4 ? 'manager' : 'operator';
+  const activePermissionDraft = permissionDrafts[activePermissionRole] || makePermissionDesignDraft(activePermissionRoleKind, permissionOrgUnits);
+  const updateActivePermissionDraft = (updater: (draft: PermissionDesignDraft) => PermissionDesignDraft) => {
+    setPermissionDrafts((current) => {
+      const baseDraft = current[activePermissionRole] || activePermissionDraft;
+      return { ...current, [activePermissionRole]: updater(baseDraft) };
+    });
+    setHasUnsavedChanges(true);
+  };
   const previewFlowNodes = useMemo(
     () => professionalFlowConfig.nodes.filter((node) => node.executable || node.type === 'startEvent' || node.type === 'endEvent'),
     [professionalFlowConfig.nodes],
@@ -1224,8 +1444,9 @@ export default function FormSettingsPage() {
     setViewConfig(makeDesignerViewConfig(baseConfig));
     setExpandedViewRow('filter-0');
     setFilterFieldPickerOpen(false);
+    setTableFieldPickerOpen(false);
     setDraggedViewFilterId('');
-    setViewPreviewDevice('desktop');
+    setDraggedViewColumnId('');
     setVersion(baseConfig.version);
     setCopiedControl(null);
     setHistory([]);
@@ -1244,6 +1465,7 @@ export default function FormSettingsPage() {
     setProfessionalFlowConfig(makeProfessionalFlowConfig(baseConfig));
     setPlatformForm(null);
     setWorkflowMeta({});
+    setPermissionDrafts({});
     const nextFlowNodes = makeFlowNodes(baseConfig.flowSteps);
     setFlowNodes(nextFlowNodes);
     setFlowConnections(makeFlowConnections(nextFlowNodes));
@@ -1277,6 +1499,7 @@ export default function FormSettingsPage() {
         const matchedForm = forms.find((form) => form.code === baseConfig.id);
         if (!matchedForm || cancelled) return;
         setPlatformForm(matchedForm);
+        setPermissionDrafts(permissionDraftsFromConfig(matchedForm.config));
         let persistedViewConfig = getStoredViewConfig(matchedForm, baseConfig);
         if (!persistedViewConfig) {
           try {
@@ -1351,6 +1574,8 @@ export default function FormSettingsPage() {
   const selectedControlUsesDataSource = Boolean(
     selectedControl && isDataSourceControlType(selectedEffectiveControlType),
   );
+  const selectedReferenceSourceKind = selectedControl?.dataSourceKind || inferReferenceSourceKind(selectedField, selectedEffectiveControlType);
+  const selectedReferenceConfig = getReferenceConfig(selectedReferenceSourceKind);
   const selectedControlUsesEncoding = Boolean(
     selectedControl && isEncodingField(selectedField),
   );
@@ -1588,11 +1813,24 @@ export default function FormSettingsPage() {
     });
   };
 
-  const updateViewTable = (patch: Partial<ViewConfig['table']>) => {
-    updateViewConfig((current) => ({
-      ...current,
-      table: { ...current.table, ...patch },
-    }));
+  const reorderViewColumns = (draggedId: string, targetId: string) => {
+    if (!draggedId || draggedId === targetId) return;
+    updateViewConfig((current) => {
+      const source = sortByOrder(current.table.columns);
+      const fromIndex = source.findIndex((column) => column.id === draggedId);
+      const toIndex = source.findIndex((column) => column.id === targetId);
+      if (fromIndex < 0 || toIndex < 0) return current;
+      const next = [...source];
+      const [dragged] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, dragged);
+      return {
+        ...current,
+        table: {
+          ...current.table,
+          columns: next.map((column, sortOrder) => ({ ...column, sortOrder })),
+        },
+      };
+    });
   };
 
   const syncViewFiltersByFields = (fieldNames: string[]) => {
@@ -1624,6 +1862,40 @@ export default function FormSettingsPage() {
     });
   };
 
+  const syncViewColumnsByFields = (fieldNames: string[]) => {
+    updateViewConfig((current) => {
+      const selected = new Set(fieldNames);
+      const existingByField = new Map(current.table.columns.map((column) => [column.fieldName, column]));
+      const columns = fieldNames
+        .map((fieldName, index) => {
+          const existing = existingByField.get(fieldName);
+          if (existing) {
+            return { ...existing, enabled: true, sortOrder: index };
+          }
+          const field = baseConfig.fields.find((item) => item.key === fieldName);
+          return {
+            id: `column-${fieldName}-${Date.now()}-${index}`,
+            fieldName,
+            label: field?.name || fieldName,
+            enabled: true,
+            width: index === 0 ? 180 : 140,
+            sortable: Boolean(field?.sortable),
+            renderType: renderTypeForField(field?.type),
+            emptyText: '-',
+            sortOrder: index,
+          } satisfies ViewTableColumnConfig;
+        })
+        .filter((column) => selected.has(column.fieldName));
+      return {
+        ...current,
+        table: {
+          ...current.table,
+          columns,
+        },
+      };
+    });
+  };
+
   const ensurePlatformForm = async () => {
     if (platformForm) return platformForm;
     const formsResponse = await listPlatformForms();
@@ -1631,6 +1903,7 @@ export default function FormSettingsPage() {
     const matchedForm = forms.find((form) => form.code === baseConfig.id);
     if (matchedForm) {
       setPlatformForm(matchedForm);
+      setPermissionDrafts(permissionDraftsFromConfig(matchedForm.config));
       setWorkflowMeta(getWorkflowDesignerMeta(matchedForm));
       return matchedForm;
     }
@@ -1704,16 +1977,11 @@ export default function FormSettingsPage() {
           .map((permission) => deletePlatformFormPermission(form.id, permission.id)),
       );
 
-      const actionPermissions = [
-        ['view', true],
-        ['create', true],
-        ['edit', true],
-        ['delete', false],
-        ['import', true],
-        ['export', true],
-        ['configure', false],
-        ['approve', true],
-      ] as const;
+      const draft = activePermissionDraft;
+      const actionPermissions = permissionActionDefinitions.map((definition) => {
+        const enabled = draft.actions[definition.key] !== false;
+        return [definition.key, enabled] as const;
+      });
       await Promise.all(actionPermissions.map(([action, enabled]) => (
         upsertPlatformFormPermission(form.id, {
           role_id: role.id,
@@ -1736,6 +2004,21 @@ export default function FormSettingsPage() {
         }));
       });
       await Promise.all(fieldPermissions.map((permission) => upsertPlatformFormPermission(form.id, permission)));
+      const nextPermissionDrafts = { ...permissionDrafts, [activePermissionRole]: draft };
+      const nextConfig = {
+        ...(form.config || {}),
+        permissionDesign: {
+          ...((form.config?.permissionDesign as Record<string, unknown>) || {}),
+          version: 1,
+          updatedAt: new Date().toISOString(),
+          roles: nextPermissionDrafts,
+        },
+      };
+      const updatedResponse = await updatePlatformForm(form.id, { config: nextConfig });
+      const updatedForm = (updatedResponse.data?.data || { ...form, config: nextConfig }) as PlatformForm;
+      setPlatformForm(updatedForm);
+      setPermissionDrafts(nextPermissionDrafts);
+      setHasUnsavedChanges(false);
       message.success('权限配置已保存到后台数据库');
     } catch (error) {
       console.error('save permissions failed', error);
@@ -2529,14 +2812,8 @@ export default function FormSettingsPage() {
   const viewFieldOptions = baseConfig.fields.map((field) => ({ value: field.key, label: `${field.name} (${field.key})` }));
   const sortedViewFilters = sortByOrder(viewConfig.filters);
   const sortedViewColumns = sortByOrder(viewConfig.table.columns);
-  const enabledViewFilters = sortedViewFilters.filter((filter) => filter.enabled);
   const enabledViewColumns = sortedViewColumns.filter((column) => column.enabled);
   const viewConfigMeta = getViewConfigMeta(platformForm);
-  const viewSampleRows = [
-    { alertId: 'AL-2605-001', title: '压缩空气压力偏低', device: '空压站 2#', level: '严重', status: '已派发', source: '能源站', owner: '李工', occurredAt: '2026-05-24' },
-    { alertId: 'AL-2605-002', title: 'A 线节拍延迟', device: '总装 A 线', level: '中等', status: '确认中', source: '生产执行', owner: '王工', occurredAt: '2026-05-24' },
-    { alertId: 'AL-2605-003', title: '来料批次延迟', device: '供应链', level: '中等', status: '跟进中', source: '供应链', owner: '周工', occurredAt: '2026-05-23' },
-  ];
 
   const renderViewFilterControl = (filter: ViewFilterConfig) => {
     const placeholder = filter.placeholder || filter.label;
@@ -2550,10 +2827,9 @@ export default function FormSettingsPage() {
   };
 
   const renderViewFilterRow = (filter: ViewFilterConfig, index: number) => {
-    const expanded = expandedViewRow === filter.id;
     return (
       <div
-        className={`view-config-row ${expanded ? 'view-config-row-expanded' : ''} ${draggedViewFilterId === filter.id ? 'view-config-row-dragging' : ''}`}
+        className={`view-config-row ${draggedViewFilterId === filter.id ? 'view-config-row-dragging' : ''}`}
         draggable
         key={filter.id}
         onDragEnd={() => setDraggedViewFilterId('')}
@@ -2574,37 +2850,12 @@ export default function FormSettingsPage() {
       >
         <div
           className="view-config-row-main view-filter-config-main"
-          onClick={() => setExpandedViewRow(expanded ? '' : filter.id)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              setExpandedViewRow(expanded ? '' : filter.id);
-            }
-          }}
-          role="button"
-          tabIndex={0}
         >
           <label className="view-filter-config-form-item">
             <span className="view-filter-config-label">{filter.label}</span>
             <span className="view-filter-config-control">{renderViewFilterControl(filter)}</span>
           </label>
         </div>
-        {expanded && (
-          <div className="view-config-inline-editor">
-            <label><span>绑定字段</span><Select value={filter.fieldName} options={viewFieldOptions} onChange={(fieldName) => {
-              const field = baseConfig.fields.find((item) => item.key === fieldName);
-              updateViewFilter(filter.id, { fieldName, label: field?.name || filter.label });
-            }} /></label>
-            <label><span>显示名称</span><Input value={filter.label} onChange={(event) => updateViewFilter(filter.id, { label: event.target.value })} /></label>
-            <label><span>控件类型</span><Select value={filter.controlType} options={viewControlOptions} onChange={(controlType) => updateViewFilter(filter.id, { controlType, operator: controlType === 'dateRange' ? 'between' : filter.operator })} /></label>
-            <label><span>操作符</span><Select value={filter.operator} options={viewFilterOperatorOptions} onChange={(operator) => updateViewFilter(filter.id, { operator })} /></label>
-            <label><span>默认值</span><Input allowClear value={String(filter.defaultValue ?? '')} onChange={(event) => updateViewFilter(filter.id, { defaultValue: event.target.value })} /></label>
-            <label><span>占位提示</span><Input allowClear value={filter.placeholder || ''} onChange={(event) => updateViewFilter(filter.id, { placeholder: event.target.value })} /></label>
-            <label><span>是否启用</span><Switch checked={filter.enabled} onChange={(enabled) => updateViewFilter(filter.id, { enabled })} /></label>
-            <label><span>显示位置</span><Select value={filter.advanced ? 'advanced' : 'common'} options={[{ value: 'common', label: '常用筛选' }, { value: 'advanced', label: '高级筛选' }]} onChange={(value) => updateViewFilter(filter.id, { advanced: value === 'advanced' })} /></label>
-            <label><span>清空默认值</span><Button onClick={() => updateViewFilter(filter.id, { defaultValue: '' })}>清空</Button></label>
-          </div>
-        )}
       </div>
     );
   };
@@ -2660,55 +2911,69 @@ export default function FormSettingsPage() {
             type="text"
           />
         </div>
-        <div className="view-config-list view-config-filter-grid">
-          {sortedViewFilters.map(renderViewFilterRow)}
+        <div className="view-config-filter-shell">
+          <div className="view-config-list view-config-filter-grid">
+            {sortedViewFilters.map(renderViewFilterRow)}
+          </div>
+          <Space className="view-config-filter-actions">
+            <Button size="small">重置</Button>
+            <Button icon={<SearchOutlined />} size="small" type="primary">查询</Button>
+          </Space>
         </div>
       </section>
 
       <section className="view-config-section">
         <div className="view-config-section-head">
           <div><strong>数据列表区</strong><span>配置表格列、操作、排序、分页和行交互。</span></div>
-          <Space wrap>
-            <Select size="small" value={viewConfig.table.density} options={tableDensityOptions} onChange={(density) => updateViewTable({ density })} />
-            <Select size="small" value={String(viewConfig.table.pageSize)} options={[10, 20, 50, 100].map((value) => ({ value: String(value), label: `${value} 条/页` }))} onChange={(value) => updateViewTable({ pageSize: Number(value) })} />
-            <Select size="small" value={viewConfig.table.rowClickAction} options={[{ value: 'detail', label: '点击行看详情' }, { value: 'edit', label: '点击行编辑' }, { value: 'none', label: '无行点击' }]} onChange={(rowClickAction) => updateViewTable({ rowClickAction })} />
-          </Space>
+          <Button
+            aria-label="新增列表字段"
+            icon={<PlusOutlined />}
+            onClick={() => setTableFieldPickerOpen(true)}
+            size="small"
+            title="新增列表字段"
+            type="text"
+          />
         </div>
-        <div className="view-config-list">
-          {sortedViewColumns.map(renderViewColumnRow)}
+        <div className="view-config-table-shell">
+          <div className="view-config-table-preview">
+            <div
+              className="view-config-table-head-row"
+              style={{ gridTemplateColumns: `${enabledViewColumns.map((column) => `${column.width || 140}px`).join(' ')} 128px` }}
+            >
+              {enabledViewColumns.map((column) => (
+                <div
+                  className={`view-config-table-head-cell ${draggedViewColumnId === column.id ? 'view-config-table-cell-dragging' : ''}`}
+                  draggable
+                  key={column.id}
+                  onDragEnd={() => setDraggedViewColumnId('')}
+                  onDragOver={(event) => {
+                    if (!draggedViewColumnId || draggedViewColumnId === column.id) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                  }}
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'move';
+                    setDraggedViewColumnId(column.id);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    reorderViewColumns(draggedViewColumnId, column.id);
+                    setDraggedViewColumnId('');
+                  }}
+                  title="拖拽调整列顺序"
+                >
+                  {column.label}
+                </div>
+              ))}
+              <div className="view-config-table-head-cell view-config-table-action-cell">操作</div>
+            </div>
+            <div className="view-config-table-empty">
+              暂无数据
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className={`view-runtime-preview view-runtime-preview-${viewPreviewDevice}`}>
-        <div className="view-runtime-preview-head">
-          <strong>运行页预览</strong>
-          <span>上方筛选 + 下方数据表格</span>
-        </div>
-        <div className="view-runtime-filter-preview">
-          {enabledViewFilters.filter((filter) => !filter.advanced).map((filter) => (
-            <label key={filter.id}>
-              <span>{filter.label}</span>
-              {renderViewFilterControl(filter)}
-            </label>
-          ))}
-          <Space className="view-runtime-actions">
-            <Button>重置</Button>
-            <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-          </Space>
-        </div>
-        <div className="view-runtime-table-preview">
-          <div className="view-runtime-table-head" style={{ gridTemplateColumns: `repeat(${Math.max(enabledViewColumns.length, 1)}, minmax(110px, 1fr)) 140px` }}>
-            {enabledViewColumns.map((column) => <span key={column.id}>{column.label}</span>)}
-            <span>操作</span>
-          </div>
-          {viewSampleRows.map((row, rowIndex) => (
-            <div className="view-runtime-table-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${Math.max(enabledViewColumns.length, 1)}, minmax(110px, 1fr)) 140px` }}>
-              {enabledViewColumns.map((column) => <span key={column.id}>{String(row[column.fieldName as keyof typeof row] ?? column.emptyText)}</span>)}
-              <span>详情　处理</span>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 
@@ -2749,6 +3014,19 @@ export default function FormSettingsPage() {
   );
 
   const activeTabKey: string = activeTab;
+  const permissionActionRows = permissionActionDefinitions.map((item) => ({ ...item, enabled: activePermissionDraft.actions[item.key] !== false }));
+  const enabledPermissionActionCount = permissionActionRows.filter((item) => item.enabled).length;
+  const editablePermissionFieldCount = baseConfig.fields.filter((field, index) => !field.locked && (activePermissionRoleKind === 'system' || index < 5)).length;
+  const requiredPermissionFieldCount = baseConfig.fields.filter((field) => field.required).length;
+  const permissionScopeCards = [
+    { title: '数据范围', value: activePermissionDraft.data.scope, desc: '决定列表、详情和统计可见数据' },
+    { title: '组织来源', value: activePermissionDraft.data.orgUnits.join(' / ') || '未绑定组织', desc: '来自组织管理和用户归属' },
+    { title: '敏感字段', value: activePermissionDraft.data.sensitiveFields, desc: '影响导出、详情和 AI 问答上下文' },
+  ];
+  const enabledWorkflowPermissionCount = Object.values(activePermissionDraft.workflow).filter(Boolean).length;
+  const enabledConfigPermissionCount = Object.values(activePermissionDraft.config).filter(Boolean).length;
+  const workflowPermissionItems = permissionWorkflowDefinitions.map((item) => ({ ...item, enabled: activePermissionDraft.workflow[item.key] !== false }));
+  const configPermissionItems = permissionConfigDefinitions.map((item) => ({ ...item, enabled: activePermissionDraft.config[item.key] !== false }));
 
   return (
     <div className="form-designer-page">
@@ -3000,7 +3278,7 @@ export default function FormSettingsPage() {
           )}
 
           {activeTabKey === 'filter' && (
-            <div className="canvas-board data-view-canvas">
+            <div className="data-view-canvas">
               {renderDataViewDesigner()}
             </div>
           )}
@@ -3027,7 +3305,7 @@ export default function FormSettingsPage() {
               <div className="permission-overview">
                 <div>
                   <strong>{baseConfig.name}权限配置</strong>
-                  <span>角色、动作、字段、数据范围集中配置</span>
+                  <span>配置表单数据、动作、字段、流程和配置权限；菜单入口由“应用与菜单”统一控制。</span>
                 </div>
                 <Space size={8}>
                   <Tag color="processing">当前：{activePermissionRole}</Tag>
@@ -3049,8 +3327,8 @@ export default function FormSettingsPage() {
                 <aside className="permission-role-rail">
                   <div className="permission-rail-head">
                     <div>
-                      <div className="permission-section-title">角色</div>
-                      <small>从用户与权限同步</small>
+                      <div className="permission-section-title">1. 选择授权对象</div>
+                      <small>来自用户与权限中心的角色</small>
                     </div>
                     <Tag>{permissionRoles.length}</Tag>
                   </div>
@@ -3065,7 +3343,7 @@ export default function FormSettingsPage() {
                       <span className="permission-role-icon"><UserSwitchOutlined /></span>
                       <span>
                         <strong>{role}</strong>
-                        <small>{role === activePermissionRole ? '正在配置' : index === 0 ? '管理员策略' : '点击切换'}</small>
+                        <small>{role === activePermissionRole ? '正在配置' : index === 0 ? '最高权限模板' : '点击切换配置'}</small>
                       </span>
                       <Tag color={role === activePermissionRole ? 'blue' : 'default'}>{index === 0 ? '全局' : '业务'}</Tag>
                     </button>
@@ -3073,89 +3351,233 @@ export default function FormSettingsPage() {
                 </aside>
 
                 <div className="permission-main">
-                  <section className="permission-card permission-action-card">
+                  <section className="permission-card permission-scope-card">
                     <div className="permission-card-head">
                       <div>
-                        <div className="permission-section-title">动作权限</div>
-                        <span>记录级操作</span>
+                        <div className="permission-section-title">1. 数据权限</div>
+                        <span>决定角色可以看到哪些组织、记录和敏感信息</span>
                       </div>
-                      <Tag color="green">6 / 8 已启用</Tag>
+                      <ApartmentOutlined />
                     </div>
-                    <div className="permission-action-table">
-                      <div className="permission-action-head">
-                        <span>动作</span><span>说明</span><span>状态</span>
-                      </div>
+                    <div className="permission-data-config">
+                      <label>
+                        <span>数据范围</span>
+                        <Select
+                          size="small"
+                          value={activePermissionDraft.data.scope}
+                          onChange={(scope) => updateActivePermissionDraft((draft) => ({
+                            ...draft,
+                            data: { ...draft.data, scope },
+                          }))}
+                          options={[
+                            { value: 'all', label: '全部组织' },
+                            { value: 'org_tree', label: '本组织及下级' },
+                            { value: 'org', label: '仅本组织' },
+                            { value: 'assigned', label: '本人创建 / 分派给我' },
+                            { value: 'custom', label: '自定义范围' },
+                          ]}
+                        />
+                      </label>
+                      <label>
+                        <span>组织来源</span>
+                        <Select
+                          mode="multiple"
+                          size="small"
+                          value={activePermissionDraft.data.orgUnits}
+                          onChange={(orgUnits) => updateActivePermissionDraft((draft) => ({
+                            ...draft,
+                            data: { ...draft.data, orgUnits },
+                          }))}
+                          maxTagCount="responsive"
+                          options={permissionOrgUnits.map((unit) => ({ value: unit, label: unit }))}
+                        />
+                      </label>
+                      <label>
+                        <span>敏感字段</span>
+                        <Select
+                          size="small"
+                          value={activePermissionDraft.data.sensitiveFields}
+                          onChange={(sensitiveFields) => updateActivePermissionDraft((draft) => ({
+                            ...draft,
+                            data: { ...draft.data, sensitiveFields },
+                          }))}
+                          options={[
+                            { value: 'full', label: '完整显示' },
+                            { value: 'mask', label: '详情与导出脱敏' },
+                            { value: 'hide', label: '完全隐藏' },
+                          ]}
+                        />
+                      </label>
+                    </div>
+                    <div className="permission-data-checks">
                       {[
-                        ['查看', true, '基础访问'],
-                        ['新增', true, '创建记录'],
-                        ['编辑', true, '修改记录'],
-                        ['删除', false, '高风险动作'],
-                        ['导入', true, '批量写入'],
-                        ['导出', true, '数据外发'],
-                        ['设置', false, '配置入口'],
-                        ['审批', true, '流程处理'],
-                      ].map(([name, enabled, desc]) => (
-                        <button className={`permission-action ${enabled ? 'permission-action-on' : 'permission-action-off'}`} key={name as string} type="button">
-                          <span>{name}</span>
-                          <small>{desc}</small>
-                          <Tag color={enabled ? 'green' : 'default'}>{enabled ? '允许' : '关闭'}</Tag>
-                        </button>
+                        ['createdByMe', '本人创建'],
+                        ['assignedToMe', '分派给我'],
+                        ['sameOrg', '同组织记录'],
+                        ['crossOrg', '跨组织记录'],
+                        ['statistics', '统计汇总数据'],
+                      ].map(([key, label]) => (
+                        <Checkbox
+                          key={key}
+                          checked={activePermissionDraft.data.ownership[key] !== false}
+                          onChange={(event) => updateActivePermissionDraft((draft) => ({
+                            ...draft,
+                            data: {
+                              ...draft.data,
+                              ownership: { ...draft.data.ownership, [key]: event.target.checked },
+                            },
+                          }))}
+                        >
+                          {label}
+                        </Checkbox>
                       ))}
+                    </div>
+                    <div className="permission-condition-strip">
+                      <Tag color="blue">组织树</Tag>
+                      <Tag color="cyan">本人创建</Tag>
+                      <Tag color="purple">分派给我</Tag>
+                      <Tag color={activePermissionDraft.data.sensitiveFields === 'full' ? 'green' : 'orange'}>{activePermissionDraft.data.sensitiveFields === 'full' ? '不脱敏' : '敏感字段脱敏'}</Tag>
                     </div>
                   </section>
 
-                  <aside className="permission-side-stack">
-                    <section className="permission-card permission-scope-card">
-                      <div className="permission-card-head">
-                        <div>
-                          <div className="permission-section-title">数据范围</div>
-                          <span>组织维度</span>
-                        </div>
-                        <ApartmentOutlined />
+                  <section className="permission-card permission-action-card">
+                    <div className="permission-card-head">
+                      <div>
+                        <div className="permission-section-title">2. 动作权限</div>
+                        <span>控制按钮、接口动作和批量操作入口</span>
                       </div>
-                      <div className="permission-scope-grid">
-                        <div><span>范围模式</span><strong>主组织 + 个人创建</strong></div>
-                        <div><span>组织来源</span><strong>{permissionOrgUnits.slice(0, 3).join(' / ')}</strong></div>
-                        <div><span>敏感数据</span><strong>脱敏显示</strong></div>
-                      </div>
-                    </section>
-
-                    <section className="permission-card permission-summary-card">
-                      <div className="permission-card-head">
-                        <div>
-                          <div className="permission-section-title">生效摘要</div>
-                          <span>{activePermissionRole}</span>
-                        </div>
-                        <LockOutlined />
-                      </div>
-                      <div className="permission-summary-list">
-                        <div><strong>应用</strong><span>{baseConfig.appName}</span></div>
-                        <div><strong>表单</strong><span>{baseConfig.name}</span></div>
-                        <div><strong>状态</strong><Tag color="orange">草稿</Tag></div>
-                      </div>
-                    </section>
-                  </aside>
+                      <Tag color="green">{enabledPermissionActionCount} / {permissionActionRows.length} 已启用</Tag>
+                    </div>
+                    <div className="permission-action-grid">
+                      {permissionActionRows.map((item) => (
+                        <Tooltip
+                          key={item.key}
+                          title={`${item.desc}；风险等级：${item.risk === 'high' ? '高' : item.risk === 'medium' ? '中' : '低'}`}
+                          placement="top"
+                        >
+                          <label className={`permission-toggle-row permission-action-toggle-row ${item.enabled ? 'permission-action-toggle-on' : 'permission-action-toggle-off'}`}>
+                            <strong>{item.name}</strong>
+                            <Switch
+                              size="small"
+                              checked={item.enabled}
+                              onChange={(checked) => updateActivePermissionDraft((draft) => ({
+                                ...draft,
+                                actions: { ...draft.actions, [item.key]: checked },
+                              }))}
+                            />
+                          </label>
+                        </Tooltip>
+                      ))}
+                    </div>
+                    <div className="permission-action-binding">
+                      <span>前台联动</span>
+                      <Tag>新建按钮</Tag>
+                      <Tag>表格编辑</Tag>
+                      <Tag>表格删除</Tag>
+                      <Tag>导入导出工具栏</Tag>
+                      <Tag>流程审批入口</Tag>
+                    </div>
+                  </section>
 
                   <section className="permission-card permission-field-card">
                     <div className="permission-card-head">
                       <div>
-                        <div className="permission-section-title">字段权限</div>
-                        <span>按角色控制字段可见、可编辑和必填</span>
+                        <div className="permission-section-title">3. 字段权限</div>
+                        <span>每一行就是一个字段，横向看可见、编辑、必填和导出策略</span>
                       </div>
-                      <Button size="small">批量设置</Button>
+                      <Space size={6}>
+                        <Tag color="green">可见 {baseConfig.fields.length}</Tag>
+                        <Tag color="blue">可编辑 {editablePermissionFieldCount}</Tag>
+                        <Tag color="orange">必填 {requiredPermissionFieldCount}</Tag>
+                        <Button size="small">批量设置</Button>
+                      </Space>
                     </div>
                     <div className="permission-field-matrix">
                       <div className="permission-field-head">
-                        <span>字段</span><span>可见</span><span>可编辑</span><span>必填</span>
+                        <span>字段</span><span>可见</span><span>可编辑</span><span>必填</span><span>导出</span>
                       </div>
                       {baseConfig.fields.map((field, index) => (
                         <div className="permission-field-row" key={field.key}>
                           <span>{field.name}</span>
                           <Tag color="green">可见</Tag>
-                          <Tag color={field.locked ? 'default' : 'blue'}>{field.locked ? '锁定' : index < 2 ? '可编辑' : '只读'}</Tag>
+                          <Tag color={field.locked ? 'default' : activePermissionRoleKind === 'system' || index < 5 ? 'blue' : 'default'}>
+                            {field.locked ? '锁定' : activePermissionRoleKind === 'system' || index < 5 ? '可编辑' : '只读'}
+                          </Tag>
                           <Tag color={field.required ? 'orange' : 'default'}>{field.required ? '必填' : '可选'}</Tag>
+                          <Tag color={activePermissionRoleKind === 'operator' && index > 4 ? 'default' : 'cyan'}>
+                            {activePermissionRoleKind === 'operator' && index > 4 ? '脱敏' : '允许'}
+                          </Tag>
                         </div>
                       ))}
+                    </div>
+                  </section>
+
+                  <section className="permission-card permission-workflow-card">
+                    <div className="permission-card-head">
+                      <div>
+                        <div className="permission-section-title">4. 流程权限</div>
+                        <span>控制提交、审批、驳回、转交和流程日志</span>
+                      </div>
+                      <Tag color="purple">{professionalFlowConfig.nodes.length} 个节点</Tag>
+                    </div>
+                    <div className="permission-toggle-grid permission-toggle-grid-compact">
+                      {workflowPermissionItems.map((item) => (
+                        <label className="permission-toggle-row" key={item.title}>
+                          <span>
+                            <strong>{item.title}</strong>
+                            <small>{item.desc}</small>
+                          </span>
+                          <Switch
+                            size="small"
+                            checked={item.enabled}
+                            onChange={(checked) => updateActivePermissionDraft((draft) => ({
+                              ...draft,
+                              workflow: { ...draft.workflow, [item.key]: checked },
+                            }))}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="permission-card permission-config-card">
+                    <div className="permission-card-head">
+                      <div>
+                        <div className="permission-section-title">5. 配置权限</div>
+                        <span>控制谁能修改低代码配置、发布版本和回滚历史</span>
+                      </div>
+                      <LockOutlined />
+                    </div>
+                    <div className="permission-config-grid">
+                      {configPermissionItems.map((item) => (
+                        <label className="permission-config-item" key={item.title}>
+                          <span>{item.title}</span>
+                          <Switch
+                            size="small"
+                            checked={item.enabled}
+                            onChange={(checked) => updateActivePermissionDraft((draft) => ({
+                              ...draft,
+                              config: { ...draft.config, [item.key]: checked },
+                            }))}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="permission-card permission-summary-card">
+                    <div className="permission-card-head">
+                      <div>
+                        <div className="permission-section-title">生效摘要</div>
+                        <span>保存后会关联运行页、菜单入口、流程审批、导出能力和字段策略</span>
+                      </div>
+                      <Tag color="orange">草稿待发布</Tag>
+                    </div>
+                    <div className="permission-summary-list">
+                      <div><strong>应用</strong><span>{baseConfig.appName}</span></div>
+                      <div><strong>表单</strong><span>{baseConfig.name}</span></div>
+                      <div><strong>角色</strong><span>{activePermissionRole}</span></div>
+                      <div><strong>数据范围</strong><span>{permissionScopeCards[0].value}</span></div>
                     </div>
                   </section>
                 </div>
@@ -3228,31 +3650,73 @@ export default function FormSettingsPage() {
                           <strong className="designer-prop-section-title">数据源与选项</strong>
                           <label>
                             <span>来源类型</span>
-                            <Input
-                              value={
-                                selectedEffectiveControlType === 'relation' || selectedField?.type.includes('关联')
-                                  ? '关联对象'
-                                  : selectedField?.type.includes('人员')
-                                    ? '组织人员'
-                                    : '静态枚举'
-                              }
-                              readOnly
+                            <Select
+                              value={selectedReferenceSourceKind}
+                              options={referenceSourceKindOptions}
+                              onChange={(dataSourceKind) => {
+                                const config = getReferenceConfig(dataSourceKind);
+                                updateSelectedControl({
+                                  dataSourceKind,
+                                  optionSource: config.objects[0]?.value,
+                                });
+                              }}
                             />
                           </label>
                           <label>
-                            <span>选项来源</span>
+                            <span>配置位置</span>
                             <Input
-                              allowClear
-                              placeholder="例如：系统监测、人工上报、外部接口"
-                              value={selectedControl.optionSource || selectedField?.optionSource || ''}
-                              onChange={(event) => updateSelectedControl({ optionSource: event.target.value })}
+                              value={selectedReferenceConfig.setup}
+                              readOnly
+                            />
+                          </label>
+                          {selectedReferenceSourceKind === 'static' ? (
+                            <label>
+                              <span>选项值</span>
+                              <Input
+                                allowClear
+                                placeholder={selectedReferenceConfig.placeholder}
+                                value={selectedControl.optionSource || selectedField?.optionSource || ''}
+                                onChange={(event) => updateSelectedControl({ optionSource: event.target.value })}
+                              />
+                            </label>
+                          ) : (
+                            <label>
+                              <span>引用对象</span>
+                              <Select
+                                value={selectedControl.optionSource || selectedReferenceConfig.objects[0]?.value}
+                                options={selectedReferenceConfig.objects}
+                                placeholder={selectedReferenceConfig.placeholder}
+                                onChange={(optionSource) => updateSelectedControl({ optionSource })}
+                              />
+                            </label>
+                          )}
+                          <label>
+                            <span>值字段</span>
+                            <Select
+                              value={selectedReferenceConfig.valueFields[0]?.value}
+                              options={selectedReferenceConfig.valueFields}
+                            />
+                          </label>
+                          <label>
+                            <span>显示字段</span>
+                            <Select
+                              value={selectedReferenceConfig.labelFields[0]?.value}
+                              options={selectedReferenceConfig.labelFields}
                             />
                           </label>
                           <label>
                             <span>选项预览</span>
                             <Select
-                              value={optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)[0]?.value}
-                              options={optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)}
+                              value={
+                                selectedReferenceSourceKind === 'static'
+                                  ? optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)[0]?.value
+                                  : selectedReferenceConfig.preview[0]
+                              }
+                              options={
+                                selectedReferenceSourceKind === 'static'
+                                  ? optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)
+                                  : selectedReferenceConfig.preview.map((item) => ({ value: item, label: item }))
+                              }
                             />
                           </label>
                         </section>
@@ -3447,6 +3911,34 @@ export default function FormSettingsPage() {
           className="view-filter-field-grid"
           value={sortedViewFilters.map((filter) => filter.fieldName)}
           onChange={(values) => syncViewFiltersByFields(values.map(String))}
+        >
+          {baseConfig.fields.map((field) => (
+            <label className="view-filter-field-option" key={field.key}>
+              <Checkbox value={field.key} />
+              <span>
+                <strong>{field.name}</strong>
+                <small>{field.key} · {field.type}</small>
+              </span>
+            </label>
+          ))}
+        </Checkbox.Group>
+      </Modal>
+
+      <Modal
+        centered
+        className="view-filter-field-modal"
+        okText="完成"
+        onCancel={() => setTableFieldPickerOpen(false)}
+        onOk={() => setTableFieldPickerOpen(false)}
+        open={tableFieldPickerOpen}
+        title="选择列表字段"
+        width={720}
+      >
+        <div className="view-filter-field-modal-note">勾选表单字段后，会自动出现在数据列表区；取消勾选会从列表区移除。</div>
+        <Checkbox.Group
+          className="view-filter-field-grid"
+          value={sortedViewColumns.map((column) => column.fieldName)}
+          onChange={(values) => syncViewColumnsByFields(values.map(String))}
         >
           {baseConfig.fields.map((field) => (
             <label className="view-filter-field-option" key={field.key}>

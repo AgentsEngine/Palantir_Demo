@@ -93,6 +93,10 @@ platform form APIs as the source of truth. It no longer derives extra form rows
 from ontology objects or shows synthetic field/metric previews when the backend
 does not provide real form metadata.
 
+Menu-node permission/configuration data travels through `ApplicationMenuNode.config`.
+Frontend menu editors can configure custom rules, but runtime authorization is
+still enforced by `/api/v1/applications/{id}/menus`.
+
 Generated `/program/:programId` pages still own their layout in
 `src/pages/AppPrograms/index.tsx`, but production-facing rows and metrics should
 come from `/api/v1/dashboard/programs/{program_id}` when available.
@@ -109,6 +113,11 @@ admin-facing sections:
 
 Legacy query sections `palantir-config` and `data-ontology` are normalized to
 `data-assets` for compatibility.
+
+System Admin also includes `ReferenceDataManagement.tsx` under the
+`reference-data` tab. This page manages local dictionaries and master-data
+examples in `localStorage` (`mf_reference_data_admin`) for form-design demos; it
+is not a backend persisted reference-data service yet.
 
 When adding a fixed product page, update:
 
@@ -142,22 +151,24 @@ Implemented client groups include:
 - Applications and application admin APIs.
 - Platform tenant APIs and current tenant profile APIs.
 - Platform forms: forms, fields, layouts, actions, permissions, workflow
-  bindings, publish versions, dynamic records, and application menu nodes.
+  bindings, publish versions, runtime permission summaries, dynamic records, and
+  application menu nodes.
 - Workflow, notifications, templates, rules, scheduler, search.
 - Knowledge base: spaces, sources, documents, upload simulation, ingestion jobs,
   Markdown, chunks, cards, related evidence, binding candidates, OCR workflow
   metadata, directories, local RAG search, and persisted knowledge Agent
   conversations/messages.
-- AI platform settings, conversation/memory APIs, low-code Agent actions, GLM-compatible defaults, and provider testing.
+- AI platform settings, conversation/memory/draft APIs, low-code Agent actions,
+  generic draft confirmation/cancel flows, GLM-compatible defaults, and provider
+  testing.
 - Release metadata from `/api/v1/release/current`.
 - Productization readiness is consumed by backend tests today; add a frontend
   service wrapper only when a page needs to render it.
 
-The knowledge base API is currently a local MVP backed by static documents and
-TF-IDF retrieval on the backend. It is not yet connected to an external vector
-database or embedding service. The knowledge Agent chat uses persisted
-conversation/runtime rows, while the source knowledge material remains
-demo/static or in-memory upload simulation.
+The knowledge base API is currently a local MVP backed by persisted
+document/chunk/runtime rows plus seeded/demo catalog data and TF-IDF retrieval
+on the backend. It is not yet connected to an external vector database or
+embedding service.
 
 ## Ready Path Smoke Guard
 

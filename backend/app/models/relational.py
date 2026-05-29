@@ -761,6 +761,7 @@ class ApplicationMenuNode(TimestampMixin, Base):
     visible: Mapped[bool] = mapped_column(Boolean, default=True)
     default_entry: Mapped[bool] = mapped_column(Boolean, default=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    config: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
 
 class FormField(TimestampMixin, Base):
@@ -1302,6 +1303,23 @@ class AIAgentRun(TimestampMixin, Base):
     risk_level: Mapped[str] = mapped_column(String(50), default="low")
     requires_confirmation: Mapped[bool] = mapped_column(Boolean, default=False)
     confirmation_payload: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+
+class AIDraft(TimestampMixin, Base):
+    __tablename__ = "ai_drafts"
+    __table_args__ = (UniqueConstraint("tenant_id", "draft_id", name="uq_ai_drafts_tenant_draft_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, default=1, index=True)
+    draft_id: Mapped[str] = mapped_column(String(100), index=True)
+    skill: Mapped[str] = mapped_column(String(200), index=True)
+    status: Mapped[str] = mapped_column(String(50), default="draft")
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    evidence: Mapped[list] = mapped_column(JSON, default=list)
+    source: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    run_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    created_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class AIToolCall(TimestampMixin, Base):

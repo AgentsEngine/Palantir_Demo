@@ -29,7 +29,7 @@ def _text_from_context(context: dict[str, Any]) -> str:
 
 
 def _has_quantity(text: str) -> bool:
-    return bool(re.search(r"\d+\s*(件|个|套|pcs|kg|箱|台|批|小时|天|周)?", text, flags=re.IGNORECASE))
+    return bool(re.search(r"\d+\s*(件|个|套|pcs|kg|箱|台|小时|天|周)?", text, flags=re.IGNORECASE))
 
 
 def has_minimum_action_requirements(skill: str, message: str, context: dict[str, Any] | None = None) -> bool:
@@ -56,13 +56,14 @@ def build_action_guidance_answer(skill: str, *, assistant_name: str = "AI Agent"
     questions = contract.get("questions") or []
     required = contract.get("required") or []
     lines = [
-        f"可以，我先不直接生成可确认动作。{assistant_name} 会先查看对应 skill/tool 契约，把关键参数问清楚，再给你确认清单。",
+        f"可以，{assistant_name} 会先查看对应 skill/tool 合约，把关键参数问清楚，再给你确认清单；确认前不会写入或提交业务流程。",
         "",
         f"当前动作：`{skill}`",
-        f"调用契约：`{contract.get('tool') or skill}`",
+        f"调用合约：`{contract.get('tool') or skill}`",
     ]
+    lines[0] = f"可以，{assistant_name} 会先不直接生成可确认动作，而是查看对应 skill/tool 合约，把关键参数问清楚，再给你确认清单；确认前不会写入或提交业务流程。"
     if required:
-        lines.append(f"关键参数：{', '.join(required)}")
+        lines.append(f"关键参数：{', '.join(str(item) for item in required)}")
     if questions:
         lines.append("")
         lines.append("请先补充：")

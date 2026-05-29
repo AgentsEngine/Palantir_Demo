@@ -112,6 +112,26 @@ async def _role_names_for_user(db: AsyncSession, user: dict) -> list[str]:
         return _mock_role_names(user)
 
 
+async def _role_ids_for_user(db: AsyncSession, user: dict) -> list[int]:
+    if user.get("is_admin"):
+        return []
+    uid = user.get("uid")
+    if not uid:
+        return []
+    try:
+        from app.models.relational import UserRole
+        tenant_id = current_tenant_id(user)
+        result = await db.execute(
+            select(UserRole.role_id).where(
+                UserRole.user_id == uid,
+                UserRole.tenant_id == tenant_id,
+            )
+        )
+        return [int(row[0]) for row in result.fetchall()]
+    except Exception:
+        return []
+
+
 async def _user_can_access_application(db: AsyncSession, user: dict, app_id: int) -> bool:
     if user.get("is_admin"):
         return True
@@ -133,6 +153,62 @@ async def _user_can_access_application(db: AsyncSession, user: dict, app_id: int
         .limit(1)
     )
     return allowed_role_id is not None
+
+
+def _rule_actions_match(actions: object, requested: str = "view") -> bool:
+    if not isinstance(actions, list):
+        return requested == "view"
+    return "*" in actions or requested in actions
+
+
+def _menu_rule_subject_matches(rule: dict, user: dict, role_ids: set[int], inherited: bool) -> bool:
+    subject_type = rule.get("subjectType") or rule.get("subject_type") or "app_roles"
+    if subject_type == "app_roles":
+        return inherited
+    if subject_type == "roles":
+        values = rule.get("roleIds") or rule.get("role_ids") or []
+        return bool(role_ids.intersection({int(value) for value in values if str(value).isdigit()}))
+    if subject_type == "users":
+        values = {str(value).strip().lower() for value in (rule.get("userKeys") or rule.get("user_keys") or [])}
+        user_keys = {
+            str(user.get("sub") or "").strip().lower(),
+            str(user.get("uid") or "").strip().lower(),
+        }
+        return bool(values.intersection(user_keys))
+    return False
+
+
+async def _user_can_access_menu_node(db: AsyncSession, user: dict, node, role_ids: list[int]) -> bool:
+    if user.get("is_admin"):
+        return True
+    config = node.config or {}
+    inherited = await _user_can_access_application(db, user, node.application_id)
+    rules = config.get("permission_rules")
+    role_id_set = set(role_ids)
+
+    if not isinstance(rules, list) or not rules:
+        if config.get("permission_mode") == "custom":
+            configured_role_ids = {
+                int(value)
+                for value in (config.get("role_ids") or [])
+                if str(value).isdigit()
+            }
+            return bool(role_id_set.intersection(configured_role_ids))
+        return inherited
+
+    matched_allow = False
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        if not _rule_actions_match(rule.get("actions"), "view"):
+            continue
+        if not _menu_rule_subject_matches(rule, user, role_id_set, inherited):
+            continue
+        if rule.get("effect") == "deny":
+            return False
+        if rule.get("effect", "allow") == "allow":
+            matched_allow = True
+    return matched_allow
 
 
 def _menu_tree(items: list[dict]) -> list[dict]:
@@ -165,6 +241,7 @@ def _platform_menu_payload(node) -> dict:
         "is_visible": node.visible,
         "is_default": node.default_entry,
         "form_id": node.form_id,
+        "config": node.config or {},
     }
 
 
@@ -393,7 +470,13 @@ async def list_application_menus(app_id: int, user: dict = Depends(get_current_u
             .order_by(ApplicationMenuNode.sort_order, ApplicationMenuNode.id)
         )).scalars().all()
         if platform_nodes:
-            return {"data": _menu_tree([_platform_menu_payload(node) for node in platform_nodes])}
+            role_ids = await _role_ids_for_user(session, user)
+            allowed_nodes = [
+                node
+                for node in platform_nodes
+                if await _user_can_access_menu_node(session, user, node, role_ids)
+            ]
+            return {"data": _menu_tree([_platform_menu_payload(node) for node in allowed_nodes])}
         form_rows = await session.execute(
             select(ApplicationForm, Form)
             .join(Form, Form.id == ApplicationForm.form_id)
