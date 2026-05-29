@@ -50,11 +50,11 @@
   "forms.create_dynamic_record_draft": {
     "name": "forms.create_dynamic_record_draft",
     "title": "Create form draft",
-    "description": "Create an internal business record draft without submitting workflow.",
+    "description": "Create an internal business record draft without submitting workflow. Must check target form create permission before writing.",
     "side_effect": "draft_write",
     "risk_level": "medium",
-    "input_schema": {"form_key": "string", "payload": "object"},
-    "output_schema": {"draft_id": "string", "status": "draft"},
+    "input_schema": {"form_id": "integer", "form_code": "string", "record.data": "object", "payload": "object"},
+    "output_schema": {"record_id": "integer", "form_id": "integer", "form_code": "string", "status": "draft"},
     "permission_check": "save_draft",
     "audit_required": true
   },

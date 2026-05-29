@@ -75,6 +75,21 @@ The application loads this file as deployment-level Agent configuration. The Pyt
     ],
     "example": "表单：supplier_risk；分析最近 50 条记录中高风险供应商的主要原因。"
   },
+  "forms.create_record_draft": {
+    "tool": "forms.create_dynamic_record_draft",
+    "required": ["form.id|form.code", "record.data"],
+    "optional": ["source_message", "evidence", "target_form_code"],
+    "questions": [
+      "要在哪个表单中新增记录？请提供当前表单、表单 ID 或表单编码。",
+      "这条记录的关键字段分别是什么？",
+      "是否有来源证据、分析结论或后续流程需要挂到草稿上？"
+    ],
+    "slot_terms": {
+      "form.id|form.code": ["form", "form_id", "form_code", "表单", "当前表单"],
+      "record.data": ["data", "record", "字段", "内容", "值", "新增数据", "创建记录"]
+    },
+    "example": "表单：quality_event；记录：标题=SMT-03 温区异常，等级=高，负责人=李明。"
+  },
   "low_code.create_form_definition": {
     "planner_tool": "ai.semantic_plan_low_code_form",
     "tool": "forms.create_form_definition",

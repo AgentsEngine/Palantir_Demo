@@ -5,15 +5,18 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_tenant_id, current_user_id
 from app.core.audit import write_audit_log
+from app.core.permissions import has_form_permission
 from app.models.relational import DynamicRecord, Form, FormField, FormVersion
 
 
 SKILL_FORM_CANDIDATES = {
+    "forms.create_record_draft": [],
     "maintenance.create_work_order_draft": ["work-order", "work_order", "maintenance-order", "alert-center"],
     "supply.create_purchase_request_draft": ["purchase-request", "purchase_request", "risk-review"],
     "material.create_material_application_draft": ["material-application", "material_application", "risk-review"],
@@ -100,6 +103,11 @@ async def resolve_dynamic_record_form(
 
 
 def _pick_payload_value(payload: dict[str, Any], field: FormField) -> Any:
+    nested_data = payload.get("record.data") or payload.get("data") or payload.get("record")
+    if isinstance(nested_data, dict) and nested_data is not payload:
+        nested_value = _pick_payload_value(nested_data, field)
+        if nested_value not in (None, "", [], {}):
+            return nested_value
     keys = [
         field.field_name,
         field.field_name.replace("_", "-"),
@@ -133,6 +141,8 @@ async def create_dynamic_record_draft_from_agent(
     form = await resolve_dynamic_record_form(session, tenant_id=tenant_id, skill=skill, payload=payload)
     if not form:
         return None
+    if not await has_form_permission(user, form.id, "create", session):
+        raise HTTPException(status_code=403, detail="Form create permission denied")
 
     fields = (
         await session.execute(

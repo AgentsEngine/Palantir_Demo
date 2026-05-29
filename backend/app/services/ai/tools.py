@@ -25,6 +25,19 @@ def create_contract_draft_action(
     ))
 
 
+def create_form_record_draft(
+    evidence: list[dict[str, Any]] | None = None,
+    context: dict[str, Any] | None = None,
+    source_message: str = "",
+) -> SkillAction:
+    return create_contract_draft_action(
+        "forms.create_record_draft",
+        evidence=evidence,
+        context=context,
+        source_message=source_message,
+    )
+
+
 def create_work_order_draft(
     evidence: list[dict[str, Any]] | None = None,
     context: dict[str, Any] | None = None,
@@ -112,6 +125,8 @@ def choose_draft_actions(
     actions: list[SkillAction] = []
     if wants_low_code_form:
         actions.append(create_low_code_form_definition_action(message, evidence, context))
+    if any(token in text for token in ["create record", "new record", "\u65b0\u5efa\u6570\u636e", "\u521b\u5efa\u8bb0\u5f55", "\u65b0\u589e\u6570\u636e"]):
+        actions.append(create_form_record_draft(evidence, context, message))
     if any(token in text for token in ["maintenance", "work order", "\u7ef4\u4fee", "\u5de5\u5355", "\u8bbe\u5907"]):
         actions.append(create_work_order_draft(evidence, context, message))
     if any(token in text for token in ["purchase", "\u91c7\u8d2d"]):

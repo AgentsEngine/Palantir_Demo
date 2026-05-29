@@ -97,6 +97,24 @@
       "recommended_actions": true
     }
   },
+  "forms.create_record_draft": {
+    "name": "forms.create_record_draft",
+    "title": "Create form record draft",
+    "description": "Prepare a new dynamic form record draft from conversation, page context, or analysis evidence without submitting it.",
+    "capability_level": "assisted",
+    "risk_level": "medium",
+    "allowed_tools": ["forms.query_records", "forms.get_record", "forms.create_dynamic_record_draft"],
+    "required_permissions": ["draft"],
+    "confirmation_policy": "confirm_token",
+    "permission_capability": "draft",
+    "domain": "dynamic-form",
+    "output_schema": {
+      "type": "draft_action",
+      "resource": "dynamic_record",
+      "draft_required": true,
+      "confirmation_checklist": true
+    }
+  },
   "low_code.suggest_model_or_page": {
     "name": "low_code.suggest_model_or_page",
     "title": "Low-code design suggestion",

@@ -152,6 +152,7 @@ def test_skill_tool_registry_contracts():
     assert any(item["name"] == "forms.create_dynamic_record_draft" for item in list_tools())
     assert any(item["name"] == "forms.query_records" for item in list_tools())
     assert any(item["name"] == "analysis.analyze_form_records" for item in list_skills())
+    assert any(item["name"] == "forms.create_record_draft" for item in list_skills())
     assert any(item["name"] == "ai.semantic_plan_low_code_form" for item in list_tools())
     assert get_skill("quality.create_capa_draft").confirmation_policy == "confirm_token"
     assert get_tool("workflow.start").side_effect == "workflow_action"
@@ -159,6 +160,7 @@ def test_skill_tool_registry_contracts():
     assert get_tool("forms.query_records").permission_check == "business_query"
     assert get_tool("forms.add_form_field").side_effect == "configuration_write"
     assert "forms.query_records" in get_skill("analysis.analyze_form_records").allowed_tools
+    assert "forms.create_dynamic_record_draft" in get_skill("forms.create_record_draft").allowed_tools
     assert "ai.semantic_plan_low_code_form" in get_skill("low_code.create_form_definition").allowed_tools
     assert "forms.add_form_field" in get_skill("low_code.add_form_field").allowed_tools
 
@@ -175,6 +177,10 @@ def test_skill_tool_registry_contracts():
     assert reason == "Allowed"
 
     allowed, reason = validate_tool_call("analysis.analyze_form_records", "forms.query_records")
+    assert allowed is True
+    assert reason == "Allowed"
+
+    allowed, reason = validate_tool_call("forms.create_record_draft", "forms.create_dynamic_record_draft")
     assert allowed is True
     assert reason == "Allowed"
 
@@ -243,6 +249,38 @@ def test_form_record_analysis_summarizes_visible_records():
     assert [item["record_id"] for item in evidence] == [1, 2]
     assert "Material Master" in answer
     assert "\u786e\u8ba4\u6e05\u5355" in answer
+
+
+@pytest.mark.asyncio
+async def test_dynamic_record_draft_checks_target_form_create_permission(monkeypatch):
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    from app.services.ai import dynamic_record_drafts
+
+    async def fake_resolve_form(session, *, tenant_id, skill, payload):
+        return SimpleNamespace(id=12, tenant_id=tenant_id, code="quality_event", name="Quality Event")
+
+    async def fake_has_form_permission(user, form_id, action, session):
+        assert form_id == 12
+        assert action == "create"
+        return False
+
+    monkeypatch.setattr(dynamic_record_drafts, "resolve_dynamic_record_form", fake_resolve_form)
+    monkeypatch.setattr(dynamic_record_drafts, "has_form_permission", fake_has_form_permission)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await dynamic_record_drafts.create_dynamic_record_draft_from_agent(
+            SimpleNamespace(),
+            user={"sub": "viewer", "tenant_id": 1, "is_admin": False},
+            skill="forms.create_record_draft",
+            payload={"form_code": "quality_event", "record.data": {"title": "A"}},
+            evidence=[],
+        )
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == "Form create permission denied"
 
 
 def test_prompt_builder_includes_tenant_context_memory_and_evidence():

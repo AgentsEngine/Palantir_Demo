@@ -8,6 +8,7 @@ from .action_guidance import describe_action_contract
 
 
 ACTION_TITLES = {
+    "forms.create_record_draft": "Form record draft",
     "maintenance.create_work_order_draft": "Maintenance work order draft",
     "supply.create_purchase_request_draft": "Purchase request draft",
     "material.create_material_application_draft": "Material application draft",
@@ -25,6 +26,7 @@ def _slot_value(slots: dict[str, Any], slot: str) -> Any:
         "owner_or_due_date": ["owner", "due_date"],
         "item": ["material", "part", "object"],
         "form.id|form.code": ["form_id", "formId", "form_code", "formCode", "form"],
+        "record.data": ["data", "record", "values", "fields"],
     }
     for alias in aliases.get(slot, []):
         if alias in slots and slots[alias] not in (None, "", [], {}):
