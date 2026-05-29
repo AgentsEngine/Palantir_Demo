@@ -150,11 +150,15 @@ def test_skill_tool_registry_contracts():
 
     assert any(item["name"] == "knowledge.answer_question" for item in list_skills())
     assert any(item["name"] == "forms.create_dynamic_record_draft" for item in list_tools())
+    assert any(item["name"] == "forms.query_records" for item in list_tools())
+    assert any(item["name"] == "analysis.analyze_form_records" for item in list_skills())
     assert any(item["name"] == "ai.semantic_plan_low_code_form" for item in list_tools())
     assert get_skill("quality.create_capa_draft").confirmation_policy == "confirm_token"
     assert get_tool("workflow.start").side_effect == "workflow_action"
     assert get_tool("ai.semantic_plan_low_code_form").side_effect == "read"
+    assert get_tool("forms.query_records").permission_check == "business_query"
     assert get_tool("forms.add_form_field").side_effect == "configuration_write"
+    assert "forms.query_records" in get_skill("analysis.analyze_form_records").allowed_tools
     assert "ai.semantic_plan_low_code_form" in get_skill("low_code.create_form_definition").allowed_tools
     assert "forms.add_form_field" in get_skill("low_code.add_form_field").allowed_tools
 
@@ -170,9 +174,44 @@ def test_skill_tool_registry_contracts():
     assert allowed is True
     assert reason == "Allowed"
 
+    allowed, reason = validate_tool_call("analysis.analyze_form_records", "forms.query_records")
+    assert allowed is True
+    assert reason == "Allowed"
+
     allowed, reason = validate_tool_call("knowledge.answer_question", "workflow.start")
     assert allowed is False
     assert reason == "Tool is outside the skill allowlist"
+
+
+def test_preflight_blocks_viewer_configuration_write():
+    from app.services.ai.preflight import preflight_agent_request
+    from app.services.ai.settings import AI_SYSTEM_SETTINGS
+
+    decision = preflight_agent_request(
+        message="\u5e2e\u6211\u65b0\u5efa\u4e00\u4e2a\u8868\u5355",
+        context={},
+        user={"sub": "auditor_gu", "is_admin": False, "roles": [{"name": "viewer"}]},
+        settings=AI_SYSTEM_SETTINGS,
+    )
+
+    assert decision.allowed is False
+    assert decision.capability == "config"
+    assert decision.risk_level == "high"
+
+
+def test_preflight_blocks_viewer_business_query_without_capability():
+    from app.services.ai.preflight import preflight_agent_request
+    from app.services.ai.settings import AI_SYSTEM_SETTINGS
+
+    decision = preflight_agent_request(
+        message="\u5e2e\u6211\u5206\u6790\u4e00\u4e0b\u5f53\u524d\u8868\u5355\u6570\u636e",
+        context={"formCode": "supplier_risk"},
+        user={"sub": "auditor_gu", "is_admin": False, "roles": [{"name": "viewer"}]},
+        settings=AI_SYSTEM_SETTINGS,
+    )
+
+    assert decision.allowed is False
+    assert decision.capability == "business_query"
 
 
 def test_prompt_builder_includes_tenant_context_memory_and_evidence():

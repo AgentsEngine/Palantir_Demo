@@ -46,6 +46,20 @@ def classify_preflight(message: str, context: dict[str, Any] | None = None) -> t
 
     context = context or {}
     text = f"{message}\n{context.get('currentPage') or ''}\n{context.get('page') or ''}"
+    if _contains(text, ["\u5220\u9664", "delete", "\u6539\u6743\u9650", "\u6743\u9650\u53d8\u66f4", "change permission"]):
+        return "config", "critical", "low-code"
+    if _contains(text, ["\u8868\u5355", "form"]) and _contains(text, ["\u65b0\u5efa", "\u521b\u5efa", "create", "new", "build"]):
+        return "config", "high", "low-code"
+    if _contains(text, ["\u65b0\u5efa\u8868\u5355", "\u521b\u5efa\u8868\u5355", "\u65b0\u589e\u5b57\u6bb5", "\u65b0\u5efa\u5b57\u6bb5", "low-code", "low code", "form creation"]):
+        return "config", "high", "low-code"
+    if _contains(text, ["\u542f\u52a8\u6d41\u7a0b", "\u63d0\u4ea4\u5ba1\u6279", "\u53d1\u8d77\u6d41\u7a0b", "workflow", "submit"]):
+        return "workflow", "high", "workflow"
+    if _contains(text, ["\u4e0b\u5355", "\u8ba2\u5355", "\u91c7\u8d2d", "purchase order", "order"]):
+        return "workflow", "high", "supply-chain"
+    if _contains(text, ["\u8349\u7a3f", "\u65b0\u5efa\u6570\u636e", "\u521b\u5efa\u8bb0\u5f55", "create record", "draft"]):
+        return "draft", "medium", None
+    if _contains(text, ["\u5206\u6790", "\u67e5\u8be2", "\u7edf\u8ba1", "\u67e5\u770b", "records", "record", "analyze", "query"]):
+        return "business_query", "low", None
     if _contains(text, ["删除", "delete", "改权限", "权限变更", "change permission"]):
         return "config", "critical", "low-code"
     if _contains(text, ["新建表单", "创建表单", "新增字段", "新建字段", "low-code", "low code", "form creation"]):

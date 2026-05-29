@@ -365,6 +365,40 @@ class AgentRuntime:
                 mode="assisted",
             )
 
+        form_query_payload = _form_query_payload(request.context or {})
+        if user and preflight.capability == "business_query" and form_query_payload:
+            async with db_session() as session:
+                query_result = await query_form_records(session, user=user, payload=form_query_payload)
+            tool_step = {
+                "id": "step-form-record-query",
+                "type": "tool",
+                "tool": "forms.query_records",
+                "status": "completed",
+                "result_count": query_result.get("record_count", 0),
+            }
+            steps.append(tool_step)
+            await _emit_step(event_sink, tool_step)
+            records = query_result.get("records") or []
+            evidence = [
+                {
+                    "source": "forms.query_records",
+                    "form": query_result.get("form"),
+                    "record_id": record.get("id"),
+                    "data": record.get("data"),
+                }
+                for record in records[:8]
+            ]
+            form_name = (query_result.get("form") or {}).get("name") or (query_result.get("form") or {}).get("code") or "当前表单"
+            return AgentResponse(
+                answer=(
+                    f"已按权限读取 `{form_name}` 的 {query_result.get('record_count', 0)} 条记录。"
+                    "我会基于可见字段给出分析；若需要写入或发起流程，会先生成草稿和确认清单。"
+                ),
+                evidence=evidence,
+                steps=steps,
+                mode="qa",
+            )
+
         if not _is_real_model_configured(config):
             model_step = {
                 "id": "step-model-config",
