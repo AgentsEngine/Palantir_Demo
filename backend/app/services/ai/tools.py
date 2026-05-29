@@ -14,10 +14,10 @@ def create_work_order_draft(evidence: list[dict[str, Any]] | None = None) -> Ski
         skill="maintenance.create_work_order_draft",
         title="Maintenance work order draft",
         payload={
-            "equipment": "CNC-17 spindle",
-            "priority": "high",
-            "suggested_window": "within 48 hours",
-            "risk_signal": "health score 68, vibration rising",
+            "asset": "To be confirmed",
+            "priority": "To be confirmed",
+            "suggested_window": "To be confirmed",
+            "risk_signal": "To be confirmed",
         },
         evidence=evidence or [],
     ))
@@ -28,10 +28,10 @@ def create_purchase_request_draft(evidence: list[dict[str, Any]] | None = None) 
         skill="supply.create_purchase_request_draft",
         title="Purchase request draft",
         payload={
-            "material": "M-0042 critical spare part",
-            "quantity": "200 pcs",
-            "reason": "projected below safety stock in 5 days",
-            "recommended_supplier": "East China Precision",
+            "item": "To be confirmed",
+            "quantity": "To be confirmed",
+            "reason": "To be confirmed",
+            "recommended_supplier": "To be confirmed",
         },
         evidence=evidence or [],
     ))
@@ -42,10 +42,10 @@ def create_material_application_draft(evidence: list[dict[str, Any]] | None = No
         skill="material.create_material_application_draft",
         title="Material application draft",
         payload={
-            "line": "Assembly Line 2",
-            "material_code": "MAT-2188",
-            "quantity": "36 sets",
-            "usage": "rework and supplemental issue",
+            "business_unit": "To be confirmed",
+            "item_code": "To be confirmed",
+            "quantity": "To be confirmed",
+            "usage": "To be confirmed",
         },
         evidence=evidence or [],
     ))
@@ -56,9 +56,9 @@ def create_capa_draft(evidence: list[dict[str, Any]] | None = None) -> SkillActi
         skill="quality.create_capa_draft",
         title="CAPA draft",
         payload={
-            "problem": "defect rate increased for 3 consecutive shifts",
-            "containment": "isolate related batches and increase inspection frequency",
-            "suspected_root_cause": "material batch or process parameter drift",
+            "problem": "To be confirmed",
+            "containment": "To be confirmed",
+            "suspected_root_cause": "To be confirmed",
         },
         evidence=evidence or [],
     ))
