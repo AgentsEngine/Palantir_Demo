@@ -37,6 +37,21 @@ async def test_agent_returns_confirmed_draft_skill():
 
     result = await run_agent(AgentRequest(message="生成维修工单草稿"))
 
+    assert result.mode == "qa"
+    assert result.requires_confirmation is False
+    assert result.actions == []
+    assert "maintenance.create_work_order_draft" in result.answer
+    assert any(step["id"] == "step-tool-contract" for step in result.steps)
+    assert any(step["id"] == "step-requirement-gap" for step in result.steps)
+
+
+@pytest.mark.asyncio
+async def test_agent_returns_confirmed_draft_after_guided_requirements():
+    from app.services.ai.orchestrator import run_agent
+    from app.services.ai.schemas import AgentRequest
+
+    result = await run_agent(AgentRequest(message="为设备 CNC-17 生成维修工单草稿，主轴振动异常，优先级高，48 小时内处理"))
+
     assert result.mode == "assisted"
     assert result.requires_confirmation is True
     assert result.actions

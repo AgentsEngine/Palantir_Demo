@@ -100,6 +100,10 @@ def test_agent_conversation_history_restores_run_steps_and_actions():
                         "conversation_id": conversation["conversation_id"],
                         "formName": f"AI Supplier History {suffix}",
                         "formCode": f"ai_supplier_history_{suffix}",
+                        "fields": [
+                            {"field_name": "supplier_name", "label": "Supplier", "field_type": "string", "required": True},
+                            {"field_name": "risk_level", "label": "Risk Level", "field_type": "string"},
+                        ],
                     },
                 },
             ),
@@ -140,6 +144,81 @@ def test_chinese_low_code_request_uses_backend_planner():
         "material_name",
         "material_type",
     ]
+
+
+def test_low_code_agent_guides_before_write_when_requirements_are_missing():
+    from app.main import app
+
+    with TestClient(app) as client:
+        login = _assert_ok(
+            client.post("/api/v1/auth/login", json={"username": "admin", "password": "admin123"}),
+            context="login",
+        )
+        headers = _headers(login["token"])
+
+        response = _assert_ok(
+            client.post(
+                "/api/v1/ai/agent",
+                headers=headers,
+                json={"message": "帮我新建一个物料主数据表单"},
+            ),
+            context="agent guide",
+        )
+
+        assert response["requires_confirmation"] is False
+        assert response["actions"] == []
+        assert "先不直接生成可确认动作" in response["answer"]
+        assert any(step["id"] == "step-tool-contract" for step in response["steps"])
+        assert any(step["id"] == "step-requirement-gap" for step in response["steps"])
+
+
+def test_low_code_agent_prepares_confirmation_after_user_supplies_fields():
+    from app.main import app
+
+    suffix = uuid.uuid4().hex[:8]
+    with TestClient(app) as client:
+        login = _assert_ok(
+            client.post("/api/v1/auth/login", json={"username": "admin", "password": "admin123"}),
+            context="login",
+        )
+        headers = _headers(login["token"])
+        conversation = _assert_ok(
+            client.post(
+                "/api/v1/ai/agent/conversations",
+                headers=headers,
+                json={"title": "Guided form", "page": "ai-workbench", "context": {"surface": "global"}},
+            ),
+            context="create conversation",
+        )["data"]
+
+        _assert_ok(
+            client.post(
+                "/api/v1/ai/agent",
+                headers=headers,
+                json={
+                    "message": f"帮我新建一个供应商风险{suffix}表单",
+                    "context": {"conversation_id": conversation["conversation_id"]},
+                },
+            ),
+            context="first guided turn",
+        )
+        response = _assert_ok(
+            client.post(
+                "/api/v1/ai/agent",
+                headers=headers,
+                json={
+                    "message": "字段包括供应商名称、风险等级、整改负责人；供应商名称必填；创建菜单入口",
+                    "context": {"conversation_id": conversation["conversation_id"]},
+                },
+            ),
+            context="requirements followup",
+        )
+
+        assert response["requires_confirmation"] is True
+        assert response["actions"][0]["skill"] == "low_code.create_form_definition"
+        payload = response["actions"][0]["payload"]
+        assert payload["menu"]["create"] is True
+        assert [field["label"] for field in payload["fields"][:3]] == ["供应商名称", "风险等级", "整改负责人"]
 
 
 def test_confirmation_followup_can_reuse_recent_low_code_request():

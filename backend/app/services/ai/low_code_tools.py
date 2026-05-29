@@ -34,6 +34,31 @@ SUPPORTED_FIELD_TYPES = {
 }
 
 
+CREATE_FORM_DEFINITION_CONTRACT = {
+    "tool": "forms.create_form_definition",
+    "required": ["form.name", "form.code", "fields"],
+    "optional": ["form.description", "menu.create", "menu.title", "menu.icon"],
+    "field_schema": ["field_name", "label", "field_type", "required", "searchable", "sortable", "enum_values"],
+    "supported_field_types": sorted(SUPPORTED_FIELD_TYPES),
+}
+
+
+def describe_create_form_definition_contract() -> dict[str, Any]:
+    """Return the platform contract the Agent must consult before proposing a form write."""
+
+    return CREATE_FORM_DEFINITION_CONTRACT
+
+
+def has_minimum_form_requirements(context: dict[str, Any]) -> bool:
+    """Gate form writes until the user has supplied enough design detail."""
+
+    fields = context.get("fields")
+    has_name = bool(context.get("formName") or context.get("form_name"))
+    has_fields = isinstance(fields, list) and len(fields) >= 2
+    has_code = bool(context.get("formCode") or context.get("form_code"))
+    return has_name and (has_fields or has_code)
+
+
 def _slugify(value: str, fallback: str = "ai_form") -> str:
     slug = re.sub(r"[^a-zA-Z0-9_]+", "_", value.strip().lower()).strip("_")
     slug = re.sub(r"_+", "_", slug)

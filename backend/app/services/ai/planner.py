@@ -111,6 +111,13 @@ def _recent_user_messages(context: dict[str, Any]) -> list[str]:
     return output
 
 
+def _recent_low_code_request(context: dict[str, Any]) -> str | None:
+    for prior in reversed(_recent_user_messages(context)):
+        if _is_low_code_form_request(prior):
+            return prior
+    return None
+
+
 def _extract_form_name(message: str) -> str | None:
     text = message.strip()
     patterns = [
@@ -130,17 +137,58 @@ def _extract_form_name(message: str) -> str | None:
     return None
 
 
+def _extract_fields(message: str) -> list[dict[str, Any]]:
+    match = re.search(
+        r"(?:字段|栏位|信息|内容)(?:包括|包含|有|为|:|：)?(?P<fields>[\u4e00-\u9fa5A-Za-z0-9_、，,;；\s]{2,120})",
+        message,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return []
+    raw = match.group("fields")
+    raw = re.split(r"(?:菜单|入口|必填|确认|就好|即可|然后|并且)", raw, maxsplit=1)[0]
+    names = [
+        item.strip(" \t\n\r:：，,、;；。.")
+        for item in re.split(r"[、，,;；\n]+", raw)
+        if item.strip(" \t\n\r:：，,、;；。.")
+    ]
+    fields: list[dict[str, Any]] = []
+    seen_labels: set[str] = set()
+    for index, name in enumerate(names[:12]):
+        if name in seen_labels:
+            continue
+        seen_labels.add(name)
+        fields.append(
+            {
+                "field_name": f"field_{index + 1}",
+                "label": name[:40],
+                "field_type": "string",
+                "required": bool(re.search(rf"{re.escape(name)}.*?(?:必填|必须)", message)),
+            }
+        )
+    return fields
+
+
+def _extract_menu_preference(message: str) -> dict[str, Any]:
+    if not re.search(r"菜单|入口|导航", message):
+        return {}
+    disabled = re.search(r"不(?:创建|生成|要).*?(?:菜单|入口|导航)", message)
+    return {"createMenu": not bool(disabled)}
+
+
 def plan_agent_turn(message: str, context: dict[str, Any] | None = None) -> AgentPlan:
     context = context or {}
     source_message = message
     reason = "direct_request"
+    recent_low_code_request = _recent_low_code_request(context)
 
     if _is_confirmation(message):
-        for prior in reversed(_recent_user_messages(context)):
-            if _is_low_code_form_request(prior):
-                source_message = prior
-                reason = "confirmation_followup"
-                break
+        if recent_low_code_request:
+            source_message = recent_low_code_request
+            reason = "confirmation_followup"
+    elif recent_low_code_request and _contains_any(message, ["字段", "栏位", "信息", "菜单", "入口", "必填"]):
+        source_message = f"{recent_low_code_request}\n{message}"
+        reason = "low_code_requirements_followup"
 
     if not _is_low_code_form_request(source_message):
         return AgentPlan(intent="qa", source_message=message, confidence=0.2, reason="no_action_plan")
@@ -149,6 +197,10 @@ def plan_agent_turn(message: str, context: dict[str, Any] | None = None) -> Agen
     form_name = _extract_form_name(source_message)
     if form_name:
         extracted["formName"] = form_name
+    fields = _extract_fields(source_message)
+    if fields:
+        extracted["fields"] = fields
+    extracted.update(_extract_menu_preference(source_message))
     return AgentPlan(
         intent="action",
         skill="low_code.create_form_definition",

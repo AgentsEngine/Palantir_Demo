@@ -15,6 +15,11 @@ from .settings import settings_snapshot, settings_to_provider_config
 from .tenant_profile import TenantProfile, default_tenant_profile
 from .planner import plan_agent_turn
 from .tools import choose_draft_actions, create_low_code_form_definition_action
+from .action_guidance import (
+    build_action_guidance_answer,
+    describe_action_contract,
+    has_minimum_action_requirements,
+)
 from .client import get_provider
 from .agent_context_router import classify_context_need
 
@@ -22,25 +27,6 @@ from .agent_context_router import classify_context_need
 EXTERNAL_PROVIDER_NAMES = {"openai-compatible", "openai", "azure-openai", "deepseek", "qwen", "glm"}
 RISK_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 AgentEventSink = Callable[[str, dict[str, Any]], Awaitable[None]]
-GENERAL_CHAT_TERMS = [
-    "你好",
-    "您好",
-    "早上好",
-    "晚上好",
-    "你是谁",
-    "你叫什么",
-    "who are you",
-    "喜欢我",
-    "你喜欢",
-    "爱我",
-    "谢谢",
-    "thank",
-    "hello",
-    "hi",
-    "在吗",
-    "聊聊",
-    "随便聊",
-]
 KNOWLEDGE_TASK_TERMS = [
     "文档",
     "该文档",
@@ -105,7 +91,7 @@ class AgentRuntime:
             return "general"
         if any(term.lower() in normalized for term in KNOWLEDGE_TASK_TERMS):
             return "knowledge"
-        if len(normalized) <= 40 and any(term.lower() in normalized for term in GENERAL_CHAT_TERMS):
+        if len(normalized) <= 40:
             return "general"
         return "knowledge"
 
@@ -164,9 +150,63 @@ class AgentRuntime:
                 **(request.context or {}),
                 **planner_result.extracted_context,
             }
+            contract = describe_action_contract(planner_result.skill)
+            contract_step = {
+                "id": "step-tool-contract",
+                "type": "observe",
+                "status": "completed",
+                "tool": contract["tool"],
+                "summary": "Loaded form creation API contract before planning a write.",
+                "required": contract["required"],
+            }
+            steps.append(contract_step)
+            await _emit_step(event_sink, contract_step)
+            if not has_minimum_action_requirements(planner_result.skill, planner_result.source_message, action_context):
+                missing_step = {
+                    "id": "step-requirement-gap",
+                    "type": "plan",
+                    "status": "completed",
+                    "summary": "Need more form design details before preparing a write confirmation.",
+                }
+                steps.append(missing_step)
+                await _emit_step(event_sink, missing_step)
+                return AgentResponse(
+                    answer=build_action_guidance_answer(planner_result.skill, assistant_name=profile.assistant_name),
+                    evidence=evidence,
+                    steps=steps,
+                    mode="qa",
+                )
             actions.append(create_low_code_form_definition_action(planner_result.source_message, evidence=evidence, context=action_context))
         elif planner_result.intent == "qa":
             actions = choose_draft_actions(request.message, evidence=evidence, context=request.context)
+            if actions:
+                first_action = actions[0]
+                contract = describe_action_contract(first_action.skill)
+                contract_step = {
+                    "id": "step-tool-contract",
+                    "type": "observe",
+                    "status": "completed",
+                    "tool": contract.get("tool") or first_action.skill,
+                    "summary": "Loaded action skill/tool contract before preparing confirmation.",
+                    "required": contract.get("required") or [],
+                }
+                steps.append(contract_step)
+                await _emit_step(event_sink, contract_step)
+                if not has_minimum_action_requirements(first_action.skill, request.message, request.context):
+                    missing_step = {
+                        "id": "step-requirement-gap",
+                        "type": "plan",
+                        "status": "completed",
+                        "summary": "Need more action details before preparing a confirmation.",
+                    }
+                    steps.append(missing_step)
+                    await _emit_step(event_sink, missing_step)
+                    return AgentResponse(
+                        answer=build_action_guidance_answer(first_action.skill, assistant_name=profile.assistant_name),
+                        evidence=evidence,
+                        steps=steps,
+                        mode="qa",
+                    )
         if actions:
             skill_step = {
                 "id": "step-skill-selection",
@@ -376,10 +416,6 @@ class AgentRuntime:
                     f"{model_hint}"
                     "我可以正常聊天，也可以在你询问文档、SOP、知识对象或业务数据时切换到知识检索模式。"
                 )
-            if any(term in lower for term in ["喜欢我", "爱我", "你喜欢"]):
-                return "当然愿意认真陪你聊。作为 AI 我没有人类意义上的喜欢，但我会以稳定、真诚和有边界的方式回应你。"
-            if any(term in lower for term in ["你好", "您好", "早上好", "晚上好", "hello", "hi"]):
-                return f"你好呀，我是 {profile.assistant_name}。你可以直接和我聊天，也可以让我帮你查文档、梳理 SOP 或分析知识关系。"
             return "我在。你可以像正常对话一样问我；如果问题涉及当前文档或知识库，我会再结合证据回答。"
         if any(term in lower for term in ["who are you", "model", "模型", "你是谁", "大模型"]):
             model_hint = f"当前 AI 平台配置的默认生成模型是 {configured_model}。" if configured_model else "背后的模型由 AI 平台配置决定。"

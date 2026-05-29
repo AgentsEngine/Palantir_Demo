@@ -22,6 +22,7 @@ import {
   MobileOutlined,
   NumberOutlined,
   PaperClipOutlined,
+  PlusOutlined,
   SaveOutlined,
   SearchOutlined,
   SelectOutlined,
@@ -1127,6 +1128,7 @@ export default function FormSettingsPage() {
   const [viewConfig, setViewConfig] = useState<ViewConfig>(() => makeDesignerViewConfig(baseConfig));
   const [expandedViewRow, setExpandedViewRow] = useState<string>('filter-0');
   const [filterFieldPickerOpen, setFilterFieldPickerOpen] = useState(false);
+  const [draggedViewFilterId, setDraggedViewFilterId] = useState('');
   const [viewPreviewDevice, setViewPreviewDevice] = useState<'desktop' | 'narrow'>('desktop');
   const [layoutControls, setLayoutControls] = useState<LayoutControl[]>(baseConfig.fields.map(makeFieldControl));
   const [selectedControlId, setSelectedControlId] = useState<string>('');
@@ -1222,6 +1224,7 @@ export default function FormSettingsPage() {
     setViewConfig(makeDesignerViewConfig(baseConfig));
     setExpandedViewRow('filter-0');
     setFilterFieldPickerOpen(false);
+    setDraggedViewFilterId('');
     setViewPreviewDevice('desktop');
     setVersion(baseConfig.version);
     setCopiedControl(null);
@@ -1565,6 +1568,23 @@ export default function FormSettingsPage() {
       return kind === 'filter'
         ? { ...current, filters: reordered as ViewFilterConfig[] }
         : { ...current, table: { ...current.table, columns: reordered as ViewTableColumnConfig[] } };
+    });
+  };
+
+  const reorderViewFilters = (draggedId: string, targetId: string) => {
+    if (!draggedId || draggedId === targetId) return;
+    updateViewConfig((current) => {
+      const source = sortByOrder(current.filters);
+      const fromIndex = source.findIndex((filter) => filter.id === draggedId);
+      const toIndex = source.findIndex((filter) => filter.id === targetId);
+      if (fromIndex < 0 || toIndex < 0) return current;
+      const next = [...source];
+      const [dragged] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, dragged);
+      return {
+        ...current,
+        filters: next.map((filter, sortOrder) => ({ ...filter, sortOrder })),
+      };
     });
   };
 
@@ -2532,21 +2552,43 @@ export default function FormSettingsPage() {
   const renderViewFilterRow = (filter: ViewFilterConfig, index: number) => {
     const expanded = expandedViewRow === filter.id;
     return (
-      <div className={`view-config-row ${expanded ? 'view-config-row-expanded' : ''}`} key={filter.id}>
-        <button className="view-config-row-main" type="button" onClick={() => setExpandedViewRow(expanded ? '' : filter.id)}>
-          <span className="view-config-order">{index + 1}</span>
-          <span className="view-config-primary">
-            <strong>{filter.label}</strong>
-            <small>{filter.fieldName} · {viewControlOptions.find((item) => item.value === filter.controlType)?.label} · {viewFilterOperatorOptions.find((item) => item.value === filter.operator)?.label}</small>
-          </span>
-          <Tag color={filter.enabled ? 'green' : 'default'}>{filter.enabled ? '启用' : '停用'}</Tag>
-          <Tag color={filter.advanced ? 'blue' : 'cyan'}>{filter.advanced ? '高级' : '常用'}</Tag>
-        </button>
-        <Space size={4} className="view-config-row-actions">
-          <Button size="small" onClick={() => moveViewItem('filter', filter.id, -1)} disabled={index === 0}>上移</Button>
-          <Button size="small" onClick={() => moveViewItem('filter', filter.id, 1)} disabled={index === sortedViewFilters.length - 1}>下移</Button>
-          <Switch size="small" checked={filter.enabled} onChange={(enabled) => updateViewFilter(filter.id, { enabled })} />
-        </Space>
+      <div
+        className={`view-config-row ${expanded ? 'view-config-row-expanded' : ''} ${draggedViewFilterId === filter.id ? 'view-config-row-dragging' : ''}`}
+        draggable
+        key={filter.id}
+        onDragEnd={() => setDraggedViewFilterId('')}
+        onDragOver={(event) => {
+          if (!draggedViewFilterId || draggedViewFilterId === filter.id) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+        }}
+        onDragStart={(event) => {
+          event.dataTransfer.effectAllowed = 'move';
+          setDraggedViewFilterId(filter.id);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          reorderViewFilters(draggedViewFilterId, filter.id);
+          setDraggedViewFilterId('');
+        }}
+      >
+        <div
+          className="view-config-row-main view-filter-config-main"
+          onClick={() => setExpandedViewRow(expanded ? '' : filter.id)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setExpandedViewRow(expanded ? '' : filter.id);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <label className="view-filter-config-form-item">
+            <span className="view-filter-config-label">{filter.label}</span>
+            <span className="view-filter-config-control">{renderViewFilterControl(filter)}</span>
+          </label>
+        </div>
         {expanded && (
           <div className="view-config-inline-editor">
             <label><span>绑定字段</span><Select value={filter.fieldName} options={viewFieldOptions} onChange={(fieldName) => {
@@ -2558,6 +2600,7 @@ export default function FormSettingsPage() {
             <label><span>操作符</span><Select value={filter.operator} options={viewFilterOperatorOptions} onChange={(operator) => updateViewFilter(filter.id, { operator })} /></label>
             <label><span>默认值</span><Input allowClear value={String(filter.defaultValue ?? '')} onChange={(event) => updateViewFilter(filter.id, { defaultValue: event.target.value })} /></label>
             <label><span>占位提示</span><Input allowClear value={filter.placeholder || ''} onChange={(event) => updateViewFilter(filter.id, { placeholder: event.target.value })} /></label>
+            <label><span>是否启用</span><Switch checked={filter.enabled} onChange={(enabled) => updateViewFilter(filter.id, { enabled })} /></label>
             <label><span>显示位置</span><Select value={filter.advanced ? 'advanced' : 'common'} options={[{ value: 'common', label: '常用筛选' }, { value: 'advanced', label: '高级筛选' }]} onChange={(value) => updateViewFilter(filter.id, { advanced: value === 'advanced' })} /></label>
             <label><span>清空默认值</span><Button onClick={() => updateViewFilter(filter.id, { defaultValue: '' })}>清空</Button></label>
           </div>
@@ -2608,7 +2651,14 @@ export default function FormSettingsPage() {
       <section className="view-config-section">
         <div className="view-config-section-head">
           <div><strong>筛选区</strong><span>配置查询条件、操作符、默认值和常用/高级位置。</span></div>
-          <Button size="small" onClick={() => setFilterFieldPickerOpen(true)}>新增筛选项</Button>
+          <Button
+            aria-label="新增筛选项"
+            icon={<PlusOutlined />}
+            onClick={() => setFilterFieldPickerOpen(true)}
+            size="small"
+            title="新增筛选项"
+            type="text"
+          />
         </div>
         <div className="view-config-list view-config-filter-grid">
           {sortedViewFilters.map(renderViewFilterRow)}

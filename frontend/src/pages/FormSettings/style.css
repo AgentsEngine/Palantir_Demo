@@ -3011,7 +3011,7 @@
 
 .view-config-filter-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   padding: 12px;
 }
@@ -3019,21 +3019,38 @@
 .view-config-filter-grid .view-config-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  min-height: 124px;
-  padding: 12px;
-  border: 1px solid #dce5ec;
-  border-radius: 8px;
-  background: #ffffff;
+  gap: 8px;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: grab;
+}
+
+.view-config-filter-grid .view-config-row-dragging {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.view-config-filter-grid .view-config-row:active {
+  cursor: grabbing;
 }
 
 .view-config-filter-grid .view-config-row:last-child {
-  border-bottom: 1px solid #dce5ec;
+  border-bottom: 1px solid transparent;
+}
+
+.view-config-filter-grid .view-config-row-expanded {
+  border-color: #dce5ec;
+  background: #fbfcfd;
 }
 
 .view-config-filter-grid .view-config-row-main {
-  grid-template-columns: 28px minmax(0, 1fr);
-  align-items: flex-start;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .view-config-filter-grid .view-config-row-main .ant-tag {
@@ -3043,13 +3060,61 @@
 .view-config-filter-grid .view-config-row-actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   align-self: end;
+}
+
+.view-config-filter-grid .view-config-row-actions .ant-tag {
+  margin-inline-end: 0;
 }
 
 .view-config-filter-grid .view-config-inline-editor {
   grid-column: auto;
   grid-template-columns: 1fr;
   padding: 10px;
+}
+
+.view-filter-config-main {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: inherit;
+  text-align: left;
+}
+
+.view-filter-config-form-item {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.view-filter-config-label {
+  overflow: hidden;
+  color: #20323d;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-filter-config-control {
+  min-width: 0;
+}
+
+.view-filter-config-control .ant-select,
+.view-filter-config-control .ant-picker,
+.view-filter-config-control .ant-input-affix-wrapper,
+.view-filter-config-control .ant-input {
+  width: 100%;
+}
+
+.view-filter-config-control .ant-input-affix-wrapper,
+.view-filter-config-control .ant-select-selector,
+.view-filter-config-control .ant-input {
+  border-radius: 6px;
 }
 
 .view-config-row {
