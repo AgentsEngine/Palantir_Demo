@@ -150,10 +150,17 @@ def test_skill_tool_registry_contracts():
 
     assert any(item["name"] == "knowledge.answer_question" for item in list_skills())
     assert any(item["name"] == "forms.create_dynamic_record_draft" for item in list_tools())
+    assert any(item["name"] == "ai.semantic_plan_low_code_form" for item in list_tools())
     assert get_skill("quality.create_capa_draft").confirmation_policy == "confirm_token"
     assert get_tool("workflow.start").side_effect == "workflow_action"
+    assert get_tool("ai.semantic_plan_low_code_form").side_effect == "read"
+    assert "ai.semantic_plan_low_code_form" in get_skill("low_code.create_form_definition").allowed_tools
 
     allowed, reason = validate_tool_call("quality.create_capa_draft", "forms.create_dynamic_record_draft")
+    assert allowed is True
+    assert reason == "Allowed"
+
+    allowed, reason = validate_tool_call("low_code.create_form_definition", "ai.semantic_plan_low_code_form")
     assert allowed is True
     assert reason == "Allowed"
 

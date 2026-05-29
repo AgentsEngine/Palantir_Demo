@@ -96,15 +96,21 @@
   "low_code.create_form_definition": {
     "name": "low_code.create_form_definition",
     "title": "Create low-code form",
-    "description": "Create a low-code form definition from an approved AI plan.",
+    "description": "Guide the user through a low-code form definition plan, interpret conversational changes as structured form deltas, and create the form only after approval.",
     "capability_level": "agentic",
     "risk_level": "high",
-    "allowed_tools": ["forms.create_form_definition"],
+    "allowed_tools": ["ai.semantic_plan_low_code_form", "forms.create_form_definition"],
     "required_permissions": ["config"],
     "confirmation_policy": "confirm_token",
     "permission_capability": "config",
     "domain": "low-code",
-    "output_schema": {"type": "configuration_write", "resource": "form"}
+    "output_schema": {
+      "type": "configuration_write",
+      "resource": "form",
+      "draft_required": true,
+      "delta_supported": true,
+      "confirmation_checklist": true
+    }
   },
   "workflow.submit_after_confirmation": {
     "name": "workflow.submit_after_confirmation",

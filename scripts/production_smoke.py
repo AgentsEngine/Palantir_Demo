@@ -53,7 +53,12 @@ def main() -> int:
         f"{base_url}/api/v1/auth/login",
         json={"username": args.username, "password": args.password},
     )
-    token = login.get("access_token") or login.get("data", {}).get("access_token")
+    token = (
+        login.get("access_token")
+        or login.get("token")
+        or login.get("data", {}).get("access_token")
+        or login.get("data", {}).get("token")
+    )
     if not token:
         raise RuntimeError("login did not return an access token")
     headers = {"Authorization": f"Bearer {token}"}

@@ -58,6 +58,33 @@
     "permission_check": "save_draft",
     "audit_required": true
   },
+  "ai.semantic_plan_low_code_form": {
+    "name": "ai.semantic_plan_low_code_form",
+    "title": "Semantic low-code form planner",
+    "description": "Convert a conversational low-code form request or adjustment into structured form operations before any configuration write.",
+    "side_effect": "read",
+    "risk_level": "low",
+    "input_schema": {
+      "message": "string",
+      "recent_messages": "array",
+      "pending_slots": "object",
+      "supported_operations": ["create_form", "rename_form", "add_field", "update_field", "remove_field", "confirm", "qa"]
+    },
+    "output_schema": {
+      "intent": "qa|action",
+      "skill": "low_code.create_form_definition|null",
+      "operation": "create_form|rename_form|add_field|update_field|remove_field|confirm|qa",
+      "formName": "string",
+      "formCode": "string",
+      "fields": "array",
+      "menu": "object",
+      "confidence": "number",
+      "reason": "string"
+    },
+    "permission_check": "qa",
+    "dry_run_supported": true,
+    "audit_required": false
+  },
   "forms.create_form_definition": {
     "name": "forms.create_form_definition",
     "title": "Create form definition",

@@ -402,6 +402,34 @@ Demo/mock handler
 | Draft save tool | `forms.save_definition_draft`. | Saves metadata draft without publishing. |
 | Publish tool | `forms.publish_definition` with `admin_required`. | Admin reviews diff and publishes configuration. |
 
+### 9.3.1 Current: Conversational Form Creation Skill
+
+The low-code form creation flow has split into two distinct tools:
+
+| Stage | Tool / module | Behavior |
+| --- | --- | --- |
+| Semantic planning | `ai.semantic_plan_low_code_form`, `backend/app/services/ai/semantic_planner.py` | Uses the configured LLM to convert a user turn and pending draft into a structured operation such as `create_form`, `rename_form`, or `add_field`. This is read-only and may fall back to deterministic planning. |
+| Draft state merge | `backend/app/services/ai/action_state.py` | Merges structured semantic slots into the pending action state without letting regex extraction overwrite explicit LLM slots. |
+| Confirmation card | `low_code.create_form_definition` skill output | Shows the current form draft and waits for human confirmation. |
+| Configuration write | `forms.create_form_definition`, `backend/app/services/ai/low_code_tools.py` | Creates form metadata, fields, layouts, optional menu binding, audit event, and route only after confirmation and permission checks. |
+
+This means conversational edits should be represented as form deltas before they
+become a write payload:
+
+```json
+{
+  "operation": "add_field",
+  "fields": [
+    {"field_name": "supplier_rating", "label": "供应商等级", "field_type": "string", "required": false}
+  ]
+}
+```
+
+The `low_code.create_form_definition` skill allows both
+`ai.semantic_plan_low_code_form` and `forms.create_form_definition`; the former
+has no side effect, while the latter is a high-risk configuration write that
+requires `config` permission and confirmation.
+
 ### 9.4 Example: Supply Chain Recommendation To Purchase Request Draft
 
 | Stage | Implementation | Behavior |

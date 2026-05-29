@@ -65,11 +65,22 @@ The application loads this file as deployment-level Agent configuration. The Pyt
     "example": "问题：BGA 虚焊缺陷率上升；临时措施：隔离受影响批次；责任人：QE 王工，今天完成。"
   },
   "low_code.create_form_definition": {
+    "planner_tool": "ai.semantic_plan_low_code_form",
     "tool": "forms.create_form_definition",
     "required": ["form.name", "form.code", "fields"],
     "optional": ["form.description", "menu.create", "menu.title", "menu.icon"],
     "field_schema": ["field_name", "label", "field_type", "required", "searchable", "sortable", "enum_values"],
     "supported_field_types": ["boolean", "date", "datetime", "decimal", "enum", "integer", "json", "number", "relation", "string", "text"],
+    "semantic_operations": ["create_form", "rename_form", "add_field", "update_field", "remove_field", "confirm", "qa"],
+    "delta_schema": {
+      "create_form": {"writes": ["form", "fields", "menu"], "requires_confirmation": true},
+      "rename_form": {"writes": ["form.name"], "requires_confirmation": true},
+      "add_field": {"writes": ["fields"], "requires_confirmation": true},
+      "update_field": {"writes": ["fields"], "requires_confirmation": true},
+      "remove_field": {"writes": ["fields"], "requires_confirmation": true},
+      "confirm": {"writes": [], "requires_existing_draft": true},
+      "qa": {"writes": []}
+    },
     "questions": [
       "表单名称和用途是什么？",
       "需要哪些字段？哪些字段必填？",
