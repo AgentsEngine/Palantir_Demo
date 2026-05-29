@@ -96,6 +96,25 @@
     "permission_check": "config",
     "audit_required": true
   },
+  "forms.add_form_field": {
+    "name": "forms.add_form_field",
+    "title": "Add form field",
+    "description": "Add one or more metadata fields to an existing low-code form without directly altering physical business tables.",
+    "side_effect": "configuration_write",
+    "risk_level": "high",
+    "input_schema": {
+      "form_id": "integer",
+      "form_code": "string",
+      "fields": "array"
+    },
+    "output_schema": {
+      "form": "object",
+      "fields": "array",
+      "changed_layouts": "array"
+    },
+    "permission_check": "config",
+    "audit_required": true
+  },
   "workflow.start": {
     "name": "workflow.start",
     "title": "Start workflow",

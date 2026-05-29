@@ -88,6 +88,26 @@ The application loads this file as deployment-level Agent configuration. The Pyt
       "是否有枚举字段、关联字段或特殊字段类型？"
     ],
     "example": "表单名称：物料主数据；字段：物料编码、物料名称、物料类型、安全库存；物料编码和物料名称必填；创建菜单入口。"
+  },
+  "low_code.add_form_field": {
+    "planner_tool": "ai.semantic_plan_low_code_form",
+    "tool": "forms.add_form_field",
+    "required": ["form.id|form.code", "fields"],
+    "optional": ["field.required", "field.searchable", "field.sortable", "field.enum_values", "field.ui_config"],
+    "field_schema": ["field_name", "label", "field_type", "required", "searchable", "sortable", "enum_values"],
+    "supported_field_types": ["boolean", "date", "datetime", "decimal", "enum", "integer", "json", "number", "relation", "string", "text"],
+    "semantic_operations": ["add_field", "update_field", "qa"],
+    "delta_schema": {
+      "add_field": {"writes": ["fields"], "requires_existing_form": true, "requires_confirmation": true},
+      "update_field": {"writes": ["fields"], "requires_existing_form": true, "requires_confirmation": true},
+      "qa": {"writes": []}
+    },
+    "questions": [
+      "要修改哪个已有表单？请提供表单 ID、表单编码，或在当前表单详情页操作。",
+      "要新增哪些字段？字段名称、类型、是否必填分别是什么？",
+      "这些字段是否需要出现在列表、搜索、排序或表单编辑区？"
+    ],
+    "example": "表单：material_master；新增字段：供应商等级，类型 string，非必填，显示在列表。"
   }
 }
 ```

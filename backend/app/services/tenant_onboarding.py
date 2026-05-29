@@ -62,13 +62,17 @@ def _send_email(to_email: str, subject: str, body: str) -> bool:
     msg["To"] = to_email
     msg["Subject"] = subject
     msg.set_content(body)
-    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
-        if settings.SMTP_TLS:
-            smtp.starttls()
-        if settings.SMTP_USER:
-            smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-        smtp.send_message(msg)
-    return True
+    try:
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
+            if settings.SMTP_TLS:
+                smtp.starttls()
+            if settings.SMTP_USER:
+                smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            smtp.send_message(msg)
+        return True
+    except OSError as exc:
+        logger.warning("Email delivery failed for %s via %s:%s: %s", to_email, settings.SMTP_HOST, settings.SMTP_PORT, exc)
+        return False
 
 
 async def resolve_tenant_by_email(db, login: str):

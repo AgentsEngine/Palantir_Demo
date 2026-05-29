@@ -112,6 +112,25 @@
       "confirmation_checklist": true
     }
   },
+  "low_code.add_form_field": {
+    "name": "low_code.add_form_field",
+    "title": "Add low-code form field",
+    "description": "Add one or more fields to an existing low-code form after semantic planning, permission checks, and human confirmation.",
+    "capability_level": "agentic",
+    "risk_level": "high",
+    "allowed_tools": ["ai.semantic_plan_low_code_form", "forms.add_form_field"],
+    "required_permissions": ["config"],
+    "confirmation_policy": "confirm_token",
+    "permission_capability": "config",
+    "domain": "low-code",
+    "output_schema": {
+      "type": "configuration_write",
+      "resource": "form_field",
+      "draft_required": true,
+      "delta_supported": true,
+      "confirmation_checklist": true
+    }
+  },
   "workflow.submit_after_confirmation": {
     "name": "workflow.submit_after_confirmation",
     "title": "Workflow submission",
