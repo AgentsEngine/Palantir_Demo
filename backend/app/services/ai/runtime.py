@@ -8,6 +8,9 @@ from __future__ import annotations
 
 from typing import Any, Awaitable, Callable
 
+from app.core.db import db_session
+
+from .form_record_tools import query_form_records
 from .knowledge_ingestion import search_ingested_knowledge
 from .prompt_builder import PromptBuildInput, PromptBuilder
 from .schemas import AgentRequest, AgentResponse, ChatMessage, ChatOptions
@@ -22,6 +25,7 @@ from .action_guidance import (
 )
 from .action_state import create_or_update_action_state
 from .client import get_provider
+from .preflight import preflight_agent_request
 
 
 EXTERNAL_PROVIDER_NAMES = {"openai-compatible", "openai", "azure-openai", "deepseek", "qwen", "glm"}
@@ -44,6 +48,21 @@ def _format_provider_failure(exc: Exception) -> str:
     if "余额不足" in detail or "无可用资源包" in detail or '"code":"1113"' in detail:
         return "大模型连接失败：供应商返回余额不足或无可用资源包，请充值、更换 API Key，或切换到有可用额度的模型资源。"
     return "大模型连接失败。请检查 AI provider、base URL、API Key、模型名称、账户额度和网络连通性后重试。"
+
+
+def _form_query_payload(context: dict[str, Any]) -> dict[str, Any] | None:
+    form_id = context.get("form_id") or context.get("formId") or context.get("currentFormId")
+    form_code = context.get("form_code") or context.get("formCode") or context.get("currentFormCode")
+    if not form_id and not form_code:
+        return None
+    payload: dict[str, Any] = {"limit": context.get("limit") or context.get("pageSize") or 20}
+    if form_id:
+        payload["form_id"] = form_id
+    if form_code:
+        payload["form_code"] = form_code
+    if context.get("status"):
+        payload["status"] = context.get("status")
+    return payload
 
 
 async def _emit_step(event_sink: AgentEventSink | None, step: dict[str, Any]) -> None:
@@ -110,7 +129,24 @@ class AgentRuntime:
                 "missing_slots": [],
                 "notes": [f"resume draft {resume_draft.get('draft_id')}"],
             }
-        config = request.provider_config or settings_to_provider_config(settings_snapshot())
+        settings_data = settings_snapshot()
+        preflight = preflight_agent_request(
+            message=request.message,
+            context=request.context,
+            user=user,
+            settings=settings_data,
+        )
+        preflight_step = preflight.as_step()
+        steps.append(preflight_step)
+        await _emit_step(event_sink, preflight_step)
+        if not preflight.allowed:
+            return AgentResponse(
+                answer=f"当前 AI 权限策略不允许继续执行该请求：{preflight.reason}",
+                steps=steps,
+                mode="qa",
+            )
+
+        config = request.provider_config or settings_to_provider_config(settings_data)
         intent_route = await route_intent_async(request.message, request.context, provider_config=config)
         if isinstance(pending_action, dict) and pending_action.get("skill") and intent_route.intent != "action_prepare":
             intent_route.intent = "action_prepare"

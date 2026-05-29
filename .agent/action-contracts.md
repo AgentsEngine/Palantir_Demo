@@ -64,6 +64,17 @@ The application loads this file as deployment-level Agent configuration. The Pyt
     },
     "example": "问题：BGA 虚焊缺陷率上升；临时措施：隔离受影响批次；责任人：QE 王工，今天完成。"
   },
+  "analysis.analyze_form_records": {
+    "tool": "forms.query_records",
+    "required": ["form.id|form.code"],
+    "optional": ["limit", "status", "filters", "analysis_question"],
+    "questions": [
+      "要分析哪个表单或当前页面数据？",
+      "要分析什么问题，例如趋势、异常、风险、缺口还是对比？",
+      "是否需要限定状态、时间范围、字段或记录数量？"
+    ],
+    "example": "表单：supplier_risk；分析最近 50 条记录中高风险供应商的主要原因。"
+  },
   "low_code.create_form_definition": {
     "planner_tool": "ai.semantic_plan_low_code_form",
     "tool": "forms.create_form_definition",

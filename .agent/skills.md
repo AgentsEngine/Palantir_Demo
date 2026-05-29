@@ -80,6 +80,23 @@
     "domain": "supply-chain",
     "output_schema": {"type": "draft_action", "domain": "supply-chain"}
   },
+  "analysis.analyze_form_records": {
+    "name": "analysis.analyze_form_records",
+    "title": "Analyze form records",
+    "description": "Query permitted dynamic form records, summarize patterns, cite record evidence, and recommend next actions without writing data.",
+    "capability_level": "assisted",
+    "risk_level": "low",
+    "allowed_tools": ["forms.query_records", "forms.get_record", "knowledge.search"],
+    "required_permissions": ["business_query"],
+    "confirmation_policy": "none",
+    "permission_capability": "business_query",
+    "domain": "analysis",
+    "output_schema": {
+      "type": "analysis_result",
+      "requires_evidence": true,
+      "recommended_actions": true
+    }
+  },
   "low_code.suggest_model_or_page": {
     "name": "low_code.suggest_model_or_page",
     "title": "Low-code design suggestion",

@@ -26,7 +26,6 @@ from app.services.ai.memory import memory_service
 from app.services.ai.orchestrator import run_agent
 from app.services.ai.policies import decide_ai_permission, decide_skill_permission
 from app.services.ai.providers import ProviderConfigurationError
-from app.services.ai.low_code_tools import execute_add_form_field, execute_create_form_definition
 from app.services.ai.runtime import agent_runtime
 from app.services.ai.schemas import AIProviderConfig, AgentRequest, AgentResponse, ChatMessage, ChatOptions, DraftSaveRequest
 from app.services.ai.settings import (
@@ -38,6 +37,7 @@ from app.services.ai.settings import (
     settings_to_provider_config as _settings_to_provider_config,
 )
 from app.services.ai.skills import list_skills
+from app.services.ai.tool_executor import agent_tool_executor
 from app.services.ai.tool_registry import list_tools
 
 router = APIRouter()
@@ -206,104 +206,13 @@ async def _emit_agent_step(event_sink, step: dict[str, Any]) -> None:
 async def _execute_confirmed_agent_run(run: dict[str, Any], current_user: dict[str, Any]) -> dict[str, Any]:
     """Execute supported confirmed Agent actions through registered backend tools."""
 
-    if run.get("status") != "confirmed":
-        return run
-    results: list[dict[str, Any]] = []
-    for action in run.get("actions") or []:
-        skill = action.get("skill")
-        action_payload = action.get("payload") if isinstance(action.get("payload"), dict) else {}
-        source_draft_id = str(action_payload.get("_source_draft_id") or action_payload.get("_resume_draft_id") or "")
-        if skill == "low_code.add_form_field":
-            async with db_session() as session:
-                result = await execute_add_form_field(session, user=current_user, payload=action_payload)
-            results.append({
-                "skill": skill,
-                "tool": "forms.add_form_field",
-                "status": "completed",
-                "result": result,
-            })
-            _audit_ai_event(current_user, "agent_tool_executed", {"skill": skill, "tool": "forms.add_form_field", "result": result})
-            await _update_ai_draft_status(
-                draft_id=source_draft_id,
-                current_user=current_user,
-                status="executed",
-                metadata={"executed_result": result, "run_id": run.get("run_id")},
-            )
-            continue
-
-        if skill != "low_code.create_form_definition":
-            payload = action_payload
-            dynamic_result = None
-            try:
-                async with db_session() as session:
-                    dynamic_result = await create_dynamic_record_draft_from_agent(
-                        session,
-                        user=current_user,
-                        skill=str(skill or ""),
-                        payload=payload,
-                        evidence=action.get("evidence") or [],
-                    )
-            except SQLAlchemyError:
-                dynamic_result = None
-            if dynamic_result:
-                results.append({
-                    "skill": skill,
-                    "tool": "forms.create_dynamic_record_draft",
-                    "status": "completed",
-                    "result": dynamic_result,
-                })
-                _audit_ai_event(current_user, "agent_dynamic_record_draft_created", {"skill": skill, "result": dynamic_result})
-                await _update_ai_draft_status(
-                    draft_id=source_draft_id,
-                    current_user=current_user,
-                    status="executed",
-                    metadata={"executed_result": dynamic_result, "run_id": run.get("run_id")},
-                )
-                continue
-
-            draft_record = await _persist_ai_draft(
-                current_user,
-                skill=str(skill or ""),
-                payload=payload,
-                evidence=action.get("evidence") or [],
-                source="agent_run_confirmation",
-                run_id=str(run.get("run_id") or ""),
-            )
-            results.append({
-                "skill": skill,
-                "tool": (payload.get("_contract") or {}).get("tool") or "ai.drafts.save",
-                "status": "completed",
-                "result": draft_record,
-            })
-            _audit_ai_event(current_user, "agent_draft_saved", {"skill": skill, "draft_id": draft_record["draft_id"], "persisted": draft_record.get("persisted")})
-            await _update_ai_draft_status(
-                draft_id=source_draft_id,
-                current_user=current_user,
-                status="confirmed",
-                metadata={"confirmed_result": draft_record, "run_id": run.get("run_id")},
-            )
-            continue
-
-        async with db_session() as session:
-            result = await execute_create_form_definition(session, user=current_user, payload=action_payload)
-        results.append({
-            "skill": skill,
-            "tool": "forms.create_form_definition",
-            "status": "completed",
-            "result": result,
-        })
-        _audit_ai_event(current_user, "agent_tool_executed", {"skill": skill, "tool": "forms.create_form_definition", "result": result})
-        await _update_ai_draft_status(
-            draft_id=source_draft_id,
-            current_user=current_user,
-            status="executed",
-            metadata={"executed_result": result, "run_id": run.get("run_id")},
-        )
-
-    run["tool_results"] = results
-    if any(item.get("status") == "completed" for item in results):
-        run["status"] = "completed"
-    return run
+    return await agent_tool_executor.execute_confirmed_run(
+        run,
+        current_user=current_user,
+        persist_ai_draft=_persist_ai_draft,
+        update_ai_draft_status=_update_ai_draft_status,
+        audit_ai_event=_audit_ai_event,
+    )
 
 
 async def _persist_ai_draft(

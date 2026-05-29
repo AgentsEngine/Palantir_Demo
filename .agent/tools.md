@@ -58,6 +58,47 @@
     "permission_check": "save_draft",
     "audit_required": true
   },
+  "forms.query_records": {
+    "name": "forms.query_records",
+    "title": "Query form records",
+    "description": "Read dynamic form records through tenant, form, record, and field-level permissions.",
+    "side_effect": "read",
+    "risk_level": "low",
+    "input_schema": {
+      "form_id": "integer",
+      "form_code": "string",
+      "limit": "integer",
+      "status": "string",
+      "filters": "array"
+    },
+    "output_schema": {
+      "form": "object",
+      "records": "array",
+      "record_count": "integer",
+      "visible_fields": "array"
+    },
+    "permission_check": "business_query",
+    "dry_run_supported": true
+  },
+  "forms.get_record": {
+    "name": "forms.get_record",
+    "title": "Get form record",
+    "description": "Read one dynamic form record through tenant, form, record, and field-level permissions.",
+    "side_effect": "read",
+    "risk_level": "low",
+    "input_schema": {
+      "form_id": "integer",
+      "form_code": "string",
+      "record_id": "integer"
+    },
+    "output_schema": {
+      "form": "object",
+      "record": "object",
+      "visible_fields": "array"
+    },
+    "permission_check": "business_query",
+    "dry_run_supported": true
+  },
   "ai.semantic_plan_low_code_form": {
     "name": "ai.semantic_plan_low_code_form",
     "title": "Semantic low-code form planner",
