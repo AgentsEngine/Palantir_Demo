@@ -153,7 +153,7 @@ async def readiness():
 
     production_checks = {
         "appMode": settings.APP_MODE,
-        "demoAuthOptional": settings.DEMO_AUTH_OPTIONAL,
+        "demoAuthOptionalDisabled": not settings.DEMO_AUTH_OPTIONAL,
         "explicitCors": "*" not in settings.CORS_ORIGINS,
         "strongSecret": len(settings.SECRET_KEY or "") >= 32 and settings.SECRET_KEY not in {"change-me", "secret", "dev-secret"},
         "postgresRequired": not settings.IS_PRODUCTION or settings.DATABASE_BACKEND.lower() == "postgresql",
