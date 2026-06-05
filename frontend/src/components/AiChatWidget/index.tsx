@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from 'react';
-import { Button, Input, Space, Tag, Tooltip, Typography } from 'antd';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Dropdown, Input, Modal, Popover, Segmented, Space, Tag, Tooltip, Typography } from 'antd';
 import {
   CheckCircleOutlined,
   CloseOutlined,
   CodeOutlined,
-  FileTextOutlined,
+  DeleteOutlined,
+  EllipsisOutlined,
   HistoryOutlined,
+  InboxOutlined,
   MessageOutlined,
   PlusOutlined,
+  SearchOutlined,
   SendOutlined,
 } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
@@ -16,10 +19,10 @@ import {
   closeAgentConversation,
   confirmAgentRun,
   createAgentConversation,
-  listAIDrafts,
   listAgentConversationMessages,
   listAgentConversations,
   streamAgentChat,
+  updateAgentConversation,
 } from '@/services/api';
 import { useAiWorkbench } from './context';
 import type { AiKnowledgeContext } from './context';
@@ -87,6 +90,9 @@ interface AgentSession {
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
+  createdAtRaw?: string | null;
+  updatedAtRaw?: string | null;
+  status?: string;
 }
 
 interface AgentConversationPayload {
@@ -99,6 +105,7 @@ interface AgentConversationPayload {
   metadata?: Record<string, unknown>;
   created_at?: string | null;
   updated_at?: string | null;
+  status?: string;
 }
 
 interface AgentMessagePayload {
@@ -122,7 +129,6 @@ interface PageContext {
   title: string;
   scope: string;
   intro: string;
-  quickPrompts: string[];
 }
 
 interface AiChatWidgetProps {
@@ -157,19 +163,6 @@ interface AgentChatResponse {
   conversation?: AgentConversationPayload;
   user_message?: AgentMessagePayload;
   assistant_message?: AgentMessagePayload;
-}
-
-interface AIDraftItem {
-  draft_id?: string;
-  skill?: string;
-  status?: string;
-  source?: string;
-  run_id?: string;
-  persisted?: boolean;
-  created_at?: string | null;
-  payload?: Record<string, unknown>;
-  evidence?: Array<Record<string, unknown>>;
-  metadata?: Record<string, unknown>;
 }
 
 const nowText = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
@@ -223,7 +216,6 @@ const contextByRoute: Array<{
       title: '设备健康',
       scope: '设备、健康分、故障预测、维修工单',
       intro: '我会基于当前设备维护页面提供帮助，可以解释风险、总结设备状态，也可以生成维修工单草稿。',
-      quickPrompts: ['总结当前设备健康', '解释高风险设备', '生成维修工单草稿', '给出本周维护优先级'],
     },
   },
   {
@@ -232,7 +224,6 @@ const contextByRoute: Array<{
       title: '供应链风险',
       scope: '供应商、库存、物料影响、采购建议',
       intro: '我会基于供应链页面提供帮助，可以总结供应风险、解释高风险供应商，也可以生成采购或物料申请草稿。',
-      quickPrompts: ['总结供应风险', '生成采购申请草稿', '生成物料申请草稿', '给出替代供应商建议'],
     },
   },
   {
@@ -241,7 +232,6 @@ const contextByRoute: Array<{
       title: '质量分析',
       scope: '缺陷、检验、SPC、CAPA、追溯',
       intro: '我会基于质量页面提供帮助，可以解释质量异常、追溯影响范围，也可以生成 CAPA 草稿。',
-      quickPrompts: ['总结质量异常', '解释缺陷原因', '生成 CAPA 草稿', '追溯影响范围'],
     },
   },
   {
@@ -250,7 +240,6 @@ const contextByRoute: Array<{
       title: '生产态势',
       scope: 'OEE、产线、计划、产量、告警',
       intro: '我会基于生产页面提供帮助，可以解释 OEE、总结产线状态，也可以生成班次摘要。',
-      quickPrompts: ['总结生产态势', '解释 OEE 下降原因', '生成班次摘要', '列出需要关注的产线'],
     },
   },
   {
@@ -259,7 +248,6 @@ const contextByRoute: Array<{
       title: '流程中心',
       scope: '审批、待办、退回、流程状态',
       intro: '我会基于流程中心提供帮助，可以总结待办、解释审批状态，也可以生成处理意见草稿。',
-      quickPrompts: ['总结我的待办', '生成审批意见', '解释退回原因', '列出超时流程'],
     },
   },
   {
@@ -268,7 +256,6 @@ const contextByRoute: Array<{
       title: '平台管理',
       scope: '应用、菜单、权限、审计、AI 设置',
       intro: '我会基于平台管理页面提供帮助，可以解释配置、生成规则草稿，也可以总结审计线索。',
-      quickPrompts: ['解释当前配置', '生成规则草稿', '总结 AI 调用日志', '给出权限检查建议'],
     },
   },
 ];
@@ -280,7 +267,6 @@ function buildPageContext(pathname: string, fallbackTitle: string): PageContext 
       title: matched.context.title || fallbackTitle,
       scope: matched.context.scope,
       intro: matched.context.intro,
-      quickPrompts: matched.context.quickPrompts,
     };
   }
 
@@ -288,7 +274,6 @@ function buildPageContext(pathname: string, fallbackTitle: string): PageContext 
     title: fallbackTitle || '当前页面',
     scope: '当前页面数据、操作和业务上下文',
     intro: '我在。你可以直接聊天，也可以问当前页面里的数据、流程或下一步建议。',
-    quickPrompts: ['随便聊聊', '总结当前页面', '解释关键指标', '生成处理建议'],
   };
 }
 
@@ -314,6 +299,7 @@ function createUserMessage(content: string): ChatMessage {
 
 function createAgentSession(contextKey: string, intro: string, title = '当前窗口'): AgentSession {
   const timestamp = nowText();
+  const timestampRaw = new Date().toISOString();
   return {
     id: `agent-session-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title,
@@ -321,6 +307,9 @@ function createAgentSession(contextKey: string, intro: string, title = '当前�
     messages: [createAssistantMessage(intro)],
     createdAt: timestamp,
     updatedAt: timestamp,
+    createdAtRaw: timestampRaw,
+    updatedAtRaw: timestampRaw,
+    status: 'active',
   };
 }
 
@@ -329,6 +318,29 @@ function formatServerTime(value?: string | null): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return nowText();
   return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function getSessionGroupLabel(session: AgentSession): string {
+  const rawTime = session.updatedAtRaw || session.createdAtRaw;
+  if (!rawTime) return 'Older';
+  const date = new Date(rawTime);
+  if (Number.isNaN(date.getTime())) return 'Older';
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const sessionDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  if (sessionDay >= startOfToday) return '今天';
+  if (sessionDay >= startOfToday - 7 * 24 * 60 * 60 * 1000) return '最近 7 天';
+  return '更早';
+}
+
+function groupSessionsForHistory(sessions: AgentSession[]) {
+  const labels = ['今天', '最近 7 天', '更早'];
+  return labels
+    .map((label) => ({
+      label,
+      sessions: sessions.filter((session) => getSessionGroupLabel(session) === label),
+    }))
+    .filter((group) => group.sessions.length);
 }
 
 function mapServerMessage(message: AgentMessagePayload): ChatMessage {
@@ -358,7 +370,7 @@ function stringifyStepValue(value: unknown): string {
 function getAgentStepLabel(step: Record<string, unknown>): string {
   const id = String(step.id || '');
   const type = String(step.type || '');
-  if (id === 'step-draft-resume') return '载入 AI 草稿';
+  if (id === 'step-draft-resume') return '载入待确认操作';
   if (id === 'step-action-permission') return '复核动作权限';
   if (id === 'step-tool-contract') return '读取工具合约';
   if (id === 'step-requirement-gap') return '检查缺失参数';
@@ -432,6 +444,9 @@ function mapServerConversation(
     messages: conversation.last_message ? [] : [createAssistantMessage(intro)],
     createdAt: formatServerTime(conversation.created_at),
     updatedAt: formatServerTime(conversation.updated_at),
+    createdAtRaw: conversation.created_at,
+    updatedAtRaw: conversation.updated_at,
+    status: conversation.status || 'active',
   };
 }
 
@@ -510,28 +525,6 @@ function getActionStateReview(state?: AgentActionState) {
     collectedEntries,
     missing: missing.map(formatSlotName),
   };
-}
-
-function getDraftStatusLabel(status?: string): string {
-  const labels: Record<string, string> = {
-    draft: '草稿',
-    reviewing: '复核中',
-    confirmed: '已确认',
-    executed: '已执行',
-    cancelled: '已取消',
-  };
-  return labels[status || ''] || status || '草稿';
-}
-
-function getDraftTitle(draft: AIDraftItem): string {
-  const payload = draft.payload || {};
-  return typeof payload.title === 'string'
-    ? payload.title
-    : typeof payload.name === 'string'
-      ? payload.name
-      : typeof payload.problem === 'string'
-        ? payload.problem
-        : draft.skill || 'AI 草稿';
 }
 
 function getDraftPreviewFields(payload?: Record<string, unknown>) {
@@ -662,7 +655,7 @@ function getExecutionResult(result: Record<string, unknown>): AgentExecutionResu
   if (draftId) {
     return {
       kind: 'ai_draft',
-      title: 'AI 草稿已保存',
+      title: '待确认操作已保存',
       detail: draftId,
       id: draftId,
     };
@@ -713,15 +706,15 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   const [sessions, setSessions] = useState<AgentSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>();
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [draftsOpen, setDraftsOpen] = useState(false);
-  const [draftsLoading, setDraftsLoading] = useState(false);
-  const [drafts, setDrafts] = useState<AIDraftItem[]>([]);
+  const [historyQuery, setHistoryQuery] = useState('');
+  const [historyScope, setHistoryScope] = useState<'recent' | 'archived'>('recent');
+  const [archivedSessions, setArchivedSessions] = useState<AgentSession[]>([]);
   const [sending, setSending] = useState(false);
   const [confirmingRunId, setConfirmingRunId] = useState<string>();
   const [confirmationNotes, setConfirmationNotes] = useState<Record<string, string>>({});
+  const [renamingSessionId, setRenamingSessionId] = useState<string>();
+  const [renamingTitle, setRenamingTitle] = useState('');
   const bodyRef = useRef<HTMLDivElement>(null);
-  const promptScrollerRef = useRef<HTMLDivElement>(null);
-  const promptDragRef = useRef<{ pointerId: number; startX: number; scrollLeft: number; dragging: boolean } | null>(null);
 
   const pageContext = useMemo(
     () => buildPageContext(location.pathname, pageTitle),
@@ -730,9 +723,6 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   const surface = knowledgeContext ? 'knowledge' : 'global';
   const contextKey = AI_WORKBENCH_PAGE;
   const intro = '我是独立 AI 工作区。你可以直接聊天；当你问到当前页面、表单、数据、知识文档或业务分析时，我会按需读取相关上下文。';
-  const quickPrompts = knowledgeContext
-    ? ['这篇文档讲什么', '抽取系统和能力', '生成发布清单建议', '我能对它做什么']
-    : pageContext.quickPrompts;
   const activeSession = sessions.find((session) => session.id === activeSessionId) || sessions[0];
   const messages = activeSession?.messages || [];
 
@@ -811,15 +801,19 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     return () => document.body.classList.remove('ai-workbench-open');
   }, [open]);
 
-  const loadDrafts = async () => {
-    setDraftsLoading(true);
+  const loadHistoryConversations = async () => {
     try {
-      const response = await listAIDrafts({ limit: 20 });
-      setDrafts((response.data?.data || []) as AIDraftItem[]);
+      const response = await listAgentConversations({
+        page: AI_WORKBENCH_PAGE,
+        surface: 'global',
+        include_closed: true,
+        limit: 80,
+      });
+      const rows = ((response.data?.data || []) as AgentConversationPayload[])
+        .map((conversation) => mapServerConversation(conversation, contextKey, intro));
+      setArchivedSessions(rows.filter((session) => session.status === 'closed'));
     } catch {
-      setDrafts([]);
-    } finally {
-      setDraftsLoading(false);
+      setArchivedSessions([]);
     }
   };
 
@@ -929,6 +923,95 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     setSessions(remaining);
     if (nextSession) setActiveSessionId(nextSession.id);
     setHistoryOpen(false);
+  };
+
+  const archiveSession = (sessionId: string, keepHistoryVisible = false) => {
+    const targetSession = sessions.find((session) => session.id === sessionId);
+    if (!targetSession) return;
+    const targetIndex = sessions.findIndex((session) => session.id === targetSession.id);
+    const remaining = sessions.filter((session) => session.id !== targetSession.id);
+    void closeAgentConversation(targetSession.id);
+    setSessions(remaining);
+    setArchivedSessions((prev) => [{ ...targetSession, status: 'closed', updatedAt: nowText() }, ...prev]);
+    if (targetSession.id === activeSession?.id) {
+      const nextSession = remaining[Math.max(0, targetIndex - 1)] || remaining[0];
+      if (nextSession) {
+        setActiveSessionId(nextSession.id);
+      } else {
+        void startNewSession();
+      }
+    }
+    if (keepHistoryVisible) {
+      setHistoryScope('archived');
+      setHistoryOpen(true);
+    } else {
+      setHistoryOpen(false);
+    }
+  };
+
+  const restoreSession = async (session: AgentSession) => {
+    const restoredSession = { ...session, status: 'active', updatedAt: nowText() };
+    setArchivedSessions((prev) => prev.filter((item) => item.id !== session.id));
+    setSessions((prev) => [restoredSession, ...prev.filter((item) => item.id !== session.id)]);
+    setActiveSessionId(session.id);
+    setHistoryScope('recent');
+    setHistoryOpen(false);
+    try {
+      await updateAgentConversation(session.id, { status: 'active' });
+    } catch {
+      setSessions((prev) => prev.filter((item) => item.id !== session.id));
+      setArchivedSessions((prev) => [session, ...prev]);
+    }
+  };
+
+  const deleteArchivedSession = (session: AgentSession) => {
+    Modal.confirm({
+      title: '删除已归档窗口？',
+      content: '删除后该对话不会再显示，系统仍会保留必要的审计和追溯记录。',
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        setArchivedSessions((prev) => prev.filter((item) => item.id !== session.id));
+        try {
+          await updateAgentConversation(session.id, { status: 'deleted' });
+        } catch {
+          setArchivedSessions((prev) => [session, ...prev]);
+        }
+      },
+    });
+  };
+
+  const beginRenameSession = (session: AgentSession) => {
+    setActiveSessionId(session.id);
+    setHistoryOpen(false);
+    setRenamingSessionId(session.id);
+    setRenamingTitle(session.title || '当前窗口');
+  };
+
+  const cancelRenameSession = () => {
+    setRenamingSessionId(undefined);
+    setRenamingTitle('');
+  };
+
+  const commitRenameSession = async (session: AgentSession) => {
+    const title = renamingTitle.trim().slice(0, 80);
+    if (!title || title === session.title) {
+      cancelRenameSession();
+      return;
+    }
+    const previousTitle = session.title;
+    setSessions((prev) => prev.map((item) => (
+      item.id === session.id ? { ...item, title, updatedAt: nowText() } : item
+    )));
+    cancelRenameSession();
+    try {
+      await updateAgentConversation(session.id, { title });
+    } catch {
+      setSessions((prev) => prev.map((item) => (
+        item.id === session.id ? { ...item, title: previousTitle } : item
+      )));
+    }
   };
 
   const sendMessage = async (content: string, extraContext?: Record<string, unknown>) => {
@@ -1088,7 +1171,6 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
           : item
       ));
       setSessionMessages(activeSession.id, nextMessages);
-      if (executionResult.kind === 'ai_draft') void loadDrafts();
     } catch (error) {
       const detail = (error as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
         || (error as { message?: string })?.message
@@ -1158,49 +1240,13 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
   };
 
   const messageScopedNote = (actionId: string) => confirmationNotes[actionId] || '';
-
-  const scrollPromptsWithWheel = (event: WheelEvent<HTMLDivElement>) => {
-    const scroller = promptScrollerRef.current;
-    if (!scroller) return;
-    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    if (!delta) return;
-    event.preventDefault();
-    scroller.scrollLeft += delta;
-  };
-
-  const startPromptDrag = (event: PointerEvent<HTMLDivElement>) => {
-    const scroller = promptScrollerRef.current;
-    if (!scroller) return;
-    promptDragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      scrollLeft: scroller.scrollLeft,
-      dragging: false,
-    };
-    scroller.setPointerCapture(event.pointerId);
-  };
-
-  const dragPrompts = (event: PointerEvent<HTMLDivElement>) => {
-    const drag = promptDragRef.current;
-    const scroller = promptScrollerRef.current;
-    if (!drag || !scroller || drag.pointerId !== event.pointerId) return;
-    const distance = event.clientX - drag.startX;
-    if (Math.abs(distance) > 3) drag.dragging = true;
-    if (!drag.dragging) return;
-    event.preventDefault();
-    scroller.scrollLeft = drag.scrollLeft - distance;
-  };
-
-  const stopPromptDrag = (event: PointerEvent<HTMLDivElement>) => {
-    const drag = promptDragRef.current;
-    const scroller = promptScrollerRef.current;
-    if (drag && scroller && drag.pointerId === event.pointerId) {
-      scroller.releasePointerCapture(event.pointerId);
-    }
-    window.setTimeout(() => {
-      promptDragRef.current = null;
-    }, 0);
-  };
+  const historySourceSessions = historyScope === 'archived' ? archivedSessions : sessions;
+  const filteredHistorySessions = historySourceSessions.filter((session) => {
+    const query = historyQuery.trim().toLowerCase();
+    if (!query) return true;
+    return `${session.title} ${session.messages.length} ${session.updatedAt}`.toLowerCase().includes(query);
+  });
+  const historyGroups = groupSessionsForHistory(filteredHistorySessions);
 
   const chatWorkbench = (
           <div className="ai-workbench-chat">
@@ -1482,34 +1528,10 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
             })}
           </div>
 
-          <div
-            className="ai-chat-quick-prompts"
-            ref={promptScrollerRef}
-            onWheel={scrollPromptsWithWheel}
-            onPointerDown={startPromptDrag}
-            onPointerMove={dragPrompts}
-            onPointerUp={stopPromptDrag}
-            onPointerCancel={stopPromptDrag}
-          >
-            {quickPrompts.map((prompt) => (
-              <Button
-                key={prompt}
-                size="small"
-                disabled={sending}
-                onClick={() => {
-                  if (promptDragRef.current?.dragging) return;
-                  void sendMessage(prompt);
-                }}
-              >
-                {prompt}
-              </Button>
-            ))}
-          </div>
-
           <div className="ai-chat-input">
             <Input.TextArea
               value={input}
-              placeholder="问我当前页面的问题，或让我生成草稿..."
+              placeholder="问我当前页面的问题，或让我准备待确认操作..."
               autoSize={{ minRows: 1, maxRows: 3 }}
               disabled={sending}
               onChange={(event) => setInput(event.target.value)}
@@ -1522,6 +1544,94 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
             />
             <Button type="primary" icon={<SendOutlined />} loading={sending} onClick={() => { void sendMessage(input); }} />
           </div>
+    </div>
+  );
+
+  const historyOverlay = (
+    <div className="ai-session-history" role="menu" aria-label="AI 对话历史">
+      <div className="ai-session-history-head">
+        <Input
+          className="ai-session-history-search"
+          prefix={<SearchOutlined />}
+          value={historyQuery}
+          placeholder="搜索窗口..."
+          allowClear
+          onChange={(event) => setHistoryQuery(event.target.value)}
+        />
+        <Segmented
+          className="ai-session-history-scope"
+          size="small"
+          value={historyScope}
+          options={[
+            { label: '最近', value: 'recent' },
+            { label: '已归档', value: 'archived' },
+          ]}
+          onChange={(value) => setHistoryScope(value as 'recent' | 'archived')}
+        />
+      </div>
+      <div className="ai-session-history-list">
+        {historyGroups.length ? historyGroups.map((group) => (
+          <div className="ai-session-history-group" key={group.label}>
+            <div className="ai-session-history-group-label">{group.label}</div>
+            {group.sessions.map((session) => {
+              const isActive = session.id === activeSession?.id;
+              return (
+                <div className={`ai-session-history-row ${isActive ? 'active' : ''}`} key={session.id}>
+                  <button
+                    type="button"
+                    className="ai-session-history-item"
+                    onClick={() => {
+                      if (historyScope === 'archived') {
+                        void restoreSession(session);
+                        return;
+                      }
+                      setActiveSessionId(session.id);
+                      setHistoryOpen(false);
+                    }}
+                  >
+                    <CheckCircleOutlined />
+                    <span className="ai-session-history-main">
+                      <span className="ai-session-history-title">{session.title || '当前窗口'}</span>
+                      <span className="ai-session-history-meta">{session.messages.length} 条消息 · {session.updatedAt}</span>
+                    </span>
+                  </button>
+                  <Dropdown
+                    trigger={['click']}
+                    menu={{
+                      items: historyScope === 'archived'
+                        ? [
+                          { key: 'restore', label: '恢复到最近', icon: <InboxOutlined /> },
+                          { key: 'delete', label: '删除', icon: <DeleteOutlined />, danger: true },
+                        ]
+                        : [
+                          { key: 'rename', label: '重命名' },
+                          { key: 'archive', label: '归档', icon: <InboxOutlined /> },
+                        ],
+                      onClick: ({ key }) => {
+                        if (key === 'rename') beginRenameSession(session);
+                        if (key === 'archive') archiveSession(session.id, true);
+                        if (key === 'restore') void restoreSession(session);
+                        if (key === 'delete') deleteArchivedSession(session);
+                      },
+                    }}
+                  >
+                    <Button
+                      className="ai-session-history-more"
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                      onClick={(event) => event.stopPropagation()}
+                    />
+                  </Dropdown>
+                </div>
+              );
+            })}
+          </div>
+        )) : (
+          <div className="ai-session-history-empty">
+            {historyScope === 'archived' ? '暂无已归档窗口' : '没有匹配的窗口'}
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -1543,144 +1653,116 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
         <section className="ai-chat-panel ai-workbench-panel" aria-label="AI chat panel">
           <header className="ai-chat-header">
             <div className="ai-agent-tab-strip" role="tablist" aria-label="AI 对话窗口">
-              {sessions.map((session) => (
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={session.id === activeSession?.id}
-                  className={`ai-agent-title-tab ${session.id === activeSession?.id ? 'active' : ''}`}
-                  key={session.id}
-                  onClick={() => {
-                    setActiveSessionId(session.id);
-                    setHistoryOpen(false);
-                  }}
-                >
-                  <MessageOutlined />
-                  <Typography.Text strong>{session.title || '当前窗口'}</Typography.Text>
-                  <span
-                    className="ai-agent-tab-close"
-                    role="button"
-                    tabIndex={0}
-                    aria-label="关闭当前对话窗口"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      closeSession(session.id);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        closeSession(session.id);
-                      }
+              {sessions.map((session) => {
+                const isActive = session.id === activeSession?.id;
+                const isRenaming = session.id === renamingSessionId;
+                const tabClassName = `ai-agent-title-tab ${isActive ? 'active' : ''} ${isRenaming ? 'renaming' : ''}`;
+                if (isRenaming) {
+                  return (
+                    <div className={tabClassName} key={session.id} role="tab" aria-selected={isActive}>
+                      <MessageOutlined />
+                      <Input
+                        className="ai-agent-tab-title-input"
+                        value={renamingTitle}
+                        autoFocus
+                        maxLength={80}
+                        onChange={(event) => setRenamingTitle(event.target.value)}
+                        onBlur={() => { void commitRenameSession(session); }}
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            void commitRenameSession(session);
+                          }
+                          if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelRenameSession();
+                          }
+                        }}
+                      />
+                    </div>
+                  );
+                }
+                return (
+                  <Dropdown
+                    key={session.id}
+                    trigger={['contextMenu']}
+                    menu={{
+                      items: [
+                        { key: 'rename', label: '重命名' },
+                        { key: 'close', label: '关闭窗口' },
+                      ],
+                      onClick: ({ key }) => {
+                        if (key === 'rename') beginRenameSession(session);
+                        if (key === 'close') closeSession(session.id);
+                      },
                     }}
                   >
-                    <CloseOutlined />
-                  </span>
-                </button>
-              ))}
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      className={tabClassName}
+                      onClick={() => {
+                        setActiveSessionId(session.id);
+                        setHistoryOpen(false);
+                      }}
+                      onDoubleClick={() => beginRenameSession(session)}
+                    >
+                      <MessageOutlined />
+                      <Typography.Text strong title={session.title || '当前窗口'}>
+                        {session.title || '当前窗口'}
+                      </Typography.Text>
+                      <span
+                        className="ai-agent-tab-close"
+                        role="button"
+                        tabIndex={0}
+                        aria-label="关闭当前对话窗口"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          closeSession(session.id);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            closeSession(session.id);
+                          }
+                        }}
+                      >
+                        <CloseOutlined />
+                      </span>
+                    </button>
+                  </Dropdown>
+                );
+              })}
             </div>
             <Space size={4} className="ai-agent-title-actions">
               <Tooltip title="新建窗口">
                 <Button type="text" icon={<PlusOutlined />} onClick={() => { void startNewSession(); }} />
               </Tooltip>
-              <Tooltip title="历史记录">
-                <Button
-                  type="text"
-                  icon={<HistoryOutlined />}
-                  onClick={() => {
-                    setHistoryOpen((prev) => {
-                      const next = !prev;
-                      if (next) setDraftsOpen(false);
-                      return next;
-                    });
-                  }}
-                />
-              </Tooltip>
-              <Tooltip title="AI 草稿">
-                <Button
-                  type="text"
-                  icon={<FileTextOutlined />}
-                  loading={draftsLoading}
-                  onClick={() => {
-                    setDraftsOpen((prev) => {
-                      const next = !prev;
-                      if (next) {
-                        setHistoryOpen(false);
-                        void loadDrafts();
-                      }
-                      return next;
-                    });
-                  }}
-                />
-              </Tooltip>
+              <Popover
+                content={historyOverlay}
+                trigger="click"
+                placement="bottomRight"
+                open={historyOpen}
+                onOpenChange={(nextOpen) => {
+                  setHistoryOpen(nextOpen);
+                  if (nextOpen) {
+                    void loadHistoryConversations();
+                  }
+                }}
+                overlayClassName="ai-session-history-popover"
+              >
+                <Tooltip title="历史记录">
+                  <Button type="text" icon={<HistoryOutlined />} />
+                </Tooltip>
+              </Popover>
               <Tooltip title="收起">
                 <Button type="text" icon={<CloseOutlined />} onClick={() => setOpen(false)} />
               </Tooltip>
             </Space>
           </header>
-
-          {historyOpen ? (
-            <div className="ai-session-history">
-              {sessions.map((session) => (
-                <button
-                  type="button"
-                  className={`ai-session-history-item ${session.id === activeSession?.id ? 'active' : ''}`}
-                  key={session.id}
-                  onClick={() => {
-                    setActiveSessionId(session.id);
-                    setHistoryOpen(false);
-                  }}
-                >
-                  <span>{session.title}</span>
-                  <small>
-                    {session.messages.length} 条消息 · {session.updatedAt}
-                  </small>
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {draftsOpen ? (
-            <div className="ai-draft-history">
-              {draftsLoading ? <div className="ai-draft-empty">正在加载草稿...</div> : null}
-              {!draftsLoading && drafts.length === 0 ? <div className="ai-draft-empty">暂无 AI 草稿</div> : null}
-              {!draftsLoading && drafts.map((draft) => {
-                const payload = draft.payload || {};
-                const title = typeof payload.title === 'string'
-                  ? payload.title
-                  : typeof payload.name === 'string'
-                    ? payload.name
-                    : draft.skill || 'AI 草稿';
-                return (
-                  <button
-                    type="button"
-                    className="ai-draft-history-item"
-                    disabled={sending || ['executed', 'cancelled'].includes(draft.status || '')}
-                    key={draft.draft_id || draft.run_id || `${draft.skill}-${draft.created_at}`}
-                    onClick={() => {
-                      const draftId = draft.draft_id || '';
-                      if (!draftId) return;
-                      setDraftsOpen(false);
-                      void sendMessage(`继续处理草稿 ${draftId}`, { resumeDraftId: draftId });
-                    }}
-                  >
-                    <span>{title}</span>
-                    <div className="ai-draft-history-fields">
-                      {getDraftPreviewFields(draft.payload).map((field) => (
-                        <span key={`${draft.draft_id || draft.run_id}-${field.label}`}>{field.label}: {field.value}</span>
-                      ))}
-                    </div>
-                    <Tag color={draft.status === 'executed' ? 'green' : draft.status === 'cancelled' ? 'default' : 'blue'}>
-                      {getDraftStatusLabel(draft.status)}
-                    </Tag>
-                    <small>
-                      {[draft.skill, draft.status || 'draft', draft.created_at].filter(Boolean).join(' · ')}
-                    </small>
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
 
           {chatWorkbench}
         </section>

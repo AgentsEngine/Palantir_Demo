@@ -20,6 +20,9 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-do-not-use-in-prod")
 os.environ.setdefault("LOG_LEVEL", "WARNING")
 os.environ.setdefault("DEMO_AUTH_OPTIONAL", "true")
 os.environ.setdefault("DATABASE_BACKEND", "sqlite")
+os.environ["AI_API_KEY"] = ""
+os.environ["OPENAI_API_KEY"] = ""
+os.environ.setdefault("AI_TIMEOUT_SECONDS", "2")
 os.environ.setdefault(
     "SQLITE_DB_PATH",
     str(Path(tempfile.gettempdir()) / f"manufoundry_pytest_{os.getpid()}.db"),

@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Button,
   Drawer,
   Form,
   Input,
   InputNumber,
-  Alert,
   Modal,
   Popconfirm,
   Select,
@@ -234,20 +234,16 @@ export default function RoleManagement() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <Typography.Title level={5} style={{ margin: 0 }}>角色管理</Typography.Title>
-          <Typography.Text type="secondary">按角色分配应用、表单、字段、数据范围和操作权限，共 {roles.length} 个角色 / {permissionCount} 条权限规则</Typography.Text>
+          <Typography.Text type="secondary">
+            按角色分配应用、表单、字段、数据范围和操作权限，共 {roles.length} 个角色 / {permissionCount} 条权限规则
+          </Typography.Text>
         </div>
         <Space>
           <Button icon={<ReloadOutlined />} loading={loading} onClick={fetchRoles} />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建角色</Button>
         </Space>
       </div>
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 12 }}
-        message="角色决定用户能看什么、能改什么、能操作哪些数据"
-        description="常用配置是：先给角色选择资源类型和动作，再按需要设置数据范围；只有需要字段脱敏或复杂条件时，才填写条件规则和字段规则。拒绝规则优先级高于允许规则。"
-      />
+
       <Table
         dataSource={roles}
         rowKey="id"
@@ -303,7 +299,18 @@ export default function RoleManagement() {
                   <Form.List name="permissions">
                     {(fields, { add, remove }) => (
                       <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                        <Button icon={<PlusOutlined />} onClick={() => add({ resource_type: 'form', resource_key: '*', action: 'view', effect: 'allow', data_scope: 'all', priority: 100, enabled: true })}>
+                        <Button
+                          icon={<PlusOutlined />}
+                          onClick={() => add({
+                            resource_type: 'form',
+                            resource_key: '*',
+                            action: 'view',
+                            effect: 'allow',
+                            data_scope: 'all',
+                            priority: 100,
+                            enabled: true,
+                          })}
+                        >
                           添加权限规则
                         </Button>
                         {fields.map((field) => (
@@ -336,7 +343,7 @@ export default function RoleManagement() {
                               {...field}
                               name={[field.name, 'condition_json_text']}
                               label="条件规则"
-                              extra='可选。例：{"rules":[{"field":"org_id","op":"in","value":"$current_org_ids"}]}'
+                              extra='可选。例如：{"rules":[{"field":"org_id","op":"in","value":"$current_org_ids"}]}'
                             >
                               <Input.TextArea rows={3} placeholder='{"rules":[{"field":"org_id","op":"in","value":"$current_org_ids"}]}' />
                             </Form.Item>
@@ -344,7 +351,7 @@ export default function RoleManagement() {
                               {...field}
                               name={[field.name, 'field_rules_json_text']}
                               label="字段规则"
-                              extra='可选。例：{"fields":{"cost":{"visible":false,"editable":false}}} 表示成本字段不可见也不可编辑。'
+                              extra='可选。例如：{"fields":{"cost":{"visible":false,"editable":false}}}'
                             >
                               <Input.TextArea rows={3} placeholder='{"fields":{"cost":{"visible":false,"editable":false}}}' />
                             </Form.Item>

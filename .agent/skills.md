@@ -28,6 +28,29 @@
     "domain": "knowledge",
     "output_schema": {"type": "ingestion_job"}
   },
+  "knowledge.intake_document_ontology": {
+    "name": "knowledge.intake_document_ontology",
+    "title": "Document ontology intake",
+    "description": "Guide an uploaded document through ontology candidate extraction, human review, and graph publication with source evidence.",
+    "capability_level": "agentic",
+    "risk_level": "high",
+    "allowed_tools": [
+      "knowledge.extract_ontology_candidates",
+      "knowledge.approve_ontology_candidates",
+      "knowledge.commit_ontology_to_graph",
+      "knowledge.search"
+    ],
+    "required_permissions": ["rag", "config"],
+    "confirmation_policy": "confirm_token",
+    "permission_capability": "config",
+    "domain": "knowledge",
+    "output_schema": {
+      "type": "ontology_intake",
+      "generic_entities": true,
+      "domain_mappings": true,
+      "confirmation_checklist": true
+    }
+  },
   "quality.create_capa_draft": {
     "name": "quality.create_capa_draft",
     "title": "CAPA draft",

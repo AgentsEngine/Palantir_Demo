@@ -75,6 +75,11 @@ class AgentConversationRequest(BaseModel):
     context: dict[str, Any] | None = None
 
 
+class AgentConversationUpdateRequest(BaseModel):
+    title: str | None = None
+    status: str | None = None
+
+
 AI_DRAFT_STORE: dict[str, dict] = {}
 
 
@@ -607,9 +612,9 @@ async def _run_agent_for_user(body: AgentRequest, current_user: dict, event_sink
     if resume_draft_id and not context.get("resumeDraft"):
         draft_record = await _load_ai_draft_for_user(draft_id=str(resume_draft_id), current_user=current_user)
         if not draft_record:
-            raise HTTPException(status_code=404, detail="AI draft not found")
+            raise HTTPException(status_code=404, detail="待确认操作不存在")
         if draft_record.get("status") in {"executed", "cancelled"}:
-            raise HTTPException(status_code=409, detail="AI draft is no longer editable")
+            raise HTTPException(status_code=409, detail="待确认操作已不可编辑")
         decision = decide_ai_permission(current_user, AI_SYSTEM_SETTINGS, "draft", risk_level="medium")
         _raise_for_ai_decision(decision)
         resume_step = {
@@ -638,7 +643,7 @@ async def _run_agent_for_user(body: AgentRequest, current_user: dict, event_sink
                 "source_message": payload.get("source_message") or body.message,
                 "collected_slots": payload,
                 "missing_slots": [],
-                "notes": [f"resume draft {draft_record.get('draft_id')}"],
+                "notes": [f"resume pending action {draft_record.get('draft_id')}"],
             }
             context["pending_action_state"] = context["pendingActionState"]
     conversation_id = context.get("conversation_id") or context.get("conversationId")
@@ -1047,6 +1052,8 @@ async def list_agent_conversations(
         stmt = select(AIConversation).where(AIConversation.tenant_id == tenant_id, AIConversation.user_id == user_key)
         if not include_closed:
             stmt = stmt.where(AIConversation.status == "active")
+        else:
+            stmt = stmt.where(AIConversation.status != "deleted")
         if page:
             stmt = stmt.where(AIConversation.page == page)
         if document_id:
@@ -1094,6 +1101,44 @@ async def list_agent_conversation_messages(conversation_id: str, user: dict = De
             ).scalars().all()
             runs_by_message = {row.assistant_message_id: row for row in runs if row.assistant_message_id}
         return {"data": [_serialize_message(row, runs_by_message.get(row.message_id)) for row in rows], "ok": True}
+
+
+@router.patch("/agent/conversations/{conversation_id}")
+async def update_agent_conversation(
+    conversation_id: str,
+    body: AgentConversationUpdateRequest,
+    user: dict = Depends(get_current_user),
+):
+    current_user = _normalize_user(user)
+    user_key = _user_key(current_user)
+    tenant_id = current_tenant_id(current_user)
+    title = (body.title or "").strip()
+    status = (body.status or "").strip()
+    if body.title is not None and not title:
+        raise HTTPException(status_code=400, detail="Conversation title is required")
+    if len(title) > 80:
+        raise HTTPException(status_code=400, detail="Conversation title is too long")
+    if status and status not in {"active", "closed", "deleted"}:
+        raise HTTPException(status_code=400, detail="Conversation status is invalid")
+    if body.title is None and not status:
+        raise HTTPException(status_code=400, detail="Conversation update is empty")
+    async with db_session() as session:
+        conversation = await session.scalar(
+            select(AIConversation).where(
+                AIConversation.tenant_id == tenant_id,
+                AIConversation.conversation_id == conversation_id,
+                AIConversation.user_id == user_key,
+            )
+        )
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Agent conversation not found")
+        if body.title is not None:
+            conversation.title = title
+        if status:
+            conversation.status = status
+        await session.commit()
+        await session.refresh(conversation)
+        return {"data": _serialize_conversation(conversation), "ok": True}
 
 
 @router.delete("/agent/conversations/{conversation_id}")
@@ -1349,7 +1394,7 @@ async def save_ai_draft(body: DraftSaveRequest, user: dict = Depends(get_current
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     elif not body.confirmation.get("confirmed"):
-        raise HTTPException(status_code=400, detail="User confirmation is required before saving AI draft")
+        raise HTTPException(status_code=400, detail="保存前需要用户确认")
     record = await _persist_ai_draft(
         current_user,
         skill=body.skill,

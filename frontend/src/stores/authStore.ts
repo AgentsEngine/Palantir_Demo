@@ -47,20 +47,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ token, user, isAuthenticated: true });
         return;
       } catch {
-        // Fall back to legacy local state only when the API cannot restore.
+        localStorage.removeItem('mf_token');
+        localStorage.removeItem('mf_user');
       }
     }
-    const userStr = token ? localStorage.getItem('mf_user') : null;
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        set({ token: null, user, isAuthenticated: true });
-      } catch {
-        set({ token: null, user: null, isAuthenticated: false });
-      }
-    } else {
-      set({ token: null, user: null, isAuthenticated: false });
-    }
+    set({ token: null, user: null, isAuthenticated: false });
   },
 }));
 

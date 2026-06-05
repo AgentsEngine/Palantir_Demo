@@ -51,8 +51,10 @@ from app.services.ai.settings import load_persisted_ai_settings, settings_snapsh
 from app.services.ai.tenant_profile import load_tenant_profile
 from app.services.ai.ontology_extraction import (
     approve_extraction_job,
+    build_intake_recommendation_from_document,
     commit_extraction_to_graph,
     create_extraction_job,
+    create_extraction_job_from_document,
     export_extraction,
     get_extraction_job,
     persist_ingestion_result,
@@ -96,6 +98,17 @@ class BindingCandidateBody(BaseModel):
 
 class ExtractionApproveBody(BaseModel):
     approved_result: dict[str, Any] | None = None
+
+
+class OntologyIntakeBody(BaseModel):
+    domain_hint: str = "manufacturing"
+    mode: str = "recommend"
+
+
+class DocumentExtractionJobBody(BaseModel):
+    domain: str = "manufacturing"
+    prompt_name: str = "manufacturing_ontology_v1"
+    model_name: str = "mock-chat"
 
 
 class OcrCorrectionBody(BaseModel):
@@ -1372,9 +1385,53 @@ async def upload_knowledge_asset(
         INGESTION_JOBS[result["job"]["job_id"]]["tenant_id"] = tenant_id
     if result.get("document"):
         result["document"]["tenant_id"] = tenant_id
+        result["intake_recommendation"] = build_intake_recommendation_from_document(result["document"])
     await persist_ingestion_result(result, tenant_id=tenant_id)
     if result["job"]["status"] == "failed":
         return {"data": result, "ok": False}
+    return {"data": result, "ok": True}
+
+
+@router.post("/documents/{document_id}/ontology-intake")
+async def create_document_ontology_intake(
+    document_id: str,
+    body: OntologyIntakeBody | None = None,
+    user: dict = Depends(get_current_user),
+):
+    tenant_id = current_tenant_id(user)
+    document = INGESTED_DOCUMENTS.get(document_id)
+    if not document:
+        document = await _get_persisted_document(document_id, tenant_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Knowledge document not found")
+    recommendation = build_intake_recommendation_from_document({
+        **document,
+        "document_id": document.get("document_id") or document.get("id") or document_id,
+    })
+    recommendation["request"] = {
+        "domain_hint": (body.domain_hint if body else "manufacturing"),
+        "mode": (body.mode if body else "recommend"),
+    }
+    return {"data": recommendation, "ok": True}
+
+
+@router.post("/documents/{document_id}/extraction-jobs")
+async def create_document_knowledge_extraction_job(
+    document_id: str,
+    body: DocumentExtractionJobBody | None = None,
+    user: dict = Depends(get_current_user),
+):
+    tenant_id = current_tenant_id(user)
+    request = body or DocumentExtractionJobBody()
+    result = await create_extraction_job_from_document(
+        document_id,
+        domain=request.domain,
+        prompt_name=request.prompt_name,
+        model_name=request.model_name,
+        tenant_id=tenant_id,
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Knowledge document not found or has no extracted text")
     return {"data": result, "ok": True}
 
 

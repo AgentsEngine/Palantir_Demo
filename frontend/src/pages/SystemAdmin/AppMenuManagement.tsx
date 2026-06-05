@@ -25,7 +25,6 @@ import {
   Button,
   Card,
   Col,
-  Divider,
   Drawer,
   Empty,
   Form,
@@ -159,7 +158,6 @@ type MenuNode = DataNode & {
   roleIds?: number[];
   permissionActions?: string[];
   permissionRules?: PermissionRule[];
-  dataScope?: string;
   sortOrder?: number;
   config?: Record<string, unknown> | null;
   children?: MenuNode[];
@@ -205,7 +203,6 @@ function menuNode(
   roleIds: number[] = [],
   permissionActions: string[] = ['view'],
   permissionRules: PermissionRule[] = defaultPermissionRules(),
-  dataScope = 'current_app',
 ): MenuNode {
   return {
     key,
@@ -217,7 +214,6 @@ function menuNode(
     roleIds,
     permissionActions,
     permissionRules,
-    dataScope,
     children,
   };
 }
@@ -246,13 +242,22 @@ function normalizePermissionRules(raw: unknown): PermissionRule[] {
       const userKeys = Array.isArray(source.userKeys)
         ? source.userKeys.map((userKey) => String(userKey)).filter(Boolean)
         : [];
-      const actions = Array.isArray(source.actions) && source.actions.length
-        ? source.actions.map((action) => String(action)).filter(Boolean)
-        : ['view'];
+      const actions = ['view'];
       return { subjectType, roleIds, userKeys, actions, effect };
     })
     .filter(Boolean) as PermissionRule[];
   return rules.length ? rules : defaultPermissionRules();
+}
+
+function cleanMenuNodeConfig(config?: Record<string, unknown> | null): Record<string, unknown> {
+  const { data_scope: _dataScope, permission_actions: _permissionActions, ...rest } = config ?? {};
+  return rest;
+}
+
+function resolveMenuRoutePath(formId?: unknown, fallback?: string): string | undefined {
+  if (fallback) return fallback;
+  const numericFormId = formId ? Number(formId) : undefined;
+  return numericFormId && !Number.isNaN(numericFormId) ? `/dynamic/${numericFormId}` : undefined;
 }
 
 function serializeMenuNodes(nodes: MenuNode[]): SavedAssemblyMenuNode[] {
@@ -267,7 +272,6 @@ function serializeMenuNodes(nodes: MenuNode[]): SavedAssemblyMenuNode[] {
     roleIds: node.roleIds,
     permissionActions: node.permissionActions,
     permissionRules: node.permissionRules,
-    dataScope: node.dataScope,
     children: node.children?.length ? serializeMenuNodes(node.children) : undefined,
   }));
 }
@@ -284,7 +288,6 @@ function restoreMenuNodes(nodes: SavedAssemblyMenuNode[]): MenuNode[] {
       node.roleIds ?? [],
       node.permissionActions ?? ['view'],
       normalizePermissionRules(node.permissionRules),
-      node.dataScope ?? 'current_app',
     ),
     visible: node.visible ?? true,
     routePath: node.routePath,
@@ -292,7 +295,6 @@ function restoreMenuNodes(nodes: SavedAssemblyMenuNode[]): MenuNode[] {
     roleIds: node.roleIds ?? [],
     permissionActions: node.permissionActions ?? ['view'],
     permissionRules: normalizePermissionRules(node.permissionRules),
-    dataScope: node.dataScope ?? 'current_app',
   }));
 }
 
@@ -376,9 +378,7 @@ function mapPlatformMenuNodesToTree(nodes: PlatformMenuNode[]): MenuNode[] {
       const roleIds = Array.isArray(node.config?.role_ids)
         ? node.config.role_ids.map((roleId) => Number(roleId)).filter(Number.isFinite)
         : [];
-      const permissionActions = Array.isArray(node.config?.permission_actions)
-        ? node.config.permission_actions.map((action) => String(action))
-        : ['view'];
+      const permissionActions = ['view'];
       const permissionRules = normalizePermissionRules(
         node.config?.permission_rules ?? (
           permissionMode === 'custom'
@@ -386,8 +386,6 @@ function mapPlatformMenuNodesToTree(nodes: PlatformMenuNode[]): MenuNode[] {
             : [{ subjectType: 'app_roles', actions: permissionActions, effect: 'allow' }]
         ),
       );
-      const dataScope = typeof node.config?.data_scope === 'string' ? node.config.data_scope : 'current_app';
-
       return {
         ...menuNode(
           `db-${node.id}`,
@@ -399,7 +397,6 @@ function mapPlatformMenuNodesToTree(nodes: PlatformMenuNode[]): MenuNode[] {
           roleIds,
           permissionActions,
           permissionRules,
-          dataScope,
         ),
         dbId: node.id,
         parentDbId: node.parent_id ?? null,
@@ -410,7 +407,6 @@ function mapPlatformMenuNodesToTree(nodes: PlatformMenuNode[]): MenuNode[] {
         roleIds,
         permissionActions,
         permissionRules,
-        dataScope,
         sortOrder: node.sort_order,
         config: node.config,
       };
@@ -562,9 +558,7 @@ export default function AppMenuManagement() {
       defaultEntry: selectedMenu?.defaultEntry ?? false,
       permissionMode: selectedMenu?.permissionMode ?? 'inherit',
       roleIds: selectedMenu?.roleIds ?? [],
-      permissionActions: selectedMenu?.permissionActions ?? ['view'],
       permissionRules: selectedMenu?.permissionRules ?? defaultPermissionRules(),
-      dataScope: selectedMenu?.dataScope ?? 'current_app',
     });
   }, [forms, menuForm, selectedMenu]);
 
@@ -917,17 +911,16 @@ export default function AppMenuManagement() {
         await updatePlatformMenuNode(selectedApp.id, selectedMenu.dbId, {
           title: values.title,
           form_id: numericFormId,
-          route_path: values.routePath,
+          route_path: resolveMenuRoutePath(values.formId, selectedMenu.routePath),
           node_type: numericFormId ? 'form' : 'group',
           visible: values.visible,
           default_entry: values.defaultEntry,
           config: {
-            ...(selectedMenu.config ?? {}),
+            ...cleanMenuNodeConfig(selectedMenu.config),
             permission_mode: values.permissionMode ?? 'inherit',
             role_ids: values.permissionMode === 'custom' ? values.roleIds ?? [] : [],
-            permission_actions: values.permissionActions ?? ['view'],
+            permission_actions: ['view'],
             permission_rules: normalizePermissionRules(values.permissionRules),
-            data_scope: values.dataScope ?? 'current_app',
           },
         });
       } catch {
@@ -1719,12 +1712,11 @@ function AssemblyWorkspace({
               </Card>
         </Col>
         <Col xs={24} xl={7}>
-              <Card title="菜单节点属性" className="assembly-property-card">
+              <Card title="节点配置" className="assembly-property-card">
                 {selectedMenu ? (
                   <Form form={menuForm} layout="vertical" size="small" className="assembly-node-editor">
                     <div className="node-editor-hero">
                       <div>
-                        <Typography.Text type="secondary">当前节点</Typography.Text>
                         <Form.Item name="title" noStyle>
                           <Input className="node-title-input" placeholder="菜单名称" />
                         </Form.Item>
@@ -1739,51 +1731,26 @@ function AssemblyWorkspace({
                       </div>
                     </div>
                     <div className="node-editor-grid">
-                      <div className="node-config-card wide">
-                        <div>
-                          <Typography.Text strong>导航绑定</Typography.Text>
-                          <Typography.Text type="secondary">绑定表单与可选路由，决定菜单点击后的目标。</Typography.Text>
+                      {selectedMenu.formId && (
+                        <div className="node-config-card wide">
+                          <Typography.Text strong>目标表单</Typography.Text>
+                          <Form.Item name="formId" noStyle>
+                            <Select
+                              allowClear
+                              placeholder="绑定表单"
+                              options={forms.map((form) => ({ label: form.name, value: form.id }))}
+                            />
+                          </Form.Item>
                         </div>
-                        <Form.Item name="formId" noStyle>
-                          <Select
-                            allowClear
-                            placeholder="绑定表单"
-                            options={forms.map((form) => ({ label: form.name, value: form.id }))}
-                          />
-                        </Form.Item>
-                        <Form.Item name="routePath" noStyle>
-                          <Input placeholder="自定义路由，如 /program/device-health" />
-                        </Form.Item>
-                      </div>
-                      <div className="node-config-card">
-                        <Typography.Text strong>数据范围</Typography.Text>
-                        <Typography.Text type="secondary">进入页面后的默认数据边界。</Typography.Text>
-                        <Form.Item name="dataScope" noStyle>
-                          <Select
-                            options={[
-                              { label: '当前应用', value: 'current_app' },
-                              { label: '所在组织', value: 'organization' },
-                              { label: '所属团队', value: 'team' },
-                              { label: '仅本人', value: 'self' },
-                            ]}
-                          />
-                        </Form.Item>
-                      </div>
+                      )}
                       <div className="node-config-card wide permission-rule-panel">
                         <Form.List name="permissionRules">
                           {(fields, { add, remove }) => (
                             <>
                               <div className="permission-rule-head">
                                 <div className="permission-rule-title">
-                                  <span className="permission-rule-icon">
-                                    <SafetyCertificateOutlined />
-                                  </span>
-                                  <div>
-                                    <Typography.Text strong>访问权限规则</Typography.Text>
-                                    <Typography.Text type="secondary">
-                                      每条规则定义一批角色或用户可以执行的操作，可叠加多条规则形成通配授权。
-                                    </Typography.Text>
-                                  </div>
+                                  <SafetyCertificateOutlined />
+                                  <Typography.Text strong>入口角色</Typography.Text>
                                 </div>
                                 <Button
                                   size="small"
@@ -1795,37 +1762,36 @@ function AssemblyWorkspace({
                                   新增规则
                                 </Button>
                               </div>
-                              <div className="permission-rule-list">
-                                {fields.length === 0 ? (
-                                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无自定义规则" />
-                                ) : fields.map((field, index) => (
-                                  <div className="permission-rule-row" key={field.key}>
-                                    <div className="permission-rule-row-head">
+                              <div className="permission-rule-table">
+                                <div className="permission-rule-table-head">
+                                  <span>#</span>
+                                  <span>结果</span>
+                                  <span>对象</span>
+                                  <span>范围</span>
+                                  <span />
+                                </div>
+                                <div className="permission-rule-list">
+                                  {fields.length === 0 ? (
+                                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无自定义规则" />
+                                  ) : fields.map((field, index) => (
+                                    <div className="permission-rule-row" key={field.key}>
                                       <div className="permission-rule-index">
                                         <span>{String(index + 1).padStart(2, '0')}</span>
-                                        <Typography.Text strong>授权规则</Typography.Text>
                                       </div>
-                                      <Space size={6} className="permission-rule-actions">
-                                        <Button danger type="text" size="small" icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
-                                      </Space>
-                                    </div>
-                                    <div className="permission-rule-decision">
-                                      <span>规则结果</span>
-                                      <Form.Item name={[field.name, 'effect']} noStyle>
-                                        <Segmented
-                                          block
-                                          className="permission-rule-effect"
-                                          size="small"
-                                          options={[
-                                            { label: '允许访问', value: 'allow' },
-                                            { label: '拒绝访问', value: 'deny' },
-                                          ]}
-                                        />
-                                      </Form.Item>
-                                    </div>
-                                    <div className="permission-rule-fields">
+                                      <div className="permission-rule-decision">
+                                        <Form.Item name={[field.name, 'effect']} noStyle>
+                                          <Segmented
+                                            block
+                                            className="permission-rule-effect"
+                                            size="small"
+                                            options={[
+                                              { label: '允许', value: 'allow' },
+                                              { label: '拒绝', value: 'deny' },
+                                            ]}
+                                          />
+                                        </Form.Item>
+                                      </div>
                                       <label className="permission-rule-field">
-                                        <span>授权对象</span>
                                         <Form.Item name={[field.name, 'subjectType']} noStyle>
                                           <Select
                                             options={[
@@ -1836,8 +1802,7 @@ function AssemblyWorkspace({
                                           />
                                         </Form.Item>
                                       </label>
-                                      <label className="permission-rule-field permission-rule-field-wide">
-                                        <span>对象范围</span>
+                                      <label className="permission-rule-field permission-rule-scope-field">
                                         <Form.Item noStyle shouldUpdate>
                                           {({ getFieldValue }) => {
                                             const subjectType = getFieldValue(['permissionRules', field.name, 'subjectType']);
@@ -1863,26 +1828,17 @@ function AssemblyWorkspace({
                                           }}
                                         </Form.Item>
                                       </label>
-                                      <label className="permission-rule-field permission-rule-field-wide">
-                                        <span>可执行操作</span>
-                                        <Form.Item name={[field.name, 'actions']} noStyle>
-                                          <Select
-                                            mode="multiple"
-                                            placeholder="操作权限"
-                                            options={[
-                                              { label: '查看', value: 'view' },
-                                              { label: '新增', value: 'create' },
-                                              { label: '编辑', value: 'edit' },
-                                              { label: '导出', value: 'export' },
-                                              { label: '审批', value: 'approve' },
-                                              { label: '删除', value: 'delete' },
-                                            ]}
-                                          />
-                                        </Form.Item>
-                                      </label>
+                                      <Button
+                                        danger
+                                        type="text"
+                                        size="small"
+                                        className="permission-rule-remove"
+                                        icon={<DeleteOutlined />}
+                                        onClick={() => remove(field.name)}
+                                      />
                                     </div>
-                                  </div>
-                                ))}
+                                  ))}
+                                </div>
                               </div>
                             </>
                           )}
@@ -1910,10 +1866,6 @@ function AssemblyWorkspace({
                         </Button>
                       </Popconfirm>
                     </Space.Compact>
-                    <Divider />
-                    <Typography.Text type="secondary">
-                      菜单节点负责导航展示。删除表单节点会移除当前菜单入口；删除分组会保留子节点并上移。
-                    </Typography.Text>
                   </Form>
                 ) : (
                   <Empty description="请选择菜单节点" />
@@ -2183,21 +2135,19 @@ function updateMenuNode(nodes: MenuNode[], key: string, values: any): MenuNode[]
         ...node,
         title: <MenuTitle label={values.title} formId={values.formId} defaultEntry={values.defaultEntry} />,
         formId: values.formId,
-        routePath: values.routePath,
+        routePath: resolveMenuRoutePath(values.formId, node.routePath),
         visible: values.visible,
         defaultEntry: values.defaultEntry,
         permissionMode: values.permissionMode,
         roleIds: values.roleIds,
-        permissionActions: values.permissionActions,
+        permissionActions: ['view'],
         permissionRules: normalizePermissionRules(values.permissionRules),
-        dataScope: values.dataScope,
         config: {
-          ...(node.config ?? {}),
+          ...cleanMenuNodeConfig(node.config),
           permission_mode: values.permissionMode ?? 'inherit',
           role_ids: values.permissionMode === 'custom' ? values.roleIds ?? [] : [],
-          permission_actions: values.permissionActions ?? ['view'],
+          permission_actions: ['view'],
           permission_rules: normalizePermissionRules(values.permissionRules),
-          data_scope: values.dataScope ?? 'current_app',
         },
       };
     }

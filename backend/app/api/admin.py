@@ -494,6 +494,20 @@ async def revoke_user_session(session_id: str, user_ctx: dict = Depends(require_
 
 # -- Organization CRUD -----------------------------------------------------
 
+def _org_audit_payload(org):
+    return {
+        "id": org.id,
+        "tenant_id": org.tenant_id,
+        "parent_id": org.parent_id,
+        "code": org.code,
+        "name": org.name,
+        "org_type": org.org_type,
+        "sort_order": org.sort_order,
+        "status": org.status,
+        "description": org.description,
+    }
+
+
 @router.get("/org-units")
 async def list_org_units(user_ctx: dict = Depends(require_admin)):
     """List organization units used as the source of data-scope permissions."""
@@ -523,6 +537,8 @@ async def list_org_units(user_ctx: dict = Depends(require_admin)):
                     "status": org.status,
                     "description": org.description,
                     "member_count": int(member_counts.get(org.id, 0)),
+                    "created_at": org.created_at.isoformat() if getattr(org, "created_at", None) else None,
+                    "updated_at": org.updated_at.isoformat() if getattr(org, "updated_at", None) else None,
                 }
                 for org in orgs
             ]
@@ -550,6 +566,14 @@ async def create_org_unit(body: OrgUnitCreate, user_ctx: dict = Depends(require_
         db.add(org)
         await db.commit()
         await db.refresh(org)
+        await write_audit_log(
+            action="create_org_unit",
+            resource_type="org_unit",
+            resource_id=org.id,
+            user_id=current_user_id(user_ctx),
+            tenant_id=tenant_id,
+            new_values=_org_audit_payload(org),
+        )
         return {"id": org.id, "code": org.code}
 
     result = await _try_db(_query)
@@ -568,7 +592,14 @@ async def update_org_unit(org_id: int, body: OrgUnitUpdate, user_ctx: dict = Dep
         org = await db.get(OrgUnit, org_id)
         if not org or org.tenant_id != tenant_id:
             return None
+        old_values = _org_audit_payload(org)
         updates = body.dict(exclude_unset=True)
+        if not updates:
+            return {"id": org.id}
+        if "code" in updates and updates["code"] != org.code:
+            existing = await db.scalar(select(OrgUnit).where(OrgUnit.tenant_id == tenant_id, OrgUnit.code == updates["code"]))
+            if existing:
+                raise HTTPException(400, "组织编码已存在")
         if "parent_id" in updates and updates["parent_id"] is not None:
             if updates["parent_id"] == org_id:
                 raise HTTPException(400, "父级组织不能是自己")
@@ -578,6 +609,16 @@ async def update_org_unit(org_id: int, body: OrgUnitUpdate, user_ctx: dict = Dep
         for key, value in updates.items():
             setattr(org, key, value)
         await db.commit()
+        await db.refresh(org)
+        await write_audit_log(
+            action="update_org_unit",
+            resource_type="org_unit",
+            resource_id=org.id,
+            user_id=current_user_id(user_ctx),
+            tenant_id=tenant_id,
+            old_values=old_values,
+            new_values=_org_audit_payload(org),
+        )
         return {"id": org.id}
 
     result = await _try_db(_query)
@@ -603,8 +644,17 @@ async def delete_org_unit(org_id: int, user_ctx: dict = Depends(require_admin)):
         ).limit(1))
         if member:
             raise HTTPException(400, "该组织仍有成员，不能删除")
+        old_values = _org_audit_payload(org)
         await db.delete(org)
         await db.commit()
+        await write_audit_log(
+            action="delete_org_unit",
+            resource_type="org_unit",
+            resource_id=org_id,
+            user_id=current_user_id(user_ctx),
+            tenant_id=tenant_id,
+            old_values=old_values,
+        )
         return {"ok": True}
 
     result = await _try_db(_query)

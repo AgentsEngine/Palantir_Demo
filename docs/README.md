@@ -78,9 +78,11 @@ Read these first when you want the current system truth:
 | [Application Management](architecture/application-management.md) | Product boundary for application identity, visibility, and entry configuration. |
 | [Form Management](architecture/form-management.md) | Product boundary for configurable business forms and metadata-backed fields. |
 | [Configuration Lifecycle](architecture/configuration-lifecycle.md) | Draft/publish/disable/archive rules for configurable assets. |
+| [Business Interaction Form Logic](business/business-interaction-form-logic.md) | Business-facing explanation of dynamic interaction tables, runtime forms, permissions, workflow, and record storage. |
 | [Knowledge Base Workflow](business/knowledge-base-workflow.md) | User workflow for knowledge upload, review, binding, and workbench use. |
 | [Workbench Notification Center](architecture/workbench-notification-center.md) | Workbench and notification center UX boundary. |
 | [Low-Code Platform](architecture/low-code-platform.md) | Low-code platform shape and relation to application/form/runtime surfaces. |
+| [Recent Code Updates 2026-06-05](development/recent-code-updates-2026-06-05.md) | Current delivery note covering framework, backend, frontend, AI, permissions, tests, and deployment impact. |
 
 ## Roadmap And Productization
 

@@ -54,8 +54,6 @@ async def get_current_user(
 
     payload = decode_access_token(raw)
     if not payload:
-        if DEMO_AUTH_OPTIONAL:
-            return {"sub": "guest", "uid": 0, "is_admin": False, "_anonymous": True}
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token")
 
     sid = payload.get("sid")
@@ -63,8 +61,6 @@ async def get_current_user(
         from app.services.iam import is_session_active
 
         if not await is_session_active(str(sid)):
-            if DEMO_AUTH_OPTIONAL:
-                return {"sub": "guest", "uid": 0, "is_admin": False, "_anonymous": True}
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Session expired or revoked")
 
     return payload

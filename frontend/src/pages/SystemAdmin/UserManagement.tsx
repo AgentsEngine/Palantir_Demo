@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Table, Tag, Typography, message } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Table, Tag, Typography, Upload, message } from 'antd';
+import type { UploadFile } from 'antd/es/upload/interface';
 import {
   adminCreateUser,
   adminDeleteUser,
@@ -33,6 +34,10 @@ interface UserItem {
   sso_subject?: string | null;
 }
 
+type ImportRow = Record<string, string>;
+
+const csvHeaders = 'username,display_name,email,password,role_names,org_names,is_active';
+
 export default function UserManagement() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [roles, setRoles] = useState<RoleItem[]>([]);
@@ -42,6 +47,9 @@ export default function UserManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importFiles, setImportFiles] = useState<UploadFile[]>([]);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [form] = Form.useForm();
   const [securityForm] = Form.useForm();
@@ -102,6 +110,8 @@ export default function UserManagement() {
     try {
       if (editingUser) {
         const { password, username, ...updates } = payload;
+        void password;
+        void username;
         await adminUpdateUser(editingUser.id, updates);
       } else {
         await adminCreateUser(payload);
@@ -147,15 +157,69 @@ export default function UserManagement() {
     setSessionsOpen(true);
   };
 
+  const importUsers = async () => {
+    const file = importFiles[0]?.originFileObj;
+    if (!file) {
+      message.warning('请先选择 CSV 文件');
+      return;
+    }
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (!rows.length) {
+        message.warning('CSV 中没有可导入的数据');
+        return;
+      }
+      const roleMap = new Map(roles.flatMap((role) => [[role.name, role.id], [role.label, role.id]]));
+      const orgMap = new Map(orgUnits.map((org) => [org.name, org.id]));
+      let success = 0;
+      let failed = 0;
+      for (const row of rows) {
+        const username = row.username?.trim();
+        const password = row.password?.trim();
+        if (!username || !password) {
+          failed += 1;
+          continue;
+        }
+        const roleIds = splitList(row.role_names).map((name) => roleMap.get(name)).filter((id): id is number => Boolean(id));
+        const orgIds = splitList(row.org_names).map((name) => orgMap.get(name)).filter((id): id is number => Boolean(id));
+        try {
+          await adminCreateUser({
+            username,
+            password,
+            display_name: row.display_name || username,
+            email: row.email,
+            is_active: row.is_active !== 'false',
+            is_admin: false,
+            role_ids: roleIds,
+            org_unit_ids: orgIds,
+            primary_org_unit_id: orgIds[0],
+          });
+          success += 1;
+        } catch {
+          failed += 1;
+        }
+      }
+      message.success(`导入完成：成功 ${success} 条，失败 ${failed} 条`);
+      setImportOpen(false);
+      setImportFiles([]);
+      fetchData();
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
         <div>
           <Typography.Title level={5} style={{ margin: 0 }}>用户管理</Typography.Title>
           <Typography.Text type="secondary">账号、角色、组织、SSO 绑定、MFA 状态和会话治理。</Typography.Text>
         </div>
         <Space>
           <Button icon={<ReloadOutlined />} loading={loading} onClick={fetchData} />
+          <Button icon={<UploadOutlined />} onClick={() => setImportOpen(true)}>导入</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建用户</Button>
         </Space>
       </div>
@@ -244,6 +308,32 @@ export default function UserManagement() {
         </Form>
       </Modal>
 
+      <Modal
+        title="导入用户"
+        open={importOpen}
+        onOk={importUsers}
+        onCancel={() => setImportOpen(false)}
+        confirmLoading={importing}
+        okText="开始导入"
+        destroyOnClose
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+          <Typography.Text type="secondary">
+            支持 CSV 文件，表头：{csvHeaders}。角色和组织按名称匹配，多个值用英文分号分隔。
+          </Typography.Text>
+          <Upload.Dragger
+            accept=".csv,text/csv"
+            beforeUpload={() => false}
+            fileList={importFiles}
+            maxCount={1}
+            onChange={({ fileList }) => setImportFiles(fileList)}
+          >
+            <p className="ant-upload-drag-icon"><UploadOutlined /></p>
+            <p className="ant-upload-text">点击或拖拽 CSV 到这里</p>
+          </Upload.Dragger>
+        </Space>
+      </Modal>
+
       <Modal title={`账号安全 - ${editingUser?.username || ''}`} open={securityOpen} onOk={submitSecurity} onCancel={() => setSecurityOpen(false)} destroyOnClose>
         <Form form={securityForm} layout="vertical">
           <Form.Item name="password" label="重置密码"><Input.Password placeholder="留空则不修改" /></Form.Item>
@@ -288,4 +378,40 @@ export default function UserManagement() {
       </Modal>
     </div>
   );
+}
+
+function splitList(value?: string) {
+  return (value || '').split(/[;；]/).map((item) => item.trim()).filter(Boolean);
+}
+
+function parseCsv(text: string): ImportRow[] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  let quoted = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+    if (char === '"' && quoted && next === '"') {
+      cell += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === ',' && !quoted) {
+      row.push(cell);
+      cell = '';
+    } else if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\r' && next === '\n') index += 1;
+      row.push(cell);
+      if (row.some((value) => value.trim())) rows.push(row);
+      row = [];
+      cell = '';
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell);
+  if (row.some((value) => value.trim())) rows.push(row);
+  const [headers = [], ...records] = rows;
+  return records.map((record) => Object.fromEntries(headers.map((header, index) => [header.trim(), record[index]?.trim() || ''])));
 }

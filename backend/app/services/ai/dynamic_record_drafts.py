@@ -125,7 +125,7 @@ def _pick_payload_value(payload: dict[str, Any], field: FormField) -> Any:
     if field.required:
         if field.field_type in {"json", "array"}:
             return {}
-        return str(payload.get("source_message") or "AI draft pending review")[:240]
+        return str(payload.get("source_message") or "Pending action review")[:240]
     return field.default_value
 
 

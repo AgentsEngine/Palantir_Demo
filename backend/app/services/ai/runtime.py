@@ -115,7 +115,7 @@ class AgentRuntime:
                 "draft_id": resume_draft.get("draft_id"),
                 "skill": resume_draft.get("skill"),
                 "draft_status": resume_draft.get("status"),
-                "summary": "Loaded saved AI draft for review.",
+                "summary": "Loaded saved pending action for review.",
             }
             steps.append(resume_step)
             await _emit_step(event_sink, resume_step)
@@ -127,7 +127,7 @@ class AgentRuntime:
                 "source_message": str(draft_payload.get("source_message") or request.message),
                 "collected_slots": draft_payload,
                 "missing_slots": [],
-                "notes": [f"resume draft {resume_draft.get('draft_id')}"],
+                "notes": [f"resume pending action {resume_draft.get('draft_id')}"],
             }
         settings_data = settings_snapshot()
         preflight = preflight_agent_request(
@@ -392,7 +392,7 @@ class AgentRuntime:
             return AgentResponse(
                 answer=(
                     f"已按权限读取 `{form_name}` 的 {query_result.get('record_count', 0)} 条记录。"
-                    "我会基于可见字段给出分析；若需要写入或发起流程，会先生成草稿和确认清单。"
+                    "我会基于可见字段给出分析；若需要写入或发起流程，会先生成操作预览和确认清单。"
                 ),
                 evidence=evidence,
                 steps=steps,

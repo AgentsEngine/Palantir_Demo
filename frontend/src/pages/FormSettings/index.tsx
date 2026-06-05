@@ -90,11 +90,23 @@ type ControlSource = 'field' | 'component';
 type ControlWidth = 'quarter' | 'half' | 'threeQuarter' | 'full';
 type FlowPortSide = 'top' | 'right' | 'bottom' | 'left';
 type DropPosition = 'before' | 'after';
-type ControlRuleKey = 'visible' | 'readonly' | 'required';
+type ControlRuleKey =
+  | 'visible'
+  | 'readonly'
+  | 'required'
+  | 'unique'
+  | 'masked'
+  | 'copyable'
+  | 'optionSort';
 type PreviewMode = 'create' | 'edit' | 'list';
 type PreviewDevice = 'desktop' | 'tablet' | 'mobile';
 type PublishCheckLevel = 'error' | 'warning' | 'suggestion';
 type EncodingResetCycle = 'none' | 'day' | 'month' | 'year' | 'dependency';
+type EncodingSegmentType = 'fixed' | 'date' | 'field' | 'masterData' | 'organization' | 'sequence';
+type EncodingPadding = 'none' | 'leftZero' | 'rightZero' | 'truncate';
+type EncodingGenerationMode = 'auto' | 'manual' | 'autoEditable';
+type EncodingGenerationTiming = 'create' | 'save' | 'submit' | 'workflowNode';
+type EncodingUniquenessScope = 'form' | 'global' | 'organization' | 'dependency';
 type ReferenceSourceKind = 'static' | 'dictionary' | 'masterData' | 'businessForm' | 'organization' | 'externalApi';
 type FieldBusinessType =
   | 'text'
@@ -112,6 +124,8 @@ interface ControlRuleCondition {
   sourceField?: string;
   operator?: string;
   value?: string;
+  strategy?: string;
+  parameter?: string;
   note?: string;
 }
 
@@ -121,6 +135,23 @@ interface ControlRule {
 }
 
 type ControlRules = Record<ControlRuleKey, ControlRule>;
+
+interface EncodingSegment {
+  id: string;
+  name: string;
+  type: EncodingSegmentType;
+  length: number;
+  value?: string;
+  sourceField?: string;
+  sourceAttribute?: string;
+  datePattern?: string;
+  resetCycle?: EncodingResetCycle;
+  padding?: EncodingPadding;
+  sequenceStart?: number;
+  sequenceStep?: number;
+  regenerateOnChange?: boolean;
+  lockAfterGenerated?: boolean;
+}
 
 interface EncodingRule {
   enabled: boolean;
@@ -135,6 +166,10 @@ interface EncodingRule {
   regenerateOnDependencyChange: boolean;
   allowManualOverride: boolean;
   unique: boolean;
+  segments?: EncodingSegment[];
+  generationMode?: EncodingGenerationMode;
+  generationTiming?: EncodingGenerationTiming;
+  uniquenessScope?: EncodingUniquenessScope;
 }
 
 interface DesignerField {
@@ -251,14 +286,18 @@ interface ViewConfigMeta {
 interface PermissionDesignDraft {
   page: Record<string, boolean>;
   actions: Record<string, boolean>;
+  fields: Record<string, {
+    visible: boolean;
+    editable: boolean;
+    required: boolean;
+    exportable: boolean;
+  }>;
   data: {
     scope: string;
-    orgUnits: string[];
+    orgUnits: number[];
     sensitiveFields: string;
     ownership: Record<string, boolean>;
   };
-  workflow: Record<string, boolean>;
-  config: Record<string, boolean>;
 }
 
 type PermissionDraftMap = Record<string, PermissionDesignDraft>;
@@ -289,28 +328,10 @@ const permissionActionDefinitions = [
   { key: 'delete', name: '删除', desc: '移除记录，高风险动作', risk: 'high' },
   { key: 'import', name: '导入', desc: '批量写入告警数据', risk: 'high' },
   { key: 'export', name: '导出', desc: '下载列表或报表数据', risk: 'high' },
-  { key: 'configure', name: '配置', desc: '进入表单、流程和权限配置', risk: 'high' },
   { key: 'approve', name: '审批', desc: '处理流程节点和关闭告警', risk: 'medium' },
 ] as const;
 
-const permissionWorkflowDefinitions = [
-  { key: 'submit', title: '提交', desc: '发起告警处理流程' },
-  { key: 'approve', title: '审批', desc: '处理当前节点审批任务' },
-  { key: 'reject', title: '驳回', desc: '退回上一节点或发起人' },
-  { key: 'transfer', title: '转交', desc: '把待办转给同组织人员' },
-  { key: 'logs', title: '查看日志', desc: '查看流程轨迹和处理意见' },
-] as const;
-
-const permissionConfigDefinitions = [
-  { key: 'form', title: '修改表单结构' },
-  { key: 'filter', title: '修改数据筛选' },
-  { key: 'flow', title: '修改流程' },
-  { key: 'permission', title: '修改权限' },
-  { key: 'publish', title: '发布版本' },
-  { key: 'history', title: '查看版本历史' },
-] as const;
-
-function makePermissionDesignDraft(roleKind: 'system' | 'manager' | 'operator', orgUnits: string[]): PermissionDesignDraft {
+function makePermissionDesignDraft(roleKind: 'system' | 'manager' | 'operator', orgUnits: number[]): PermissionDesignDraft {
   return {
     page: {
       menu: true,
@@ -327,9 +348,9 @@ function makePermissionDesignDraft(roleKind: 'system' | 'manager' | 'operator', 
       delete: roleKind === 'system',
       import: roleKind !== 'operator',
       export: roleKind !== 'operator',
-      configure: roleKind === 'system',
       approve: roleKind !== 'operator',
     },
+    fields: {},
     data: {
       scope: roleKind === 'system' ? 'all' : roleKind === 'manager' ? 'org_tree' : 'assigned',
       orgUnits: orgUnits.slice(0, 2),
@@ -342,21 +363,6 @@ function makePermissionDesignDraft(roleKind: 'system' | 'manager' | 'operator', 
         statistics: roleKind === 'system',
       },
     },
-    workflow: {
-      submit: true,
-      approve: roleKind !== 'operator',
-      reject: roleKind !== 'operator',
-      transfer: roleKind !== 'operator',
-      logs: true,
-    },
-    config: {
-      form: roleKind === 'system',
-      filter: roleKind === 'system',
-      flow: roleKind === 'system',
-      permission: roleKind === 'system',
-      publish: roleKind === 'system',
-      history: true,
-    },
   };
 }
 
@@ -365,6 +371,32 @@ function permissionDraftsFromConfig(config?: Record<string, unknown> | null): Pe
   if (!permissionDesign || typeof permissionDesign !== 'object') return {};
   const roles = (permissionDesign as { roles?: unknown }).roles;
   return roles && typeof roles === 'object' ? roles as PermissionDraftMap : {};
+}
+
+function sanitizePermissionDesignDraft(draft: PermissionDesignDraft): PermissionDesignDraft {
+  const actions = Object.fromEntries(
+    Object.entries(draft.actions || {}).filter(([key]) => key !== 'configure'),
+  ) as Record<string, boolean>;
+  const data = draft.data || {
+    scope: 'assigned',
+    orgUnits: [],
+    sensitiveFields: 'mask',
+    ownership: {},
+  };
+  const orgUnits = Array.from(new Set(
+    (Array.isArray(data.orgUnits) ? data.orgUnits : [])
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value > 0),
+  ));
+  return {
+    page: draft.page || {},
+    actions,
+    fields: draft.fields || {},
+    data: {
+      ...data,
+      orgUnits,
+    },
+  };
 }
 
 const controlWidthOptions = [
@@ -387,6 +419,7 @@ const previewDeviceOptions = [
 ];
 
 const controlTypeOptions = [
+  { value: 'code', label: '编码' },
   { value: 'text', label: '文本输入' },
   { value: 'textarea', label: '多行文本' },
   { value: 'number', label: '数值输入' },
@@ -427,6 +460,42 @@ const encodingDatePatternOptions = [
   { value: 'none', label: '不使用日期段' },
 ];
 
+const encodingSegmentTypeOptions: Array<{ value: EncodingSegmentType; label: string }> = [
+  { value: 'fixed', label: '固定文本' },
+  { value: 'date', label: '日期时间' },
+  { value: 'field', label: '表单字段' },
+  { value: 'masterData', label: '基础档案' },
+  { value: 'organization', label: '组织信息' },
+  { value: 'sequence', label: '流水号' },
+];
+
+const encodingPaddingOptions: Array<{ value: EncodingPadding; label: string }> = [
+  { value: 'none', label: '不补位' },
+  { value: 'leftZero', label: '左侧补 0' },
+  { value: 'rightZero', label: '右侧补 0' },
+  { value: 'truncate', label: '超长截断' },
+];
+
+const encodingGenerationModeOptions: Array<{ value: EncodingGenerationMode; label: string }> = [
+  { value: 'auto', label: '自动生成' },
+  { value: 'autoEditable', label: '自动生成后可改' },
+  { value: 'manual', label: '手工录入' },
+];
+
+const encodingGenerationTimingOptions: Array<{ value: EncodingGenerationTiming; label: string }> = [
+  { value: 'create', label: '新建时生成' },
+  { value: 'save', label: '保存草稿时生成' },
+  { value: 'submit', label: '提交时生成' },
+  { value: 'workflowNode', label: '流程节点生成' },
+];
+
+const encodingUniquenessScopeOptions: Array<{ value: EncodingUniquenessScope; label: string }> = [
+  { value: 'form', label: '当前表单唯一' },
+  { value: 'global', label: '全局唯一' },
+  { value: 'organization', label: '组织内唯一' },
+  { value: 'dependency', label: '依赖范围内唯一' },
+];
+
 const referenceSourceKindOptions: Array<{ value: ReferenceSourceKind; label: string }> = [
   { value: 'static', label: '静态选项' },
   { value: 'dictionary', label: '数据字典' },
@@ -445,7 +514,7 @@ const referenceSourceRegistry: Record<ReferenceSourceKind, {
   preview: string[];
 }> = {
   static: {
-    setup: '当前字段属性中维护，适合只服务本字段的小枚举',
+    setup: '当前字段配置中维护，适合只服务本字段的小枚举',
     placeholder: '例如：系统监测、人工上报、外部接口',
     objects: [{ value: 'inline_options', label: '字段私有选项' }],
     valueFields: [{ value: 'value', label: '选项值' }],
@@ -524,9 +593,13 @@ const referenceSourceRegistry: Record<ReferenceSourceKind, {
 };
 
 const ruleLabels: Record<ControlRuleKey, string> = {
-  visible: '显示',
-  readonly: '只读',
-  required: '必输',
+  visible: '默认显示',
+  readonly: '默认只读',
+  required: '默认必输',
+  unique: '唯一校验',
+  masked: '默认脱敏',
+  copyable: '允许复制',
+  optionSort: '选项排序',
 };
 
 const ruleOperatorOptions = [
@@ -535,6 +608,30 @@ const ruleOperatorOptions = [
   { value: 'contains', label: '包含' },
   { value: 'notEmpty', label: '不为空' },
 ];
+
+const ruleStrategyOptions: Partial<Record<ControlRuleKey, Array<{ value: string; label: string }>>> = {
+  unique: [
+    { value: 'form', label: '当前表单唯一' },
+    { value: 'global', label: '全局唯一' },
+    { value: 'compound', label: '组合字段唯一' },
+  ],
+  masked: [
+    { value: 'role', label: '按角色脱敏' },
+    { value: 'partial', label: '保留首尾' },
+    { value: 'hidden', label: '全量隐藏' },
+  ],
+  copyable: [
+    { value: 'normal', label: '允许复制文本' },
+    { value: 'maskedCopy', label: '复制时脱敏' },
+    { value: 'disabled', label: '禁止复制' },
+  ],
+  optionSort: [
+    { value: 'sourceOrder', label: '按数据源顺序' },
+    { value: 'labelAsc', label: '按显示名称升序' },
+    { value: 'valueAsc', label: '按编码/值升序' },
+    { value: 'custom', label: '自定义排序' },
+  ],
+};
 
 const viewControlOptions: Array<{ value: ViewControlType; label: string }> = [
   { value: 'keyword', label: '关键词' },
@@ -574,12 +671,28 @@ function controlWidthClass(width: ControlWidth) {
   return `control-width-${width}`;
 }
 
-function makeControlRules(required = false): ControlRules {
+function makeControlRules(required = false, field?: DesignerField): ControlRules {
   return {
     visible: { enabled: true },
-    readonly: { enabled: false },
+    readonly: { enabled: Boolean(field?.locked) },
     required: { enabled: required },
+    unique: { enabled: isEncodingField(field) },
+    masked: { enabled: false },
+    copyable: { enabled: true },
+    optionSort: { enabled: false },
   };
+}
+
+function normalizeControlRules(rules?: Partial<ControlRules>, field?: DesignerField): ControlRules {
+  const defaults = makeControlRules(Boolean(field?.required), field);
+  return (Object.keys(defaults) as ControlRuleKey[]).reduce((next, ruleKey) => ({
+    ...next,
+    [ruleKey]: {
+      ...defaults[ruleKey],
+      ...(rules?.[ruleKey] || {}),
+      conditions: rules?.[ruleKey]?.conditions ? { ...rules[ruleKey]?.conditions } : defaults[ruleKey].conditions,
+    },
+  }), {} as ControlRules);
 }
 
 function inferBusinessTypeFromLegacyType(type = ''): FieldBusinessType {
@@ -604,12 +717,64 @@ function getFieldBusinessTypeLabel(field?: DesignerField) {
   return fieldBusinessTypeOptions.find((item) => item.value === businessType)?.label || '文本';
 }
 
+const fieldStorageTypeLabels: Record<string, string> = {
+  string: '文本 string',
+  text: '长文本 text',
+  number: '数值 number',
+  integer: '整数 integer',
+  decimal: '小数 decimal',
+  float: '浮点 float',
+  boolean: '布尔 boolean',
+  date: '日期 date',
+  datetime: '日期时间 datetime',
+  enum: '枚举 enum',
+  relation: '关联 relation',
+  json: 'JSON json',
+};
+
+function getFieldStorageTypeLabel(field?: DesignerField) {
+  if (!field) return '未绑定字段';
+  const storageType = mapDesignerFieldType(field);
+  return fieldStorageTypeLabels[storageType] || storageType;
+}
+
 function isEncodingField(field?: DesignerField) {
   return getFieldBusinessType(field) === 'code';
 }
 
 function makeEncodingRule(field?: DesignerField): EncodingRule {
   const prefix = field?.key.toLowerCase().includes('alert') ? 'AL' : field?.key.toLowerCase().includes('risk') ? 'SR' : 'NO';
+  const defaultSegments: EncodingSegment[] = [
+    {
+      id: 'segment-prefix',
+      name: '业务前缀',
+      type: 'fixed',
+      length: prefix.length,
+      value: prefix,
+      padding: 'none',
+      lockAfterGenerated: true,
+    },
+    {
+      id: 'segment-date',
+      name: '年月',
+      type: 'date',
+      length: 4,
+      datePattern: 'YYMM',
+      padding: 'none',
+      lockAfterGenerated: true,
+    },
+    {
+      id: 'segment-sequence',
+      name: '流水号',
+      type: 'sequence',
+      length: 3,
+      resetCycle: 'month',
+      padding: 'leftZero',
+      sequenceStart: 1,
+      sequenceStep: 1,
+      lockAfterGenerated: true,
+    },
+  ];
   return {
     enabled: true,
     template: `{PREFIX}-{YYMM}-{SEQ3}`,
@@ -623,26 +788,119 @@ function makeEncodingRule(field?: DesignerField): EncodingRule {
     regenerateOnDependencyChange: true,
     allowManualOverride: false,
     unique: true,
+    segments: defaultSegments,
+    generationMode: 'auto',
+    generationTiming: 'create',
+    uniquenessScope: 'form',
   };
+}
+
+function makeEncodingSegment(type: EncodingSegmentType = 'fixed', fields: DesignerField[] = []): EncodingSegment {
+  const firstSourceField = fields.find((field) => !isEncodingField(field));
+  const base: EncodingSegment = {
+    id: `segment-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    name: encodingSegmentTypeOptions.find((item) => item.value === type)?.label || '编码段',
+    type,
+    length: type === 'sequence' ? 3 : type === 'date' ? 4 : 2,
+    padding: type === 'sequence' ? 'leftZero' : 'truncate',
+    lockAfterGenerated: true,
+  };
+  if (type === 'fixed') return { ...base, name: '固定文本', value: 'AL', length: 2, padding: 'none' };
+  if (type === 'date') return { ...base, name: '日期', datePattern: 'YYMM', length: 4, padding: 'none' };
+  if (type === 'sequence') return { ...base, name: '流水号', resetCycle: 'month', sequenceStart: 1, sequenceStep: 1 };
+  if (type === 'organization') return { ...base, name: '组织编码', sourceAttribute: 'org_code', length: 3 };
+  return { ...base, name: type === 'masterData' ? '档案编码' : '字段取值', sourceField: firstSourceField?.key, sourceAttribute: 'code' };
+}
+
+function getLegacyEncodingSegments(rule: EncodingRule): EncodingSegment[] {
+  const segments: EncodingSegment[] = [];
+  if (rule.prefix) {
+    segments.push({
+      id: 'legacy-prefix',
+      name: '业务前缀',
+      type: 'fixed',
+      length: rule.prefix.length,
+      value: rule.prefix,
+      padding: 'none',
+    });
+  }
+  if (rule.datePattern && rule.datePattern !== 'none') {
+    segments.push({
+      id: 'legacy-date',
+      name: '日期',
+      type: 'date',
+      length: getDateSegmentLength(rule.datePattern),
+      datePattern: rule.datePattern,
+      padding: 'none',
+    });
+  }
+  rule.dependencies.forEach((sourceField, index) => {
+    segments.push({
+      id: `legacy-field-${sourceField}`,
+      name: index === 0 ? '依赖字段' : `依赖字段 ${index + 1}`,
+      type: 'field',
+      length: rule.dependencySegmentLength || 2,
+      sourceField,
+      sourceAttribute: 'code',
+      padding: 'truncate',
+      regenerateOnChange: true,
+    });
+  });
+  segments.push({
+    id: 'legacy-sequence',
+    name: '流水号',
+    type: 'sequence',
+    length: rule.sequenceLength || 3,
+    resetCycle: rule.resetCycle,
+    padding: 'leftZero',
+    sequenceStart: 1,
+    sequenceStep: 1,
+  });
+  return segments;
+}
+
+function getEncodingSegments(rule?: EncodingRule): EncodingSegment[] {
+  if (!rule) return [];
+  if (rule.segments?.length) return rule.segments;
+  return getLegacyEncodingSegments(rule);
+}
+
+function getEncodingSegmentTypeLabel(type: EncodingSegmentType) {
+  return encodingSegmentTypeOptions.find((item) => item.value === type)?.label || '编码段';
+}
+
+function renderDateSample(pattern?: string) {
+  if (pattern === 'YYYYMMDD') return '20260602';
+  if (pattern === 'YYYY') return '2026';
+  if (pattern === 'MMDD') return '0602';
+  if (pattern === 'none') return '';
+  return '2606';
+}
+
+function fitSegmentSample(value: string, length: number, padding?: EncodingPadding) {
+  if (!length || length <= 0) return '';
+  if (value.length === length) return value;
+  if (value.length > length) return padding === 'truncate' ? value.slice(0, length) : value;
+  if (padding === 'leftZero') return value.padStart(length, '0');
+  if (padding === 'rightZero') return value.padEnd(length, '0');
+  return value;
+}
+
+function renderEncodingSegmentSample(segment: EncodingSegment, fields: DesignerField[] = []) {
+  const length = segment.length || 0;
+  if (segment.type === 'fixed') return fitSegmentSample(segment.value || '', length, segment.padding);
+  if (segment.type === 'date') return fitSegmentSample(renderDateSample(segment.datePattern), length, segment.padding);
+  if (segment.type === 'sequence') return fitSegmentSample(String(segment.sequenceStart || 1), length, segment.padding || 'leftZero');
+  if (segment.type === 'organization') return fitSegmentSample(segment.sourceAttribute === 'org_name' ? '制造部' : 'MF', length, segment.padding);
+  const sourceField = fields.find((field) => field.key === segment.sourceField);
+  return fitSegmentSample(sourceField?.key?.toUpperCase() || 'FIELD', length, segment.padding);
 }
 
 function renderEncodingSample(rule?: EncodingRule, fields: DesignerField[] = []) {
   if (!rule?.enabled) return '不自动生成';
-  const dependencyCode = rule.dependencies
-    .map((fieldKey) => fields.find((field) => field.key === fieldKey)?.name || fieldKey)
-    .slice(0, 2)
-    .join('-');
-  const seq = String(1).padStart(rule.sequenceLength || 3, '0');
-  return rule.template
-    .replace('{PREFIX}', rule.prefix || '')
-    .replace('{YYMM}', '2605')
-    .replace('{YYYYMMDD}', '20260529')
-    .replace('{YYYY}', '2026')
-    .replace('{MMDD}', '0529')
-    .replace('{MM}', '05')
-    .replace('{DD}', '29')
-    .replace('{DEP}', dependencyCode || '业务字段')
-    .replace(/\{SEQ\d*\}/g, seq);
+  const segments = getEncodingSegments(rule);
+  if (!segments.length) return '请新增编码段';
+  return segments.map((segment) => renderEncodingSegmentSample(segment, fields)).join('');
 }
 
 function getDateSegmentLength(pattern?: string) {
@@ -650,19 +908,17 @@ function getDateSegmentLength(pattern?: string) {
   return pattern.length;
 }
 
-function getEncodingComposition(rule?: EncodingRule) {
+function getEncodingComposition(rule?: EncodingRule, fields: DesignerField[] = []) {
   if (!rule?.enabled) return '未启用自动编码';
-  const parts = [
-    `前缀 ${rule.prefix?.length || 0} 位`,
-    `日期 ${getDateSegmentLength(rule.datePattern)} 位`,
-    rule.dependencies.length ? `依赖段 ${rule.dependencySegmentLength || 0} 位` : '依赖段 0 位',
-    `流水 ${rule.sequenceLength || 0} 位`,
-  ];
-  const expected = (rule.prefix?.length || 0)
-    + getDateSegmentLength(rule.datePattern)
-    + (rule.dependencies.length ? rule.dependencySegmentLength || 0 : 0)
-    + (rule.sequenceLength || 0);
-  return `${parts.join(' + ')} = ${expected} 位${rule.fixedLength ? ` / 目标 ${rule.fixedLength} 位` : ''}`;
+  const segments = getEncodingSegments(rule);
+  if (!segments.length) return '尚未配置编码段';
+  const parts = segments.map((segment) => {
+    const field = fields.find((item) => item.key === segment.sourceField);
+    const source = field ? `：${field.name}` : '';
+    return `${segment.name || getEncodingSegmentTypeLabel(segment.type)}${source} ${segment.length || 0} 位`;
+  });
+  const expected = segments.reduce((total, segment) => total + (segment.length || 0), 0);
+  return `${parts.join(' + ')} = ${expected} 位`;
 }
 
 const flowNodePalette: FlowNodeDefinition[] = [
@@ -772,60 +1028,56 @@ const tabs = [
 
 const componentGroups: Array<{ category: string; items: ComponentDefinition[] }> = [
   {
-    category: '文本类',
+    category: '基础输入',
     items: [
-      { key: 'text', category: '文本类', name: '文本控件', desc: '单行文本输入', icon: <FormOutlined />, controlType: 'text' },
-      { key: 'textarea', category: '文本类', name: '多行文本', desc: '长文本、备注、说明录入', icon: <FormOutlined />, controlType: 'textarea', defaultWidth: 'full' },
-      { key: 'readonly-text', category: '文本类', name: '只读文本', desc: '展示计算值、引用值', icon: <FileSearchOutlined />, controlType: 'readonly-text' },
+      { key: 'text', category: '基础输入', name: '文本控件', desc: '单行文本输入', icon: <FormOutlined />, controlType: 'text' },
+      { key: 'textarea', category: '基础输入', name: '多行文本', desc: '长文本、备注、说明录入', icon: <FormOutlined />, controlType: 'textarea', defaultWidth: 'full' },
+      { key: 'number', category: '基础输入', name: '数值控件', desc: '数量、金额、百分比', icon: <NumberOutlined />, controlType: 'number' },
+      { key: 'code', category: '基础输入', name: '编码控件', desc: '自动编号、业务编号、流水号', icon: <NumberOutlined />, controlType: 'code' },
+      { key: 'readonly-text', category: '基础输入', name: '只读文本', desc: '展示计算值、引用值', icon: <FileSearchOutlined />, controlType: 'readonly-text' },
     ],
   },
   {
-    category: '选择类',
+    category: '选择器',
     items: [
-      { key: 'number', category: '选择类', name: '数值控件', desc: '数量、金额、百分比', icon: <NumberOutlined />, controlType: 'number' },
-      { key: 'select', category: '选择类', name: '选择控件', desc: '下拉、单选、多选', icon: <SelectOutlined />, controlType: 'select' },
-      { key: 'datetime', category: '选择类', name: '日期控件', desc: '日期、时间、时间范围', icon: <CalendarOutlined />, controlType: 'datetime' },
-      { key: 'relation', category: '选择类', name: '对象选择', desc: '人员、设备、供应商、物料', icon: <LinkOutlined />, controlType: 'relation' },
-      { key: 'switch', category: '选择类', name: '开关控件', desc: '是否、启用、状态切换', icon: <SwitcherOutlined />, controlType: 'switch' },
-      { key: 'upload', category: '选择类', name: '附件控件', desc: '图片、文件、凭证上传', icon: <PaperClipOutlined />, controlType: 'upload', defaultWidth: 'full' },
+      { key: 'select', category: '选择器', name: '选择控件', desc: '下拉、单选、多选', icon: <SelectOutlined />, controlType: 'select' },
+      { key: 'relation', category: '选择器', name: '对象选择', desc: '人员、设备、供应商、物料', icon: <LinkOutlined />, controlType: 'relation' },
+      { key: 'datetime', category: '选择器', name: '日期控件', desc: '日期、时间、时间范围', icon: <CalendarOutlined />, controlType: 'datetime' },
+      { key: 'switch', category: '选择器', name: '开关控件', desc: '是否、启用、状态切换', icon: <SwitcherOutlined />, controlType: 'switch' },
+      { key: 'upload', category: '选择器', name: '附件控件', desc: '图片、文件、凭证上传', icon: <PaperClipOutlined />, controlType: 'upload', defaultWidth: 'full' },
     ],
   },
   {
-    category: '布局类',
+    category: '布局容器',
     items: [
-      { key: 'container', category: '布局类', name: '容器', desc: '分组面板、基础信息区', icon: <HolderOutlined />, controlType: 'container', defaultWidth: 'full' },
-      { key: 'two-columns', category: '布局类', name: '多列布局', desc: '两列、三列、高密度字段排版', icon: <HolderOutlined />, controlType: 'two-columns', defaultWidth: 'full' },
-      { key: 'tabs', category: '布局类', name: 'Tab 页', desc: '切换页签、次要信息收起', icon: <HolderOutlined />, controlType: 'tabs', defaultWidth: 'full' },
-      { key: 'divider', category: '布局类', name: '分割符', desc: '分割线、区块说明', icon: <FileSearchOutlined />, controlType: 'divider', defaultWidth: 'full' },
+      { key: 'container', category: '布局容器', name: '容器', desc: '分组面板、基础信息区', icon: <HolderOutlined />, controlType: 'container', defaultWidth: 'full' },
+      { key: 'two-columns', category: '布局容器', name: '多列布局', desc: '两列、三列、高密度字段排版', icon: <HolderOutlined />, controlType: 'two-columns', defaultWidth: 'full' },
+      { key: 'tabs', category: '布局容器', name: 'Tab 页', desc: '切换页签、次要信息收起', icon: <HolderOutlined />, controlType: 'tabs', defaultWidth: 'full' },
+      { key: 'divider', category: '布局容器', name: '分割符', desc: '分割线、区块说明', icon: <FileSearchOutlined />, controlType: 'divider', defaultWidth: 'full' },
     ],
   },
   {
-    category: '数据类',
+    category: '数据展示',
     items: [
-      { key: 'editable-table', category: '数据类', name: '表格', desc: '可编辑子表、明细行', icon: <TableOutlined />, controlType: 'editable-table', defaultWidth: 'full' },
-      { key: 'readonly-table', category: '数据类', name: '关联表格', desc: '只读关联表、分页详情', icon: <TableOutlined />, controlType: 'readonly-table', defaultWidth: 'full' },
-      { key: 'summary-card', category: '数据类', name: '数据摘要', desc: '摘要卡、统计值、关联对象概览', icon: <DatabaseOutlined />, controlType: 'summary-card', defaultWidth: 'full' },
+      { key: 'editable-table', category: '数据展示', name: '表格', desc: '可编辑子表、明细行', icon: <TableOutlined />, controlType: 'editable-table', defaultWidth: 'full' },
+      { key: 'readonly-table', category: '数据展示', name: '关联表格', desc: '只读关联表、分页详情', icon: <TableOutlined />, controlType: 'readonly-table', defaultWidth: 'full' },
+      { key: 'summary-card', category: '数据展示', name: '数据摘要', desc: '摘要卡、统计值、关联对象概览', icon: <DatabaseOutlined />, controlType: 'summary-card', defaultWidth: 'full' },
+      { key: 'status-tag', category: '数据展示', name: '状态标签', desc: '状态、等级、结果标识', icon: <TagsOutlined />, controlType: 'status-tag' },
+      { key: 'file-preview', category: '数据展示', name: '媒体预览', desc: '图片、附件、凭证预览', icon: <FileImageOutlined />, controlType: 'file-preview', defaultWidth: 'full' },
     ],
   },
   {
-    category: '展示类',
+    category: '业务控件',
     items: [
-      { key: 'status-tag', category: '展示类', name: '状态标签', desc: '状态、等级、结果标识', icon: <TagsOutlined />, controlType: 'status-tag' },
-      { key: 'file-preview', category: '展示类', name: '媒体预览', desc: '图片、附件、凭证预览', icon: <FileImageOutlined />, controlType: 'file-preview', defaultWidth: 'full' },
-    ],
-  },
-  {
-    category: '业务类',
-    items: [
-      { key: 'approval-comment', category: '业务类', name: '审批处理', desc: '审批意见、处理说明、签批记录', icon: <UserSwitchOutlined />, controlType: 'approval-comment', defaultWidth: 'full' },
-      { key: 'operation-log', category: '业务类', name: '操作记录', desc: '操作日志、变更记录、审计轨迹', icon: <FileSearchOutlined />, controlType: 'operation-log', defaultWidth: 'full' },
-      { key: 'status-flow', category: '业务类', name: '状态流转', desc: '流程状态、节点进度、关闭归档', icon: <UserSwitchOutlined />, controlType: 'status-flow', defaultWidth: 'full' },
-      { key: 'risk-level', category: '业务类', name: '风险校验', desc: '风险等级、校验提示、异常规则', icon: <TagsOutlined />, controlType: 'risk-level' },
+      { key: 'approval-comment', category: '业务控件', name: '审批处理', desc: '审批意见、处理说明、签批记录', icon: <UserSwitchOutlined />, controlType: 'approval-comment', defaultWidth: 'full' },
+      { key: 'operation-log', category: '业务控件', name: '操作记录', desc: '操作日志、变更记录、审计轨迹', icon: <FileSearchOutlined />, controlType: 'operation-log', defaultWidth: 'full' },
+      { key: 'status-flow', category: '业务控件', name: '状态流转', desc: '流程状态、节点进度、关闭归档', icon: <UserSwitchOutlined />, controlType: 'status-flow', defaultWidth: 'full' },
+      { key: 'risk-level', category: '业务控件', name: '风险校验', desc: '风险等级、校验提示、异常规则', icon: <TagsOutlined />, controlType: 'risk-level' },
     ],
   },
 ];
 
-const commonControlKeys = ['text', 'number', 'select', 'datetime', 'upload', 'container', 'editable-table', 'tabs', 'divider'];
+const commonControlKeys = ['text', 'number', 'code', 'select', 'relation', 'datetime'];
 const commonControls = commonControlKeys
   .map((key) => componentGroups.flatMap((group) => group.items).find((item) => item.key === key))
   .filter((item): item is ComponentDefinition => Boolean(item));
@@ -887,7 +1139,7 @@ function optionSourceToOptions(source?: string, fallback?: string) {
 function inferFieldControlType(field?: DesignerField) {
   if (!field) return 'text';
   const businessType = getFieldBusinessType(field);
-  if (businessType === 'code') return 'readonly-text';
+  if (businessType === 'code') return 'code';
   if (businessType === 'enum') return 'select';
   if (businessType === 'person' || businessType === 'relation') return 'relation';
   if (businessType === 'date' || businessType === 'datetime') return 'datetime';
@@ -937,7 +1189,7 @@ function fieldInput(field: DesignerField, placeholderOverride?: string, disabled
   if (controlType === 'switch') {
     return <Segmented disabled={disabled} options={['否', '是']} value="否" />;
   }
-  if (controlType === 'readonly-text') {
+  if (controlType === 'readonly-text' || controlType === 'code') {
     return <Input disabled value={placeholder || field.name} />;
   }
   return <Input disabled={disabled} placeholder={placeholder} />;
@@ -1093,7 +1345,7 @@ function getStoredViewConfig(form: PlatformForm | null | undefined, designerConf
 
 function mapDesignerFieldType(field: DesignerField) {
   const businessType = getFieldBusinessType(field);
-  if (businessType === 'code') return 'code';
+  if (businessType === 'code') return 'string';
   if (businessType === 'date' || businessType === 'datetime') return 'datetime';
   if (businessType === 'number') return 'number';
   if (businessType === 'enum') return 'enum';
@@ -1142,7 +1394,7 @@ function makeFieldControl(field: DesignerField): LayoutControl {
     dataSourceKind: inferReferenceSourceKind(field, inferFieldControlType(field)),
     encodingRule: isEncodingField(field) ? makeEncodingRule(field) : undefined,
     width: getFieldBusinessType(field) === 'longText' ? 'full' : 'half',
-    rules: makeControlRules(Boolean(field.required)),
+    rules: makeControlRules(Boolean(field.required), field),
   };
 }
 
@@ -1162,15 +1414,12 @@ function makeComponentControl(component: ComponentDefinition): LayoutControl {
 }
 
 function cloneControl(control: LayoutControl): LayoutControl {
+  const clonedRules = normalizeControlRules(control.rules);
   return {
     ...control,
     id: `${control.id}-copy-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name: control.name,
-    rules: {
-      visible: { ...control.rules.visible, conditions: control.rules.visible.conditions ? { ...control.rules.visible.conditions } : undefined },
-      readonly: { ...control.rules.readonly, conditions: control.rules.readonly.conditions ? { ...control.rules.readonly.conditions } : undefined },
-      required: { ...control.rules.required, conditions: control.rules.required.conditions ? { ...control.rules.required.conditions } : undefined },
-    },
+    rules: clonedRules,
   };
 }
 
@@ -1200,8 +1449,10 @@ function RuleToggleControl({
   return (
     <div className="designer-rule-toggle" data-rule-title={title} onClick={(event) => event.stopPropagation()}>
       <Button
+        className="designer-rule-config-button"
         data-rule-action="config"
         size="small"
+        type="text"
         icon={<SettingOutlined />}
         onMouseDownCapture={(event) => {
           event.preventDefault();
@@ -1209,22 +1460,22 @@ function RuleToggleControl({
         }}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => runButtonAction(event, onConfig)}
-        title={`${title}条件配置`}
+        title={`${title} config`}
       />
-      <Button
+      <button
+        type="button"
+        className={`designer-rule-check ${enabled ? 'designer-rule-check-on' : ''}`}
         data-rule-action="toggle"
-        className="designer-rule-check"
-        size="small"
-        type={enabled ? 'primary' : 'default'}
-        icon={<CheckCircleOutlined />}
         onMouseDownCapture={(event) => {
           event.preventDefault();
           event.stopPropagation();
         }}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => runButtonAction(event, onToggle)}
-        title={enabled ? `${title}已启用` : `${title}未启用`}
-      />
+        title={enabled ? `${title} enabled` : `${title} disabled`}
+      >
+        <span className="designer-rule-check-box" aria-hidden="true" />
+      </button>
     </div>
   );
 }
@@ -1342,7 +1593,6 @@ export default function FormSettingsPage() {
   const [layoutControls, setLayoutControls] = useState<LayoutControl[]>(baseConfig.fields.map(makeFieldControl));
   const [selectedControlId, setSelectedControlId] = useState<string>('');
   const [selectedAssetKey, setSelectedAssetKey] = useState<string>(baseConfig.fields[0]?.key || '');
-  const [propertyTab, setPropertyTab] = useState<'control' | 'field'>('control');
   const [copiedControl, setCopiedControl] = useState<LayoutControl | null>(null);
   const [history, setHistory] = useState<LayoutControl[][]>([]);
   const [future, setFuture] = useState<LayoutControl[][]>([]);
@@ -1360,6 +1610,11 @@ export default function FormSettingsPage() {
   const [isCanvasDragActive, setCanvasDragActive] = useState(false);
   const [ruleOverrides, setRuleOverrides] = useState<Record<string, boolean>>({});
   const [ruleModal, setRuleModal] = useState<{ controlId: string; ruleKey: ControlRuleKey } | null>(null);
+  const [encodingSegmentEditor, setEncodingSegmentEditor] = useState<{
+    open: boolean;
+    index?: number;
+    draft: EncodingSegment;
+  }>(() => ({ open: false, draft: makeEncodingSegment('fixed', baseConfig.fields) }));
   const [professionalFlowConfig, setProfessionalFlowConfig] = useState<FlowDesignerConfig>(() => makeProfessionalFlowConfig(baseConfig));
   const [platformForm, setPlatformForm] = useState<PlatformForm | null>(null);
   const [workflowMeta, setWorkflowMeta] = useState<WorkflowDesignerMeta>({});
@@ -1367,21 +1622,48 @@ export default function FormSettingsPage() {
   const [isPersistingPermissions, setPersistingPermissions] = useState(false);
   const [identityRoleRecords, setIdentityRoleRecords] = useState<Array<{ id: number; name: string; label: string }>>([]);
   const [identityRoles, setIdentityRoles] = useState<string[]>([]);
-  const [identityOrgUnits, setIdentityOrgUnits] = useState<string[]>([]);
+  const [identityOrgUnits, setIdentityOrgUnits] = useState<Array<{ id: number; name: string; code?: string; status?: string }>>([]);
   const [permissionDrafts, setPermissionDrafts] = useState<PermissionDraftMap>({});
   const permissionRoles = identityRoles.length ? identityRoles : baseConfig.roles;
-  const permissionOrgUnits = identityOrgUnits.length ? identityOrgUnits : ['本部门', '所属工厂', '个人创建'];
+  const permissionOrgUnits = identityOrgUnits.filter((org) => org.status !== 'inactive');
+  const permissionOrgUnitIds = permissionOrgUnits.map((org) => org.id);
+  const permissionOrgUnitOptions = permissionOrgUnits.map((org) => ({
+    value: org.id,
+    label: org.code ? `${org.name} / ${org.code}` : org.name,
+  }));
   const [selectedPermissionRole, setSelectedPermissionRole] = useState('');
+  const [fieldPermissionQuery, setFieldPermissionQuery] = useState('');
+  const [fieldPermissionFilter, setFieldPermissionFilter] = useState<'all' | 'hidden' | 'editable' | 'required' | 'exportable'>('all');
+  const [fieldPermissionPage, setFieldPermissionPage] = useState(1);
   const activePermissionRole = selectedPermissionRole || permissionRoles[0] || '未配置角色';
   const activePermissionRoleIndex = Math.max(permissionRoles.indexOf(activePermissionRole), 0);
   const activePermissionRoleKind = activePermissionRoleIndex === 0 ? 'system' : activePermissionRoleIndex < 4 ? 'manager' : 'operator';
-  const activePermissionDraft = permissionDrafts[activePermissionRole] || makePermissionDesignDraft(activePermissionRoleKind, permissionOrgUnits);
+  const activePermissionDraft = permissionDrafts[activePermissionRole] || makePermissionDesignDraft(activePermissionRoleKind, permissionOrgUnitIds);
+  const getRoleFieldPermission = (field: DesignerField, index: number) => {
+    const configured = activePermissionDraft.fields?.[field.key];
+    return configured || {
+      visible: true,
+      editable: !field.locked && (activePermissionRoleKind === 'system' || index < 5),
+      required: Boolean(field.required),
+      exportable: activePermissionRoleKind !== 'operator' || index <= 4,
+    };
+  };
   const updateActivePermissionDraft = (updater: (draft: PermissionDesignDraft) => PermissionDesignDraft) => {
     setPermissionDrafts((current) => {
       const baseDraft = current[activePermissionRole] || activePermissionDraft;
       return { ...current, [activePermissionRole]: updater(baseDraft) };
     });
     setHasUnsavedChanges(true);
+  };
+  const updateRoleFieldPermission = (field: DesignerField, index: number, patch: Partial<ReturnType<typeof getRoleFieldPermission>>) => {
+    const currentPermission = getRoleFieldPermission(field, index);
+    updateActivePermissionDraft((draft) => ({
+      ...draft,
+      fields: {
+        ...(draft.fields || {}),
+        [field.key]: { ...currentPermission, ...patch },
+      },
+    }));
   };
   const previewFlowNodes = useMemo(
     () => professionalFlowConfig.nodes.filter((node) => node.executable || node.type === 'startEvent' || node.type === 'endEvent'),
@@ -1422,7 +1704,14 @@ export default function FormSettingsPage() {
         })).filter((role: { id: number; label: string }) => Number.isFinite(role.id) && role.label);
         setIdentityRoleRecords(roleRecords);
         setIdentityRoles(roleRecords.map((role: { label: string }) => role.label));
-        setIdentityOrgUnits((orgRes.data?.data || []).map((org: any) => org.name).filter(Boolean));
+        setIdentityOrgUnits((orgRes.data?.data || [])
+          .map((org: any) => ({
+            id: Number(org.id),
+            name: String(org.name || ''),
+            code: org.code ? String(org.code) : undefined,
+            status: org.status ? String(org.status) : undefined,
+          }))
+          .filter((org: { id: number; name: string }) => Number.isFinite(org.id) && org.name));
       })
       .catch(() => {
         setIdentityRoles([]);
@@ -1481,14 +1770,6 @@ export default function FormSettingsPage() {
       setPreviewFlowNodeId(previewFlowNodeOptions[0].value);
     }
   }, [previewFlowNodeId, previewFlowNodeOptions]);
-
-  useEffect(() => {
-    if (selectedControlId) {
-      setPropertyTab('control');
-      return;
-    }
-    if (selectedAssetKey) setPropertyTab('field');
-  }, [selectedAssetKey, selectedControlId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1574,14 +1855,19 @@ export default function FormSettingsPage() {
   const selectedControlUsesDataSource = Boolean(
     selectedControl && isDataSourceControlType(selectedEffectiveControlType),
   );
+  const selectedControlUsesOptionSort = Boolean(selectedControl && selectedControlUsesDataSource);
   const selectedReferenceSourceKind = selectedControl?.dataSourceKind || inferReferenceSourceKind(selectedField, selectedEffectiveControlType);
   const selectedReferenceConfig = getReferenceConfig(selectedReferenceSourceKind);
   const selectedControlUsesEncoding = Boolean(
-    selectedControl && isEncodingField(selectedField),
+    selectedControl && (selectedEffectiveControlType === 'code' || isEncodingField(selectedField)),
   );
   const selectedEncodingRule = selectedControlUsesEncoding
     ? selectedControl?.encodingRule || makeEncodingRule(selectedField)
     : undefined;
+  const selectedEncodingSegments = useMemo(
+    () => getEncodingSegments(selectedEncodingRule),
+    [selectedEncodingRule],
+  );
   const normalizedLibrarySearch = librarySearch.trim().toLowerCase();
   const matchesLibrarySearch = (text: string) => !normalizedLibrarySearch || text.toLowerCase().includes(normalizedLibrarySearch);
   const filteredCommonControls = commonControls.filter((item) => matchesLibrarySearch(`${item.name} ${item.desc} ${item.category}`));
@@ -1697,10 +1983,11 @@ export default function FormSettingsPage() {
 
   const updateSelectedControlRule = (ruleKey: ControlRuleKey, patch: Partial<ControlRule>) => {
     if (!selectedControl) return;
-    const currentRule = selectedControl.rules[ruleKey];
+    const normalizedRules = normalizeControlRules(selectedControl.rules, selectedField);
+    const currentRule = normalizedRules[ruleKey];
     updateSelectedControl({
       rules: {
-        ...selectedControl.rules,
+        ...normalizedRules,
         [ruleKey]: {
           ...currentRule,
           ...patch,
@@ -1714,7 +2001,7 @@ export default function FormSettingsPage() {
     if (!selectedControl) return;
     updateSelectedControlRule(ruleKey, {
       conditions: {
-        ...(selectedControl.rules[ruleKey].conditions || {}),
+        ...(normalizeControlRules(selectedControl.rules, selectedField)[ruleKey].conditions || {}),
         ...patch,
       },
     });
@@ -1729,7 +2016,7 @@ export default function FormSettingsPage() {
         enabled={enabled}
         onConfig={() => {
           setRuleOverrides((current) => ({ ...current, [ruleKey]: current[ruleKey] ?? defaultEnabled }));
-          message.info(`已进入「${title}」条件配置，可按字段、角色或流程状态设置规则`);
+          message.info(`已进入「${title}」默认规则配置，可按字段值或流程状态设置规则；角色差异请到权限设计配置`);
         }}
         onToggle={() => {
           setRuleOverrides((current) => {
@@ -1745,7 +2032,7 @@ export default function FormSettingsPage() {
 
   const controlRuleToggle = (ruleKey: ControlRuleKey) => {
     if (!selectedControl) return null;
-    const rule = selectedControl.rules[ruleKey];
+    const rule = normalizeControlRules(selectedControl.rules, selectedField)[ruleKey];
     const title = ruleLabels[ruleKey];
     return (
       <RuleToggleControl
@@ -1991,11 +2278,13 @@ export default function FormSettingsPage() {
       )));
 
       const fieldPermissions = baseConfig.fields.flatMap((field, index) => {
+        const permission = getRoleFieldPermission(field, index);
         const permissions = [
-          { action: 'view', effect: 'allow' },
-          { action: 'edit', effect: field.locked || index >= 2 ? 'deny' : 'allow' },
+          { action: 'view', effect: permission.visible ? 'allow' : 'deny' },
+          { action: 'edit', effect: permission.visible && permission.editable && !field.locked ? 'allow' : 'deny' },
+          { action: 'export', effect: permission.visible && permission.exportable ? 'allow' : 'deny' },
         ];
-        if (field.required) permissions.push({ action: 'create', effect: 'allow' });
+        if (permission.required) permissions.push({ action: 'create', effect: 'allow' });
         return permissions.map((permission) => ({
           role_id: role.id,
           action: permission.action,
@@ -2004,7 +2293,10 @@ export default function FormSettingsPage() {
         }));
       });
       await Promise.all(fieldPermissions.map((permission) => upsertPlatformFormPermission(form.id, permission)));
-      const nextPermissionDrafts = { ...permissionDrafts, [activePermissionRole]: draft };
+      const nextPermissionDrafts = Object.fromEntries(
+        Object.entries({ ...permissionDrafts, [activePermissionRole]: draft })
+          .map(([roleName, roleDraft]) => [roleName, sanitizePermissionDesignDraft(roleDraft)]),
+      ) as PermissionDraftMap;
       const nextConfig = {
         ...(form.config || {}),
         permissionDesign: {
@@ -2405,6 +2697,7 @@ export default function FormSettingsPage() {
     const control = makeComponentControl(component);
     commitLayoutChange((current) => [...current, control]);
     setSelectedControlId(control.id);
+    message.success(`已添加${component.name}`);
   };
 
   const updateSelectedControl = (patch: Partial<LayoutControl>) => {
@@ -2418,6 +2711,67 @@ export default function FormSettingsPage() {
     if (!selectedControlId) return;
     const currentRule = selectedControl?.encodingRule || makeEncodingRule(selectedField);
     updateSelectedControl({ encodingRule: { ...currentRule, ...patch } });
+  };
+
+  const syncEncodingSegments = (segments: EncodingSegment[]) => {
+    const dependencies = Array.from(new Set(
+      segments
+        .filter((segment) => segment.type === 'field' || segment.type === 'masterData')
+        .map((segment) => segment.sourceField)
+        .filter(Boolean) as string[],
+    ));
+    const sequenceSegment = segments.find((segment) => segment.type === 'sequence');
+    updateSelectedEncodingRule({
+      segments,
+      dependencies,
+      sequenceLength: sequenceSegment?.length || selectedEncodingRule?.sequenceLength || 3,
+      resetCycle: sequenceSegment?.resetCycle || selectedEncodingRule?.resetCycle || 'month',
+      regenerateOnDependencyChange: segments.some((segment) => segment.regenerateOnChange),
+    });
+  };
+
+  const openEncodingSegmentEditor = (segment?: EncodingSegment, index?: number) => {
+    setEncodingSegmentEditor({
+      open: true,
+      index,
+      draft: segment ? { ...segment } : makeEncodingSegment('fixed', baseConfig.fields),
+    });
+  };
+
+  const closeEncodingSegmentEditor = () => {
+    setEncodingSegmentEditor((current) => ({ ...current, open: false }));
+  };
+
+  const updateEncodingSegmentDraft = (patch: Partial<EncodingSegment>) => {
+    setEncodingSegmentEditor((current) => ({
+      ...current,
+      draft: { ...current.draft, ...patch },
+    }));
+  };
+
+  const saveEncodingSegmentDraft = () => {
+    if (!selectedControlUsesEncoding || !selectedEncodingRule) return;
+    const draft = encodingSegmentEditor.draft;
+    if (!draft.name?.trim()) {
+      message.warning('请填写编码段名称');
+      return;
+    }
+    if (!draft.length || draft.length < 1) {
+      message.warning('编码段位数至少为 1');
+      return;
+    }
+    const nextSegments = [...selectedEncodingSegments];
+    if (typeof encodingSegmentEditor.index === 'number') {
+      nextSegments[encodingSegmentEditor.index] = draft;
+    } else {
+      nextSegments.push(draft);
+    }
+    syncEncodingSegments(nextSegments);
+    closeEncodingSegmentEditor();
+  };
+
+  const removeEncodingSegment = (index: number) => {
+    syncEncodingSegments(selectedEncodingSegments.filter((_, segmentIndex) => segmentIndex !== index));
   };
 
   const moveLayoutControl = (sourceId: string, targetId: string, position: DropPosition = 'before') => {
@@ -2590,8 +2944,8 @@ export default function FormSettingsPage() {
     if (control.controlType === 'switch') {
       return <Segmented disabled={disabled} options={['否', '是']} value="否" />;
     }
-    if (control.controlType === 'readonly-text') {
-      return <Input disabled value="系统计算或引用值" />;
+    if (control.controlType === 'readonly-text' || control.controlType === 'code') {
+      return <Input disabled value={control.controlType === 'code' ? '自动生成编号' : '系统计算或引用值'} />;
     }
     return <Input disabled={disabled} placeholder={placeholder} />;
   };
@@ -2621,7 +2975,7 @@ export default function FormSettingsPage() {
       );
     }
 
-    if (['text', 'textarea', 'number', 'select', 'relation', 'datetime', 'upload', 'switch', 'readonly-text'].includes(control.controlType)) {
+    if (['text', 'textarea', 'number', 'select', 'relation', 'datetime', 'upload', 'switch', 'readonly-text', 'code'].includes(control.controlType)) {
       return (
         <div
           {...getCanvasControlDragProps(control)}
@@ -2635,6 +2989,35 @@ export default function FormSettingsPage() {
             {renderComponentInput(control)}
             {control.helpText && <small className="designer-control-help">{control.helpText}</small>}
           </label>
+        </div>
+      );
+    }
+
+    if (control.controlType === 'container' || control.controlType === 'two-columns') {
+      const isColumns = control.controlType === 'two-columns';
+      return (
+        <div
+          {...getCanvasControlDragProps(control)}
+          className={`designer-layout-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''} ${dragClass} ${ruleClass}`}
+          key={control.id}
+          onClick={() => setSelectedControlId(control.id)}
+        >
+          {renderControlActions(control)}
+          <div className="designer-layout-control-head">
+            <strong>{control.name}</strong>
+            <small>{isColumns ? '多列字段区域' : '字段分组容器'}</small>
+          </div>
+          <div className={isColumns ? 'designer-layout-columns-preview' : 'designer-layout-container-preview'}>
+            {isColumns ? (
+              <>
+                <span>左列字段</span>
+                <span>右列字段</span>
+              </>
+            ) : (
+              <span>拖入字段或控件到该分组</span>
+            )}
+          </div>
+          <small>{control.desc}</small>
         </div>
       );
     }
@@ -2691,6 +3074,21 @@ export default function FormSettingsPage() {
       );
     }
 
+    if (['summary-card', 'status-tag', 'file-preview', 'approval-comment', 'operation-log', 'status-flow', 'risk-level'].includes(control.controlType)) {
+      return (
+        <div
+          {...getCanvasControlDragProps(control)}
+          className={`designer-business-control ${controlWidthClass(control.width)} ${selectedControlId === control.id ? 'canvas-field-active' : ''} ${dragClass} ${ruleClass}`}
+          key={control.id}
+          onClick={() => setSelectedControlId(control.id)}
+        >
+          {renderControlActions(control)}
+          <strong>{control.name}</strong>
+          <span>{control.desc}</span>
+        </div>
+      );
+    }
+
     return (
       <div
         {...getCanvasControlDragProps(control)}
@@ -2720,41 +3118,11 @@ export default function FormSettingsPage() {
     );
   };
 
-  const renderFieldProperties = (field?: DesignerField) => {
-    if (!field) {
-      return <div className="designer-empty-props">当前控件未绑定字段，可在控件属性中选择绑定字段。</div>;
-    }
-    return (
-      <div className="designer-props">
-        <section className="designer-prop-section">
-          <strong className="designer-prop-section-title">字段资产</strong>
-          <label className="designer-prop-locked"><span>字段编码</span><Input value={field.key} disabled suffix="锁定" /></label>
-          <label><span>字段名称</span><Input value={field.name} readOnly /></label>
-          <label className="designer-prop-locked"><span>字段类型</span><Input value={getFieldBusinessTypeLabel(field)} disabled suffix="后端字段" /></label>
-          <label className="designer-prop-locked"><span>存储类型</span><Input value={mapDesignerFieldType(field)} disabled suffix="动态记录" /></label>
-          <label className={field.locked ? 'designer-prop-locked' : undefined}><span>字段状态</span><Input value={field.locked ? '锁定字段' : '可配置字段'} disabled={field.locked} readOnly suffix={field.locked ? '锁定' : undefined} /></label>
-        </section>
-        <section className="designer-prop-section">
-          <strong className="designer-prop-section-title">数据与校验</strong>
-          <label><span>是否必填</span>{genericRuleToggle(Boolean(field.required), '必填')}</label>
-          <label><span>默认值</span><Input value={field.defaultValue || '无'} readOnly /></label>
-          <label><span>校验规则</span><Input value={field.validation || '未配置'} readOnly /></label>
-          <label><span>枚举/关联来源</span><Input value={field.optionSource || '无'} readOnly /></label>
-        </section>
-        <section className="designer-prop-section">
-          <strong className="designer-prop-section-title">列表与检索</strong>
-          <label><span>列表展示</span>{genericRuleToggle(Boolean(field.listVisible), '列表展示')}</label>
-          <label><span>允许搜索</span>{genericRuleToggle(Boolean(field.searchable), '搜索')}</label>
-          <label><span>允许排序</span>{genericRuleToggle(Boolean(field.sortable), '排序')}</label>
-        </section>
-      </div>
-    );
-  };
-
   const activeRule = ruleModal && selectedControl?.id === ruleModal.controlId
-    ? selectedControl.rules[ruleModal.ruleKey]
+    ? normalizeControlRules(selectedControl.rules, selectedField)[ruleModal.ruleKey]
     : null;
   const activeRuleLabel = ruleModal ? ruleLabels[ruleModal.ruleKey] : '';
+  const activeRuleStrategyOptions = ruleModal ? ruleStrategyOptions[ruleModal.ruleKey] || [] : [];
   const conditionFieldOptions = baseConfig.fields.map((field) => ({ value: field.key, label: field.name }));
   const getPreviewFieldPermission = (fieldKey?: string) => (
     fieldKey ? selectedPreviewFlowNode?.fieldPermissions?.[fieldKey] : undefined
@@ -3016,18 +3384,28 @@ export default function FormSettingsPage() {
   const activeTabKey: string = activeTab;
   const permissionActionRows = permissionActionDefinitions.map((item) => ({ ...item, enabled: activePermissionDraft.actions[item.key] !== false }));
   const enabledPermissionActionCount = permissionActionRows.filter((item) => item.enabled).length;
-  const editablePermissionFieldCount = baseConfig.fields.filter((field, index) => !field.locked && (activePermissionRoleKind === 'system' || index < 5)).length;
-  const requiredPermissionFieldCount = baseConfig.fields.filter((field) => field.required).length;
-  const permissionScopeCards = [
-    { title: '数据范围', value: activePermissionDraft.data.scope, desc: '决定列表、详情和统计可见数据' },
-    { title: '组织来源', value: activePermissionDraft.data.orgUnits.join(' / ') || '未绑定组织', desc: '来自组织管理和用户归属' },
-    { title: '敏感字段', value: activePermissionDraft.data.sensitiveFields, desc: '影响导出、详情和 AI 问答上下文' },
-  ];
-  const enabledWorkflowPermissionCount = Object.values(activePermissionDraft.workflow).filter(Boolean).length;
-  const enabledConfigPermissionCount = Object.values(activePermissionDraft.config).filter(Boolean).length;
-  const workflowPermissionItems = permissionWorkflowDefinitions.map((item) => ({ ...item, enabled: activePermissionDraft.workflow[item.key] !== false }));
-  const configPermissionItems = permissionConfigDefinitions.map((item) => ({ ...item, enabled: activePermissionDraft.config[item.key] !== false }));
-
+  const editablePermissionFieldCount = baseConfig.fields.filter((field, index) => getRoleFieldPermission(field, index).editable).length;
+  const requiredPermissionFieldCount = baseConfig.fields.filter((field, index) => getRoleFieldPermission(field, index).required).length;
+  const permissionFieldPageSize = 60;
+  const filteredPermissionFields = baseConfig.fields
+    .map((field, index) => ({ field, index, permission: getRoleFieldPermission(field, index) }))
+    .filter(({ field, permission }) => {
+      const query = fieldPermissionQuery.trim().toLowerCase();
+      const matchesQuery = !query || field.name.toLowerCase().includes(query) || field.key.toLowerCase().includes(query);
+      const matchesFilter =
+        fieldPermissionFilter === 'all'
+        || (fieldPermissionFilter === 'hidden' && !permission.visible)
+        || (fieldPermissionFilter === 'editable' && permission.editable)
+        || (fieldPermissionFilter === 'required' && permission.required)
+        || (fieldPermissionFilter === 'exportable' && permission.exportable);
+      return matchesQuery && matchesFilter;
+    });
+  const fieldPermissionPageCount = Math.max(1, Math.ceil(filteredPermissionFields.length / permissionFieldPageSize));
+  const safeFieldPermissionPage = Math.min(fieldPermissionPage, fieldPermissionPageCount);
+  const pagedPermissionFields = filteredPermissionFields.slice(
+    (safeFieldPermissionPage - 1) * permissionFieldPageSize,
+    safeFieldPermissionPage * permissionFieldPageSize,
+  );
   return (
     <div className="form-designer-page">
       <header className="form-designer-toolbar">
@@ -3066,7 +3444,7 @@ export default function FormSettingsPage() {
         </Space>
       </header>
 
-      <section className={`form-designer-shell ${activeTab === 'permission' || activeTab === 'filter' || activeTab === 'flow' ? 'form-designer-shell-no-left' : ''} ${activeTab === 'filter' ? 'form-designer-shell-data-view' : ''}`}>
+      <section className={`form-designer-shell ${activeTab === 'permission' || activeTab === 'filter' || activeTab === 'flow' ? 'form-designer-shell-no-left' : ''} ${activeTab === 'filter' ? 'form-designer-shell-data-view' : ''} ${activeTab === 'permission' ? 'form-designer-shell-permission' : ''}`}>
         {!(['permission', 'filter', 'flow'] as DesignerTab[]).includes(activeTab) && (
           <aside className="form-designer-left">
             <div className="designer-panel-head">
@@ -3104,7 +3482,7 @@ export default function FormSettingsPage() {
                 <div className="designer-group-title">快捷排版</div>
                 <div className="designer-side-guide">
                   <strong>配置引导</strong>
-                  <span>{activeTab === 'filter' ? '配置运行页查询条件，选中后在右侧查看字段属性，发布时会同步做业务校验。' : '拖入字段/控件，选中后在右侧配置属性，发布时会同步做业务校验。'}</span>
+                  <span>{activeTab === 'filter' ? '配置运行页查询条件，选中后在右侧查看属性，发布时会同步做业务校验。' : '拖入字段/控件，选中后在右侧配置属性，发布时会同步做业务校验。'}</span>
                   <div>
                     <Tag color="blue">{activeTab === 'filter' ? '筛选字段' : '字段'} {libraryFields.length}</Tag>
                     <Tag color="green">{activeTab === 'filter' ? '筛选项' : '控件'} {activeTab === 'filter' ? baseConfig.filters.length : layoutControls.length}</Tag>
@@ -3133,7 +3511,7 @@ export default function FormSettingsPage() {
               {componentPanel === 'components' ? (
                 <div className="designer-component-library">
                   <section className="designer-component-group">
-                    <div className="designer-group-title">常用控件</div>
+                    <div className="designer-group-title">快捷添加</div>
                     <div className="designer-component-list">
                       {filteredCommonControls.map((item) => (
                         <div
@@ -3141,8 +3519,12 @@ export default function FormSettingsPage() {
                           draggable
                           key={item.key}
                           data-desc={item.desc}
-                          onClick={() => activeTab === 'filter' ? message.info('筛选页先选择字段，再在右侧查看或调整字段属性') : addComponentToCanvas(item)}
-                          onDragStart={(event) => event.dataTransfer.setData('componentKey', item.key)}
+                          onClick={() => activeTab === 'filter' ? message.info('筛选页先选择字段，再在右侧查看或调整属性') : addComponentToCanvas(item)}
+                          onDragEnd={() => setCanvasDragActive(false)}
+                          onDragStart={(event) => {
+                            event.dataTransfer.setData('componentKey', item.key);
+                            setCanvasDragActive(true);
+                          }}
                         >
                           <span className="designer-component-icon">{item.icon}</span>
                           <div>
@@ -3154,7 +3536,7 @@ export default function FormSettingsPage() {
                     </div>
                   </section>
                   {filteredComponentGroups.map((group) => (
-                    <details className="designer-component-group designer-component-collapse" key={group.category}>
+                    <details className="designer-component-group designer-component-collapse" key={group.category} open={!normalizedLibrarySearch}>
                       <summary className="designer-group-title">
                         <span>{group.category}</span>
                         <small>{group.items.length} 个</small>
@@ -3166,8 +3548,12 @@ export default function FormSettingsPage() {
                             draggable
                             key={item.key}
                             data-desc={item.desc}
-                            onClick={() => activeTab === 'filter' ? message.info('筛选页先选择字段，再在右侧查看或调整字段属性') : addComponentToCanvas(item)}
-                            onDragStart={(event) => event.dataTransfer.setData('componentKey', item.key)}
+                            onClick={() => activeTab === 'filter' ? message.info('筛选页先选择字段，再在右侧查看或调整属性') : addComponentToCanvas(item)}
+                            onDragEnd={() => setCanvasDragActive(false)}
+                            onDragStart={(event) => {
+                              event.dataTransfer.setData('componentKey', item.key);
+                              setCanvasDragActive(true);
+                            }}
                           >
                             <span className="designer-component-icon">{item.icon}</span>
                             <div>
@@ -3267,7 +3653,7 @@ export default function FormSettingsPage() {
               <div className="create-form-modal" onClick={(event) => event.stopPropagation()}>
                 <div className={`create-form-grid ${isCanvasDragActive ? 'canvas-drag-active' : ''}`}>
                   {layoutControls.map(renderCanvasControl)}
-                  {isCanvasDragActive && draggedControlId && !dropHint && <div className="canvas-drop-end-indicator">拖到这里放在末尾</div>}
+                  {isCanvasDragActive && !dropHint && <div className="canvas-drop-end-indicator">拖到这里放在末尾</div>}
                 </div>
                 <div className="create-form-actions">
                   <Button>取消</Button>
@@ -3301,28 +3687,7 @@ export default function FormSettingsPage() {
           )}
 
           {activeTabKey === 'permission' && (
-            <div className="canvas-board permission-canvas">
-              <div className="permission-overview">
-                <div>
-                  <strong>{baseConfig.name}权限配置</strong>
-                  <span>配置表单数据、动作、字段、流程和配置权限；菜单入口由“应用与菜单”统一控制。</span>
-                </div>
-                <Space size={8}>
-                  <Tag color="processing">当前：{activePermissionRole}</Tag>
-                  <Tag color="blue">{baseConfig.fields.length} 个字段</Tag>
-                  <Tag color="green">{permissionRoles.length} 个角色</Tag>
-                  <Button
-                    size="small"
-                    type="primary"
-                    icon={<SaveOutlined />}
-                    loading={isPersistingPermissions}
-                    onClick={savePermissionDesign}
-                  >
-                    保存权限
-                  </Button>
-                </Space>
-              </div>
-
+            <div className="permission-canvas">
               <div className="permission-workbench">
                 <aside className="permission-role-rail">
                   <div className="permission-rail-head">
@@ -3330,7 +3695,18 @@ export default function FormSettingsPage() {
                       <div className="permission-section-title">1. 选择授权对象</div>
                       <small>来自用户与权限中心的角色</small>
                     </div>
-                    <Tag>{permissionRoles.length}</Tag>
+                    <Space size={6}>
+                      <Tag>{permissionRoles.length}</Tag>
+                      <Button
+                        aria-label="保存权限"
+                        icon={<SaveOutlined />}
+                        loading={isPersistingPermissions}
+                        onClick={savePermissionDesign}
+                        size="small"
+                        title="保存权限"
+                        type="text"
+                      />
+                    </Space>
                   </div>
                   <Input size="small" prefix={<SearchOutlined />} placeholder="搜索角色" />
                   {permissionRoles.map((role, index) => (
@@ -3383,13 +3759,15 @@ export default function FormSettingsPage() {
                         <Select
                           mode="multiple"
                           size="small"
-                          value={activePermissionDraft.data.orgUnits}
+                          value={(activePermissionDraft.data.orgUnits || [])
+                            .map((value) => Number(value))
+                            .filter((value) => Number.isInteger(value) && value > 0)}
                           onChange={(orgUnits) => updateActivePermissionDraft((draft) => ({
                             ...draft,
                             data: { ...draft.data, orgUnits },
                           }))}
                           maxTagCount="responsive"
-                          options={permissionOrgUnits.map((unit) => ({ value: unit, label: unit }))}
+                          options={permissionOrgUnitOptions}
                         />
                       </label>
                       <label>
@@ -3432,12 +3810,6 @@ export default function FormSettingsPage() {
                         </Checkbox>
                       ))}
                     </div>
-                    <div className="permission-condition-strip">
-                      <Tag color="blue">组织树</Tag>
-                      <Tag color="cyan">本人创建</Tag>
-                      <Tag color="purple">分派给我</Tag>
-                      <Tag color={activePermissionDraft.data.sensitiveFields === 'full' ? 'green' : 'orange'}>{activePermissionDraft.data.sensitiveFields === 'full' ? '不脱敏' : '敏感字段脱敏'}</Tag>
-                    </div>
                   </section>
 
                   <section className="permission-card permission-action-card">
@@ -3469,117 +3841,115 @@ export default function FormSettingsPage() {
                         </Tooltip>
                       ))}
                     </div>
-                    <div className="permission-action-binding">
-                      <span>前台联动</span>
-                      <Tag>新建按钮</Tag>
-                      <Tag>表格编辑</Tag>
-                      <Tag>表格删除</Tag>
-                      <Tag>导入导出工具栏</Tag>
-                      <Tag>流程审批入口</Tag>
-                    </div>
                   </section>
 
                   <section className="permission-card permission-field-card">
                     <div className="permission-card-head">
                       <div>
-                        <div className="permission-section-title">3. 字段权限</div>
-                        <span>每一行就是一个字段，横向看可见、编辑、必填和导出策略</span>
+                        <div className="permission-section-title">3. 角色字段权限</div>
+                        <span>按字段搜索和筛选后批量处理当前角色的运行时覆盖；字段默认参数仍在字段设置里维护</span>
                       </div>
                       <Space size={6}>
-                        <Tag color="green">可见 {baseConfig.fields.length}</Tag>
+                        <Tag color="green">字段 {baseConfig.fields.length}</Tag>
                         <Tag color="blue">可编辑 {editablePermissionFieldCount}</Tag>
-                        <Tag color="orange">必填 {requiredPermissionFieldCount}</Tag>
+                        <Tag color="orange">角色必填 {requiredPermissionFieldCount}</Tag>
                         <Button size="small">批量设置</Button>
                       </Space>
                     </div>
+                    <div className="permission-field-tools">
+                      <Input
+                        allowClear
+                        prefix={<SearchOutlined />}
+                        placeholder="搜索字段名称或编码"
+                        value={fieldPermissionQuery}
+                        onChange={(event) => {
+                          setFieldPermissionQuery(event.target.value);
+                          setFieldPermissionPage(1);
+                        }}
+                      />
+                      <Select
+                        value={fieldPermissionFilter}
+                        onChange={(value) => {
+                          setFieldPermissionFilter(value);
+                          setFieldPermissionPage(1);
+                        }}
+                        options={[
+                          { value: 'all', label: '全部字段' },
+                          { value: 'hidden', label: '隐藏字段' },
+                          { value: 'editable', label: '可编辑' },
+                          { value: 'required', label: '角色必填' },
+                          { value: 'exportable', label: '允许导出' },
+                        ]}
+                      />
+                      <span>{filteredPermissionFields.length} 个匹配字段</span>
+                    </div>
                     <div className="permission-field-matrix">
                       <div className="permission-field-head">
-                        <span>字段</span><span>可见</span><span>可编辑</span><span>必填</span><span>导出</span>
+                        <span>字段</span><span>可见</span><span>编辑</span><span>必填</span><span>导出</span>
                       </div>
-                      {baseConfig.fields.map((field, index) => (
-                        <div className="permission-field-row" key={field.key}>
-                          <span>{field.name}</span>
-                          <Tag color="green">可见</Tag>
-                          <Tag color={field.locked ? 'default' : activePermissionRoleKind === 'system' || index < 5 ? 'blue' : 'default'}>
-                            {field.locked ? '锁定' : activePermissionRoleKind === 'system' || index < 5 ? '可编辑' : '只读'}
-                          </Tag>
-                          <Tag color={field.required ? 'orange' : 'default'}>{field.required ? '必填' : '可选'}</Tag>
-                          <Tag color={activePermissionRoleKind === 'operator' && index > 4 ? 'default' : 'cyan'}>
-                            {activePermissionRoleKind === 'operator' && index > 4 ? '脱敏' : '允许'}
-                          </Tag>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section className="permission-card permission-workflow-card">
-                    <div className="permission-card-head">
-                      <div>
-                        <div className="permission-section-title">4. 流程权限</div>
-                        <span>控制提交、审批、驳回、转交和流程日志</span>
+                      <div className="permission-field-list">
+                      {pagedPermissionFields.map(({ field, index, permission }) => {
+                        return (
+                          <div className="permission-field-row" key={field.key}>
+                            <span title={`${field.name} / ${field.key}`}>
+                              <strong>{field.name}</strong>
+                              <small>{field.key}</small>
+                            </span>
+                            <Switch
+                              size="small"
+                              checked={permission.visible}
+                              onChange={(checked) => updateRoleFieldPermission(field, index, {
+                                visible: checked,
+                                editable: checked ? permission.editable : false,
+                                required: checked ? permission.required : false,
+                              })}
+                            />
+                            <Switch
+                              size="small"
+                              checked={permission.visible && permission.editable}
+                              disabled={field.locked || !permission.visible}
+                              onChange={(checked) => updateRoleFieldPermission(field, index, { editable: checked })}
+                            />
+                            <Switch
+                              size="small"
+                              checked={permission.visible && permission.required}
+                              disabled={!permission.visible}
+                              onChange={(checked) => updateRoleFieldPermission(field, index, { required: checked })}
+                            />
+                            <Switch
+                              size="small"
+                              checked={permission.visible && permission.exportable}
+                              disabled={!permission.visible}
+                              onChange={(checked) => updateRoleFieldPermission(field, index, { exportable: checked })}
+                            />
+                          </div>
+                        );
+                      })}
                       </div>
-                      <Tag color="purple">{professionalFlowConfig.nodes.length} 个节点</Tag>
-                    </div>
-                    <div className="permission-toggle-grid permission-toggle-grid-compact">
-                      {workflowPermissionItems.map((item) => (
-                        <label className="permission-toggle-row" key={item.title}>
-                          <span>
-                            <strong>{item.title}</strong>
-                            <small>{item.desc}</small>
-                          </span>
-                          <Switch
+                      <div className="permission-field-pager">
+                        <span>
+                          第 {safeFieldPermissionPage} / {fieldPermissionPageCount} 页，每页 {permissionFieldPageSize} 个字段
+                        </span>
+                        <Space size={6}>
+                          <Button
                             size="small"
-                            checked={item.enabled}
-                            onChange={(checked) => updateActivePermissionDraft((draft) => ({
-                              ...draft,
-                              workflow: { ...draft.workflow, [item.key]: checked },
-                            }))}
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section className="permission-card permission-config-card">
-                    <div className="permission-card-head">
-                      <div>
-                        <div className="permission-section-title">5. 配置权限</div>
-                        <span>控制谁能修改低代码配置、发布版本和回滚历史</span>
-                      </div>
-                      <LockOutlined />
-                    </div>
-                    <div className="permission-config-grid">
-                      {configPermissionItems.map((item) => (
-                        <label className="permission-config-item" key={item.title}>
-                          <span>{item.title}</span>
-                          <Switch
+                            disabled={safeFieldPermissionPage <= 1}
+                            onClick={() => setFieldPermissionPage((page) => Math.max(1, page - 1))}
+                          >
+                            上一页
+                          </Button>
+                          <Button
                             size="small"
-                            checked={item.enabled}
-                            onChange={(checked) => updateActivePermissionDraft((draft) => ({
-                              ...draft,
-                              config: { ...draft.config, [item.key]: checked },
-                            }))}
-                          />
-                        </label>
-                      ))}
+                            disabled={safeFieldPermissionPage >= fieldPermissionPageCount}
+                            onClick={() => setFieldPermissionPage((page) => Math.min(fieldPermissionPageCount, page + 1))}
+                          >
+                            下一页
+                          </Button>
+                        </Space>
+                      </div>
                     </div>
                   </section>
 
-                  <section className="permission-card permission-summary-card">
-                    <div className="permission-card-head">
-                      <div>
-                        <div className="permission-section-title">生效摘要</div>
-                        <span>保存后会关联运行页、菜单入口、流程审批、导出能力和字段策略</span>
-                      </div>
-                      <Tag color="orange">草稿待发布</Tag>
-                    </div>
-                    <div className="permission-summary-list">
-                      <div><strong>应用</strong><span>{baseConfig.appName}</span></div>
-                      <div><strong>表单</strong><span>{baseConfig.name}</span></div>
-                      <div><strong>角色</strong><span>{activePermissionRole}</span></div>
-                      <div><strong>数据范围</strong><span>{permissionScopeCards[0].value}</span></div>
-                    </div>
-                  </section>
                 </div>
               </div>
             </div>
@@ -3605,17 +3975,7 @@ export default function FormSettingsPage() {
           </div>
 
           {selectedControl ? (
-            <Tabs
-              className="designer-prop-tabs"
-              size="small"
-              activeKey={propertyTab}
-              onChange={(key) => setPropertyTab(key as 'control' | 'field')}
-              items={[
-                {
-                  key: 'control',
-                  label: '控件属性',
-                  children: (
-                      <div className="designer-props">
+            <div className="designer-props">
                         <section className="designer-prop-section">
                           <strong className="designer-prop-section-title">控件身份</strong>
                           <label>
@@ -3642,8 +4002,14 @@ export default function FormSettingsPage() {
                           </label>
                           <label className="designer-prop-locked">
                             <span>字段类型</span>
-                            <Input value={selectedField ? getFieldBusinessTypeLabel(selectedField) : '未绑定字段'} disabled suffix="后端字段" />
+                            <Input value={getFieldStorageTypeLabel(selectedField)} disabled suffix="数据库字段" />
                           </label>
+                          {selectedControlUsesEncoding && (
+                            <label className="designer-prop-locked">
+                              <span>业务特性</span>
+                              <Input value="编码" disabled suffix="控件能力" />
+                            </label>
+                          )}
                       </section>
                       {selectedControlUsesDataSource && (
                         <section className="designer-prop-section">
@@ -3721,94 +4087,6 @@ export default function FormSettingsPage() {
                           </label>
                         </section>
                       )}
-                      {selectedControlUsesEncoding && selectedEncodingRule && (
-                        <section className="designer-prop-section">
-                          <strong className="designer-prop-section-title">编码规则</strong>
-                          <label><span>启用编码</span><Switch checked={selectedEncodingRule.enabled} onChange={(enabled) => updateSelectedEncodingRule({ enabled })} /></label>
-                          <label>
-                            <span>编码模板</span>
-                            <Input
-                              value={selectedEncodingRule.template}
-                              placeholder="{PREFIX}-{YYMM}-{DEP}-{SEQ5}"
-                              onChange={(event) => updateSelectedEncodingRule({ template: event.target.value })}
-                            />
-                          </label>
-                          <label>
-                            <span>总长度</span>
-                            <InputNumber
-                              min={4}
-                              max={64}
-                              value={selectedEncodingRule.fixedLength}
-                              onChange={(fixedLength) => updateSelectedEncodingRule({ fixedLength: Number(fixedLength || 13) })}
-                            />
-                          </label>
-                          <label>
-                            <span>前缀</span>
-                            <Input
-                              allowClear
-                              value={selectedEncodingRule.prefix || ''}
-                              onChange={(event) => updateSelectedEncodingRule({ prefix: event.target.value })}
-                            />
-                          </label>
-                          <label>
-                            <span>日期段</span>
-                            <Select
-                              value={selectedEncodingRule.datePattern || 'YYMM'}
-                              options={encodingDatePatternOptions}
-                              onChange={(datePattern) => updateSelectedEncodingRule({ datePattern })}
-                            />
-                          </label>
-                          <label>
-                            <span>依赖字段</span>
-                            <Select
-                              mode="multiple"
-                              allowClear
-                              value={selectedEncodingRule.dependencies}
-                              options={baseConfig.fields.filter((field) => field.key !== selectedField?.key).map((field) => ({ value: field.key, label: field.name }))}
-                              placeholder="选择影响编码变化的字段"
-                              onChange={(dependencies) => updateSelectedEncodingRule({ dependencies })}
-                            />
-                          </label>
-                          <label>
-                            <span>依赖段位数</span>
-                            <InputNumber
-                              min={0}
-                              max={16}
-                              disabled={!selectedEncodingRule.dependencies.length}
-                              value={selectedEncodingRule.dependencySegmentLength}
-                              onChange={(dependencySegmentLength) => updateSelectedEncodingRule({ dependencySegmentLength: Number(dependencySegmentLength || 0) })}
-                            />
-                          </label>
-                          <label>
-                            <span>流水位数</span>
-                            <InputNumber
-                              min={1}
-                              max={16}
-                              value={selectedEncodingRule.sequenceLength}
-                              onChange={(sequenceLength) => {
-                                const nextLength = Number(sequenceLength || 3);
-                                updateSelectedEncodingRule({
-                                  sequenceLength: nextLength,
-                                  template: selectedEncodingRule.template.replace(/\{SEQ\d*\}/, `{SEQ${nextLength}}`),
-                                });
-                              }}
-                            />
-                          </label>
-                          <label>
-                            <span>重置周期</span>
-                            <Select
-                              value={selectedEncodingRule.resetCycle}
-                              options={encodingResetCycleOptions}
-                              onChange={(resetCycle) => updateSelectedEncodingRule({ resetCycle })}
-                            />
-                          </label>
-                          <label><span>依赖变化重算</span><Switch checked={selectedEncodingRule.regenerateOnDependencyChange} onChange={(regenerateOnDependencyChange) => updateSelectedEncodingRule({ regenerateOnDependencyChange })} /></label>
-                          <label><span>允许手工改号</span><Switch checked={selectedEncodingRule.allowManualOverride} onChange={(allowManualOverride) => updateSelectedEncodingRule({ allowManualOverride })} /></label>
-                          <label><span>唯一校验</span><Switch checked={selectedEncodingRule.unique} onChange={(unique) => updateSelectedEncodingRule({ unique })} /></label>
-                          <label className="designer-prop-row-wide"><span>组成说明</span><Input value={getEncodingComposition(selectedEncodingRule)} readOnly /></label>
-                          <label className="designer-prop-row-wide"><span>编码示例</span><Input value={renderEncodingSample(selectedEncodingRule, baseConfig.fields)} readOnly /></label>
-                        </section>
-                      )}
                       <section className="designer-prop-section">
                         <strong className="designer-prop-section-title">布局</strong>
                           <label className="designer-prop-row-wide">
@@ -3828,10 +4106,14 @@ export default function FormSettingsPage() {
                         </label>
                       </section>
                         <section className="designer-prop-section">
-                          <strong className="designer-prop-section-title">交互规则</strong>
-                          <label><span>显示</span>{controlRuleToggle('visible')}</label>
-                          <label><span>只读</span>{controlRuleToggle('readonly')}</label>
-                          <label><span>必输</span>{controlRuleToggle('required')}</label>
+                          <strong className="designer-prop-section-title">默认交互规则</strong>
+                          <label><span>默认显示</span>{controlRuleToggle('visible')}</label>
+                          <label><span>默认只读</span>{controlRuleToggle('readonly')}</label>
+                          <label><span>默认必输</span>{controlRuleToggle('required')}</label>
+                          <label><span>唯一校验</span>{controlRuleToggle('unique')}</label>
+                          <label><span>默认脱敏</span>{controlRuleToggle('masked')}</label>
+                          <label><span>允许复制</span>{controlRuleToggle('copyable')}</label>
+                          {selectedControlUsesOptionSort && <label><span>选项排序</span>{controlRuleToggle('optionSort')}</label>}
                           {hiddenRequiredControls.length > 0 && <Tag color="red">存在隐藏且必填冲突</Tag>}
                         </section>
                         <section className="designer-prop-section">
@@ -3857,21 +4139,75 @@ export default function FormSettingsPage() {
                           <label><span>变更触发</span>{genericRuleToggle(false, '变更触发')}</label>
                           <label><span>联动刷新</span><Input value="未绑定联动规则" readOnly /></label>
                           <label><span>异常提示</span><Input value="使用字段校验提示" readOnly /></label>
-                        <label><span>权限覆盖</span><Input value="跟随表单权限" readOnly /></label>
+                        <label><span>角色差异</span><Input value="在权限设计中统一配置" readOnly /></label>
                       </section>
+                      {selectedControlUsesEncoding && selectedEncodingRule && (
+                        <section className="designer-prop-section">
+                          <strong className="designer-prop-section-title">编码规则</strong>
+                          <label>
+                            <span>生成方式</span>
+                            <Select
+                              value={selectedEncodingRule.generationMode || 'auto'}
+                              options={encodingGenerationModeOptions}
+                              onChange={(generationMode) => updateSelectedEncodingRule({
+                                generationMode,
+                                allowManualOverride: generationMode === 'autoEditable' || generationMode === 'manual',
+                              })}
+                            />
+                          </label>
+                          <label>
+                            <span>生成时机</span>
+                            <Select
+                              value={selectedEncodingRule.generationTiming || 'create'}
+                              options={encodingGenerationTimingOptions}
+                              onChange={(generationTiming) => updateSelectedEncodingRule({ generationTiming })}
+                            />
+                          </label>
+                          <label>
+                            <span>唯一范围</span>
+                            <Select
+                              value={selectedEncodingRule.uniquenessScope || 'form'}
+                              options={encodingUniquenessScopeOptions}
+                              onChange={(uniquenessScope) => updateSelectedEncodingRule({ uniquenessScope, unique: uniquenessScope !== 'dependency' || selectedEncodingSegments.length > 0 })}
+                            />
+                          </label>
+                          <div className="designer-prop-row-wide encoding-segment-list">
+                            <Button
+                              block
+                              icon={<PlusOutlined />}
+                              onClick={() => openEncodingSegmentEditor()}
+                              size="small"
+                            >
+                              新增编码段
+                            </Button>
+                            {selectedEncodingSegments.map((segment, index) => (
+                              <div className="encoding-segment-card" key={segment.id}>
+                                <button
+                                  className="encoding-segment-main"
+                                  onClick={() => openEncodingSegmentEditor(segment, index)}
+                                  type="button"
+                                >
+                                  <strong>{segment.name || getEncodingSegmentTypeLabel(segment.type)}</strong>
+                                  <small>
+                                    {getEncodingSegmentTypeLabel(segment.type)} · {segment.length || 0} 位 · 示例 {renderEncodingSegmentSample(segment, baseConfig.fields) || '-'}
+                                  </small>
+                                </button>
+                                <Button
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                  onClick={() => removeEncodingSegment(index)}
+                                  size="small"
+                                  type="text"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <label><span>组成说明</span><Input value={getEncodingComposition(selectedEncodingRule, baseConfig.fields)} readOnly /></label>
+                          <label><span>编码示例</span><Input value={renderEncodingSample(selectedEncodingRule, baseConfig.fields)} readOnly /></label>
+                        </section>
+                      )}
                       {renderTableProperties()}
                     </div>
-                  ),
-                },
-                {
-                  key: 'field',
-                  label: '字段属性',
-                  children: renderFieldProperties(selectedField),
-                },
-              ]}
-            />
-          ) : selectedField ? (
-            <Tabs className="designer-prop-tabs" size="small" items={[{ key: 'field', label: '字段属性', children: renderFieldProperties(selectedField) }]} />
           ) : (
             <div className="designer-props">
               <section className="designer-prop-section">
@@ -3895,6 +4231,174 @@ export default function FormSettingsPage() {
         </aside>
         )}
       </section>
+
+      <Modal
+        centered
+        className="encoding-segment-modal"
+        okText="保存编码段"
+        onCancel={closeEncodingSegmentEditor}
+        onOk={saveEncodingSegmentDraft}
+        open={encodingSegmentEditor.open}
+        title={typeof encodingSegmentEditor.index === 'number' ? '编辑编码段' : '新增编码段'}
+        width={560}
+      >
+        <div className="encoding-segment-form">
+          <label>
+            <span>段类型</span>
+            <Select
+              value={encodingSegmentEditor.draft.type}
+              options={encodingSegmentTypeOptions}
+              onChange={(type) => {
+                const nextSegment = makeEncodingSegment(type, baseConfig.fields);
+                updateEncodingSegmentDraft({
+                  ...nextSegment,
+                  id: encodingSegmentEditor.draft.id,
+                  name: encodingSegmentEditor.draft.name || nextSegment.name,
+                });
+              }}
+            />
+          </label>
+          <label>
+            <span>段名称</span>
+            <Input
+              value={encodingSegmentEditor.draft.name}
+              onChange={(event) => updateEncodingSegmentDraft({ name: event.target.value })}
+            />
+          </label>
+          <label>
+            <span>位数</span>
+            <InputNumber
+              min={1}
+              max={64}
+              value={encodingSegmentEditor.draft.length}
+              onChange={(length) => updateEncodingSegmentDraft({ length: Number(length || 1) })}
+            />
+          </label>
+          <label>
+            <span>补位方式</span>
+            <Select
+              value={encodingSegmentEditor.draft.padding || 'none'}
+              options={encodingPaddingOptions}
+              onChange={(padding) => updateEncodingSegmentDraft({ padding })}
+            />
+          </label>
+          {encodingSegmentEditor.draft.type === 'fixed' && (
+            <label>
+              <span>固定值</span>
+              <Input
+                value={encodingSegmentEditor.draft.value || ''}
+                placeholder="例如 AL、WO、QC"
+                onChange={(event) => updateEncodingSegmentDraft({ value: event.target.value })}
+              />
+            </label>
+          )}
+          {encodingSegmentEditor.draft.type === 'date' && (
+            <label>
+              <span>日期格式</span>
+              <Select
+                value={encodingSegmentEditor.draft.datePattern || 'YYMM'}
+                options={encodingDatePatternOptions}
+                onChange={(datePattern) => updateEncodingSegmentDraft({
+                  datePattern,
+                  length: getDateSegmentLength(datePattern) || encodingSegmentEditor.draft.length,
+                })}
+              />
+            </label>
+          )}
+          {(encodingSegmentEditor.draft.type === 'field' || encodingSegmentEditor.draft.type === 'masterData') && (
+            <>
+              <label>
+                <span>依据字段</span>
+                <Select
+                  allowClear
+                  value={encodingSegmentEditor.draft.sourceField}
+                  options={baseConfig.fields
+                    .filter((field) => field.key !== selectedField?.key)
+                    .map((field) => ({ value: field.key, label: `${field.name} / ${field.key}` }))}
+                  placeholder="选择字段变化时影响编码"
+                  onChange={(sourceField) => updateEncodingSegmentDraft({ sourceField, regenerateOnChange: Boolean(sourceField) })}
+                />
+              </label>
+              <label>
+                <span>取值属性</span>
+                <Select
+                  value={encodingSegmentEditor.draft.sourceAttribute || 'code'}
+                  options={[
+                    { value: 'code', label: '编码' },
+                    { value: 'id', label: 'ID' },
+                    { value: 'shortName', label: '简称' },
+                    { value: 'custom', label: '自定义属性' },
+                  ]}
+                  onChange={(sourceAttribute) => updateEncodingSegmentDraft({ sourceAttribute })}
+                />
+              </label>
+            </>
+          )}
+          {encodingSegmentEditor.draft.type === 'organization' && (
+            <label>
+              <span>组织属性</span>
+              <Select
+                value={encodingSegmentEditor.draft.sourceAttribute || 'org_code'}
+                options={[
+                  { value: 'org_code', label: '组织编码' },
+                  { value: 'factory_code', label: '工厂编码' },
+                  { value: 'department_code', label: '部门编码' },
+                  { value: 'org_name', label: '组织简称' },
+                ]}
+                onChange={(sourceAttribute) => updateEncodingSegmentDraft({ sourceAttribute })}
+              />
+            </label>
+          )}
+          {encodingSegmentEditor.draft.type === 'sequence' && (
+            <>
+              <label>
+                <span>起始值</span>
+                <InputNumber
+                  min={0}
+                  max={999999}
+                  value={encodingSegmentEditor.draft.sequenceStart || 1}
+                  onChange={(sequenceStart) => updateEncodingSegmentDraft({ sequenceStart: Number(sequenceStart || 1) })}
+                />
+              </label>
+              <label>
+                <span>步长</span>
+                <InputNumber
+                  min={1}
+                  max={100}
+                  value={encodingSegmentEditor.draft.sequenceStep || 1}
+                  onChange={(sequenceStep) => updateEncodingSegmentDraft({ sequenceStep: Number(sequenceStep || 1) })}
+                />
+              </label>
+              <label>
+                <span>重置周期</span>
+                <Select
+                  value={encodingSegmentEditor.draft.resetCycle || 'month'}
+                  options={encodingResetCycleOptions}
+                  onChange={(resetCycle) => updateEncodingSegmentDraft({ resetCycle })}
+                />
+              </label>
+            </>
+          )}
+          <label>
+            <span>字段变化重算</span>
+            <Checkbox
+              checked={Boolean(encodingSegmentEditor.draft.regenerateOnChange)}
+              onChange={(event) => updateEncodingSegmentDraft({ regenerateOnChange: event.target.checked })}
+            />
+          </label>
+          <label>
+            <span>生成后锁定</span>
+            <Checkbox
+              checked={encodingSegmentEditor.draft.lockAfterGenerated !== false}
+              onChange={(event) => updateEncodingSegmentDraft({ lockAfterGenerated: event.target.checked })}
+            />
+          </label>
+          <div className="encoding-segment-preview">
+            <span>段示例</span>
+            <strong>{renderEncodingSegmentSample(encodingSegmentEditor.draft, baseConfig.fields) || '-'}</strong>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         centered
@@ -4061,6 +4565,27 @@ export default function FormSettingsPage() {
                 ]}
               />
             </label>
+            {activeRuleStrategyOptions.length > 0 && (
+              <label>
+                <span>规则策略</span>
+                <Select
+                  value={activeRule.conditions?.strategy || activeRuleStrategyOptions[0]?.value}
+                  onChange={(value) => updateSelectedRuleCondition(ruleModal.ruleKey, { strategy: value })}
+                  options={activeRuleStrategyOptions}
+                />
+              </label>
+            )}
+            {activeRuleStrategyOptions.length > 0 && (
+              <label>
+                <span>策略参数</span>
+                <Input
+                  allowClear
+                  placeholder="例如：组合唯一字段、脱敏保留位数、导出审批说明"
+                  value={activeRule.conditions?.parameter || ''}
+                  onChange={(event) => updateSelectedRuleCondition(ruleModal.ruleKey, { parameter: event.target.value })}
+                />
+              </label>
+            )}
             <label>
               <span>条件来源字段</span>
               <Select

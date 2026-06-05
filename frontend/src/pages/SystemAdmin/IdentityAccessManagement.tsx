@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuditOutlined, SafetyCertificateOutlined, SettingOutlined, TeamOutlined, UserSwitchOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Form, Input, InputNumber, Space, Statistic, Switch, Tabs, Tag, Typography, message } from 'antd';
+import { Button, Card, Form, Input, InputNumber, Space, Statistic, Switch, Tabs, Typography, message } from 'antd';
 import { adminGetIamSettings, adminUpdateIamSettings } from '@/services/api';
 import OrganizationManagement from './OrganizationManagement';
 import RoleManagement from './RoleManagement';
@@ -12,8 +12,9 @@ interface IdentityAccessManagementProps {
 
 export default function IdentityAccessManagement({ defaultActiveKey = 'overview' }: IdentityAccessManagementProps) {
   return (
-    <div>
+    <div className="identity-access-workspace">
       <Tabs
+        className="identity-access-tabs"
         defaultActiveKey={defaultActiveKey}
         items={[
           { key: 'overview', label: <span><AuditOutlined /> 访问控制总览</span>, children: <IdentityOverview /> },
@@ -106,19 +107,22 @@ function IdentityOverview() {
 
   const oidc = settings?.oidc || {};
   const security = settings?.security || {};
+
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
-      <Alert
-        type="info"
-        showIcon
-        message="这里是登录与安全配置"
-        description="上面的卡片显示当前状态；下面可以配置密码策略、失败锁定、MFA 和企业 SSO/OIDC。用户属于哪个角色、角色有哪些权限，则在用户管理和角色管理里配置。"
-      />
-      <Space wrap>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: 12,
+          width: '100%',
+        }}
+      >
         <Card><Statistic title="登录模式" value="本地 + SSO" prefix={<SettingOutlined />} /></Card>
         <Card><Statistic title="MFA" value={security?.mfa?.enabled ? '可用' : '未启用'} /></Card>
         <Card><Statistic title="OIDC" value={oidc.enabled ? '已配置' : '未配置'} /></Card>
-      </Space>
+      </div>
+
       <Card title="账号安全策略">
         <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
           控制账号密码、失败锁定和 SSO 后是否继续要求平台 MFA。生产环境里建议开启复杂度、历史密码和失败锁定。
@@ -149,6 +153,7 @@ function IdentityOverview() {
           </Space>
         </Form>
       </Card>
+
       <Card title="企业 SSO / OIDC">
         <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
           如果公司有统一身份平台，就在这里填写 OIDC 参数。未配置时，系统仍可使用账号密码登录。

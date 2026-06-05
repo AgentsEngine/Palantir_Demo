@@ -20,7 +20,7 @@ from app.api._model_driven_shared import assert_safe_identifier
 from app.api.deps import current_tenant_id, current_user_id, get_current_user, get_db, require_admin
 from app.config import settings
 from app.core.audit import write_audit_log
-from app.core.permissions import allowed_form_fields, evaluate_form_permission, has_form_permission
+from app.core.permissions import allowed_form_fields, evaluate_form_permission, get_user_role_ids, has_form_permission
 from app.services.tenant_onboarding import assert_tenant_quota
 
 router = APIRouter()
@@ -230,7 +230,7 @@ FIELD_TYPE_ALIASES = {
     "relation": "relation",
     "attachment": "json",
     "json": "json",
-    "code": "code",
+    "code": "string",
 }
 
 
@@ -255,7 +255,7 @@ def _normalize_form_field_data(
     encoding_rule = normalized.pop("encoding_rule", None)
     ui_config_input = normalized.pop("ui_config", None)
 
-    explicit_type = business_type or normalized.get("field_type")
+    explicit_type = normalized.get("field_type")
     effective_type = _normalize_field_type(explicit_type or current_field_type)
     if explicit_type is not None or current_field_type is None:
         normalized["field_type"] = effective_type
@@ -271,18 +271,30 @@ def _normalize_form_field_data(
     if data_source is not None:
         ui_config["dataSource"] = data_source
         ui_config_touched = True
+    if business_type is not None:
+        ui_config["businessType"] = business_type
+        ui_config_touched = True
 
     ui_config_adds_encoding = isinstance(ui_config_input, dict) and "encodingRule" in ui_config_input
-    if (encoding_rule is not None or ui_config_adds_encoding) and effective_type != "code":
-        raise HTTPException(422, "encoding_rule requires field_type=code")
-    if effective_type == "code":
+    uses_encoding = (
+        business_type == "code"
+        or control_type == "code"
+        or ui_config.get("businessType") == "code"
+        or ui_config.get("controlType") == "code"
+        or encoding_rule is not None
+        or ui_config_adds_encoding
+    )
+    if uses_encoding:
+        ui_config["businessType"] = "code"
+        ui_config["controlType"] = ui_config.get("controlType") or "code"
         if encoding_rule is not None:
             ui_config["encodingRule"] = encoding_rule
             ui_config_touched = True
         elif ui_config.get("autoNumber") and not ui_config.get("encodingRule"):
             ui_config["encodingRule"] = {"enabled": True, "template": ui_config["autoNumber"]}
             ui_config_touched = True
-    elif explicit_type is not None:
+        ui_config_touched = True
+    elif business_type is not None or control_type is not None:
         ui_config.pop("encodingRule", None)
         ui_config.pop("autoNumber", None)
         ui_config_touched = True
@@ -293,6 +305,7 @@ def _normalize_form_field_data(
 
 
 def _form_payload(form, *, fields: Optional[list] = None, applications: Optional[list] = None) -> dict:
+    config = form.config or {}
     payload = {
         "id": form.id,
         "tenant_id": getattr(form, "tenant_id", None),
@@ -304,7 +317,8 @@ def _form_payload(form, *, fields: Optional[list] = None, applications: Optional
         "storage_mode": form.storage_mode,
         "status": form.status,
         "owner_id": form.owner_id,
-        "config": form.config or {},
+        "config": config,
+        "permission_design": _permission_design_from_config(config),
         "created_at": form.created_at.isoformat() if form.created_at else None,
         "updated_at": form.updated_at.isoformat() if form.updated_at else None,
     }
@@ -317,15 +331,19 @@ def _form_payload(form, *, fields: Optional[list] = None, applications: Optional
 
 def _field_payload(field) -> dict:
     ui_config = field.ui_config or {}
+    legacy_code_field = field.field_type == "code"
+    storage_type = "string" if legacy_code_field else field.field_type
+    business_type = ui_config.get("businessType") or ("code" if legacy_code_field or ui_config.get("encodingRule") else storage_type)
+    control_type = ui_config.get("controlType") or ("code" if business_type == "code" else None)
     return {
         "id": field.id,
         "form_id": field.form_id,
         "meta_field_id": field.meta_field_id,
         "field_name": field.field_name,
         "label": field.label,
-        "field_type": field.field_type,
-        "business_type": field.field_type,
-        "control_type": ui_config.get("controlType"),
+        "field_type": storage_type,
+        "business_type": business_type,
+        "control_type": control_type,
         "data_source": ui_config.get("dataSource") or ui_config.get("relation"),
         "encoding_rule": ui_config.get("encodingRule"),
         "required": field.required,
@@ -340,6 +358,11 @@ def _field_payload(field) -> dict:
         "ui_config": ui_config,
         "sort_order": field.sort_order,
     }
+
+
+def _permission_design_from_config(config: Optional[dict]) -> dict:
+    permission_design = (config or {}).get("permissionDesign")
+    return permission_design if isinstance(permission_design, dict) else {}
 
 
 def _form_version_payload(version) -> dict:
@@ -817,6 +840,7 @@ async def _form_snapshot(db: AsyncSession, tenant_id: int, form) -> dict:
 def _published_form_payload(form, version, *, applications: Optional[list] = None) -> dict:
     snapshot = version.snapshot or {}
     form_snapshot = snapshot.get("form") or {}
+    config = form_snapshot.get("config") or form.config or {}
     payload = {
         **_form_payload(form),
         **{key: value for key, value in form_snapshot.items() if key in {"name", "code", "description", "model_id", "table_name", "storage_mode", "status", "owner_id", "config"}},
@@ -824,6 +848,7 @@ def _published_form_payload(form, version, *, applications: Optional[list] = Non
         "published_version": version.version,
         "published_at": version.published_at.isoformat() if version.published_at else None,
         "fields": [field for field in snapshot.get("fields", []) if _field_cfg_is_active(field)],
+        "permission_design": _permission_design_from_config(config),
     }
     if applications is not None:
         payload["applications"] = applications
@@ -837,6 +862,56 @@ async def _runtime_permission_summary(user: dict, form_id: int, db: AsyncSession
     for action in actions:
         decision = await evaluate_form_permission(user, form_id, action, db, cache=cache)
         summary[action] = bool(decision["allowed"])
+    return summary
+
+
+def _runtime_field_name(field) -> str:
+    if isinstance(field, dict):
+        return str(field.get("field_name") or "")
+    return str(getattr(field, "field_name", "") or "")
+
+
+async def _runtime_field_permission_summary(user: dict, form, fields: list, db: AsyncSession) -> dict:
+    cache: dict = {}
+    field_names = [name for name in (_runtime_field_name(field) for field in fields) if name]
+    if user.get("is_admin"):
+        return {
+            name: {"visible": True, "editable": True, "exportable": True, "required": False}
+            for name in field_names
+        }
+
+    summary: dict[str, dict] = {}
+    for name in field_names:
+        view = await evaluate_form_permission(user, form.id, "view", db, field_name=name, cache=cache)
+        edit = await evaluate_form_permission(user, form.id, "edit", db, field_name=name, cache=cache)
+        export = await evaluate_form_permission(user, form.id, "export", db, field_name=name, cache=cache)
+        summary[name] = {
+            "visible": bool(view["allowed"]),
+            "editable": bool(edit["allowed"]),
+            "exportable": bool(export["allowed"]),
+            "required": False,
+        }
+
+    permission_design = _permission_design_from_config(form.config)
+    role_configs = permission_design.get("roles") if isinstance(permission_design, dict) else None
+    if isinstance(role_configs, dict):
+        role_ids = await get_user_role_ids(user, db)
+        if role_ids:
+            from app.models.relational import Role
+
+            tenant_id = current_tenant_id(user)
+            roles = (await db.execute(
+                select(Role).where(Role.tenant_id == tenant_id, Role.id.in_(role_ids))
+            )).scalars().all()
+            role_keys = {role.name for role in roles} | {role.label for role in roles}
+            for role_key in role_keys:
+                role_config = role_configs.get(role_key)
+                fields_config = role_config.get("fields") if isinstance(role_config, dict) else None
+                if not isinstance(fields_config, dict):
+                    continue
+                for name, field_config in fields_config.items():
+                    if name in summary and isinstance(field_config, dict):
+                        summary[name]["required"] = summary[name]["required"] or bool(field_config.get("required"))
     return summary
 
 
@@ -1076,7 +1151,7 @@ DEFAULT_BUSINESS_FORMS = [
         "table_name": "equipment_alerts",
         "app_codes": ["maintenance-analysis", "production-dashboard"],
         "fields": [
-            {"field_name": "alertId", "label": "告警编号", "field_type": "code", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True, "sortable": True, "ui_config": {"controlType": "readonly-text", "encodingRule": {"enabled": True, "template": "AL-{yyyyMMdd}-{seq:3}", "prefix": "AL", "datePattern": "YYYYMMDD", "sequenceLength": 3, "fixedLength": 15, "dependencies": [], "resetCycle": "day", "regenerateOnDependencyChange": True, "allowManualOverride": False, "unique": True}}},
+            {"field_name": "alertId", "label": "告警编号", "field_type": "string", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True, "sortable": True, "ui_config": {"businessType": "code", "controlType": "code", "encodingRule": {"enabled": True, "template": "AL-{yyyyMMdd}-{seq:3}", "prefix": "AL", "datePattern": "YYYYMMDD", "sequenceLength": 3, "fixedLength": 15, "dependencies": [], "resetCycle": "day", "regenerateOnDependencyChange": True, "allowManualOverride": False, "unique": True}}},
             {"field_name": "title", "label": "告警标题", "field_type": "string", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True},
             {"field_name": "device", "label": "关联设备", "field_type": "string", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True, "ui_config": {"relation": "equipment"}},
             {"field_name": "level", "label": "告警等级", "field_type": "enum", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True, "enum_values": {"values": ["严重", "一般", "提醒"]}},
@@ -1108,7 +1183,7 @@ DEFAULT_BUSINESS_FORMS = [
         "table_name": "risk_reviews",
         "app_codes": ["supply-risk"],
         "fields": [
-            {"field_name": "riskNo", "label": "风险单号", "field_type": "code", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True, "sortable": True, "ui_config": {"controlType": "readonly-text", "encodingRule": {"enabled": True, "template": "SR-{yyyyMMdd}-{seq:3}", "prefix": "SR", "datePattern": "YYYYMMDD", "sequenceLength": 3, "fixedLength": 15, "dependencies": [], "resetCycle": "day", "regenerateOnDependencyChange": True, "allowManualOverride": False, "unique": True}}},
+            {"field_name": "riskNo", "label": "风险单号", "field_type": "string", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True, "sortable": True, "ui_config": {"businessType": "code", "controlType": "code", "encodingRule": {"enabled": True, "template": "SR-{yyyyMMdd}-{seq:3}", "prefix": "SR", "datePattern": "YYYYMMDD", "sequenceLength": 3, "fixedLength": 15, "dependencies": [], "resetCycle": "day", "regenerateOnDependencyChange": True, "allowManualOverride": False, "unique": True}}},
             {"field_name": "subject", "label": "风险主题", "field_type": "string", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True},
             {"field_name": "level", "label": "风险等级", "field_type": "enum", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True, "enum_values": {"values": ["高", "中", "低"]}},
             {"field_name": "owner", "label": "处理人", "field_type": "string", "required": True, "visible_in_list": True, "visible_in_form": True, "searchable": True, "ui_config": {"relation": "users"}},
@@ -1857,9 +1932,11 @@ async def get_form(
                 visible_names = await allowed_form_fields(user, form_id, "view", fields, db)
                 payload["fields"] = [field for field in payload["fields"] if field.get("field_name") in visible_names]
             payload["runtime_permissions"] = await _runtime_permission_summary(user, form_id, db)
+            payload["runtime_field_permissions"] = await _runtime_field_permission_summary(user, form, payload.get("fields") or [], db)
             return {"data": payload}
     payload = _form_payload(form, fields=fields, applications=applications)
     payload["runtime_permissions"] = await _runtime_permission_summary(user, form_id, db)
+    payload["runtime_field_permissions"] = await _runtime_field_permission_summary(user, form, fields, db)
     return {"data": payload}
 
 

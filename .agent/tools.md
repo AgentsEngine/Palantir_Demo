@@ -47,6 +47,39 @@
     "output_schema": {"embedding_count": "integer"},
     "permission_check": "rag"
   },
+  "knowledge.extract_ontology_candidates": {
+    "name": "knowledge.extract_ontology_candidates",
+    "title": "Extract ontology candidates",
+    "description": "Read an indexed document and extract generic objects, domain mappings, relationships, properties, and source evidence.",
+    "side_effect": "draft_write",
+    "risk_level": "medium",
+    "input_schema": {"document_id": "string", "domain": "string", "prompt_name": "string"},
+    "output_schema": {"job": "object", "generic_entities": "array", "domain_mappings": "array", "relations": "array", "quality_report": "object"},
+    "permission_check": "rag",
+    "audit_required": true
+  },
+  "knowledge.approve_ontology_candidates": {
+    "name": "knowledge.approve_ontology_candidates",
+    "title": "Approve ontology candidates",
+    "description": "Mark reviewed ontology candidates as approved before graph publication.",
+    "side_effect": "draft_write",
+    "risk_level": "medium",
+    "input_schema": {"job_id": "string", "approved_result": "object"},
+    "output_schema": {"job": "object", "status": "string"},
+    "permission_check": "config",
+    "audit_required": true
+  },
+  "knowledge.commit_ontology_to_graph": {
+    "name": "knowledge.commit_ontology_to_graph",
+    "title": "Commit ontology candidates to graph",
+    "description": "Publish approved ontology candidates to graph assets and create document-object evidence links.",
+    "side_effect": "configuration_write",
+    "risk_level": "high",
+    "input_schema": {"job_id": "string"},
+    "output_schema": {"job": "object", "commit": "object"},
+    "permission_check": "config",
+    "audit_required": true
+  },
   "forms.create_dynamic_record_draft": {
     "name": "forms.create_dynamic_record_draft",
     "title": "Create form draft",

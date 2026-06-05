@@ -295,6 +295,7 @@ async def _query_dynamic_form_program(db: AsyncSession, tenant_id: int, program_
     form = await db.scalar(select(Form).where(Form.tenant_id == tenant_id, Form.code == program_id))
     if form is None:
         return None
+    form_config = form.config or {}
 
     total = await db.scalar(
         select(func.count(DynamicRecord.id)).where(
@@ -347,6 +348,7 @@ async def _query_dynamic_form_program(db: AsyncSession, tenant_id: int, program_
             ],
             "rows": rows,
             "total": int(total),
+            "viewConfig": form_config.get("viewConfig"),
         }
 
     rows = []
@@ -378,6 +380,7 @@ async def _query_dynamic_form_program(db: AsyncSession, tenant_id: int, program_
         ],
         "rows": rows,
         "total": int(total),
+        "viewConfig": form_config.get("viewConfig"),
     }
 
 

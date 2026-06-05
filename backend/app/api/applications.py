@@ -265,16 +265,23 @@ def _mock_application_payload(app: dict, include_bindings: bool = False) -> dict
 
 
 def _mock_visible_apps(user: dict) -> list[dict]:
-    if user.get("is_admin") or user.get("_anonymous"):
+    if user.get("is_admin"):
         return [_mock_application_payload(a) for a in DEFAULT_APPLICATIONS if a["status"] == "published"]
     role_names = set(_mock_role_names(user))
     if not role_names:
-        return [_mock_application_payload(a) for a in DEFAULT_APPLICATIONS if a["status"] == "published"]
+        return []
     return [
         _mock_application_payload(a)
         for a in DEFAULT_APPLICATIONS
         if a["status"] == "published" and role_names.intersection(a["role_names"])
     ]
+
+
+def _mock_can_access_application(user: dict, app: dict) -> bool:
+    if user.get("is_admin"):
+        return True
+    role_names = set(_mock_role_names(user))
+    return bool(role_names.intersection(app.get("role_names") or []))
 
 
 async def _ensure_default_seed(db: AsyncSession, tenant_id: int = 1) -> None:
@@ -533,6 +540,8 @@ async def list_application_menus(app_id: int, user: dict = Depends(get_current_u
     app = next((a for a in DEFAULT_APPLICATIONS if a["id"] == app_id), None)
     if not app:
         raise HTTPException(404, "Application not found")
+    if not _mock_can_access_application(user, app):
+        raise HTTPException(403, "Application access denied")
     menus = [_mock_menu_by_route(route) for route in app["menu_routes"]]
     return {"data": _menu_tree([m for m in menus if m])}
 
@@ -561,6 +570,8 @@ async def get_application(app_id: int, user: dict = Depends(get_current_user), d
     app = next((a for a in DEFAULT_APPLICATIONS if a["id"] == app_id), None)
     if not app:
         raise HTTPException(404, "Application not found")
+    if not _mock_can_access_application(user, app):
+        raise HTTPException(403, "Application access denied")
     return {"data": _mock_application_payload(app, include_bindings=True)}
 
 

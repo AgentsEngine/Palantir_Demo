@@ -249,6 +249,18 @@ export const createKnowledgeExtractionJob = (
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
+export const createKnowledgeOntologyIntake = (
+  documentId: string,
+  data?: { domain_hint?: string; mode?: string },
+) => api.post(`/knowledge/documents/${documentId}/ontology-intake`, data ?? {});
+export const createKnowledgeDocumentExtractionJob = (
+  documentId: string,
+  data?: {
+    domain?: string;
+    prompt_name?: string;
+    model_name?: string;
+  },
+) => api.post(`/knowledge/documents/${documentId}/extraction-jobs`, data ?? {});
 export const getKnowledgeExtractionJob = (jobId: string) =>
   api.get(`/knowledge/extraction-jobs/${jobId}`);
 export const approveKnowledgeExtractionJob = (jobId: string, approvedResult?: Record<string, unknown>) =>
@@ -385,6 +397,8 @@ export const listAgentConversations = (params?: Record<string, unknown>) =>
   api.get('/ai/agent/conversations', { params });
 export const listAgentConversationMessages = (conversationId: string) =>
   api.get(`/ai/agent/conversations/${conversationId}/messages`);
+export const updateAgentConversation = (conversationId: string, data: Record<string, unknown>) =>
+  api.patch(`/ai/agent/conversations/${conversationId}`, data);
 export const closeAgentConversation = (conversationId: string) =>
   api.delete(`/ai/agent/conversations/${conversationId}`);
 export const listAIMemories = (params?: Record<string, unknown>) =>
@@ -745,7 +759,9 @@ export interface PlatformForm {
   published_at?: string | null;
   fields?: PlatformFormField[];
   applications?: Array<Record<string, unknown>>;
+  permission_design?: Record<string, unknown>;
   runtime_permissions?: Record<string, boolean>;
+  runtime_field_permissions?: Record<string, { visible: boolean; editable: boolean; exportable: boolean; required?: boolean }>;
 }
 
 export interface PlatformFormPublishImpactItem {

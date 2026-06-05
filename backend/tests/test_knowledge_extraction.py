@@ -70,6 +70,9 @@ def test_extraction_job_lifecycle_and_exports(client):
     job = payload["job"]
     assert job["status"] == "completed"
     assert job["result"]["entities"]
+    assert job["result"]["generic_entities"]
+    assert job["result"]["domain_mappings"]
+    assert job["result"]["properties"]
     assert job["result"]["relations"]
     assert job["quality_report"]["counts"]["FATAL"] == 0
 
@@ -122,6 +125,52 @@ def test_extraction_quality_report_blocks_empty_source(client):
 
     commit_response = client.post(f"/api/v1/knowledge/extraction-jobs/{job['job_id']}/commit-to-graph")
     assert commit_response.status_code == 409
+
+
+def test_uploaded_document_returns_intake_and_extracts_without_reupload(client):
+    upload = client.post(
+        "/api/v1/knowledge/assets/upload",
+        files={
+            "file": (
+                "process-note.md",
+                (
+                    b"# Process note\n\n"
+                    b"Supplier: Northwind material\n"
+                    b"Material batch: MB-900\n"
+                    b"Equipment: SMT-08 placement line\n"
+                    b"Quality event: QE-771 dimension drift\n"
+                ),
+                "text/markdown",
+            )
+        },
+    )
+    assert upload.status_code == 200
+    payload = upload.json()["data"]
+    document_id = payload["document"]["document_id"]
+    assert payload["intake_recommendation"]["document_id"] == document_id
+    assert "extract_ontology_candidates" in payload["intake_recommendation"]["capabilities"]
+
+    intake = client.post(
+        f"/api/v1/knowledge/documents/{document_id}/ontology-intake",
+        json={"domain_hint": "manufacturing", "mode": "recommend"},
+    )
+    assert intake.status_code == 200
+    assert intake.json()["data"]["confirmation"]["skill"] == "knowledge.intake_document_ontology"
+
+    extraction = client.post(
+        f"/api/v1/knowledge/documents/{document_id}/extraction-jobs",
+        json={
+            "domain": "manufacturing",
+            "prompt_name": "manufacturing_ontology_v1",
+            "model_name": "mock-chat",
+        },
+    )
+    assert extraction.status_code == 200
+    job = extraction.json()["data"]["job"]
+    assert job["document_id"] == document_id
+    assert job["result"]["generic_entities"]
+    assert job["result"]["domain_mappings"]
+    assert job["status"] == "completed"
 
 
 def test_llm_json_parser_reports_missing_fields():

@@ -43,6 +43,29 @@ logger = get_logger(__name__)
 
 EXTRACTION_JOBS: dict[str, dict[str, Any]] = {}
 
+GENERIC_TYPE_MAP: dict[str, str] = {
+    "Supplier": "Organization",
+    "Customer": "Organization",
+    "Equipment": "Asset",
+    "MaterialBatch": "Material",
+    "Material": "Material",
+    "WorkOrder": "Process",
+    "QualityEvent": "Event",
+    "CAPA": "Process",
+    "KnowledgeCard": "Document",
+}
+
+MANUFACTURING_DOMAIN_TYPES = {
+    "Supplier",
+    "Customer",
+    "Equipment",
+    "MaterialBatch",
+    "Material",
+    "WorkOrder",
+    "QualityEvent",
+    "CAPA",
+}
+
 DEMO_GRAPH_ASSET_JOBS: list[dict[str, Any]] = [
     {
         "job_id": "demo-job-supplier-8d",
@@ -456,7 +479,7 @@ def deterministic_extract(markdown: str, *, domain: str = "manufacturing") -> di
             entities.append({
                 "candidate_id": _id("ent"),
                 "name": title[:120],
-                "entity_type": "QualityEvent",
+                "entity_type": "QualityEvent" if domain == "manufacturing" else "Document",
                 "description": "Fallback candidate from document title.",
                 "confidence": 0.52,
                 "source_location": "line:1",
@@ -504,11 +527,144 @@ def deterministic_extract(markdown: str, *, domain: str = "manufacturing") -> di
             "status": "candidate",
         })
 
-    return {
+    return normalize_ontology_result({
         "entities": entities,
         "relations": relations,
         "logic_rules": logic_rules,
         "actions": actions,
+    }, domain=domain, markdown=markdown)
+
+
+def normalize_ontology_result(result: dict[str, Any], *, domain: str = "manufacturing", markdown: str = "") -> dict[str, Any]:
+    """Add platform-generic ontology fields while preserving the legacy contract."""
+    entities = list(result.get("entities") or [])
+    relations = list(result.get("relations") or [])
+    generic_entities = []
+    domain_mappings = []
+    properties = []
+
+    for entity in entities:
+        entity_type = str(entity.get("entity_type") or "KnowledgeEntity")
+        generic_type = GENERIC_TYPE_MAP.get(entity_type, "Object")
+        generic_entities.append({
+            "candidate_id": entity.get("candidate_id"),
+            "name": entity.get("name"),
+            "generic_type": generic_type,
+            "description": entity.get("description"),
+            "confidence": entity.get("confidence", 0),
+            "source_location": entity.get("source_location"),
+            "evidence": entity.get("source_location"),
+        })
+        if domain == "manufacturing" or entity_type in MANUFACTURING_DOMAIN_TYPES:
+            domain_mappings.append({
+                "candidate_id": entity.get("candidate_id"),
+                "domain": "manufacturing",
+                "domain_type": entity_type,
+                "generic_type": generic_type,
+                "mapping_status": "candidate",
+                "confidence": entity.get("confidence", 0),
+                "source_location": entity.get("source_location"),
+            })
+        if entity.get("name"):
+            properties.append({
+                "candidate_id": f"{entity.get('candidate_id')}:name",
+                "entity_candidate_id": entity.get("candidate_id"),
+                "property_name": "name",
+                "value": entity.get("name"),
+                "confidence": entity.get("confidence", 0),
+                "source_location": entity.get("source_location"),
+            })
+        if entity.get("description"):
+            properties.append({
+                "candidate_id": f"{entity.get('candidate_id')}:description",
+                "entity_candidate_id": entity.get("candidate_id"),
+                "property_name": "description",
+                "value": entity.get("description"),
+                "confidence": max(float(entity.get("confidence") or 0) - 0.05, 0),
+                "source_location": entity.get("source_location"),
+            })
+
+    result = {
+        **result,
+        "entities": entities,
+        "generic_entities": generic_entities,
+        "domain_mappings": domain_mappings,
+        "relations": relations,
+        "properties": properties,
+    }
+    if markdown and "document_profile" not in result:
+        result["document_profile"] = build_intake_recommendation_from_document({
+            "title": next((line.strip("# ").strip() for line in markdown.splitlines() if line.strip().startswith("#")), "") or "Uploaded document",
+            "source_type": "markdown",
+            "markdown_content": markdown,
+            "document_id": "preview",
+        })["document_profile"]
+    return result
+
+
+def build_intake_recommendation_from_document(document: dict[str, Any]) -> dict[str, Any]:
+    markdown = str(document.get("markdown_content") or "")
+    title = str(document.get("title") or document.get("source_file_name") or "Uploaded document")
+    source_type = str(document.get("source_type") or "document")
+    line_count = len([line for line in markdown.splitlines() if line.strip()])
+    word_count = len(re.findall(r"\w+", markdown))
+    has_tables = "|" in markdown or source_type in {"excel", "xlsx"}
+    has_ocr = bool(document.get("ocr_result"))
+    likely_domain = "manufacturing" if any(
+        token.lower() in markdown.lower()
+        for token in ["work order", "supplier", "equipment", "quality", "capa", "material", "mes", "erp", "工单", "供应商", "设备", "质量", "物料"]
+    ) else "general"
+    capabilities = [
+        "summarize_document",
+        "extract_ontology_candidates",
+        "bind_existing_objects",
+        "prepare_graph_publish",
+    ]
+    if has_ocr:
+        capabilities.insert(1, "review_ocr_evidence")
+    profile = {
+        "document_id": document.get("document_id"),
+        "title": title,
+        "source_type": source_type,
+        "likely_domain": likely_domain,
+        "line_count": line_count,
+        "word_count": word_count,
+        "has_tables": has_tables,
+        "has_ocr": has_ocr,
+    }
+    return {
+        "document_id": document.get("document_id"),
+        "document_profile": profile,
+        "summary": f"{title} has been indexed as a {source_type} document and is ready for ontology intake.",
+        "capabilities": capabilities,
+        "suggested_actions": [
+            {
+                "key": "extract_ontology_candidates",
+                "title": "Extract ontology candidates",
+                "description": "Identify generic objects, manufacturing mappings, relationships, properties, and source evidence.",
+                "requires_confirmation": True,
+                "tool": "knowledge.extract_ontology_candidates",
+            },
+            {
+                "key": "summarize_document",
+                "title": "Summarize document",
+                "description": "Create an evidence-backed document summary without writing graph assets.",
+                "requires_confirmation": False,
+                "tool": "knowledge.search",
+            },
+            {
+                "key": "prepare_graph_publish",
+                "title": "Prepare graph publish checklist",
+                "description": "Review quality issues and binding gaps before graph publication.",
+                "requires_confirmation": True,
+                "tool": "knowledge.commit_ontology_to_graph",
+            },
+        ],
+        "confirmation": {
+            "skill": "knowledge.intake_document_ontology",
+            "requires_confirmation": True,
+            "write_policy": "review_before_extract_then_confirm_before_commit",
+        },
     }
 
 
@@ -730,7 +886,7 @@ async def create_extraction_job(
         },
         "document": document,
         "chunks": chunks,
-    })
+    }, tenant_id=tenant_id)
 
     result = deterministic_extract(markdown, domain=domain)
     quality_report = build_quality_report(result)
@@ -748,6 +904,81 @@ async def create_extraction_job(
         "updated_at": _now(),
         "committed_at": None,
         "tenant_id": tenant_id,
+    }
+    EXTRACTION_JOBS[extraction_job_id] = job
+    await persist_extraction_job(job, tenant_id=tenant_id)
+    return {"job": job, "document": document, "chunks": chunks}
+
+
+async def create_extraction_job_from_document(
+    document_id: str,
+    *,
+    domain: str = "manufacturing",
+    prompt_name: str = "manufacturing_ontology_v1",
+    model_name: str = "mock-chat",
+    tenant_id: int = 1,
+) -> dict[str, Any] | None:
+    """Create ontology candidates from a document that has already been ingested."""
+    document = DOCUMENTS.get(document_id)
+    if not document:
+        try:
+            async with db_session() as session:
+                row = await session.scalar(
+                    select(KnowledgeDocument).where(
+                        KnowledgeDocument.tenant_id == tenant_id,
+                        KnowledgeDocument.document_id == document_id,
+                    )
+                )
+                if row:
+                    document = {
+                        "asset_id": None,
+                        "document_id": row.document_id,
+                        "source_file_name": row.source_file_name,
+                        "source_type": row.source_type,
+                        "title": row.title,
+                        "markdown_content": row.markdown_content,
+                        "ocr_result": row.ocr_result,
+                        "permission_scope": row.permission_scope,
+                        "owner_user_id": row.owner_user_id,
+                        "source_path": row.source_path,
+                        "status": row.status,
+                        "created_at": row.created_at.isoformat() if row.created_at else _now(),
+                        "updated_at": row.updated_at.isoformat() if row.updated_at else _now(),
+                    }
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Document lookup for ontology extraction skipped: %s", exc)
+    if not document:
+        return None
+
+    markdown = str(document.get("markdown_content") or "")
+    if not markdown.strip():
+        return None
+
+    DOCUMENTS[document_id] = document
+    chunks = [chunk for chunk in CHUNKS.values() if chunk.get("document_id") == document_id]
+    if not chunks:
+        chunks = markdown_to_chunks(markdown, document_id, str(document.get("permission_scope") or "enterprise"))
+        for chunk in chunks:
+            CHUNKS[chunk["chunk_id"]] = chunk
+
+    result = deterministic_extract(markdown, domain=domain)
+    quality_report = build_quality_report(result)
+    extraction_job_id = _id("extract")
+    job = {
+        "job_id": extraction_job_id,
+        "document_id": document_id,
+        "domain": domain,
+        "prompt_name": prompt_name,
+        "model_name": model_name,
+        "status": "completed",
+        "result": result,
+        "approved_result": None,
+        "quality_report": quality_report,
+        "created_at": _now(),
+        "updated_at": _now(),
+        "committed_at": None,
+        "tenant_id": tenant_id,
+        "source": "uploaded_document",
     }
     EXTRACTION_JOBS[extraction_job_id] = job
     await persist_extraction_job(job, tenant_id=tenant_id)

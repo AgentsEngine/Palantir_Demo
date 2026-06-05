@@ -46,7 +46,9 @@ import {
   approveKnowledgeExtractionJob,
   commitKnowledgeExtractionJobToGraph,
   createKnowledgeAgentConversation,
+  createKnowledgeDocumentExtractionJob,
   createKnowledgeExtractionJob,
+  createKnowledgeOntologyIntake,
   enhanceKnowledgeDocumentOcr,
   exportKnowledgeExtractionJob,
   getGraphAssetQuality,
@@ -141,7 +143,10 @@ type ExtractionJob = {
   status: string;
   result: {
     entities: ExtractionEntity[];
+    generic_entities?: Array<Record<string, unknown>>;
+    domain_mappings?: Array<Record<string, unknown>>;
     relations: ExtractionRelation[];
+    properties?: Array<Record<string, unknown>>;
     logic_rules: Array<Record<string, unknown>>;
     actions: Array<Record<string, unknown>>;
   };
@@ -211,6 +216,29 @@ type KnowledgeDocument = {
   owner_user_id?: string;
   linked_objects?: Array<{ type?: string; id?: string; name?: string; object_type?: string; object_id?: string; object_name?: string; confidence?: number; status?: string; source_location?: string }>;
   markdown_content?: string;
+};
+
+type OntologyIntakeRecommendation = {
+  document_id?: string;
+  summary?: string;
+  document_profile?: {
+    title?: string;
+    source_type?: string;
+    likely_domain?: string;
+    line_count?: number;
+    word_count?: number;
+    has_tables?: boolean;
+    has_ocr?: boolean;
+  };
+  capabilities?: string[];
+  suggested_actions?: Array<{
+    key: string;
+    title: string;
+    description?: string;
+    requires_confirmation?: boolean;
+    tool?: string;
+  }>;
+  confirmation?: Record<string, unknown>;
 };
 type KnowledgeCard = { id: string; title: string; scenario?: string; owner?: string; updated_at?: string };
 type KnowledgeChunk = { id?: string; chunk_id?: string; title?: string; document_title?: string; chunk_text: string; source_ref?: string; source_location?: string };
@@ -1864,6 +1892,12 @@ export function KnowledgeCenter() {
   const [agentLoading, setAgentLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [intakeRecommendation, setIntakeRecommendation] = useState<OntologyIntakeRecommendation | null>(null);
+  const [intakeLoading, setIntakeLoading] = useState(false);
+  const [ontologyJob, setOntologyJob] = useState<ExtractionJob | null>(null);
+  const [ontologyExtracting, setOntologyExtracting] = useState(false);
+  const [ontologyApproving, setOntologyApproving] = useState(false);
+  const [ontologyCommitting, setOntologyCommitting] = useState(false);
   const [mode, setMode] = useState<string | number>('original');
   const [ocrBlocks, setOcrBlocks] = useState<EditableOcrBlock[]>([]);
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -2068,6 +2102,36 @@ export function KnowledgeCenter() {
 
   useEffect(() => {
     let cancelled = false;
+    const loadIntake = async () => {
+      setOntologyJob(null);
+      if (!selectedDocumentId || selectedDocumentId.startsWith('demo-')) {
+        setIntakeRecommendation(null);
+        return;
+      }
+      setIntakeLoading(true);
+      try {
+        const res = await createKnowledgeOntologyIntake(selectedDocumentId, { domain_hint: 'manufacturing', mode: 'recommend' });
+        if (!cancelled) {
+          setIntakeRecommendation(res.data?.data ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setIntakeRecommendation(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIntakeLoading(false);
+        }
+      }
+    };
+    loadIntake();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDocumentId]);
+
+  useEffect(() => {
+    let cancelled = false;
     const loadMarkdown = async () => {
       if (!selectedDocumentId || selectedDocumentId.startsWith('demo-')) {
         setDocumentMarkdown('');
@@ -2234,7 +2298,14 @@ export function KnowledgeCenter() {
   const handleUpload = async (options: any) => {
     setUploading(true);
     try {
-      await uploadKnowledgeAsset(options.file, { permission_scope: 'enterprise', owner_user_id: 'demo-user' });
+      const response = await uploadKnowledgeAsset(options.file, { permission_scope: 'enterprise', owner_user_id: 'demo-user' });
+      const payload = response.data?.data ?? {};
+      const uploadedDocumentId = payload.document?.document_id ?? payload.document?.id;
+      if (uploadedDocumentId) {
+        setSelectedDocumentId(uploadedDocumentId);
+      }
+      setIntakeRecommendation(payload.intake_recommendation ?? null);
+      setOntologyJob(null);
       message.success('资料已进入知识库，可在当前文档右侧继续抽取、审核和发布');
       options.onSuccess?.({});
       loadKnowledge();
@@ -2243,6 +2314,56 @@ export function KnowledgeCenter() {
       options.onError?.(error);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const startOntologyExtraction = async () => {
+    if (!selectedDocumentId || ontologyExtracting) return;
+    setOntologyExtracting(true);
+    try {
+      const response = await createKnowledgeDocumentExtractionJob(selectedDocumentId, {
+        domain: intakeRecommendation?.document_profile?.likely_domain ?? 'general',
+        prompt_name: 'manufacturing_ontology_v1',
+        model_name: 'mock-chat',
+      });
+      const nextJob = response.data?.data?.job;
+      setOntologyJob(nextJob ?? null);
+      setMode('objects');
+      message.success('Ontology candidates are ready for review.');
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail ?? 'Failed to extract ontology candidates');
+    } finally {
+      setOntologyExtracting(false);
+    }
+  };
+
+  const approveOntologyJob = async () => {
+    if (!ontologyJob || ontologyApproving) return;
+    setOntologyApproving(true);
+    try {
+      const response = await approveKnowledgeExtractionJob(ontologyJob.job_id);
+      setOntologyJob(response.data?.data ?? null);
+      message.success('Ontology candidates approved.');
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail ?? 'Failed to approve ontology candidates');
+    } finally {
+      setOntologyApproving(false);
+    }
+  };
+
+  const commitOntologyJob = async () => {
+    if (!ontologyJob || ontologyCommitting) return;
+    setOntologyCommitting(true);
+    try {
+      const response = await commitKnowledgeExtractionJobToGraph(ontologyJob.job_id);
+      setOntologyJob(response.data?.data?.job ?? null);
+      await loadKnowledge();
+      setMode('graph');
+      message.success('Ontology candidates were published to graph assets.');
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail ?? 'Failed to publish ontology candidates');
+    } finally {
+      setOntologyCommitting(false);
     }
   };
 
@@ -2435,6 +2556,65 @@ export function KnowledgeCenter() {
         </main>
 
         <aside className="knowledge-rag-panel">
+          <Card
+            className="knowledge-rag-card knowledge-intake-card"
+            title={<Space><NodeIndexOutlined />AI ontology intake</Space>}
+            loading={intakeLoading}
+          >
+            {intakeRecommendation ? (
+              <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                <Alert type="info" showIcon message={intakeRecommendation.document_profile?.title ?? selectedTitle} description={intakeRecommendation.summary} />
+                <div className="knowledge-note-properties compact">
+                  <div><span>type</span><strong>{intakeRecommendation.document_profile?.source_type ?? selectedSourceType}</strong></div>
+                  <div><span>domain</span><strong>{intakeRecommendation.document_profile?.likely_domain ?? 'general'}</strong></div>
+                  <div><span>lines</span><strong>{intakeRecommendation.document_profile?.line_count ?? '-'}</strong></div>
+                </div>
+                <Space wrap size={6}>{(intakeRecommendation.capabilities ?? []).map((item) => <Tag key={item}>{item}</Tag>)}</Space>
+                {(intakeRecommendation.suggested_actions ?? []).map((action) => (
+                  <div className="knowledge-intake-action" key={action.key}>
+                    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                      <Space wrap><Typography.Text strong>{action.title}</Typography.Text>{action.requires_confirmation ? <Tag color="gold">confirm</Tag> : <Tag>read</Tag>}</Space>
+                      <Typography.Text type="secondary">{action.description}</Typography.Text>
+                    </Space>
+                  </div>
+                ))}
+                <Button type="primary" icon={<FileSearchOutlined />} loading={ontologyExtracting} disabled={!selectedDocumentId} onClick={startOntologyExtraction} block>
+                  Start ontology extraction
+                </Button>
+              </Space>
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Upload or select an indexed document to start ontology intake." />
+            )}
+            {ontologyJob ? (
+              <div className="knowledge-ontology-review">
+                <Divider />
+                <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                  <Space wrap><Tag color={ontologyJob.status === 'committed' ? 'green' : ontologyJob.quality_report?.blocking ? 'red' : 'blue'}>{ontologyJob.status}</Tag><Typography.Text code>{ontologyJob.job_id}</Typography.Text></Space>
+                  <Row gutter={8}>
+                    <Col span={8}><div className="knowledge-intake-metric"><Typography.Text type="secondary">generic</Typography.Text><Typography.Title level={5}>{ontologyJob.result.generic_entities?.length ?? ontologyJob.result.entities.length}</Typography.Title></div></Col>
+                    <Col span={8}><div className="knowledge-intake-metric"><Typography.Text type="secondary">domain</Typography.Text><Typography.Title level={5}>{ontologyJob.result.domain_mappings?.length ?? 0}</Typography.Title></div></Col>
+                    <Col span={8}><div className="knowledge-intake-metric"><Typography.Text type="secondary">relations</Typography.Text><Typography.Title level={5}>{ontologyJob.result.relations.length}</Typography.Title></div></Col>
+                  </Row>
+                  <Table
+                    size="small"
+                    rowKey="candidate_id"
+                    dataSource={ontologyJob.result.entities}
+                    pagination={{ pageSize: 4 }}
+                    columns={[
+                      { title: 'Name', dataIndex: 'name', ellipsis: true },
+                      { title: 'Type', dataIndex: 'entity_type', width: 120, render: (value) => <Tag color="blue">{value}</Tag> },
+                      { title: 'Evidence', dataIndex: 'source_location', width: 110 },
+                    ]}
+                  />
+                  <Alert type={ontologyJob.quality_report?.blocking ? 'error' : 'success'} showIcon message={ontologyJob.quality_report?.blocking ? 'Blocking issues need review' : 'Ready for review and graph publish'} />
+                  <Space wrap>
+                    <Button icon={<CheckCircleOutlined />} loading={ontologyApproving} onClick={approveOntologyJob}>Approve</Button>
+                    <Button type="primary" icon={<NodeIndexOutlined />} loading={ontologyCommitting} disabled={ontologyJob.quality_report?.blocking} onClick={commitOntologyJob}>Publish to graph</Button>
+                  </Space>
+                </Space>
+              </div>
+            ) : null}
+          </Card>
           <Card className="knowledge-rag-card knowledge-chat-card" title={<Space><RobotOutlined />知识助手</Space>}>
             <Tabs
               size="small"

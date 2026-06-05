@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppstoreOutlined, ArrowLeftOutlined, BarChartOutlined, CheckCircleOutlined, DatabaseOutlined, DownloadOutlined, ExperimentOutlined, ExpandOutlined, FieldTimeOutlined, FileSearchOutlined, LineChartOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, SettingOutlined, ShopOutlined, ToolOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons';
-import { Button, Card, Col, DatePicker, Descriptions, Drawer, Empty, Form, Input, Modal, Progress, Row, Select, Space, Statistic, Table, Tabs, Tag, Timeline, Typography } from 'antd';
+import { Button, Card, Col, DatePicker, Descriptions, Drawer, Empty, Form, Input, Modal, Progress, Row, Select, Space, Statistic, Table, Tabs, Tag, Timeline, Tooltip, Typography } from 'antd';
 import type { ColumnsType, ColumnType } from 'antd/es/table';
 import { useNavigate, useParams } from 'react-router-dom';
 import DashboardPage from '../Dashboard';
@@ -49,6 +49,7 @@ interface ProgramDefinition {
 interface ProgramDataPayload {
   metrics?: ProgramDefinition['metrics'];
   rows?: ProgramRow[];
+  viewConfig?: ViewConfig;
   source?: string;
 }
 
@@ -131,22 +132,18 @@ const programDefinitions: Record<string, ProgramDefinition> = {
     metrics: [
       { label: '今日达成率', value: 94.6, suffix: '%', tone: 'green' },
       { label: '计划产量', value: 12840, tone: 'blue' },
-      { label: '异常工单', value: 7, tone: 'orange' },
+      { label: '异常工单', value: 37, tone: 'orange' },
       { label: '平均节拍', value: 48, suffix: 's', tone: 'blue' },
     ],
     focus: ['按班次汇总产量与良率', '对比计划与实际进度', '暴露影响交付的异常点'],
     columns: [
       { title: '班次', dataIndex: 'shift' },
       { title: '产线', dataIndex: 'line' },
-      { title: '计划', dataIndex: 'plan' },
-      { title: '实际', dataIndex: 'actual' },
+      { title: '计划', dataIndex: 'plan', sorter: (a, b) => Number(a.plan) - Number(b.plan) },
+      { title: '实际', dataIndex: 'actual', sorter: (a, b) => Number(a.actual) - Number(b.actual) },
       { title: '状态', dataIndex: 'status', render: (value) => <Tag color={value === '正常' ? 'green' : 'orange'}>{value}</Tag> },
     ],
-    rows: [
-      { key: 'po-1', shift: '早班', line: '总装 A 线', plan: 3200, actual: 3158, status: '正常' },
-      { key: 'po-2', shift: '早班', line: '焊装 B 线', plan: 2860, actual: 2714, status: '需关注' },
-      { key: 'po-3', shift: '中班', line: '涂装 C 线', plan: 3020, actual: 2988, status: '正常' },
-    ],
+    rows: makeProductionRows(),
   },
   'oee-trend-report': {
     id: 'oee-trend-report',
@@ -183,10 +180,10 @@ const programDefinitions: Record<string, ProgramDefinition> = {
     owner: '车间班组',
     icon: <FieldTimeOutlined />,
     metrics: [
-      { label: '运行产线', value: 11, tone: 'green' },
-      { label: '待料产线', value: 2, tone: 'orange' },
-      { label: '换型中', value: 1, tone: 'blue' },
-      { label: '停线', value: 0, tone: 'green' },
+      { label: '运行产线', value: 214, tone: 'green' },
+      { label: '待料产线', value: 21, tone: 'orange' },
+      { label: '换型中', value: 18, tone: 'blue' },
+      { label: '停线', value: 7, tone: 'red' },
     ],
     focus: ['产线当前工况', '瓶颈工位与节拍差异', '换型和待料影响'],
     columns: [
@@ -195,11 +192,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '瓶颈工位', dataIndex: 'station' },
       { title: '负荷', dataIndex: 'load', render: (value) => <Progress percent={Number(value)} size="small" /> },
     ],
-    rows: [
-      { key: 'ls-1', line: '冲压 01', product: '前围板', station: 'OP30 成形', load: 86 },
-      { key: 'ls-2', line: '总装 03', product: 'MF-220 标准型', station: '电检', load: 74 },
-      { key: 'ls-3', line: '涂装 02', product: '银灰外饰', station: '烘干炉', load: 91 },
-    ],
+    rows: makeLineRows(),
   },
   'line-load-analysis': {
     id: 'line-load-analysis',
@@ -231,29 +224,25 @@ const programDefinitions: Record<string, ProgramDefinition> = {
   'production-plan-entry': {
     id: 'production-plan-entry',
     title: '生产计划填报',
-    subtitle: '表单性质的业务表，用于维护计划产量、产品、班次和确认状态。',
+    subtitle: '维护计划产量、产品、班次和确认状态。',
     kind: 'business',
     owner: '生产计划',
     icon: <AppstoreOutlined />,
     metrics: [
-      { label: '待提交计划', value: 6, tone: 'orange' },
-      { label: '已确认计划', value: 28, tone: 'green' },
-      { label: '待调整批次', value: 4, tone: 'red' },
-      { label: '覆盖产线', value: 12, tone: 'blue' },
+      { label: '待提交计划', value: 46, tone: 'orange' },
+      { label: '已确认计划', value: 238, tone: 'green' },
+      { label: '待调整批次', value: 34, tone: 'red' },
+      { label: '覆盖产线', value: 96, tone: 'blue' },
     ],
     focus: ['计划录入和保存草稿', '班次产量确认', '排产调整原因留痕'],
     columns: [
       { title: '计划单号', dataIndex: 'planNo', width: 150 },
       { title: '产品', dataIndex: 'product', width: 150 },
       { title: '产线', dataIndex: 'line', width: 130 },
-      { title: '计划数量', dataIndex: 'quantity', width: 110 },
+      { title: '计划数量', dataIndex: 'quantity', width: 110, sorter: (a, b) => Number(a.quantity) - Number(b.quantity) },
       { title: '状态', dataIndex: 'status', width: 100, render: (value) => <Tag color={value === '已确认' ? 'green' : 'orange'}>{value}</Tag> },
     ],
-    rows: [
-      { key: 'ppe-1', planNo: 'PP-260520-001', product: 'MF-220 标准型', line: '总装 A 线', quantity: 1200, status: '已确认' },
-      { key: 'ppe-2', planNo: 'PP-260520-002', product: '电控模块 V2', line: '电控装配', quantity: 860, status: '草稿' },
-      { key: 'ppe-3', planNo: 'PP-260520-003', product: '铝壳体 A 型', line: '压铸 D 线', quantity: 1500, status: '待确认' },
-    ],
+    rows: makePlanRows(),
   },
   'device-health': {
     id: 'device-health',
@@ -395,23 +384,19 @@ const programDefinitions: Record<string, ProgramDefinition> = {
     owner: '运营指挥',
     icon: <WarningOutlined />,
     metrics: [
-      { label: '未关闭告警', value: 26, tone: 'orange' },
-      { label: '严重告警', value: 3, tone: 'red' },
-      { label: '已确认', value: 15, tone: 'blue' },
-      { label: '自动恢复', value: 8, tone: 'green' },
+      { label: '未关闭告警', value: 308, tone: 'orange' },
+      { label: '严重告警', value: 28, tone: 'red' },
+      { label: '已确认', value: 96, tone: 'blue' },
+      { label: '已关闭', value: 52, tone: 'green' },
     ],
     focus: ['告警等级', '责任域分派', '处置时效'],
     columns: [
       { title: '告警', dataIndex: 'name' },
       { title: '来源', dataIndex: 'source' },
-      { title: '等级', dataIndex: 'level', render: (value) => <Tag color={value === '严重' ? 'red' : 'orange'}>{value}</Tag> },
+      { title: '等级', dataIndex: 'level', render: (value) => <Tag color={value === '严重' ? 'red' : value === '中等' ? 'orange' : 'blue'}>{value}</Tag> },
       { title: '状态', dataIndex: 'status' },
     ],
-    rows: [
-      { key: 'ac-1', name: '压缩空气压力低', source: '能源站', level: '严重', status: '已派发' },
-      { key: 'ac-2', name: 'A 线节拍延迟', source: '生产执行', level: '中等', status: '确认中' },
-      { key: 'ac-3', name: '来料批次延迟', source: '供应链', level: '中等', status: '跟进中' },
-    ],
+    rows: makeAlertRows(),
   },
   'quality-overview': {
     id: 'quality-overview',
@@ -729,92 +714,6 @@ const programDefinitions: Record<string, ProgramDefinition> = {
   },
 };
 
-programDefinitions['production-overview'] = {
-  ...programDefinitions['production-overview'],
-  title: '生产总览',
-  subtitle: '面向车间调度的产量、节拍、达成率和异常状态汇总。',
-  owner: '生产运营',
-  metrics: [
-    { label: '今日达成率', value: 94.6, suffix: '%', tone: 'green' },
-    { label: '计划产量', value: 12840, tone: 'blue' },
-    { label: '异常工单', value: 37, tone: 'orange' },
-    { label: '平均节拍', value: 48, suffix: 's', tone: 'blue' },
-  ],
-  focus: ['按班次汇总产量与良率', '对比计划与实际进度', '暴露影响交付的异常点'],
-  columns: [
-    { title: '班次', dataIndex: 'shift' },
-    { title: '产线', dataIndex: 'line' },
-    { title: '计划', dataIndex: 'plan', sorter: (a, b) => Number(a.plan) - Number(b.plan) },
-    { title: '实际', dataIndex: 'actual', sorter: (a, b) => Number(a.actual) - Number(b.actual) },
-    { title: '状态', dataIndex: 'status', render: (value) => <Tag color={value === '正常' ? 'green' : 'orange'}>{value}</Tag> },
-  ],
-  rows: makeProductionRows(),
-};
-
-programDefinitions['line-status'] = {
-  ...programDefinitions['line-status'],
-  title: '产线状态',
-  subtitle: '查看每条产线的运行模式、瓶颈工位和实时负荷。',
-  owner: '车间班组',
-  metrics: [
-    { label: '运行产线', value: 214, tone: 'green' },
-    { label: '待料产线', value: 21, tone: 'orange' },
-    { label: '换型中', value: 18, tone: 'blue' },
-    { label: '停线', value: 7, tone: 'red' },
-  ],
-  focus: ['产线当前工况', '瓶颈工位与节拍差异', '换型和待料影响'],
-  columns: [
-    { title: '产线', dataIndex: 'line' },
-    { title: '当前产品', dataIndex: 'product' },
-    { title: '瓶颈工位', dataIndex: 'station' },
-    { title: '负荷', dataIndex: 'load', render: (value) => <Progress percent={Number(value)} size="small" /> },
-  ],
-  rows: makeLineRows(),
-};
-
-programDefinitions['production-plan-entry'] = {
-  ...programDefinitions['production-plan-entry'],
-  title: '生产计划填报',
-  subtitle: '维护计划产量、产品、班次和确认状态。',
-  owner: '生产计划',
-  metrics: [
-    { label: '待提交计划', value: 46, tone: 'orange' },
-    { label: '已确认计划', value: 238, tone: 'green' },
-    { label: '待调整批次', value: 34, tone: 'red' },
-    { label: '覆盖产线', value: 96, tone: 'blue' },
-  ],
-  focus: ['计划录入和保存草稿', '班次产量确认', '排产调整原因留痕'],
-  columns: [
-    { title: '计划单号', dataIndex: 'planNo', width: 150 },
-    { title: '产品', dataIndex: 'product', width: 150 },
-    { title: '产线', dataIndex: 'line', width: 130 },
-    { title: '计划数量', dataIndex: 'quantity', width: 110, sorter: (a, b) => Number(a.quantity) - Number(b.quantity) },
-    { title: '状态', dataIndex: 'status', width: 100, render: (value) => <Tag color={value === '已确认' ? 'green' : 'orange'}>{value}</Tag> },
-  ],
-  rows: makePlanRows(),
-};
-
-programDefinitions['alert-center'] = {
-  ...programDefinitions['alert-center'],
-  title: '告警中心',
-  subtitle: '聚合设备、质量、交付和库存告警，支持处置优先级排序。',
-  owner: '运营指挥',
-  metrics: [
-    { label: '未关闭告警', value: 308, tone: 'orange' },
-    { label: '严重告警', value: 28, tone: 'red' },
-    { label: '已确认', value: 96, tone: 'blue' },
-    { label: '已关闭', value: 52, tone: 'green' },
-  ],
-  focus: ['告警等级', '责任域分派', '处置时效'],
-  columns: [
-    { title: '告警', dataIndex: 'name' },
-    { title: '来源', dataIndex: 'source' },
-    { title: '等级', dataIndex: 'level', render: (value) => <Tag color={value === '严重' ? 'red' : value === '中等' ? 'orange' : 'blue'}>{value}</Tag> },
-    { title: '状态', dataIndex: 'status' },
-  ],
-  rows: makeAlertRows(),
-};
-
 const fieldLabelMap: Record<string, string> = {
   riskNo: '风险单',
   subject: '主题',
@@ -873,6 +772,7 @@ function AppProgramPage() {
       ...baseProgram,
       metrics: programData?.metrics?.length ? programData.metrics : baseProgram.metrics,
       rows: programData?.rows?.length ? programData.rows : baseProgram.rows,
+      viewConfig: programData?.viewConfig || baseProgram.viewConfig,
     };
   }, [baseProgram, programData]);
 
@@ -1000,6 +900,74 @@ function formatDetailValue(value: unknown) {
   return String(value);
 }
 
+function readProgramField(row: ProgramRow | null, key: string, fallback = '-') {
+  if (!row) return fallback;
+  const formData = getRowFormData(row);
+  const value = row[key] ?? formData[key];
+  if (value === undefined || value === null || value === '') return fallback;
+  return formatDetailValue(value);
+}
+
+function parseAlertTime(value: unknown) {
+  if (!value) return null;
+  const timestamp = Date.parse(String(value));
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function formatAlertTime(value: unknown) {
+  const timestamp = parseAlertTime(value);
+  if (!timestamp) return formatDetailValue(value);
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(timestamp);
+}
+
+function getAlertTone(row: ProgramRow | null) {
+  const level = readProgramField(row, 'level', '');
+  if (level.includes('严重') || level.includes('critical')) return 'critical';
+  if (level.includes('中') || level.includes('高') || level.includes('warning')) return 'warning';
+  if (level.includes('提醒') || level.includes('minor')) return 'notice';
+  return 'normal';
+}
+
+function getAlertTagColor(row: ProgramRow | null) {
+  const tone = getAlertTone(row);
+  if (tone === 'critical') return 'red';
+  if (tone === 'warning') return 'orange';
+  if (tone === 'notice') return 'blue';
+  return 'geekblue';
+}
+
+function isAlertClosed(row: ProgramRow | null) {
+  const status = readProgramField(row, 'status', '');
+  const processStatus = readProgramField(row, 'processStatus', '');
+  return status.includes('关闭') || processStatus.includes('完成') || processStatus.includes('closed');
+}
+
+function getAlertSlaPercent(row: ProgramRow | null) {
+  const occurred = parseAlertTime(row ? readProgramField(row, 'occurredAt', '') : '');
+  const due = parseAlertTime(row ? readProgramField(row, 'dueAt', '') : '');
+  const completed = parseAlertTime(row ? readProgramField(row, 'completedAt', '') : '');
+  if (!occurred || !due || due <= occurred) return isAlertClosed(row) ? 100 : 62;
+  const compareAt = completed || Date.now();
+  return Math.max(6, Math.min(100, Math.round(((compareAt - occurred) / (due - occurred)) * 100)));
+}
+
+function getAlertSlaStatus(row: ProgramRow | null): 'success' | 'normal' | 'exception' {
+  if (isAlertClosed(row)) return 'success';
+  return getAlertSlaPercent(row) >= 92 ? 'exception' : 'normal';
+}
+
+function getAlertEvidenceCount(row: ProgramRow | null) {
+  if (!row) return 0;
+  const formData = getRowFormData(row);
+  const evidence = row.evidence ?? formData.evidence;
+  return Array.isArray(evidence) ? evidence.length : evidence ? 1 : 0;
+}
+
 function getInteractionEntries(row: ProgramRow | null) {
   const formData = getRowFormData(row);
   const source = formData.interactionLog || row?.interactionLog;
@@ -1016,6 +984,229 @@ function getInteractionEntries(row: ProgramRow | null) {
     }
     return { title: String(item), description: '系统记录' };
   });
+}
+
+function AlertBusinessProgram({
+  program,
+  onSettings,
+  onReload,
+  loading,
+}: {
+  program: ProgramDefinition;
+  onSettings: () => void;
+  onReload: () => void;
+  loading?: boolean;
+}) {
+  const [selectedRow, setSelectedRow] = React.useState<ProgramRow | null>(null);
+  const [filterValues, setFilterValues] = React.useState<Record<string, unknown>>({});
+  const [filterForm] = Form.useForm();
+  const viewConfig = React.useMemo(() => normalizeViewConfig(program.viewConfig, programFieldsForView(program)), [program]);
+  const activeFilters = React.useMemo(() => sortByOrder(viewConfig.filters).filter((filter) => filter.enabled), [viewConfig.filters]);
+  const viewColumns = React.useMemo(() => sortByOrder(viewConfig.table.columns).filter((column) => column.enabled), [viewConfig.table.columns]);
+  const filteredRows = React.useMemo(() => program.rows.filter((row) => activeFilters.every((filter) => (
+    programValueMatchesFilter(row, filter, filterValues[filter.id] ?? filter.defaultValue)
+  ))), [activeFilters, filterValues, program.rows]);
+  const selectedKey = selectedRow ? String(selectedRow.key || selectedRow.recordId || selectedRow.alertId || '') : '';
+
+  React.useEffect(() => {
+    if (!filteredRows.length) {
+      setSelectedRow(null);
+      return;
+    }
+    const stillVisible = selectedRow && filteredRows.some((row) => String(row.key || row.recordId || row.alertId) === selectedKey);
+    if (!stillVisible) setSelectedRow(filteredRows[0]);
+  }, [filteredRows, selectedKey, selectedRow]);
+
+  const configuredColumns = React.useMemo(() => {
+    const columns: ColumnsType<ProgramRow> = viewColumns
+      .map<ColumnType<ProgramRow>>((viewColumn) => {
+        const source = program.columns.find((column) => isDataColumn(column) && column.dataIndex === viewColumn.fieldName) as ColumnType<ProgramRow> | undefined;
+        const renderCell = (value: unknown, record: ProgramRow) => {
+          const formData = getRowFormData(record);
+          const actual = value ?? formData[viewColumn.fieldName];
+          if (actual === undefined || actual === null || actual === '') return viewColumn.emptyText || '-';
+          if (viewColumn.fieldName === 'level') return <Tag color={getAlertTagColor(record)}>{String(actual)}</Tag>;
+          if (viewColumn.fieldName === 'status' || viewColumn.fieldName === 'processStatus') return <Tag color={isAlertClosed(record) ? 'default' : 'blue'}>{String(actual)}</Tag>;
+          if (viewColumn.fieldName === 'occurredAt' || viewColumn.fieldName === 'dueAt') return formatAlertTime(actual);
+          if (viewColumn.fieldName === 'title') return <Typography.Text strong>{String(actual)}</Typography.Text>;
+          if (viewColumn.renderType === 'tag') return <Tag>{String(actual)}</Tag>;
+          return String(actual);
+        };
+        return {
+          ...(source || {}),
+          title: viewColumn.label,
+          dataIndex: source?.dataIndex || viewColumn.fieldName,
+          key: source?.key || viewColumn.fieldName,
+          width: viewColumn.width || (viewColumn.fieldName === 'title' ? 240 : 130),
+          fixed: viewColumn.fixed,
+          sorter: viewColumn.sortable ? source?.sorter || ((a: ProgramRow, b: ProgramRow) => String(a[viewColumn.fieldName] || '').localeCompare(String(b[viewColumn.fieldName] || ''))) : undefined,
+          render: source?.render || renderCell,
+        };
+      });
+    return [
+      ...columns,
+      {
+        title: '操作',
+        key: 'action',
+        fixed: 'right' as const,
+        width: 132,
+        render: (_: unknown, record: ProgramRow) => (
+          <Space onClick={(event) => event.stopPropagation()}>
+            <Button type="link" size="small" onClick={() => setSelectedRow(record)}>查看</Button>
+            <Button type="link" size="small">处理</Button>
+          </Space>
+        ),
+      },
+    ];
+  }, [program.columns, viewColumns]);
+
+  const renderFilterControl = (filter: ViewFilterConfig) => {
+    const placeholder = filter.placeholder || filter.label;
+    if (filter.controlType === 'dateRange') return <RangePicker />;
+    if (filter.controlType === 'select' || filter.controlType === 'relation' || filter.operator === 'equals') {
+      const options = Array.from(new Set(program.rows.map((row) => row[filter.fieldName] ?? getRowFormData(row)[filter.fieldName]).filter(Boolean))).map((value) => ({ value: String(value), label: String(value) }));
+      return <Select allowClear placeholder={placeholder} options={options} />;
+    }
+    return <Input allowClear prefix={filter.controlType === 'keyword' || filter.fieldName === 'title' ? <SearchOutlined /> : undefined} placeholder={placeholder} />;
+  };
+
+  const selectedTitle = readProgramField(selectedRow, 'title', readProgramField(selectedRow, 'name', '告警记录'));
+  const interactionEntries = React.useMemo(() => getInteractionEntries(selectedRow), [selectedRow]);
+
+  return (
+    <div className="alert-business-page">
+      <div className="alert-business-header">
+        <div className="alert-business-heading">
+          <span className="alert-business-icon"><WarningOutlined /></span>
+          <div>
+            <Space size={8} align="center" wrap>
+              <Typography.Title level={4}>告警中心</Typography.Title>
+              <Tag color="green">业务交互</Tag>
+            </Space>
+            <Typography.Text type="secondary">用于告警登记、确认、派工、处理和关闭；不是独立分析看板。</Typography.Text>
+          </div>
+        </div>
+        <div className="alert-business-actions">
+          <Tooltip title="新增告警">
+            <Button type="primary" aria-label="新增告警" icon={<PlusOutlined />}>新增告警</Button>
+          </Tooltip>
+          <Tooltip title="批量处理">
+            <Button className="alert-business-batch-action" aria-label="批量处理" icon={<CheckCircleOutlined />} disabled={!selectedRow}>批量处理</Button>
+          </Tooltip>
+          <Tooltip title="刷新">
+            <Button aria-label="刷新" icon={<ReloadOutlined />} loading={loading} onClick={onReload}>刷新</Button>
+          </Tooltip>
+          <Tooltip title="导出">
+            <Button aria-label="导出" icon={<DownloadOutlined />}>导出</Button>
+          </Tooltip>
+          <Tooltip title="设置">
+            <Button aria-label="设置" icon={<SettingOutlined />} onClick={onSettings}>设置</Button>
+          </Tooltip>
+        </div>
+      </div>
+
+      <Form
+        className="alert-business-filter-form"
+        form={filterForm}
+        colon={false}
+        layout="horizontal"
+        onFinish={(values) => setFilterValues(values)}
+      >
+        {activeFilters.slice(0, 8).map((filter) => (
+          <Form.Item key={filter.id} name={filter.id} label={filter.label} initialValue={filter.defaultValue}>
+            {renderFilterControl(filter)}
+          </Form.Item>
+        ))}
+        <Form.Item className="alert-business-filter-actions" label=" ">
+          <Space>
+            <Button onClick={() => { filterForm.resetFields(); setFilterValues({}); }}>重置</Button>
+            <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>查询</Button>
+          </Space>
+        </Form.Item>
+      </Form>
+
+      <div className="alert-business-body">
+        <section className="alert-business-table-panel">
+          <Table<ProgramRow>
+            className="alert-business-table"
+            rowKey={(record) => String(record.key || record.recordId || record.alertId)}
+            size={viewConfig.table.density === 'compact' ? 'small' : 'middle'}
+            columns={configuredColumns}
+            dataSource={filteredRows}
+            loading={loading}
+            pagination={{ pageSize: viewConfig.table.pageSize, showSizeChanger: false, showTotal: (total) => `共 ${total} 条记录` }}
+            scroll={{ x: 1280, y: '100%' }}
+            rowClassName={(record) => String(record.key || record.recordId || record.alertId) === selectedKey ? 'alert-business-row-selected' : ''}
+            onRow={(record) => ({
+              onClick: () => setSelectedRow(record),
+            })}
+          />
+        </section>
+
+        <aside className="alert-business-record-panel">
+          {selectedRow ? (
+            <>
+              <div className="alert-business-record-head">
+                <div>
+                  <Typography.Title level={5}>{selectedTitle}</Typography.Title>
+                  <Typography.Text type="secondary">{readProgramField(selectedRow, 'alertId', String(selectedKey))}</Typography.Text>
+                </div>
+                <Tag color={isAlertClosed(selectedRow) ? 'default' : 'processing'}>{readProgramField(selectedRow, 'status', '-')}</Tag>
+              </div>
+
+              <Descriptions size="small" column={1} className="alert-business-descriptions">
+                <Descriptions.Item label="关联设备">{readProgramField(selectedRow, 'device', '-')}</Descriptions.Item>
+                <Descriptions.Item label="告警等级"><Tag color={getAlertTagColor(selectedRow)}>{readProgramField(selectedRow, 'level', '一般')}</Tag></Descriptions.Item>
+                <Descriptions.Item label="告警来源">{readProgramField(selectedRow, 'source', '-')}</Descriptions.Item>
+                <Descriptions.Item label="发生时间">{formatAlertTime(readProgramField(selectedRow, 'occurredAt', ''))}</Descriptions.Item>
+                <Descriptions.Item label="处理时限">{formatAlertTime(readProgramField(selectedRow, 'dueAt', ''))}</Descriptions.Item>
+                <Descriptions.Item label="当前处理人">{readProgramField(selectedRow, 'currentHandler', readProgramField(selectedRow, 'owner', '未分配'))}</Descriptions.Item>
+              </Descriptions>
+
+              <div className="alert-business-sla">
+                <div>
+                  <span>SLA 进度</span>
+                  <strong>{getAlertSlaPercent(selectedRow)}%</strong>
+                </div>
+                <Progress percent={getAlertSlaPercent(selectedRow)} status={getAlertSlaStatus(selectedRow)} />
+              </div>
+
+              <div className="alert-business-section">
+                <div className="alert-business-section-title">处置结论</div>
+                <p>{readProgramField(selectedRow, 'resolution', isAlertClosed(selectedRow) ? '已关闭，等待归档复核。' : '等待责任人补充处置结论。')}</p>
+              </div>
+
+              <div className="alert-business-section">
+                <div className="alert-business-section-title">流程记录</div>
+                <Timeline
+                  items={(interactionEntries.length ? interactionEntries : [
+                    { title: '创建告警', description: formatAlertTime(readProgramField(selectedRow, 'occurredAt', '')) },
+                    { title: readProgramField(selectedRow, 'currentNode', '业务处理'), description: readProgramField(selectedRow, 'currentHandler', readProgramField(selectedRow, 'owner', '未分配')) },
+                  ]).map((entry, index) => ({
+                    color: index === 0 ? 'blue' : isAlertClosed(selectedRow) ? 'green' : 'gray',
+                    children: (
+                      <div className="workflow-step-item">
+                        <strong>{entry.title}</strong>
+                        <span>{entry.description}</span>
+                      </div>
+                    ),
+                  }))}
+                />
+              </div>
+
+              <Space wrap className="alert-business-record-actions">
+                <Button type="primary">处理</Button>
+                <Button>转派</Button>
+                <Button>关闭</Button>
+              </Space>
+            </>
+          ) : (
+            <Empty description="请选择一条告警记录" />
+          )}
+        </aside>
+      </div>
+    </div>
+  );
 }
 
 function BusinessProgram({
@@ -1070,19 +1261,27 @@ function BusinessProgram({
     ? String(selectedRow.currentHandler || selectedRow.owner || '未分配')
     : '未分配';
   const configuredColumns = React.useMemo(() => {
-    const baseColumns = viewColumns
-      .map((viewColumn) => {
+    const baseColumns: ColumnsType<ProgramRow> = viewColumns
+      .map<ColumnType<ProgramRow>>((viewColumn) => {
         const source = program.columns.find((column) => isDataColumn(column) && column.dataIndex === viewColumn.fieldName) as ColumnType<ProgramRow> | undefined;
-        if (!source) return null;
+        const renderCell = (value: unknown, record: ProgramRow) => {
+          const formData = getRowFormData(record);
+          const actual = value ?? formData[viewColumn.fieldName];
+          if (actual === undefined || actual === null || actual === '') return viewColumn.emptyText || '-';
+          if (viewColumn.renderType === 'tag') return <Tag>{String(actual)}</Tag>;
+          return String(actual);
+        };
         return {
-          ...source,
+          ...(source || {}),
           title: viewColumn.label,
+          dataIndex: source?.dataIndex || viewColumn.fieldName,
+          key: source?.key || viewColumn.fieldName,
           width: viewColumn.width,
           fixed: viewColumn.fixed,
-          sorter: viewColumn.sortable ? source.sorter || ((a: ProgramRow, b: ProgramRow) => String(a[viewColumn.fieldName] || '').localeCompare(String(b[viewColumn.fieldName] || ''))) : undefined,
+          sorter: viewColumn.sortable ? source?.sorter || ((a: ProgramRow, b: ProgramRow) => String(a[viewColumn.fieldName] || '').localeCompare(String(b[viewColumn.fieldName] || ''))) : undefined,
+          render: source?.render || renderCell,
         };
-      })
-      .filter((column): column is NonNullable<typeof column> => Boolean(column));
+      });
     return [...baseColumns, { title: '操作', key: 'action', fixed: 'right' as const, width: 160, render: (_: unknown, record: ProgramRow) => <Space onClick={(event) => event.stopPropagation()}><Button type="link" size="small" onClick={() => setSelectedRow(record)}>详情</Button><Button type="link" size="small">处理</Button></Space> }];
   }, [program.columns, viewColumns]);
 
@@ -1116,41 +1315,6 @@ function BusinessProgram({
             <Button icon={<SettingOutlined />} onClick={onSettings}>设置</Button>
           </Space>
         </div>
-        <div className="app-business-search-grid">
-          <label>
-            <span>业务编号</span>
-            <Input allowClear placeholder="请输入" />
-          </label>
-          <label>
-            <span>主题</span>
-            <Input allowClear placeholder="请输入" />
-          </label>
-          <label>
-            <span>状态</span>
-            <Select allowClear placeholder="请选择" options={[{ value: 'pending', label: '待处理' }, { value: 'processing', label: '处理中' }, { value: 'closed', label: '已关闭' }]} />
-          </label>
-          <label>
-            <span>负责人</span>
-            <Select allowClear placeholder="请选择" options={[{ value: 'me', label: '我负责的' }, { value: 'team', label: '团队范围' }]} />
-          </label>
-          <label>
-            <span>申请时间</span>
-            <RangePicker />
-          </label>
-          <label>
-            <span>等级</span>
-            <Select allowClear placeholder="请选择" options={[{ value: 'high', label: '高' }, { value: 'medium', label: '中' }, { value: 'low', label: '低' }]} />
-          </label>
-          <label>
-            <span>处理人</span>
-            <Input allowClear placeholder="请输入" />
-          </label>
-          <div className="app-business-search-actions">
-            <Button>重置</Button>
-            <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-          </div>
-        </div>
-
         <Form
           className="app-business-search-grid app-business-configured-search"
           form={filterForm}
