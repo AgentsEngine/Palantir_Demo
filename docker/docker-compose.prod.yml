@@ -10,6 +10,7 @@ services:
     environment:
       - APP_MODE=production
       - LOG_LEVEL=INFO
+      - DATABASE_BACKEND=postgresql
       - DEMO_AUTH_OPTIONAL=false
       # Set SECRET_KEY from the server environment or .env file.
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required in production}
