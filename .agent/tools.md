@@ -132,6 +132,39 @@
     "permission_check": "business_query",
     "dry_run_supported": true
   },
+  "platform.identity_settings.query": {
+    "name": "platform.identity_settings.query",
+    "title": "Query identity settings",
+    "description": "Read tenant identity configuration such as users, roles, and account status through admin permissions.",
+    "side_effect": "read",
+    "risk_level": "low",
+    "input_schema": {"subject": "users|roles|org_units", "limit": "integer"},
+    "output_schema": {"items": "array", "count": "integer"},
+    "permission_check": "config",
+    "dry_run_supported": true
+  },
+  "platform.application_settings.query": {
+    "name": "platform.application_settings.query",
+    "title": "Query application settings",
+    "description": "Read tenant application configuration such as apps, menus, routes, and publish status through admin permissions.",
+    "side_effect": "read",
+    "risk_level": "low",
+    "input_schema": {"subject": "applications|menus|routes", "limit": "integer"},
+    "output_schema": {"items": "array", "count": "integer"},
+    "permission_check": "config",
+    "dry_run_supported": true
+  },
+  "platform.form_settings.query": {
+    "name": "platform.form_settings.query",
+    "title": "Query form settings",
+    "description": "Read low-code form configuration such as form definitions, fields, layouts, and publish status through admin permissions.",
+    "side_effect": "read",
+    "risk_level": "low",
+    "input_schema": {"subject": "forms|fields|layouts", "limit": "integer"},
+    "output_schema": {"items": "array", "count": "integer"},
+    "permission_check": "config",
+    "dry_run_supported": true
+  },
   "ai.semantic_plan_low_code_form": {
     "name": "ai.semantic_plan_low_code_form",
     "title": "Semantic low-code form planner",

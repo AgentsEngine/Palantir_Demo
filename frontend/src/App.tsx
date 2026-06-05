@@ -100,6 +100,16 @@ interface ReleaseInfo {
   show_popup?: boolean;
 }
 
+const runtimeRouteAliasMap: Record<string, string> = {
+  '/dynamic/equipment-inspection': '/program/equipment-inspection',
+  '/supply-chain': '/program/supply-overview',
+};
+
+function normalizeRuntimeRoute(routePath?: string): string {
+  if (!routePath) return '';
+  return runtimeRouteAliasMap[routePath] || routePath;
+}
+
 const businessMenuItems: NonNullable<MenuProps['items']> = [
   { key: '/', icon: <HomeOutlined />, label: '\u6211\u7684\u5de5\u4f5c\u53f0' },
   { key: '/dashboard', icon: <DashboardOutlined />, label: '\u751f\u4ea7\u6001\u52bf' },
@@ -136,33 +146,34 @@ const pageTitleMap: Record<string, string> = {
 
 const programTitleMap: Record<string, string> = {
   'production-overview': '\u751f\u4ea7\u603b\u89c8',
-  'oee-trend-report': 'OEE Trend Report',
+  'oee-trend-report': 'OEE \u8d8b\u52bf\u62a5\u8868',
   'line-status': '\u4ea7\u7ebf\u72b6\u6001',
-  'line-load-analysis': 'Line Load Analysis',
-  'production-plan-entry': 'Production Plan Entry',
+  'line-load-analysis': '\u4ea7\u7ebf\u8d1f\u8377\u5206\u6790',
+  'production-plan-entry': '\u751f\u4ea7\u8ba1\u5212\u586b\u62a5',
   'device-health': '\u8bbe\u5907\u5065\u5eb7',
-  'device-health-dashboard': 'Device Health Dashboard',
-  'fault-prediction': 'Fault Prediction',
-  'failure-trend-analysis': 'Failure Trend Analysis',
-  'maintenance-order': 'Maintenance Order',
+  'device-health-dashboard': '\u8bbe\u5907\u5065\u5eb7\u770b\u677f',
+  'fault-prediction': '\u6545\u969c\u9884\u6d4b',
+  'failure-trend-analysis': '\u6545\u969c\u8d8b\u52bf\u5206\u6790',
+  'maintenance-order': '\u7ef4\u4fee\u5de5\u5355',
+  'equipment-inspection': '\u70b9\u68c0\u8ba1\u5212',
   'alert-center': '\u544a\u8b66\u4e2d\u5fc3',
   'quality-overview': '\u8d28\u91cf\u603b\u89c8',
   'inspection-batch': '\u68c0\u9a8c\u6279\u6b21',
-  'defect-analysis-report': 'Defect Analysis Report',
-  'process-capability-dashboard': 'Process Capability Dashboard',
-  'defect-analysis': 'Defect Analysis',
-  'quality-event': 'Quality Traceability',
+  'defect-analysis-report': '\u7f3a\u9677\u5206\u6790\u62a5\u8868',
+  'process-capability-dashboard': '\u8fc7\u7a0b\u80fd\u529b\u770b\u677f',
+  'defect-analysis': '\u7f3a\u9677\u5206\u6790',
+  'quality-event': '\u8d28\u91cf\u8ffd\u6eaf',
   'supplier-risk': '\u4f9b\u5e94\u5546\u98ce\u9669',
   'supply-overview': '\u4f9b\u5e94\u603b\u89c8',
-  'material-impact-report': 'Material Impact Report',
-  'supply-risk-dashboard': 'Supply Risk Dashboard',
+  'material-impact-report': '\u7269\u6599\u5f71\u54cd\u62a5\u8868',
+  'supply-risk-dashboard': '\u4f9b\u5e94\u98ce\u9669\u770b\u677f',
   'material-impact': '\u7269\u6599\u5f71\u54cd',
   'risk-review': '\u98ce\u9669\u590d\u6838',
 };
 
 function getRuntimePageTitle(pathname: string): string {
   if (pathname.startsWith('/dynamic/')) {
-    return 'Dynamic Page';
+    return '业务页面';
   }
   if (pathname.startsWith('/program/')) {
     const programId = pathname.split('/').filter(Boolean)[1];
@@ -216,7 +227,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
 function buildDynamicMenuTree(items: DynamicMenu[]): MenuProps['items'] {
   if (items.some((item) => item.children?.length)) {
     return items.map((item) => ({
-      key: item.route_path || `dynamic-${item.id}`,
+      key: normalizeRuntimeRoute(item.route_path) || `dynamic-${item.id}`,
       icon: iconFor(item.icon),
       label: item.title,
       children: item.children?.length ? buildDynamicMenuTree(item.children) : undefined,
@@ -225,8 +236,9 @@ function buildDynamicMenuTree(items: DynamicMenu[]): MenuProps['items'] {
   const map = new Map<number, any>();
   const roots: any[] = [];
   for (const item of items) {
+    const routePath = normalizeRuntimeRoute(item.route_path);
     map.set(item.id, {
-      key: item.route_path || `dynamic-${item.id}`,
+      key: routePath || `dynamic-${item.id}`,
       icon: iconFor(item.icon),
       label: item.title,
       children: [],
@@ -237,7 +249,7 @@ function buildDynamicMenuTree(items: DynamicMenu[]): MenuProps['items'] {
     if (!node) continue;
     if (item.parent_id && map.has(item.parent_id)) {
       map.get(item.parent_id).children.push(node);
-    } else if (item.route_path) {
+    } else if (normalizeRuntimeRoute(item.route_path)) {
       roots.push(node);
     }
   }
@@ -254,10 +266,47 @@ function unwrapApplicationMenuRoot(items: MenuProps['items']): MenuProps['items'
   return items;
 }
 
+function menuLabelToText(label: React.ReactNode): string {
+  if (typeof label === 'string' || typeof label === 'number') return String(label);
+  if (Array.isArray(label)) return label.map(menuLabelToText).join('');
+  if (React.isValidElement<{ children?: React.ReactNode }>(label)) {
+    return menuLabelToText(label.props.children);
+  }
+  return '';
+}
+
+function findMenuLabelPath(items: MenuProps['items'], route: string): string[] | null {
+  for (const item of items || []) {
+    if (!item || !('key' in item) || !('label' in item)) continue;
+    const label = menuLabelToText(item.label);
+    const childPath = 'children' in item && item.children?.length
+      ? findMenuLabelPath(item.children as MenuProps['items'], route)
+      : null;
+    if (String(item.key) === route) return label ? [label] : [];
+    if (childPath) return label ? [label, ...childPath] : childPath;
+  }
+  return null;
+}
+
+function getProgramRouteForBreadcrumb(pathname: string): { route: string; mode: 'view' | 'settings' } | null {
+  if (pathname.startsWith('/program/')) {
+    const programId = pathname.split('/').filter(Boolean)[1];
+    return programId ? { route: `/program/${programId}`, mode: 'view' } : null;
+  }
+  if (pathname.startsWith('/form-settings/')) {
+    const formId = pathname.split('/').filter(Boolean)[1];
+    if (!formId) return null;
+    const route = /^\d+$/.test(formId) ? `/dynamic/${formId}` : `/program/${formId}`;
+    return { route, mode: 'settings' };
+  }
+  return null;
+}
+
 function findFirstDynamicMenuRoute(items: DynamicMenu[]): string | undefined {
   for (const item of items) {
     if (item.is_visible === false) continue;
-    if (item.route_path) return item.route_path;
+    const routePath = normalizeRuntimeRoute(item.route_path);
+    if (routePath) return routePath;
     const childRoute = item.children?.length ? findFirstDynamicMenuRoute(item.children) : undefined;
     if (childRoute) return childRoute;
   }
@@ -370,23 +419,36 @@ function AppContent() {
       .map((item) => (item && 'key' in item ? String(item.key) : ''))
       .filter(Boolean);
   }, [allMenuItems]);
-  const selectedKey = location.pathname;
+  const selectedKey = normalizeRuntimeRoute(location.pathname) || location.pathname;
+  const currentMenuTitle = useMemo(() => {
+    const path = findMenuLabelPath(allMenuItems, selectedKey);
+    return path?.length ? path[path.length - 1] : undefined;
+  }, [allMenuItems, selectedKey]);
   const showRuntimePageBar =
     !location.pathname.startsWith('/program/')
+    && !location.pathname.startsWith('/dynamic/')
     && !location.pathname.startsWith('/form-settings/')
     && !['/', '/workflow', '/system-admin', '/account-center'].includes(location.pathname);
-  const runtimeTitle = getRuntimePageTitle(location.pathname);
+  const runtimeTitle = currentMenuTitle || getRuntimePageTitle(location.pathname);
   const releaseUpdates = [...(releaseInfo?.highlights || []), ...(releaseInfo?.details || [])];
   const releaseUpdatesScrollable = releaseUpdates.length > 10;
 
 
   const breadcrumbItems = useMemo(() => {
-    const title = getRuntimePageTitle(location.pathname);
+    const programRoute = getProgramRouteForBreadcrumb(location.pathname);
+    const menuPath = programRoute ? findMenuLabelPath(allMenuItems, programRoute.route) : null;
+    const pagePath = !programRoute ? findMenuLabelPath(allMenuItems, location.pathname) : null;
+    const fallbackTitle = currentMenuTitle || getRuntimePageTitle(location.pathname);
+    const titles = menuPath?.length
+      ? (programRoute?.mode === 'settings' ? [...menuPath, '\u8868\u5355\u8bbe\u7f6e'] : menuPath)
+      : pagePath?.length
+        ? pagePath
+        : [fallbackTitle];
     return [
       { title: <a onClick={() => navigate('/')}><HomeOutlined /></a> },
-      { title },
+      ...titles.map((title) => ({ title })),
     ];
-  }, [location.pathname, navigate]);
+  }, [allMenuItems, currentMenuTitle, location.pathname, navigate]);
 
   const handleApproval = (instId: number, action: string) => {
     const commentRef = React.createRef<any>();
@@ -412,7 +474,7 @@ function AppContent() {
     setCurrentApplication(app);
     localStorage.setItem('mf_current_app_id', String(app.id));
     const defaultRoute = app.default_route || '/';
-    navigate(defaultRoute);
+    navigate(normalizeRuntimeRoute(defaultRoute) || defaultRoute);
   };
 
   const applicationMenu: MenuProps = {

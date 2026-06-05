@@ -93,6 +93,9 @@ def _semantic_context(parsed: dict[str, Any]) -> dict[str, Any]:
     if form_code:
         extracted["formCode"] = form_code
         extracted["form_code"] = form_code
+    assembly_kind = str(parsed.get("assemblyKind") or parsed.get("assembly_kind") or "").strip().lower()
+    if assembly_kind in {"business", "analysis"}:
+        extracted["assemblyKind"] = assembly_kind
     fields = _normalize_fields(parsed.get("fields"))
     if fields:
         extracted["fields"] = fields
@@ -133,9 +136,11 @@ def _build_prompt(message: str, context: dict[str, Any]) -> list[ChatMessage]:
         "If the user changes a form name, fill formName only and do not invent fields. "
         "If the user adds fields, fill fields and keep formName empty unless explicitly changed. "
         "Clean polite/modal particles from names, such as 吧, 把, 哈, 呀, 哦, 呢. "
+        "Classify assemblyKind as business for data-entry/workflow forms, analysis for dashboards/reports/BI/analytics. "
         "Return schema: "
         "{\"intent\":\"qa|action\",\"skill\":\"low_code.create_form_definition|null\","
         "\"operation\":\"create_form|rename_form|add_field|update_field|remove_field|confirm|qa\","
+        "\"assemblyKind\":\"business|analysis\","
         "\"formName\":\"\",\"formCode\":\"\",\"fields\":[{\"field_name\":\"snake_case\",\"label\":\"字段名\","
         "\"field_type\":\"string|number|text|enum|date|datetime|boolean|json\",\"required\":false}],"
         "\"menu\":{\"create\":true},\"confidence\":0.0,\"reason\":\"short\"}."

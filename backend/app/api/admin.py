@@ -80,6 +80,11 @@ class IamSettingsUpdate(BaseModel):
     oidc: dict = {}
 
 
+class ReferenceDataSettings(BaseModel):
+    dictionaries: list[dict] = []
+    masterData: list[dict] = []
+
+
 class OrgUnitCreate(BaseModel):
     code: str
     name: str
@@ -198,6 +203,74 @@ def _admin_db_fallback(default):
     if settings.IS_PRODUCTION:
         raise HTTPException(503, "Admin database unavailable")
     return default
+
+
+REFERENCE_DATA_SETTINGS_KEY = "reference_data_admin"
+
+
+@router.get("/reference-data")
+async def get_reference_data(user_ctx: dict = Depends(require_admin)):
+    """Return tenant reference data stored in the database."""
+
+    async def _query(db):
+        from app.models.relational import SystemSetting
+
+        tenant_id = current_tenant_id(user_ctx)
+        key = f"{REFERENCE_DATA_SETTINGS_KEY}:{tenant_id}"
+        row = await db.scalar(select(SystemSetting).where(SystemSetting.key == key))
+        value = row.value if row and isinstance(row.value, dict) else {}
+        return {
+            "data": {
+                "dictionaries": value.get("dictionaries") if isinstance(value.get("dictionaries"), list) else [],
+                "masterData": value.get("masterData") if isinstance(value.get("masterData"), list) else [],
+            },
+            "source": "database",
+        }
+
+    result = await _try_db(_query)
+    return result if result is not None else _admin_db_fallback({
+        "data": {"dictionaries": [], "masterData": []},
+        "source": "unavailable",
+    })
+
+
+@router.put("/reference-data")
+async def save_reference_data(body: ReferenceDataSettings, user_ctx: dict = Depends(require_admin)):
+    """Persist tenant reference data in the database."""
+
+    async def _query(db):
+        from app.models.relational import SystemSetting
+
+        tenant_id = current_tenant_id(user_ctx)
+        key = f"{REFERENCE_DATA_SETTINGS_KEY}:{tenant_id}"
+        payload = {"dictionaries": body.dictionaries, "masterData": body.masterData}
+        row = await db.scalar(select(SystemSetting).where(SystemSetting.key == key))
+        if row is None:
+            row = SystemSetting(
+                key=key,
+                value=payload,
+                description="Tenant reference dictionaries and master-data configuration",
+                updated_by=str(current_user_id(user_ctx) or user_ctx.get("sub") or "system"),
+            )
+            db.add(row)
+        else:
+            row.value = payload
+            row.updated_by = str(current_user_id(user_ctx) or user_ctx.get("sub") or "system")
+        await db.commit()
+        await write_audit_log(
+            action="save_reference_data",
+            resource_type="reference_data",
+            user_id=current_user_id(user_ctx),
+            tenant_id=tenant_id,
+            new_values=payload,
+        )
+        return {"data": payload, "source": "database"}
+
+    result = await _try_db(_query)
+    return result if result is not None else _admin_db_fallback({
+        "data": {"dictionaries": [], "masterData": []},
+        "source": "unavailable",
+    })
 
 
 # ── User CRUD ────────────────────────────────────────────

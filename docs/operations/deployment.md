@@ -1,6 +1,6 @@
 # Deployment
 
-Last updated: 2026-05-29
+Last updated: 2026-06-05
 
 This document reflects the current repository files and the project deployment convention.
 

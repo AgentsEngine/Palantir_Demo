@@ -32,8 +32,8 @@ import {
   List,
   Popconfirm,
   Row,
-  Segmented,
   Select,
+  Segmented,
   Space,
   Switch,
   Table,
@@ -250,7 +250,12 @@ function normalizePermissionRules(raw: unknown): PermissionRule[] {
 }
 
 function cleanMenuNodeConfig(config?: Record<string, unknown> | null): Record<string, unknown> {
-  const { data_scope: _dataScope, permission_actions: _permissionActions, ...rest } = config ?? {};
+  const {
+    data_scope: _dataScope,
+    permission_actions: _permissionActions,
+    permission_rules: _permissionRules,
+    ...rest
+  } = config ?? {};
   return rest;
 }
 
@@ -379,13 +384,9 @@ function mapPlatformMenuNodesToTree(nodes: PlatformMenuNode[]): MenuNode[] {
         ? node.config.role_ids.map((roleId) => Number(roleId)).filter(Number.isFinite)
         : [];
       const permissionActions = ['view'];
-      const permissionRules = normalizePermissionRules(
-        node.config?.permission_rules ?? (
-          permissionMode === 'custom'
-            ? [{ subjectType: 'roles', roleIds, actions: permissionActions, effect: 'allow' }]
-            : [{ subjectType: 'app_roles', actions: permissionActions, effect: 'allow' }]
-        ),
-      );
+      const permissionRules = permissionMode === 'custom'
+        ? [{ subjectType: 'roles' as const, roleIds, actions: permissionActions, effect: 'allow' as const }]
+        : defaultPermissionRules();
       return {
         ...menuNode(
           `db-${node.id}`,
@@ -558,7 +559,6 @@ export default function AppMenuManagement() {
       defaultEntry: selectedMenu?.defaultEntry ?? false,
       permissionMode: selectedMenu?.permissionMode ?? 'inherit',
       roleIds: selectedMenu?.roleIds ?? [],
-      permissionRules: selectedMenu?.permissionRules ?? defaultPermissionRules(),
     });
   }, [forms, menuForm, selectedMenu]);
 
@@ -920,7 +920,6 @@ export default function AppMenuManagement() {
             permission_mode: values.permissionMode ?? 'inherit',
             role_ids: values.permissionMode === 'custom' ? values.roleIds ?? [] : [],
             permission_actions: ['view'],
-            permission_rules: normalizePermissionRules(values.permissionRules),
           },
         });
       } catch {
@@ -1744,105 +1743,47 @@ function AssemblyWorkspace({
                         </div>
                       )}
                       <div className="node-config-card wide permission-rule-panel">
-                        <Form.List name="permissionRules">
-                          {(fields, { add, remove }) => (
-                            <>
-                              <div className="permission-rule-head">
-                                <div className="permission-rule-title">
-                                  <SafetyCertificateOutlined />
-                                  <Typography.Text strong>入口角色</Typography.Text>
-                                </div>
-                                <Button
-                                  size="small"
-                                  type="primary"
-                                  ghost
-                                  icon={<PlusOutlined />}
-                                  onClick={() => add({ subjectType: 'roles', roleIds: [], userKeys: [], actions: ['view'], effect: 'allow' })}
-                                >
-                                  新增规则
-                                </Button>
-                              </div>
-                              <div className="permission-rule-table">
-                                <div className="permission-rule-table-head">
-                                  <span>#</span>
-                                  <span>结果</span>
-                                  <span>对象</span>
-                                  <span>范围</span>
-                                  <span />
-                                </div>
-                                <div className="permission-rule-list">
-                                  {fields.length === 0 ? (
-                                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无自定义规则" />
-                                  ) : fields.map((field, index) => (
-                                    <div className="permission-rule-row" key={field.key}>
-                                      <div className="permission-rule-index">
-                                        <span>{String(index + 1).padStart(2, '0')}</span>
-                                      </div>
-                                      <div className="permission-rule-decision">
-                                        <Form.Item name={[field.name, 'effect']} noStyle>
-                                          <Segmented
-                                            block
-                                            className="permission-rule-effect"
-                                            size="small"
-                                            options={[
-                                              { label: '允许', value: 'allow' },
-                                              { label: '拒绝', value: 'deny' },
-                                            ]}
-                                          />
-                                        </Form.Item>
-                                      </div>
-                                      <label className="permission-rule-field">
-                                        <Form.Item name={[field.name, 'subjectType']} noStyle>
-                                          <Select
-                                            options={[
-                                              { label: '应用默认角色', value: 'app_roles' },
-                                              { label: '指定角色', value: 'roles' },
-                                              { label: '指定用户', value: 'users' },
-                                            ]}
-                                          />
-                                        </Form.Item>
-                                      </label>
-                                      <label className="permission-rule-field permission-rule-scope-field">
-                                        <Form.Item noStyle shouldUpdate>
-                                          {({ getFieldValue }) => {
-                                            const subjectType = getFieldValue(['permissionRules', field.name, 'subjectType']);
-                                            if (subjectType === 'users') {
-                                              return (
-                                                <Form.Item name={[field.name, 'userKeys']} noStyle>
-                                                  <Select mode="tags" placeholder="输入用户账号或邮箱" />
-                                                </Form.Item>
-                                              );
-                                            }
-                                            if (subjectType === 'roles') {
-                                              return (
-                                                <Form.Item name={[field.name, 'roleIds']} noStyle>
-                                                  <Select
-                                                    mode="multiple"
-                                                    placeholder="选择角色"
-                                                    options={roles.map((role) => ({ label: `${role.label} / ${role.name}`, value: role.id }))}
-                                                  />
-                                                </Form.Item>
-                                              );
-                                            }
-                                            return <div className="permission-rule-inherit">跟随当前应用可见角色</div>;
-                                          }}
-                                        </Form.Item>
-                                      </label>
-                                      <Button
-                                        danger
-                                        type="text"
-                                        size="small"
-                                        className="permission-rule-remove"
-                                        icon={<DeleteOutlined />}
-                                        onClick={() => remove(field.name)}
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </Form.List>
+                        <div className="permission-rule-head">
+                          <div className="permission-rule-title">
+                            <SafetyCertificateOutlined />
+                            <Typography.Text strong>入口角色</Typography.Text>
+                          </div>
+                          <Typography.Text type="secondary">同步到角色权限</Typography.Text>
+                        </div>
+                        <div className="entry-role-editor">
+                          <Form.Item name="permissionMode" label="入口策略">
+                            <Select
+                              options={[
+                                { label: '跟随应用可见角色', value: 'inherit' },
+                                { label: '指定入口角色', value: 'custom' },
+                              ]}
+                            />
+                          </Form.Item>
+                          <Form.Item noStyle shouldUpdate>
+                            {({ getFieldValue }) => {
+                              const permissionMode = getFieldValue('permissionMode');
+                              if (permissionMode !== 'custom') {
+                                return (
+                                  <div className="entry-role-inherit">
+                                    当前菜单继承应用可见角色；需要单独授权时切换为“指定入口角色”。
+                                  </div>
+                                );
+                              }
+                              return (
+                                <Form.Item name="roleIds" label="可进入角色">
+                                  <Select
+                                    mode="multiple"
+                                    placeholder="选择能看到并进入该菜单的角色"
+                                    options={roles.map((role) => ({ label: `${role.label} / ${role.name}`, value: role.id }))}
+                                  />
+                                </Form.Item>
+                              );
+                            }}
+                          </Form.Item>
+                          <Typography.Text type="secondary">
+                            这里只配置菜单入口；字段、按钮、状态和数据范围仍在表单设计器里配置，最终结果可在角色管理的权限模拟中验证。
+                          </Typography.Text>
+                        </div>
                       </div>
                     </div>
                     <Space.Compact block>
@@ -2141,13 +2082,14 @@ function updateMenuNode(nodes: MenuNode[], key: string, values: any): MenuNode[]
         permissionMode: values.permissionMode,
         roleIds: values.roleIds,
         permissionActions: ['view'],
-        permissionRules: normalizePermissionRules(values.permissionRules),
+        permissionRules: values.permissionMode === 'custom'
+          ? [{ subjectType: 'roles', roleIds: values.roleIds ?? [], actions: ['view'], effect: 'allow' }]
+          : defaultPermissionRules(),
         config: {
           ...cleanMenuNodeConfig(node.config),
           permission_mode: values.permissionMode ?? 'inherit',
           role_ids: values.permissionMode === 'custom' ? values.roleIds ?? [] : [],
           permission_actions: ['view'],
-          permission_rules: normalizePermissionRules(values.permissionRules),
         },
       };
     }

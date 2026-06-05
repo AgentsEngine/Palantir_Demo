@@ -1,9 +1,9 @@
 """Document-to-ontology extraction workflow.
 
-The extractor is deterministic by default so the demo and tests work without
-external LLM calls. The public service shape is intentionally close to a real
-LLM pipeline: parse source material, produce ontology candidates, generate a
-quality report, require approval, then commit approved candidates to graph.
+The extractor is deterministic by default when no external LLM is configured.
+The public service shape is intentionally close to a real LLM pipeline: parse
+source material, produce ontology candidates, generate a quality report, require
+approval, then commit approved candidates to graph.
 """
 
 from __future__ import annotations
@@ -65,277 +65,6 @@ MANUFACTURING_DOMAIN_TYPES = {
     "QualityEvent",
     "CAPA",
 }
-
-DEMO_GRAPH_ASSET_JOBS: list[dict[str, Any]] = [
-    {
-        "job_id": "demo-job-supplier-8d",
-        "document_id": "demo-doc-supplier-8d",
-        "domain": "quality",
-        "prompt_name": "supplier_8d_v1",
-        "model_name": "mock-chat",
-        "status": "committed",
-        "committed_at": "2026-05-25T09:30:00",
-        "approved_result": {
-            "entities": [
-                {
-                    "candidate_id": "demo-ent-supplier-beichen",
-                    "name": "北辰电子材料",
-                    "entity_type": "Supplier",
-                    "description": "供应商 8D 报告中确认的来料供应商。",
-                    "confidence": 0.96,
-                    "source_location": "8D:供应商信息",
-                },
-                {
-                    "candidate_id": "demo-ent-material-mb7781",
-                    "name": "MB-7781 焊锡膏 S12",
-                    "entity_type": "MaterialBatch",
-                    "description": "涉及温控波动的焊锡膏批次。",
-                    "confidence": 0.94,
-                    "source_location": "8D:D3 围堵措施",
-                },
-                {
-                    "candidate_id": "demo-ent-defect-void",
-                    "name": "BGA 焊点虚焊",
-                    "entity_type": "Defect",
-                    "description": "AOI 与复检确认的主要缺陷。",
-                    "confidence": 0.91,
-                    "source_location": "8D:D2 问题描述",
-                },
-                {
-                    "candidate_id": "demo-ent-capa-072",
-                    "name": "CAPA-072 批次冻结与复检",
-                    "entity_type": "CAPA",
-                    "description": "供应商整改和厂内复检动作。",
-                    "confidence": 0.88,
-                    "source_location": "8D:D5/D6 纠正措施",
-                },
-            ],
-            "relations": [
-                {
-                    "candidate_id": "demo-rel-supplier-material",
-                    "source_candidate_id": "demo-ent-supplier-beichen",
-                    "source_name": "北辰电子材料",
-                    "source_type": "Supplier",
-                    "target_candidate_id": "demo-ent-material-mb7781",
-                    "target_name": "MB-7781 焊锡膏 S12",
-                    "target_type": "MaterialBatch",
-                    "relation_type": "SUPPLIES",
-                    "confidence": 0.93,
-                    "source_location": "8D:供应商信息",
-                },
-                {
-                    "candidate_id": "demo-rel-material-defect",
-                    "source_candidate_id": "demo-ent-material-mb7781",
-                    "source_name": "MB-7781 焊锡膏 S12",
-                    "source_type": "MaterialBatch",
-                    "target_candidate_id": "demo-ent-defect-void",
-                    "target_name": "BGA 焊点虚焊",
-                    "target_type": "Defect",
-                    "relation_type": "MAY_CAUSE",
-                    "confidence": 0.82,
-                    "source_location": "8D:D4 根因分析",
-                },
-                {
-                    "candidate_id": "demo-rel-defect-capa",
-                    "source_candidate_id": "demo-ent-defect-void",
-                    "source_name": "BGA 焊点虚焊",
-                    "source_type": "Defect",
-                    "target_candidate_id": "demo-ent-capa-072",
-                    "target_name": "CAPA-072 批次冻结与复检",
-                    "target_type": "CAPA",
-                    "relation_type": "TRIGGERS",
-                    "confidence": 0.89,
-                    "source_location": "8D:D5/D6 纠正措施",
-                },
-            ],
-            "logic_rules": [],
-            "actions": [],
-        },
-        "quality_report": {"blocking": False, "counts": {"FATAL": 0, "ERROR": 0, "WARNING": 1, "INFO": 1}, "items": []},
-    },
-    {
-        "job_id": "demo-job-quality-sop",
-        "document_id": "demo-doc-quality-sop",
-        "domain": "quality",
-        "prompt_name": "quality_sop_v1",
-        "model_name": "mock-chat",
-        "status": "committed",
-        "committed_at": "2026-05-25T09:35:00",
-        "approved_result": {
-            "entities": [
-                {
-                    "candidate_id": "demo-ent-sop-q14",
-                    "name": "SOP-QA-014 焊点虚焊复检流程",
-                    "entity_type": "KnowledgeCard",
-                    "description": "质量 SOP 中定义的冻结、复检和放行流程。",
-                    "confidence": 0.92,
-                    "source_location": "SOP:3.2-4.1",
-                },
-                {
-                    "candidate_id": "demo-ent-inspection-recheck",
-                    "name": "BGA 区域复检",
-                    "entity_type": "QualityEvent",
-                    "description": "针对同批次和同设备窗口的复检要求。",
-                    "confidence": 0.84,
-                    "source_location": "SOP:4.1",
-                },
-            ],
-            "relations": [
-                {
-                    "candidate_id": "demo-rel-sop-defect",
-                    "source_candidate_id": "demo-ent-sop-q14",
-                    "source_name": "SOP-QA-014 焊点虚焊复检流程",
-                    "source_type": "KnowledgeCard",
-                    "target_candidate_id": "demo-ent-defect-void",
-                    "target_name": "BGA 焊点虚焊",
-                    "target_type": "Defect",
-                    "relation_type": "EVIDENCE_FOR",
-                    "confidence": 0.87,
-                    "source_location": "SOP:3.2",
-                },
-                {
-                    "candidate_id": "demo-rel-sop-recheck",
-                    "source_candidate_id": "demo-ent-sop-q14",
-                    "source_name": "SOP-QA-014 焊点虚焊复检流程",
-                    "source_type": "KnowledgeCard",
-                    "target_candidate_id": "demo-ent-inspection-recheck",
-                    "target_name": "BGA 区域复检",
-                    "target_type": "QualityEvent",
-                    "relation_type": "TRIGGERS",
-                    "confidence": 0.81,
-                    "source_location": "SOP:4.1",
-                },
-            ],
-            "logic_rules": [],
-            "actions": [],
-        },
-        "quality_report": {"blocking": False, "counts": {"FATAL": 0, "ERROR": 0, "WARNING": 0, "INFO": 1}, "items": []},
-    },
-    {
-        "job_id": "demo-job-equipment-log",
-        "document_id": "demo-doc-equipment-log",
-        "domain": "maintenance",
-        "prompt_name": "equipment_log_v1",
-        "model_name": "mock-chat",
-        "status": "committed",
-        "committed_at": "2026-05-25T09:40:00",
-        "approved_result": {
-            "entities": [
-                {
-                    "candidate_id": "demo-ent-equipment-smt03",
-                    "name": "SMT-03 回流炉",
-                    "entity_type": "Equipment",
-                    "description": "设备日志中出现温区短时偏低的回流炉。",
-                    "confidence": 0.93,
-                    "source_location": "设备日志:09:12",
-                },
-                {
-                    "candidate_id": "demo-ent-sensor-temp05",
-                    "name": "温区 4 温度传感器",
-                    "entity_type": "Sensor",
-                    "description": "记录异常温度窗口的传感器。",
-                    "confidence": 0.78,
-                    "source_location": "设备日志:09:12",
-                },
-            ],
-            "relations": [
-                {
-                    "candidate_id": "demo-rel-equipment-sensor",
-                    "source_candidate_id": "demo-ent-equipment-smt03",
-                    "source_name": "SMT-03 回流炉",
-                    "source_type": "Equipment",
-                    "target_candidate_id": "demo-ent-sensor-temp05",
-                    "target_name": "温区 4 温度传感器",
-                    "target_type": "Sensor",
-                    "relation_type": "MEASURED_BY",
-                    "confidence": 0.78,
-                    "source_location": "设备日志:09:12",
-                }
-            ],
-            "logic_rules": [],
-            "actions": [],
-        },
-        "quality_report": {"blocking": False, "counts": {"FATAL": 0, "ERROR": 0, "WARNING": 1, "INFO": 1}, "items": []},
-    },
-    {
-        "job_id": "demo-job-workorder-exception",
-        "document_id": "demo-doc-workorder-exception",
-        "domain": "manufacturing",
-        "prompt_name": "workorder_exception_v1",
-        "model_name": "mock-chat",
-        "status": "committed",
-        "committed_at": "2026-05-25T09:45:00",
-        "approved_result": {
-            "entities": [
-                {
-                    "candidate_id": "demo-ent-workorder-017",
-                    "name": "WO-260521-017 电控模块工单",
-                    "entity_type": "WorkOrder",
-                    "description": "同设备、同物料批次窗口内的生产工单。",
-                    "confidence": 0.9,
-                    "source_location": "工单异常记录:line 6",
-                },
-                {
-                    "candidate_id": "demo-ent-product-batch-a",
-                    "name": "PB-260521-A 电控模块产品批",
-                    "entity_type": "ProductBatch",
-                    "description": "可能受影响的产品批次。",
-                    "confidence": 0.86,
-                    "source_location": "工单异常记录:line 9",
-                },
-                {
-                    "candidate_id": "demo-ent-customer-order-8821",
-                    "name": "SO-8821 客户订单",
-                    "entity_type": "CustomerOrder",
-                    "description": "受影响产品批次关联的客户订单。",
-                    "confidence": 0.8,
-                    "source_location": "工单异常记录:line 12",
-                },
-            ],
-            "relations": [
-                {
-                    "candidate_id": "demo-rel-workorder-equipment",
-                    "source_candidate_id": "demo-ent-workorder-017",
-                    "source_name": "WO-260521-017 电控模块工单",
-                    "source_type": "WorkOrder",
-                    "target_candidate_id": "demo-ent-equipment-smt03",
-                    "target_name": "SMT-03 回流炉",
-                    "target_type": "Equipment",
-                    "relation_type": "USES_EQUIPMENT",
-                    "confidence": 0.87,
-                    "source_location": "工单异常记录:line 6",
-                },
-                {
-                    "candidate_id": "demo-rel-workorder-product",
-                    "source_candidate_id": "demo-ent-workorder-017",
-                    "source_name": "WO-260521-017 电控模块工单",
-                    "source_type": "WorkOrder",
-                    "target_candidate_id": "demo-ent-product-batch-a",
-                    "target_name": "PB-260521-A 电控模块产品批",
-                    "target_type": "ProductBatch",
-                    "relation_type": "PRODUCES_BATCH",
-                    "confidence": 0.84,
-                    "source_location": "工单异常记录:line 9",
-                },
-                {
-                    "candidate_id": "demo-rel-product-order",
-                    "source_candidate_id": "demo-ent-product-batch-a",
-                    "source_name": "PB-260521-A 电控模块产品批",
-                    "source_type": "ProductBatch",
-                    "target_candidate_id": "demo-ent-customer-order-8821",
-                    "target_name": "SO-8821 客户订单",
-                    "target_type": "CustomerOrder",
-                    "relation_type": "AFFECTS_ORDER",
-                    "confidence": 0.8,
-                    "source_location": "工单异常记录:line 12",
-                },
-            ],
-            "logic_rules": [],
-            "actions": [],
-        },
-        "quality_report": {"blocking": False, "counts": {"FATAL": 0, "ERROR": 0, "WARNING": 1, "INFO": 1}, "items": []},
-    },
-]
 
 SUPPORTED_SOURCE_TYPES = {"markdown", "unknown", "pdf", "excel"}
 ENTITY_TYPES = [
@@ -831,8 +560,8 @@ async def create_extraction_job(
     content: bytes,
     domain: str = "manufacturing",
     prompt_name: str = "manufacturing_ontology_v1",
-    model_name: str = "mock-chat",
-    owner_user_id: str = "demo-user",
+    model_name: str = "deterministic-extractor",
+    owner_user_id: str = "knowledge-admin",
     permission_scope: str = "enterprise",
     tenant_id: int = 1,
 ) -> dict[str, Any]:
@@ -915,7 +644,7 @@ async def create_extraction_job_from_document(
     *,
     domain: str = "manufacturing",
     prompt_name: str = "manufacturing_ontology_v1",
-    model_name: str = "mock-chat",
+    model_name: str = "deterministic-extractor",
     tenant_id: int = 1,
 ) -> dict[str, Any] | None:
     """Create ontology candidates from a document that has already been ingested."""
@@ -1243,8 +972,6 @@ async def list_graph_asset_jobs() -> list[dict[str, Any]]:
                 })
     except Exception as exc:  # noqa: BLE001
         logger.warning("Graph asset job lookup skipped: %s", exc)
-    if not jobs:
-        jobs.extend(DEMO_GRAPH_ASSET_JOBS)
     return jobs
 
 

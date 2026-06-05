@@ -190,6 +190,12 @@ export const listSemanticOntologyRelations = () => api.get('/semantic-assets/ont
 export const listSemanticPageContracts = () => api.get('/semantic-assets/page-contracts');
 export const getSemanticPageContract = (route: string) =>
   api.get('/semantic-assets/page-contracts/by-route', { params: { route } });
+export const getClosedLoopConfig = () => api.get('/semantic-assets/closed-loop-config');
+
+// Reference data
+export const getReferenceData = () => api.get('/admin/reference-data');
+export const saveReferenceData = (data: { dictionaries: unknown[]; masterData: unknown[] }) =>
+  api.put('/admin/reference-data', data);
 
 // Knowledge base / local RAG MVP
 export const listKnowledgeSpaces = () => api.get('/knowledge/spaces');
@@ -343,20 +349,10 @@ export interface AgentStreamEvent {
   data: Record<string, unknown>;
 }
 
-export const streamAgentChat = async (
-  data: Record<string, unknown>,
+const readAgentEventStream = async (
+  response: Response,
   onEvent: (event: AgentStreamEvent) => void,
 ) => {
-  const token = localStorage.getItem('mf_token');
-  const response = await fetch(`${apiBaseURL}/ai/agent/stream`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    credentials: 'include',
-    body: JSON.stringify(data),
-  });
   if (!response.ok || !response.body) {
     throw new Error(`Agent stream failed: ${response.status}`);
   }
@@ -385,8 +381,37 @@ export const streamAgentChat = async (
   }
   if (buffer.trim()) flushBlock(buffer);
 };
+
+const postAgentEventStream = async (
+  path: string,
+  data: Record<string, unknown>,
+  onEvent: (event: AgentStreamEvent) => void,
+) => {
+  const token = localStorage.getItem('mf_token');
+  const response = await fetch(`${apiBaseURL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  await readAgentEventStream(response, onEvent);
+};
+
+export const streamAgentChat = async (
+  data: Record<string, unknown>,
+  onEvent: (event: AgentStreamEvent) => void,
+) => postAgentEventStream('/ai/agent/stream', data, onEvent);
+
 export const confirmAgentRun = (runId: string, data: Record<string, unknown>) =>
   api.post(`/ai/agent-runs/${runId}/confirm`, data);
+export const streamConfirmAgentRun = async (
+  runId: string,
+  data: Record<string, unknown>,
+  onEvent: (event: AgentStreamEvent) => void,
+) => postAgentEventStream(`/ai/agent-runs/${runId}/confirm/stream`, data, onEvent);
 export const cancelAgentRun = (runId: string) =>
   api.post(`/ai/agent-runs/${runId}/cancel`);
 export const listAIDrafts = (params?: Record<string, unknown>) =>
@@ -731,6 +756,10 @@ export interface PlatformFormField {
   field_name: string;
   label: string;
   field_type: PlatformFieldType | string;
+  business_type?: string | null;
+  control_type?: string | null;
+  data_source?: string | null;
+  encoding_rule?: Record<string, unknown> | null;
   required: boolean;
   visible_in_list: boolean;
   visible_in_form: boolean;

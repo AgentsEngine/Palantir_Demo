@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import HTTPException
@@ -12,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api._model_driven_shared import assert_safe_identifier
 from app.api.deps import current_tenant_id, current_user_id
 from app.core.audit import write_audit_log
-from app.models.relational import Application, ApplicationForm, ApplicationMenuNode, Form, FormField, FormLayout
+from app.models.relational import Application, ApplicationForm, ApplicationMenuNode, Form, FormField, FormLayout, FormVersion
 
 
 FIELD_TYPE_ALIASES = {
@@ -143,6 +144,233 @@ def _default_fields(message: str) -> list[dict[str, Any]]:
     ]
 
 
+def _view_control_type(field_type: str) -> str:
+    if field_type in {"date", "datetime"}:
+        return "dateRange"
+    if field_type == "enum":
+        return "select"
+    if field_type in {"number", "integer", "decimal"}:
+        return "number"
+    if field_type == "relation":
+        return "relation"
+    return "text"
+
+
+def _view_render_type(field_type: str) -> str:
+    if field_type in {"date", "datetime"}:
+        return "date"
+    if field_type in {"number", "integer", "decimal"}:
+        return "number"
+    if field_type == "enum":
+        return "tag"
+    return "text"
+
+
+def _default_searchable_for_field(field: dict[str, Any], index: int) -> bool:
+    field_type = str(field.get("field_type") or "")
+    return index < 4 and field.get("visible_in_list", True) and field_type in {
+        "string",
+        "text",
+        "enum",
+        "date",
+        "datetime",
+        "relation",
+    }
+
+
+def _standard_view_config(fields: list[dict[str, Any]]) -> dict[str, Any]:
+    visible_fields = [field for field in fields if field.get("visible_in_list", True)]
+    searchable_fields = [field for field in fields if field.get("searchable")]
+    if not searchable_fields:
+        searchable_fields = [
+            field
+            for index, field in enumerate(visible_fields)
+            if _default_searchable_for_field(field, index)
+        ][:4]
+    return {
+        "filters": [
+            {
+                "id": f"filter-{field['field_name']}",
+                "fieldName": field["field_name"],
+                "label": field.get("label") or field["field_name"],
+                "controlType": "keyword" if index == 0 and _view_control_type(str(field.get("field_type") or "")) == "text" else _view_control_type(str(field.get("field_type") or "")),
+                "operator": "contains" if str(field.get("field_type") or "") in {"string", "text"} else "equals",
+                "placeholder": f"搜索{field.get('label') or field['field_name']}",
+                "enabled": True,
+                "advanced": index > 3,
+                "sortOrder": index,
+            }
+            for index, field in enumerate(searchable_fields)
+        ],
+        "table": {
+            "columns": [
+                {
+                    "id": f"column-{field['field_name']}",
+                    "fieldName": field["field_name"],
+                    "label": field.get("label") or field["field_name"],
+                    "enabled": True,
+                    "width": 180 if index == 0 else 140,
+                    "sortable": bool(field.get("sortable")),
+                    "renderType": _view_render_type(str(field.get("field_type") or "")),
+                    "emptyText": "-",
+                    "sortOrder": index,
+                }
+                for index, field in enumerate(visible_fields)
+            ],
+            "pageSize": 20,
+            "density": "middle",
+            "rowClickAction": "detail",
+            "toolbarActions": ["create", "refresh", "export", "settings"],
+            "rowActions": ["detail", "edit"],
+        },
+    }
+
+
+def _standard_form_layout(fields: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "sections": [
+            {
+                "id": "section-business-info",
+                "title": "业务信息",
+                "fields": [
+                    {
+                        "fieldName": field["field_name"],
+                        "label": field.get("label") or field["field_name"],
+                        "colSpan": 2 if str(field.get("field_type") or "") in {"text", "json"} else 1,
+                    }
+                    for field in fields
+                    if field.get("visible_in_form", True)
+                ],
+            }
+        ],
+    }
+
+
+def _infer_assembly_kind(message: str, context: dict[str, Any] | None = None) -> str:
+    context = context or {}
+    explicit = str(context.get("assemblyKind") or context.get("assembly_kind") or context.get("kind") or "").lower()
+    if explicit in {"analysis", "analytics", "dashboard", "report", "bi_report", "metric_dashboard"}:
+        return "analysis"
+    if explicit in {"business", "form", "entry_form"}:
+        return "business"
+    text = f"{message} {context.get('formName') or ''} {context.get('form_name') or ''}".lower()
+    if any(token in text for token in ["看板", "仪表盘", "驾驶舱", "分析", "报表", "bi", "dashboard", "analytics", "report"]):
+        return "analysis"
+    return "business"
+
+
+def _standard_analytics_design(form_code: str, form_name: str, fields: list[dict[str, Any]]) -> dict[str, Any]:
+    dimensions = [
+        field["field_name"]
+        for field in fields
+        if field.get("searchable") or str(field.get("field_type") or "") in {"enum", "date", "datetime", "string"}
+    ][:4] or ["category", "status", "owner"]
+    measures = [
+        field["field_name"]
+        for field in fields
+        if str(field.get("field_type") or "") in {"number", "integer", "decimal"}
+    ][:4] or ["count"]
+    primary_dimension = dimensions[0]
+    primary_measure = measures[0]
+    dataset_id = f"{form_code}-dataset"
+    return {
+        "datasets": [
+            {
+                "id": dataset_id,
+                "name": f"{form_name}数据集",
+                "sourceType": "businessForm",
+                "source": form_code,
+                "refreshMode": "realtime",
+                "dimensions": dimensions,
+                "measures": measures,
+            }
+        ],
+        "metrics": [
+            {
+                "id": "metric-total",
+                "name": f"{form_name}总数",
+                "expression": "count(*)",
+                "datasetId": dataset_id,
+                "format": "number",
+                "threshold": "正常 >= 0",
+            },
+            {
+                "id": "metric-primary",
+                "name": f"{primary_measure}汇总",
+                "expression": f"sum({primary_measure})" if primary_measure != "count" else "count(*)",
+                "datasetId": dataset_id,
+                "format": "number",
+                "threshold": "按业务目标配置",
+            },
+        ],
+        "widgets": [
+            {"id": "widget-total", "title": "核心指标", "type": "metric-card", "datasetId": dataset_id, "metricIds": ["metric-total", "metric-primary"], "width": "full", "interaction": "none"},
+            {"id": "widget-trend", "title": "趋势分析", "type": "line", "datasetId": dataset_id, "metricIds": ["metric-total"], "dimension": primary_dimension, "width": "half", "interaction": "filter"},
+            {"id": "widget-rank", "title": "排行分析", "type": "rank-table", "datasetId": dataset_id, "metricIds": ["metric-primary"], "dimension": primary_dimension, "width": "half", "interaction": "drilldown"},
+        ],
+        "globalFilters": [primary_dimension],
+        "interactions": [
+            {"sourceWidgetId": "widget-trend", "targetWidgetId": "widget-rank", "action": "filter"},
+        ],
+        "style": {
+            "preset": "factory-clear",
+            "background": "#f4f5f6",
+            "componentGap": 12,
+            "cardRadius": 4,
+            "cardBorder": "subtle",
+            "chartPalette": "industrial",
+            "tableDensity": "middle",
+            "filterTheme": "compact",
+        },
+    }
+
+
+def _standard_form_config(base_config: dict[str, Any] | None, fields: list[dict[str, Any]]) -> dict[str, Any]:
+    now = datetime.now(timezone.utc).isoformat()
+    view_config = _standard_view_config(fields)
+    return {
+        **(base_config or {}),
+        "createdByAgent": True,
+        "source": (base_config or {}).get("source") or "agent-low-code-form",
+        "viewConfig": (base_config or {}).get("viewConfig") or view_config,
+        "viewConfigDraft": (base_config or {}).get("viewConfigDraft") or (base_config or {}).get("viewConfig") or view_config,
+        "viewConfigMeta": (base_config or {}).get("viewConfigMeta") or {
+            "draftVersion": 1,
+            "publishedVersion": 1,
+            "draftSavedAt": now,
+            "publishedAt": now,
+            "status": "published",
+        },
+        "formLayout": (base_config or {}).get("formLayout") or _standard_form_layout(fields),
+    }
+
+
+def _standard_analytics_config(
+    base_config: dict[str, Any] | None,
+    fields: list[dict[str, Any]],
+    *,
+    form_code: str,
+    form_name: str,
+) -> dict[str, Any]:
+    now = datetime.now(timezone.utc).isoformat()
+    analytics_design = (base_config or {}).get("analyticsDesign") or _standard_analytics_design(form_code, form_name, fields)
+    return {
+        **(base_config or {}),
+        "createdByAgent": True,
+        "source": (base_config or {}).get("source") or "agent-low-code-analytics",
+        "assemblyKind": "analysis",
+        "analyticsDesign": analytics_design,
+        "analyticsDesignDraft": (base_config or {}).get("analyticsDesignDraft") or analytics_design,
+        "analyticsDesignMeta": (base_config or {}).get("analyticsDesignMeta") or {
+            "draftVersion": 1,
+            "publishedVersion": 1,
+            "draftSavedAt": now,
+            "publishedAt": now,
+            "status": "published",
+        },
+    }
+
+
 def build_low_code_form_payload(message: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
     """Create a conservative form-definition draft from a user request."""
 
@@ -171,15 +399,25 @@ def build_low_code_form_payload(message: str, context: dict[str, Any] | None = N
         if not isinstance(field, dict):
             continue
         field_name = _slugify(str(field.get("field_name") or field.get("name") or f"field_{index + 1}"), f"field_{index + 1}")
+        normalized_field_type = _normalize_field_type(field.get("field_type") or field.get("type"))
+        field_visible_in_list = bool(field.get("visible_in_list", True))
+        field_searchable = (
+            bool(field.get("searchable"))
+            if "searchable" in field
+            else _default_searchable_for_field(
+                {"field_type": normalized_field_type, "visible_in_list": field_visible_in_list},
+                index,
+            )
+        )
         normalized_fields.append(
             {
                 "field_name": field_name,
                 "label": str(field.get("label") or field_name.replace("_", " ").title()),
-                "field_type": _normalize_field_type(field.get("field_type") or field.get("type")),
+                "field_type": normalized_field_type,
                 "required": bool(field.get("required", False)),
-                "visible_in_list": bool(field.get("visible_in_list", True)),
+                "visible_in_list": field_visible_in_list,
                 "visible_in_form": bool(field.get("visible_in_form", True)),
-                "searchable": bool(field.get("searchable", False)),
+                "searchable": field_searchable,
                 "sortable": bool(field.get("sortable", False)),
                 "enum_values": field.get("enum_values"),
                 "ui_config": field.get("ui_config"),
@@ -187,15 +425,24 @@ def build_low_code_form_payload(message: str, context: dict[str, Any] | None = N
             }
         )
 
+    assembly_kind = _infer_assembly_kind(message, context)
+    base_config = context.get("config") if isinstance(context.get("config"), dict) else None
+    form_code = _slugify(str(code))
+    standard_config = (
+        _standard_analytics_config(base_config, normalized_fields, form_code=form_code, form_name=str(raw_name))
+        if assembly_kind == "analysis"
+        else _standard_form_config(base_config, normalized_fields)
+    )
     return {
         "form": {
             "name": str(raw_name),
-            "code": _slugify(str(code)),
+            "code": form_code,
             "description": str(context.get("description") or "Created from an AI Agent low-code plan."),
-            "status": "draft",
+            "status": "draft" if assembly_kind == "analysis" else "published",
             "storage_mode": "dynamic",
             "application_id": context.get("application_id") or context.get("applicationId"),
-            "config": {"createdByAgent": True},
+            "config": standard_config,
+            "assembly_kind": assembly_kind,
         },
         "fields": normalized_fields,
         "menu": {
@@ -221,6 +468,8 @@ async def execute_create_form_definition(
     form_data = dict(payload.get("form") or {})
     fields = payload.get("fields") or []
     menu = dict(payload.get("menu") or {})
+    field_configs = [field for field in fields if isinstance(field, dict)]
+    base_config = form_data.get("config") if isinstance(form_data.get("config"), dict) else None
 
     code = _slugify(str(form_data.get("code") or "ai_generated_form"))
     assert_safe_identifier(code)
@@ -236,6 +485,15 @@ async def execute_create_form_definition(
                 break
         else:
             raise HTTPException(status_code=409, detail="Form code already exists")
+    assembly_kind = _infer_assembly_kind(
+        f"{form_data.get('name') or ''} {form_data.get('description') or ''}",
+        {"assemblyKind": form_data.get("assembly_kind") or (base_config or {}).get("assemblyKind")},
+    )
+    form_config = (
+        _standard_analytics_config(base_config, field_configs, form_code=code, form_name=str(form_data.get("name") or code))
+        if assembly_kind == "analysis"
+        else _standard_form_config(base_config, field_configs)
+    )
 
     application_id = form_data.get("application_id")
     app = None
@@ -244,15 +502,20 @@ async def execute_create_form_definition(
         if not app or app.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Application not found")
 
+    requested_status = str(form_data.get("status") or "")
+    initial_status = "draft" if assembly_kind == "analysis" else "published"
+    if requested_status and requested_status != "draft":
+        initial_status = requested_status
+
     form = Form(
         tenant_id=tenant_id,
         name=str(form_data.get("name") or code),
         code=code,
         description=form_data.get("description"),
         storage_mode=str(form_data.get("storage_mode") or "dynamic"),
-        status=str(form_data.get("status") or "draft"),
+        status=initial_status,
         owner_id=current_user_id(user),
-        config=form_data.get("config") or {"createdByAgent": True},
+        config=form_config,
     )
     session.add(form)
     await session.flush()
@@ -266,16 +529,26 @@ async def execute_create_form_definition(
         if field_name in seen_names:
             continue
         seen_names.add(field_name)
+        normalized_field_type = _normalize_field_type(field_data.get("field_type"))
+        field_visible_in_list = bool(field_data.get("visible_in_list", True))
+        field_searchable = (
+            bool(field_data.get("searchable"))
+            if "searchable" in field_data
+            else _default_searchable_for_field(
+                {"field_type": normalized_field_type, "visible_in_list": field_visible_in_list},
+                index,
+            )
+        )
         field = FormField(
             tenant_id=tenant_id,
             form_id=form.id,
             field_name=field_name,
             label=str(field_data.get("label") or field_name),
-            field_type=_normalize_field_type(field_data.get("field_type")),
+            field_type=normalized_field_type,
             required=bool(field_data.get("required", False)),
-            visible_in_list=bool(field_data.get("visible_in_list", True)),
+            visible_in_list=field_visible_in_list,
             visible_in_form=bool(field_data.get("visible_in_form", True)),
-            searchable=bool(field_data.get("searchable", False)),
+            searchable=field_searchable,
             sortable=bool(field_data.get("sortable", False)),
             enum_values=field_data.get("enum_values"),
             ui_config=field_data.get("ui_config"),
@@ -284,6 +557,9 @@ async def execute_create_form_definition(
         session.add(field)
         created_fields.append(field)
 
+    view_config = form_config.get("viewConfig") or _standard_view_config(field_configs)
+    form_layout = form_config.get("formLayout") or _standard_form_layout(field_configs)
+    analytics_design = form_config.get("analyticsDesign")
     list_columns = [
         {"field_name": field.field_name, "label": field.label, "width": 160}
         for field in created_fields
@@ -294,8 +570,13 @@ async def execute_create_form_definition(
         for field in created_fields
         if field.visible_in_form
     ]
-    session.add(FormLayout(tenant_id=tenant_id, form_id=form.id, layout_type="list", config={"columns": list_columns}))
-    session.add(FormLayout(tenant_id=tenant_id, form_id=form.id, layout_type="form", config={"sections": [{"title": "Basic", "fields": form_items}]}))
+    if assembly_kind != "analysis":
+        session.add(FormLayout(tenant_id=tenant_id, form_id=form.id, layout_type="list", config={"viewConfig": view_config, "columns": list_columns}))
+        session.add(FormLayout(tenant_id=tenant_id, form_id=form.id, layout_type="view", config={"draft": view_config, "published": view_config, "meta": form_config.get("viewConfigMeta")}))
+        session.add(FormLayout(tenant_id=tenant_id, form_id=form.id, layout_type="form", config=form_layout or {"sections": [{"title": "业务信息", "fields": form_items}]}))
+
+    if assembly_kind == "analysis":
+        session.add(FormLayout(tenant_id=tenant_id, form_id=form.id, layout_type="analytics", config={"draft": analytics_design, "published": analytics_design, "meta": form_config.get("analyticsDesignMeta")}))
 
     binding = None
     menu_node = None
@@ -306,15 +587,78 @@ async def execute_create_form_definition(
             menu_node = ApplicationMenuNode(
                 tenant_id=tenant_id,
                 application_id=app.id,
-                node_type="form",
+                node_type="analytics" if assembly_kind == "analysis" else "form",
                 title=str(menu.get("title") or form.name),
-                icon=menu.get("icon"),
+                icon=menu.get("icon") or ("BarChartOutlined" if assembly_kind == "analysis" else "FormOutlined"),
                 form_id=form.id,
-                route_path=f"/dynamic/{form.id}",
+                route_path=f"/form-settings/{form.code}?tab=dashboard" if assembly_kind == "analysis" else f"/dynamic/{form.code}",
                 visible=True,
                 default_entry=False,
+                config={"assemblyKind": assembly_kind},
             )
             session.add(menu_node)
+
+    if assembly_kind != "analysis":
+        await session.flush()
+        published_at = datetime.now()
+        field_snapshots = [
+            {
+                "id": field.id,
+                "form_id": field.form_id,
+                "field_name": field.field_name,
+                "label": field.label,
+                "field_type": field.field_type,
+                "business_type": (field.ui_config or {}).get("businessType") or field.field_type,
+                "control_type": (field.ui_config or {}).get("controlType"),
+                "data_source": (field.ui_config or {}).get("dataSource") or (field.ui_config or {}).get("relation"),
+                "encoding_rule": (field.ui_config or {}).get("encodingRule"),
+                "required": field.required,
+                "visible_in_list": field.visible_in_list,
+                "visible_in_form": field.visible_in_form,
+                "searchable": field.searchable,
+                "sortable": field.sortable,
+                "archived": field.archived,
+                "default_value": field.default_value,
+                "enum_values": field.enum_values,
+                "validation": field.validation,
+                "ui_config": field.ui_config or {},
+                "sort_order": field.sort_order,
+            }
+            for field in created_fields
+        ]
+        session.add(FormVersion(
+            tenant_id=tenant_id,
+            form_id=form.id,
+            version=1,
+            status="published",
+            snapshot={
+                "form": {
+                    "id": form.id,
+                    "tenant_id": tenant_id,
+                    "name": form.name,
+                    "code": form.code,
+                    "description": form.description,
+                    "model_id": form.model_id,
+                    "table_name": form.table_name,
+                    "storage_mode": form.storage_mode,
+                    "status": "published",
+                    "owner_id": form.owner_id,
+                    "config": form_config,
+                },
+                "fields": field_snapshots,
+                "layouts": [
+                    {"layout_type": "list", "config": {"viewConfig": view_config, "columns": list_columns}},
+                    {"layout_type": "view", "config": {"draft": view_config, "published": view_config, "meta": form_config.get("viewConfigMeta")}},
+                    {"layout_type": "form", "config": form_layout},
+                ],
+                "actions": [],
+                "permissions": [],
+                "workflow_bindings": [],
+            },
+            impact_report={"latest_version": None, "next_version": 1, "record_count": 0, "blocking_count": 0, "warning_count": 0, "items": []},
+            published_by=current_user_id(user),
+            published_at=published_at,
+        ))
 
     await session.commit()
     await session.refresh(form)
@@ -332,7 +676,7 @@ async def execute_create_form_definition(
         "fields": [{"id": field.id, "field_name": field.field_name, "label": field.label} for field in created_fields],
         "application_binding": {"id": binding.id, "application_id": binding.application_id} if binding else None,
         "menu_node": {"id": menu_node.id, "route_path": menu_node.route_path} if menu_node else None,
-        "route_path": f"/dynamic/{form.id}",
+        "route_path": f"/form-settings/{form.code}?tab=dashboard" if assembly_kind == "analysis" else f"/dynamic/{form.code}",
     }
 
 
@@ -354,7 +698,7 @@ def _append_field_to_layouts(layouts: list[FormLayout], field: FormField) -> lis
         elif layout.layout_type == "form":
             sections = list(config.get("sections") or [])
             if not sections:
-                sections = [{"title": "Basic", "fields": []}]
+                sections = [{"title": "业务信息", "fields": []}]
             first = dict(sections[0])
             fields = list(first.get("fields") or [])
             already_present = any(

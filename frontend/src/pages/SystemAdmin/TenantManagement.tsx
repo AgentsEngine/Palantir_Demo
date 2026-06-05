@@ -339,13 +339,6 @@ export default function TenantManagement() {
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
-      <Alert
-        type="info"
-        showIcon
-        message="平台管理员在这里开通租户、治理状态、配置限额，并处理邀请与账号安全。"
-        description="邮箱域名用于登录解析；停用或归档后，该租户用户不能登录，也不能继续生成邀请和密码重置链接。"
-      />
-
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
         <div>
           <Typography.Title level={5} style={{ margin: 0 }}>租户运营后台</Typography.Title>

@@ -150,6 +150,9 @@ async def init_db():
 
 async def _build_graph_from_seed() -> None:
     """Build Neo4j graph from seed JSON data if graph is available."""
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        logger.info("pytest detected; skipping Neo4j graph build")
+        return
     if neo4j_driver is None:
         logger.info("Neo4j not available, skipping graph build")
         return

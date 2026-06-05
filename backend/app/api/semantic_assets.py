@@ -1,264 +1,455 @@
-"""Semantic asset APIs for the low-code ontology demo.
-
-This module intentionally returns a stable demo contract first. The existing
-data-source, ontology, and graph APIs remain available for deeper CRUD/query
-work; these endpoints provide the product-shaped layer used by admin screens
-and page settings.
-"""
+"""Semantic asset APIs backed by database metadata and persisted records."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import current_tenant_id, get_current_user, get_db
+from app.models.relational import (
+    Application,
+    AuditLog,
+    Defect,
+    DynamicRecord,
+    Equipment,
+    Form,
+    FormAction,
+    FormField,
+    KnowledgeObjectLink,
+    Material,
+    ProductionLine,
+    Role,
+    RolePermission,
+    Supplier,
+    WorkOrder,
+)
 
 router = APIRouter()
 
 
-DATA_ASSETS = [
-    {
-        "id": 1,
-        "name": "Manufacturing PostgreSQL",
-        "type": "postgresql",
-        "status": "connected",
-        "owner": "平台管理员",
-        "freshness": "5 分钟前",
-        "tables": [
-            {
-                "id": 101,
-                "name": "equipment",
-                "label": "设备主数据",
-                "rows": 128,
-                "quality_score": 98,
-                "fields": [
-                    {"name": "id", "label": "设备ID", "type": "integer", "primary_key": True, "searchable": True, "visible": False, "quality": "good"},
-                    {"name": "name", "label": "设备名称", "type": "string", "primary_key": False, "searchable": True, "visible": True, "quality": "good"},
-                    {"name": "line_id", "label": "产线ID", "type": "integer", "primary_key": False, "searchable": True, "visible": False, "quality": "good"},
-                    {"name": "model", "label": "型号", "type": "string", "primary_key": False, "searchable": True, "visible": True, "quality": "good"},
-                    {"name": "status", "label": "状态", "type": "enum", "primary_key": False, "searchable": True, "visible": True, "quality": "good"},
-                    {"name": "health_score", "label": "健康分", "type": "float", "primary_key": False, "searchable": False, "visible": True, "quality": "warning"},
-                ],
-            },
-            {
-                "id": 102,
-                "name": "work_orders",
-                "label": "维修/生产工单",
-                "rows": 246,
-                "quality_score": 94,
-                "fields": [
-                    {"name": "id", "label": "工单ID", "type": "integer", "primary_key": True, "searchable": True, "visible": False, "quality": "good"},
-                    {"name": "order_no", "label": "工单编号", "type": "string", "primary_key": False, "searchable": True, "visible": True, "quality": "good"},
-                    {"name": "line_id", "label": "产线ID", "type": "integer", "primary_key": False, "searchable": True, "visible": False, "quality": "good"},
-                    {"name": "status", "label": "状态", "type": "enum", "primary_key": False, "searchable": True, "visible": True, "quality": "good"},
-                    {"name": "planned_start", "label": "计划开始", "type": "datetime", "primary_key": False, "searchable": False, "visible": True, "quality": "good"},
-                ],
-            },
-        ],
-    },
-    {
-        "id": 2,
-        "name": "Supply Chain API",
-        "type": "rest_api",
-        "status": "connected",
-        "owner": "供应链团队",
-        "freshness": "12 分钟前",
-        "tables": [
-            {
-                "id": 201,
-                "name": "suppliers",
-                "label": "供应商档案",
-                "rows": 56,
-                "quality_score": 91,
-                "fields": [
-                    {"name": "id", "label": "供应商ID", "type": "integer", "primary_key": True, "searchable": True, "visible": False, "quality": "good"},
-                    {"name": "name", "label": "供应商名称", "type": "string", "primary_key": False, "searchable": True, "visible": True, "quality": "good"},
-                    {"name": "rating", "label": "评级", "type": "float", "primary_key": False, "searchable": False, "visible": True, "quality": "good"},
-                    {"name": "lead_time_days", "label": "交付周期", "type": "integer", "primary_key": False, "searchable": False, "visible": True, "quality": "warning"},
-                ],
-            },
-            {
-                "id": 202,
-                "name": "materials",
-                "label": "物料主数据",
-                "rows": 430,
-                "quality_score": 96,
-                "fields": [
-                    {"name": "id", "label": "物料ID", "type": "integer", "primary_key": True, "searchable": True, "visible": False, "quality": "good"},
-                    {"name": "name", "label": "物料名称", "type": "string", "primary_key": False, "searchable": True, "visible": True, "quality": "good"},
-                    {"name": "material_type", "label": "物料类型", "type": "string", "primary_key": False, "searchable": True, "visible": True, "quality": "good"},
-                    {"name": "safety_stock", "label": "安全库存", "type": "float", "primary_key": False, "searchable": False, "visible": True, "quality": "good"},
-                ],
-            },
-        ],
-    },
-]
+DATABASE_MODELS = [Equipment, WorkOrder, Supplier, Material, Defect, ProductionLine]
+
+# Backward-compatible exports for AI context routing. The semantic asset API now
+# resolves these structures from database metadata at request time.
+ONTOLOGY_OBJECTS: list[dict[str, Any]] = []
+ONTOLOGY_RELATIONS: list[dict[str, Any]] = []
+PAGE_CONTRACTS: dict[str, dict[str, Any]] = {}
 
 
-ONTOLOGY_OBJECTS = [
-    {
-        "id": "Device",
-        "name": "设备",
-        "code": "Device",
-        "icon": "tool",
-        "source": "equipment",
-        "description": "制造现场的核心设备对象，承载健康分、状态、产线归属和维护动作。",
-        "fields": [
-            {"name": "name", "label": "设备名称", "type": "string", "source_field": "equipment.name", "list": True, "form": True, "search": True},
-            {"name": "model", "label": "型号", "type": "string", "source_field": "equipment.model", "list": True, "form": True, "search": True},
-            {"name": "status", "label": "运行状态", "type": "enum", "source_field": "equipment.status", "list": True, "form": True, "search": True},
-            {"name": "health_score", "label": "健康分", "type": "float", "source_field": "equipment.health_score", "list": True, "form": False, "search": False},
-        ],
-    },
-    {
-        "id": "WorkOrder",
-        "name": "工单",
-        "code": "WorkOrder",
-        "icon": "file",
-        "source": "work_orders",
-        "description": "生产和维修任务的统一工单对象。",
-        "fields": [
-            {"name": "order_no", "label": "工单编号", "type": "string", "source_field": "work_orders.order_no", "list": True, "form": True, "search": True},
-            {"name": "status", "label": "状态", "type": "enum", "source_field": "work_orders.status", "list": True, "form": True, "search": True},
-            {"name": "planned_start", "label": "计划开始", "type": "datetime", "source_field": "work_orders.planned_start", "list": True, "form": True, "search": False},
-        ],
-    },
-    {
-        "id": "Supplier",
-        "name": "供应商",
-        "code": "Supplier",
-        "icon": "shop",
-        "source": "suppliers",
-        "description": "供应链中的供应商对象，承载评级、交付周期和风险动作。",
-        "fields": [
-            {"name": "name", "label": "供应商名称", "type": "string", "source_field": "suppliers.name", "list": True, "form": True, "search": True},
-            {"name": "rating", "label": "评级", "type": "float", "source_field": "suppliers.rating", "list": True, "form": True, "search": False},
-            {"name": "lead_time_days", "label": "交付周期", "type": "integer", "source_field": "suppliers.lead_time_days", "list": True, "form": True, "search": False},
-        ],
-    },
-    {
-        "id": "Material",
-        "name": "物料",
-        "code": "Material",
-        "icon": "database",
-        "source": "materials",
-        "description": "供应链、库存和生产计划共用的物料对象。",
-        "fields": [
-            {"name": "name", "label": "物料名称", "type": "string", "source_field": "materials.name", "list": True, "form": True, "search": True},
-            {"name": "material_type", "label": "物料类型", "type": "string", "source_field": "materials.material_type", "list": True, "form": True, "search": True},
-            {"name": "safety_stock", "label": "安全库存", "type": "float", "source_field": "materials.safety_stock", "list": True, "form": True, "search": False},
-        ],
-    },
-    {
-        "id": "Alert",
-        "name": "告警",
-        "code": "Alert",
-        "icon": "alert",
-        "source": "alerts",
-        "description": "设备、质量和供应链风险触发的异常事件。",
-        "fields": [
-            {"name": "title", "label": "告警标题", "type": "string", "source_field": "alerts.title", "list": True, "form": True, "search": True},
-            {"name": "severity", "label": "严重度", "type": "enum", "source_field": "alerts.severity", "list": True, "form": True, "search": True},
-            {"name": "created_at", "label": "触发时间", "type": "datetime", "source_field": "alerts.created_at", "list": True, "form": False, "search": False},
-        ],
-    },
-    {
-        "id": "QualityEvent",
-        "name": "质量事件",
-        "code": "QualityEvent",
-        "icon": "check",
-        "source": "defects",
-        "description": "检验、缺陷、CAPA 形成的质量事件对象。",
-        "fields": [
-            {"name": "defect_type", "label": "缺陷类型", "type": "string", "source_field": "defects.defect_type", "list": True, "form": True, "search": True},
-            {"name": "severity", "label": "严重度", "type": "enum", "source_field": "defects.severity", "list": True, "form": True, "search": True},
-            {"name": "root_cause", "label": "根因", "type": "text", "source_field": "defects.root_cause", "list": False, "form": True, "search": False},
-        ],
-    },
-]
+def _column_quality(column) -> str:
+    if column.primary_key or not column.nullable:
+        return "good"
+    return "unknown"
 
 
-ONTOLOGY_RELATIONS = [
-    {"id": 1, "source": "Device", "type": "LOCATED_IN", "label": "位于", "target": "ProductionLine", "graph": True, "description": "设备归属到产线"},
-    {"id": 2, "source": "Device", "type": "GENERATES", "label": "产生", "target": "Alert", "graph": True, "description": "设备健康异常产生告警"},
-    {"id": 3, "source": "Alert", "type": "CREATES", "label": "触发", "target": "WorkOrder", "graph": True, "description": "告警触发工单处理"},
-    {"id": 4, "source": "Supplier", "type": "SUPPLIES", "label": "供应", "target": "Material", "graph": True, "description": "供应商供应物料"},
-    {"id": 5, "source": "QualityEvent", "type": "AFFECTS", "label": "影响", "target": "Device", "graph": True, "description": "质量事件影响设备/产线稳定性"},
-    {"id": 6, "source": "Material", "type": "USED_BY", "label": "被使用于", "target": "WorkOrder", "graph": True, "description": "物料被工单消耗"},
-]
+def _field_payload(column) -> dict[str, Any]:
+    return {
+        "name": column.name,
+        "label": column.name,
+        "type": column.type.__class__.__name__.lower(),
+        "primary_key": bool(column.primary_key),
+        "searchable": column.type.__class__.__name__.lower() in {"string", "text"},
+        "visible": not column.name.endswith("_id") or column.primary_key,
+        "quality": _column_quality(column),
+    }
 
 
-PAGE_CONTRACTS = {
-    "/dashboard": {
-        "route": "/dashboard",
-        "title": "生产态势",
-        "entity": "Device",
-        "description": "围绕设备和产线的生产态势总览。",
-        "components": ["工厂 KPI", "OEE 趋势", "产线状态", "活动告警"],
-        "actions": ["刷新数据", "导出报表", "创建告警规则"],
-    },
-    "/maintenance": {
-        "route": "/maintenance",
-        "title": "预测性维护",
-        "entity": "Device",
-        "description": "以设备为主对象，配置健康总览、故障预测和工单流转。",
-        "components": ["设备健康总览", "健康分析", "故障预测", "工单管理"],
-        "actions": ["创建维修工单", "确认告警", "查看关联图谱"],
-    },
-    "/quality": {
-        "route": "/quality",
-        "title": "质量分析",
-        "entity": "QualityEvent",
-        "description": "以质量事件为主对象，配置缺陷、SPC 和 CAPA 流程。",
-        "components": ["质量指标", "SPC 控制图", "缺陷列表", "CAPA 跟踪"],
-        "actions": ["发起复核", "创建 CAPA", "导出质量报告"],
-    },
-    "/supply-chain": {
-        "route": "/supply-chain",
-        "title": "供应链风险",
-        "entity": "Supplier",
-        "description": "以供应商为主对象，配置风险评分、物料影响和复核流程。",
-        "components": ["供应商指标", "风险雷达", "物料影响", "供应商列表"],
-        "actions": ["发起供应商复核", "查看影响路径", "生成风险报告"],
-    },
-    "/": {
-        "route": "/",
-        "title": "我的工作台",
-        "entity": "Device",
-        "description": "个人工作台消费多个对象的摘要，不作为单对象表单。",
-        "components": ["待办任务", "最近应用", "平台状态", "数据新鲜度"],
-        "actions": ["打开应用", "处理审批", "查看告警"],
-    },
-}
+async def _count_table(db: AsyncSession, model, tenant_id: int) -> int:
+    stmt = select(func.count()).select_from(model)
+    if "tenant_id" in model.__table__.columns:
+        stmt = stmt.where(model.tenant_id == tenant_id)
+    return int(await db.scalar(stmt) or 0)
+
+
+async def _data_asset_tables(db: AsyncSession, tenant_id: int) -> list[dict[str, Any]]:
+    tables: list[dict[str, Any]] = []
+    for index, model in enumerate(DATABASE_MODELS, start=1):
+        table = model.__table__
+        row_count = await _count_table(db, model, tenant_id)
+        tables.append({
+            "id": table.name,
+            "name": table.name,
+            "label": table.name,
+            "rows": row_count,
+            "quality_score": 100 if row_count else 0,
+            "fields": [_field_payload(column) for column in table.columns],
+        })
+    return tables
 
 
 @router.get("/data-assets")
-async def list_data_assets():
-    return {"data": DATA_ASSETS}
+async def list_data_assets(
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    tenant_id = current_tenant_id(user)
+    tables = await _data_asset_tables(db, tenant_id)
+    return {
+        "data": [{
+            "id": 1,
+            "name": "application_database",
+            "type": "database",
+            "status": "connected",
+            "owner": "database",
+            "freshness": None,
+            "tables": tables,
+        }],
+        "source": "database",
+    }
 
 
 @router.get("/ontology-objects")
-async def list_ontology_objects():
-    return {"data": ONTOLOGY_OBJECTS}
+async def list_ontology_objects(
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    tenant_id = current_tenant_id(user)
+    form_rows = (
+        await db.execute(
+            select(Form)
+            .where(Form.tenant_id == tenant_id)
+            .order_by(Form.id)
+        )
+    ).scalars().all()
+
+    objects: list[dict[str, Any]] = []
+    for form in form_rows:
+        field_rows = (
+            await db.execute(
+                select(FormField)
+                .where(FormField.form_id == form.id, FormField.archived.is_(False))
+                .order_by(FormField.sort_order, FormField.id)
+            )
+        ).scalars().all()
+        objects.append({
+            "id": form.code,
+            "name": form.name,
+            "code": form.code,
+            "source": form.table_name or f"dynamic_records:{form.id}",
+            "description": form.description or "",
+            "fields": [
+                {
+                    "name": field.field_name,
+                    "label": field.label,
+                    "type": field.field_type,
+                    "source_field": field.field_name,
+                    "list": field.visible_in_list,
+                    "form": field.visible_in_form,
+                    "search": field.searchable,
+                }
+                for field in field_rows
+            ],
+        })
+
+    if objects:
+        return {"data": objects, "source": "database"}
+
+    tables = await _data_asset_tables(db, tenant_id)
+    return {
+        "data": [
+            {
+                "id": table["name"],
+                "name": table["label"],
+                "code": table["name"],
+                "source": table["name"],
+                "description": "",
+                "fields": [
+                    {
+                        "name": field["name"],
+                        "label": field["label"],
+                        "type": field["type"],
+                        "source_field": field["name"],
+                        "list": field["visible"],
+                        "form": field["visible"],
+                        "search": field["searchable"],
+                    }
+                    for field in table["fields"]
+                ],
+            }
+            for table in tables
+        ],
+        "source": "database",
+    }
 
 
 @router.get("/ontology-relations")
-async def list_ontology_relations():
-    return {"data": ONTOLOGY_RELATIONS}
+async def list_ontology_relations(
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    tenant_id = current_tenant_id(user)
+    relations: list[dict[str, Any]] = []
+    for model in DATABASE_MODELS:
+        table = model.__table__
+        for column in table.columns:
+            for fk in column.foreign_keys:
+                relations.append({
+                    "id": f"{table.name}.{column.name}->{fk.column.table.name}.{fk.column.name}",
+                    "source": table.name,
+                    "type": "FOREIGN_KEY",
+                    "label": column.name,
+                    "target": fk.column.table.name,
+                    "graph": True,
+                    "description": f"{table.name}.{column.name} -> {fk.column.table.name}.{fk.column.name}",
+                })
+
+    form_rows = (
+        await db.execute(select(Form).where(Form.tenant_id == tenant_id).order_by(Form.id))
+    ).scalars().all()
+    for form in form_rows:
+        fields = (
+            await db.execute(
+                select(FormField)
+                .where(FormField.form_id == form.id, FormField.archived.is_(False))
+                .order_by(FormField.sort_order, FormField.id)
+            )
+        ).scalars().all()
+        for field in fields:
+            relation_model = (field.ui_config or {}).get("relationModel") if isinstance(field.ui_config, dict) else None
+            if relation_model:
+                relations.append({
+                    "id": f"{form.code}.{field.field_name}->{relation_model}",
+                    "source": form.code,
+                    "type": "RELATION_FIELD",
+                    "label": field.label,
+                    "target": relation_model,
+                    "graph": True,
+                    "description": "",
+                })
+    return {"data": relations, "source": "database"}
 
 
 @router.get("/page-contracts")
-async def list_page_contracts():
-    return {"data": list(PAGE_CONTRACTS.values())}
+async def list_page_contracts(
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    tenant_id = current_tenant_id(user)
+    forms = (
+        await db.execute(
+            select(Form)
+            .where(Form.tenant_id == tenant_id)
+            .order_by(Form.id)
+        )
+    ).scalars().all()
+    apps = (
+        await db.execute(
+            select(Application)
+            .where(Application.tenant_id == tenant_id)
+            .order_by(Application.sort_order, Application.id)
+        )
+    ).scalars().all()
+    contracts = [
+        {
+            "route": (
+                f"/form-settings/{form.code}?tab=dashboard"
+                if str((form.config or {}).get("assemblyKind") or (form.config or {}).get("kind") or (form.config or {}).get("type") or "").lower()
+                in {"analysis", "analytics", "dashboard", "report", "bi_report", "metric_dashboard", "list_analysis"}
+                else f"/dynamic/{form.code}"
+            ),
+            "title": form.name,
+            "entity": form.code,
+            "description": form.description or "",
+            "components": [],
+            "actions": [],
+        }
+        for form in forms
+    ]
+    contracts.extend([
+        {
+            "route": app.default_route,
+            "title": app.name,
+            "entity": app.code,
+            "description": app.description or "",
+            "components": [],
+            "actions": [],
+        }
+        for app in apps
+    ])
+    return {"data": contracts, "source": "database"}
 
 
 @router.get("/page-contracts/by-route")
-async def get_page_contract_by_route(route: str):
-    contract = PAGE_CONTRACTS.get(route)
+async def get_page_contract_by_route(
+    route: str,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    contracts = (await list_page_contracts(db=db, user=user))["data"]
+    contract = next((item for item in contracts if item["route"] == route), None)
     if not contract:
         raise HTTPException(status_code=404, detail="Page contract not found")
-    entity = next((item for item in ONTOLOGY_OBJECTS if item["id"] == contract["entity"]), None)
-    relations = [
-        item
-        for item in ONTOLOGY_RELATIONS
+    objects = (await list_ontology_objects(db=db, user=user))["data"]
+    relations = (await list_ontology_relations(db=db, user=user))["data"]
+    entity = next((item for item in objects if item["id"] == contract["entity"]), None)
+    related = [
+        item for item in relations
         if item["source"] == contract["entity"] or item["target"] == contract["entity"]
     ]
-    return {"data": {**contract, "entity_detail": entity, "relations": relations}}
+    return {"data": {**contract, "entity_detail": entity, "relations": related}, "source": "database"}
 
+
+@router.get("/closed-loop-config")
+async def get_closed_loop_config(
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    tenant_id = current_tenant_id(user)
+
+    forms = (
+        await db.execute(select(Form).where(Form.tenant_id == tenant_id).order_by(Form.id))
+    ).scalars().all()
+    applications = (
+        await db.execute(select(Application).where(Application.tenant_id == tenant_id).order_by(Application.id))
+    ).scalars().all()
+    roles = (
+        await db.execute(select(Role).where(Role.tenant_id == tenant_id).order_by(Role.id))
+    ).scalars().all()
+    links = (
+        await db.execute(select(KnowledgeObjectLink).where(KnowledgeObjectLink.tenant_id == tenant_id).limit(200))
+    ).scalars().all()
+
+    nodes: list[dict[str, Any]] = []
+    for form in forms:
+        fields = (
+            await db.execute(
+                select(FormField.field_name)
+                .where(FormField.form_id == form.id, FormField.archived.is_(False))
+                .order_by(FormField.sort_order, FormField.id)
+            )
+        ).scalars().all()
+        actions = (
+            await db.execute(
+                select(FormAction.label)
+                .where(FormAction.form_id == form.id, FormAction.enabled.is_(True))
+                .order_by(FormAction.sort_order, FormAction.id)
+            )
+        ).scalars().all()
+        record_count = await db.scalar(
+            select(func.count()).select_from(DynamicRecord).where(
+                DynamicRecord.tenant_id == tenant_id,
+                DynamicRecord.form_id == form.id,
+                DynamicRecord.deleted_at.is_(None),
+            )
+        )
+        nodes.append({
+            "id": f"form:{form.id}",
+            "name": form.name,
+            "type": "Form",
+            "domain": form.storage_mode,
+            "status": form.status if form.status in {"published", "draft", "review"} else "draft",
+            "riskLevel": "medium" if record_count else "low",
+            "module": "forms",
+            "roles": [],
+            "fields": list(fields),
+            "actions": list(actions),
+            "description": form.description or "",
+        })
+
+    for app in applications:
+        nodes.append({
+            "id": f"app:{app.id}",
+            "name": app.name,
+            "type": "Application",
+            "domain": "application",
+            "status": app.status if app.status in {"published", "draft", "review"} else "draft",
+            "riskLevel": "low",
+            "module": app.default_route,
+            "roles": [],
+            "fields": ["code", "default_route", "status"],
+            "actions": ["view"],
+            "description": app.description or "",
+        })
+
+    for role in roles:
+        permissions = (
+            await db.execute(
+                select(RolePermission)
+                .where(RolePermission.role_id == role.id)
+                .order_by(RolePermission.id)
+            )
+        ).scalars().all()
+        nodes.append({
+            "id": f"role:{role.id}",
+            "name": role.label or role.name,
+            "type": "RolePolicy",
+            "domain": "identity",
+            "status": "published",
+            "riskLevel": "low",
+            "module": "identity-access",
+            "roles": [role.name],
+            "fields": [p.resource_type for p in permissions],
+            "actions": [p.action for p in permissions],
+            "description": role.description or "",
+        })
+
+    object_types = sorted({link.object_type for link in links if link.object_type})
+    for object_type in object_types:
+        related = [link for link in links if link.object_type == object_type]
+        nodes.append({
+            "id": f"knowledge:{object_type}",
+            "name": object_type,
+            "type": "KnowledgeObject",
+            "domain": "knowledge",
+            "status": "published",
+            "riskLevel": "low",
+            "module": "knowledge-base",
+            "roles": [],
+            "fields": sorted({str(link.object_id) for link in related if link.object_id})[:20],
+            "actions": ["review", "publish"],
+            "description": "",
+        })
+
+    edges: list[dict[str, Any]] = []
+    for role in roles:
+        permissions = (
+            await db.execute(select(RolePermission).where(RolePermission.role_id == role.id).order_by(RolePermission.id))
+        ).scalars().all()
+        for permission in permissions:
+            target = next(
+                (
+                    node["id"]
+                    for node in nodes
+                    if permission.resource_type in {node["type"], node["module"], node["domain"]}
+                    or permission.resource_key in {node["id"], node["name"]}
+                ),
+                None,
+            )
+            if target:
+                edges.append({
+                    "id": f"permission:{permission.id}",
+                    "source": f"role:{role.id}",
+                    "target": target,
+                    "type": "CAN_ACCESS",
+                    "label": permission.action,
+                    "condition": permission.resource_key,
+                    "status": "published",
+                    "riskLevel": "low",
+                    "evidence": "role_permissions",
+                    "frontendVisible": False,
+                })
+
+    audit_count = await db.scalar(
+        select(func.count()).select_from(AuditLog).where(AuditLog.tenant_id == tenant_id)
+    ) or 0
+    policies = [
+        {
+            "key": "audit-coverage",
+            "policy": "Audit log coverage",
+            "scope": "admin and runtime operations",
+            "guard": "audit_logs table",
+            "coverage": 100 if audit_count else 0,
+        },
+        {
+            "key": "role-permission",
+            "policy": "Role permission boundary",
+            "scope": "role_permissions table",
+            "guard": "RBAC evaluation",
+            "coverage": 100 if roles else 0,
+        },
+    ]
+
+    return {"data": {"nodes": nodes, "edges": edges, "policies": policies}, "source": "database"}

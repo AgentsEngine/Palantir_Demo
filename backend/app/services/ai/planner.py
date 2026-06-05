@@ -31,6 +31,13 @@ FORM_OBJECT_TERMS = [
     "low code",
     "table",
     "page",
+    "dashboard",
+    "report",
+    "analytics",
+    "bi",
+    "看板",
+    "报表",
+    "分析",
     "表单",
     "页面",
     "台账",
@@ -95,6 +102,12 @@ def _is_confirmation(message: str) -> bool:
 
 def _is_low_code_form_request(message: str) -> bool:
     return _contains_any(message, FORM_OBJECT_TERMS) and _contains_any(message, BUILD_INTENT_TERMS)
+
+
+def _infer_assembly_kind(message: str) -> str:
+    if _contains_any(message, ["看板", "仪表盘", "驾驶舱", "分析", "报表", "BI", "dashboard", "analytics", "report"]):
+        return "analysis"
+    return "business"
 
 
 def _recent_user_messages(context: dict[str, Any]) -> list[str]:
@@ -211,6 +224,7 @@ def plan_agent_turn(message: str, context: dict[str, Any] | None = None) -> Agen
         return AgentPlan(intent="qa", source_message=message, confidence=0.2, reason="no_action_plan")
 
     extracted: dict[str, Any] = {"planner_reason": reason}
+    extracted["assemblyKind"] = _infer_assembly_kind(source_message)
     form_name = _extract_form_name(source_message)
     if form_name:
         extracted["formName"] = form_name

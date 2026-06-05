@@ -10,6 +10,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Pagination,
   Popconfirm,
   Select,
   Space,
@@ -25,7 +26,6 @@ import {
   BranchesOutlined,
   DeleteOutlined,
   EditOutlined,
-  EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -119,6 +119,8 @@ export default function OrganizationManagement() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [keyword, setKeyword] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | undefined>();
+  const [orgPage, setOrgPage] = useState(1);
+  const [orgPageSize, setOrgPageSize] = useState(100);
   const [form] = Form.useForm();
 
   const fetchData = useCallback(async () => {
@@ -225,6 +227,15 @@ export default function OrganizationManagement() {
       return matchesKeyword && matchesType;
     });
   }, [keyword, orgMaps.tableRecords, typeFilter]);
+
+  useEffect(() => {
+    setOrgPage(1);
+  }, [keyword, typeFilter]);
+
+  const pagedRecords = useMemo(() => {
+    const start = (orgPage - 1) * orgPageSize;
+    return filteredRecords.slice(start, start + orgPageSize);
+  }, [filteredRecords, orgPage, orgPageSize]);
 
   const selectedOrg = useMemo(
     () => orgMaps.tableRecords.find((org) => org.id === selectedOrgId) || null,
@@ -358,13 +369,10 @@ export default function OrganizationManagement() {
     { title: '说明', dataIndex: 'description', ellipsis: true },
     {
       title: '操作',
-      width: 142,
+      width: 112,
       fixed: 'right',
       render: (_, record) => (
         <Space size={4}>
-          <Tooltip title="查看预览">
-            <Button size="small" icon={<EyeOutlined />} onClick={() => setSelectedOrgId(record.id)} />
-          </Tooltip>
           <Tooltip title="新增下级">
             <Button size="small" icon={<PlusOutlined />} onClick={() => openCreate(record.id)} />
           </Tooltip>
@@ -386,13 +394,9 @@ export default function OrganizationManagement() {
     },
   ];
 
-  const activeCount = orgUnits.filter((org) => org.status === 'active').length;
-  const memberCount = orgUnits.reduce((total, org) => total + (org.member_count || 0), 0);
-  const rootCount = orgUnits.filter((org) => !org.parent_id).length;
-
   return (
     <div className="org-management-console">
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+      <div className="org-management-toolbar">
         <div>
           <Typography.Title level={5} style={{ margin: 0 }}>组织管理</Typography.Title>
           <Typography.Text type="secondary">
@@ -406,25 +410,6 @@ export default function OrganizationManagement() {
           </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate()}>新建组织</Button>
         </Space>
-      </div>
-
-      <div className="org-metric-strip">
-        <div className="org-metric-tile">
-          <span>组织总数</span>
-          <strong>{orgUnits.length}</strong>
-        </div>
-        <div className="org-metric-tile">
-          <span>启用组织</span>
-          <strong>{activeCount}</strong>
-        </div>
-        <div className="org-metric-tile">
-          <span>成员归属</span>
-          <strong>{memberCount}</strong>
-        </div>
-        <div className="org-metric-tile">
-          <span>根组织</span>
-          <strong>{rootCount}</strong>
-        </div>
       </div>
 
       <div className="org-management-workbench">
@@ -461,22 +446,37 @@ export default function OrganizationManagement() {
           </div>
 
           <Table<OrgTableRecord>
-            dataSource={filteredRecords}
+            dataSource={pagedRecords}
             columns={columns}
             rowKey="id"
             loading={loading}
             size="small"
-            pagination={{ pageSize: 10, showSizeChanger: false }}
+            className="org-management-table"
+            pagination={false}
             rowSelection={{
               selectedRowKeys,
               onChange: setSelectedRowKeys,
             }}
             rowClassName={(record) => (record.id === selectedOrgId ? 'org-row-selected' : '')}
-            scroll={{ x: 1080 }}
+            scroll={{ x: 1080, y: 'calc(100vh / var(--app-ui-scale) - 600px)' }}
             onRow={(record) => ({
               onClick: () => setSelectedOrgId(record.id),
             })}
           />
+          <div className="org-management-pagination">
+            <Pagination
+              current={orgPage}
+              pageSize={orgPageSize}
+              total={filteredRecords.length}
+              showSizeChanger
+              pageSizeOptions={[20, 50, 100, 200]}
+              showTotal={(total) => `共 ${total} 个组织`}
+              onChange={(page, pageSize) => {
+                setOrgPage(page);
+                setOrgPageSize(pageSize);
+              }}
+            />
+          </div>
         </div>
 
         <OrgPreviewPanel
@@ -589,12 +589,18 @@ function OrgPreviewPanel({
       children: (
         <div className="org-detail-grid">
           <BasicInfoBlock org={org} typeLabel={typeMeta.label} />
-          <ImpactPreviewCard
-            org={org}
-            items={impactItems}
-            onAssess={() => message.info('影响评估会基于成员、角色和数据范围策略生成审批前检查。')}
-          />
         </div>
+      ),
+    },
+    {
+      key: 'impact',
+      label: '影响范围',
+      children: (
+        <ImpactPreviewCard
+          org={org}
+          items={impactItems}
+          onAssess={() => message.info('影响评估会基于成员、角色和数据范围策略生成审批前检查。')}
+        />
       ),
     },
     {

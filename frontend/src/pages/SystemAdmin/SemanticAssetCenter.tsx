@@ -36,10 +36,12 @@ import {
   Table,
   Tabs,
   Tag,
+  Tree,
   Typography,
   Upload,
   message,
 } from 'antd';
+import type { DataNode } from 'antd/es/tree';
 import cytoscape from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 import {
@@ -265,15 +267,76 @@ const KNOWLEDGE_TYPE_LABELS: Record<string, string> = {
 };
 
 const normalizeKnowledgeType = (item: KnowledgeDocument) => String(item.source_type ?? item.file_type ?? 'database').toLowerCase();
-
-const GRAPH_DOCUMENT_ALIASES: Record<string, string> = {
-  'kb-doc-quality-sop-docx': 'demo-doc-quality-sop',
-  'kb-doc-capa-072-docx': 'demo-doc-supplier-8d',
-  'kb-doc-supplier-8d-xlsx': 'demo-doc-supplier-8d',
-  'kb-doc-process-control-xlsx': 'demo-doc-equipment-log',
-  'kb-doc-maintenance-log-pdf': 'demo-doc-equipment-log',
-  'kb-doc-customer-risk-pdf': 'demo-doc-workorder-exception',
+const getKnowledgeDocumentId = (item: KnowledgeDocument) => String(item.id ?? item.document_id ?? '');
+const getKnowledgeDocumentTitle = (item: KnowledgeDocument) => String(item.title ?? item.document_title ?? item.file_name ?? item.source_file_name ?? '未命名文档');
+const getKnowledgeDocumentFileName = (item: KnowledgeDocument) => String(item.source_file_name ?? item.file_name ?? item.filename ?? item.updated_at ?? '数据库文档');
+const normalizeKnowledgeTypeGroup = (item: KnowledgeDocument) => {
+  const type = normalizeKnowledgeType(item);
+  return ['word', 'docx'].includes(type) ? 'docx' : ['excel', 'xlsx'].includes(type) ? 'xlsx' : type;
 };
+const getKnowledgeDocumentStatusMeta = (item: KnowledgeDocument) => {
+  const linkedCount = (item.linked_objects ?? []).length;
+  if (linkedCount > 0) return { label: '已发布', color: 'success' };
+  if (String((item as any).status ?? '').toLowerCase() === 'indexed') return { label: '待抽取', color: 'warning' };
+  return { label: (item as any).status ?? '入库中', color: 'default' };
+};
+
+const KNOWLEDGE_INTAKE_CAPABILITY_LABELS: Record<string, string> = {
+  summarize_document: '生成文档摘要',
+  review_ocr_evidence: '复核 OCR 证据',
+  extract_ontology_candidates: '抽取本体候选',
+  bind_existing_objects: '绑定已有对象',
+  prepare_graph_publish: '准备图谱发布',
+};
+
+const KNOWLEDGE_INTAKE_ACTION_LABELS: Record<string, { title: string; description: string }> = {
+  extract_ontology_candidates: {
+    title: '抽取本体候选',
+    description: '识别通用对象、制造业对象映射、关系、属性和原文证据。',
+  },
+  summarize_document: {
+    title: '生成文档摘要',
+    description: '基于证据生成当前文档摘要，不写入图谱资产。',
+  },
+  prepare_graph_publish: {
+    title: '准备图谱发布清单',
+    description: '发布前检查质量问题、对象绑定缺口和证据完整性。',
+  },
+};
+
+const KNOWLEDGE_INTAKE_STATUS_LABELS: Record<string, string> = {
+  draft: '草稿',
+  pending: '待处理',
+  running: '抽取中',
+  completed: '已完成',
+  approved: '已审核',
+  committed: '已发布',
+  failed: '失败',
+};
+
+const getIntakeSourceTypeLabel = (type?: string) => {
+  const normalized = String(type ?? '').toLowerCase();
+  return KNOWLEDGE_TYPE_LABELS[normalized] ?? (normalized ? normalized.toUpperCase() : '文档');
+};
+
+const getIntakeDomainLabel = (domain?: string) => {
+  const normalized = String(domain ?? '').toLowerCase();
+  if (normalized === 'manufacturing') return '制造业';
+  if (normalized === 'general') return '通用';
+  return domain ?? '-';
+};
+
+const getIntakeSummary = (
+  recommendation: OntologyIntakeRecommendation,
+  fallbackTitle: string,
+  fallbackSourceType: string,
+) => {
+  const title = recommendation.document_profile?.title ?? fallbackTitle;
+  const typeLabel = getIntakeSourceTypeLabel(recommendation.document_profile?.source_type ?? fallbackSourceType);
+  return `${title} 已作为${typeLabel}完成索引，可以进入本体抽取准备。`;
+};
+
+const GRAPH_DOCUMENT_ALIASES: Record<string, string> = {};
 
 const severityColors: Record<string, string> = {
   FATAL: 'red',
@@ -296,110 +359,23 @@ const graphTypeColors: Record<string, string> = {
   default: '#5d6972',
 };
 
-const fallbackAssets: DataAsset[] = [
-  {
-    id: 1,
-    name: 'Manufacturing PostgreSQL',
-    type: 'postgresql',
-    owner: '平台管理员',
-    status: 'connected',
-    freshness: '5 分钟前',
-    tables: [
-      {
-        id: 'equipment',
-        name: 'equipment',
-        label: '设备主数据',
-        rows: 128,
-        quality_score: 98,
-        fields: [
-          { name: 'equipment_id', label: '设备ID', type: 'string', primary_key: true, searchable: true, visible: true, quality: 'good' },
-          { name: 'name', label: '设备名称', type: 'string', searchable: true, visible: true, quality: 'good' },
-          { name: 'line_id', label: '产线ID', type: 'string', visible: true, quality: 'good' },
-          { name: 'status', label: '状态', type: 'enum', searchable: true, visible: true, quality: 'good' },
-        ],
-      },
-      {
-        id: 'work_orders',
-        name: 'work_orders',
-        label: '维修/生产工单',
-        rows: 246,
-        quality_score: 94,
-        fields: [
-          { name: 'work_order_id', label: '工单ID', type: 'string', primary_key: true, searchable: true, visible: true, quality: 'good' },
-          { name: 'equipment_id', label: '设备ID', type: 'string', searchable: true, visible: true, quality: 'good' },
-          { name: 'status', label: '状态', type: 'enum', searchable: true, visible: true, quality: 'warning' },
-        ],
-      },
-    ],
-  },
-];
-
-const fallbackObjects: OntologyObject[] = [
-  {
-    id: 'equipment',
-    name: '设备',
-    code: 'Equipment',
-    source: 'equipment',
-    description: '制造现场可维护、可监控、可关联工单和质量事件的设备对象。',
-    fields: [
-      { name: 'equipment_id', label: '设备ID', type: 'string', source_field: 'equipment_id', list: true, form: true, search: true },
-      { name: 'name', label: '设备名称', type: 'string', source_field: 'name', list: true, form: true, search: true },
-      { name: 'status', label: '状态', type: 'enum', source_field: 'status', list: true, form: true, search: true },
-    ],
-  },
-  {
-    id: 'defect',
-    name: '缺陷',
-    code: 'Defect',
-    source: 'quality_defects',
-    description: '质量异常、缺陷类型、严重度和证据来源的统一语义对象。',
-    fields: [
-      { name: 'defect_id', label: '缺陷ID', type: 'string', source_field: 'defect_id', list: true, form: true, search: true },
-      { name: 'severity', label: '严重度', type: 'enum', source_field: 'severity', list: true, form: true, search: true },
-    ],
-  },
-];
-
-const fallbackRelations: OntologyRelation[] = [
-  { id: 'equipment-workorder', source: 'equipment', target: 'work_order', label: '产生工单', type: 'GENERATES', graph: true, description: '设备异常或计划维护触发工单。' },
-  { id: 'defect-equipment', source: 'defect', target: 'equipment', label: '关联设备', type: 'RELATED_TO', graph: true, description: '缺陷可追溯到相关设备或工序。' },
-];
-
-const fallbackGraphNodes: GraphAssetNode[] = [
-  { id: 'demo-ent-supplier-beichen', name: '北辰电子材料', type: 'Supplier', confidence: 0.96, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:供应商信息', knowledge_job_id: 'demo-job-supplier-8d', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
-  { id: 'demo-ent-material-mb7781', name: 'MB-7781 焊锡膏 S12', type: 'MaterialBatch', confidence: 0.94, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D3 围堵措施', knowledge_job_id: 'demo-job-supplier-8d', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
-  { id: 'demo-ent-defect-void', name: 'BGA 焊点虚焊', type: 'Defect', confidence: 0.91, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D2 问题描述', knowledge_job_id: 'demo-job-supplier-8d', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
-  { id: 'demo-ent-capa-072', name: 'CAPA-072 批次冻结与复检', type: 'CAPA', confidence: 0.88, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D5/D6 纠正措施', knowledge_job_id: 'demo-job-supplier-8d', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
-  { id: 'demo-ent-sop-q14', name: 'SOP-QA-014 焊点虚焊复检流程', type: 'KnowledgeCard', confidence: 0.92, source_document_id: 'demo-doc-quality-sop', source_location: 'SOP:3.2-4.1', knowledge_job_id: 'demo-job-quality-sop', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
-  { id: 'demo-ent-equipment-smt03', name: 'SMT-03 回流炉', type: 'Equipment', confidence: 0.93, source_document_id: 'demo-doc-equipment-log', source_location: '设备日志:09:12', knowledge_job_id: 'demo-job-equipment-log', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
-  { id: 'demo-ent-workorder-017', name: 'WO-260521-017 电控模块工单', type: 'WorkOrder', confidence: 0.9, source_document_id: 'demo-doc-workorder-exception', source_location: '工单异常记录:line 6', knowledge_job_id: 'demo-job-workorder-exception', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
-  { id: 'demo-ent-customer-order-8821', name: 'SO-8821 客户订单', type: 'CustomerOrder', confidence: 0.8, source_document_id: 'demo-doc-workorder-exception', source_location: '工单异常记录:line 12', knowledge_job_id: 'demo-job-workorder-exception', review_status: 'approved', publish_status: 'published', binding_status: 'unbound' },
-];
-
-const fallbackGraphRelationships: GraphAssetRelationship[] = [
-  { id: 'demo-rel-supplier-material', source_name: '北辰电子材料', target_name: 'MB-7781 焊锡膏 S12', relation_type: 'SUPPLIES', confidence: 0.93, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:供应商信息', knowledge_job_id: 'demo-job-supplier-8d', publish_status: 'published' },
-  { id: 'demo-rel-material-defect', source_name: 'MB-7781 焊锡膏 S12', target_name: 'BGA 焊点虚焊', relation_type: 'MAY_CAUSE', confidence: 0.82, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D4 根因分析', knowledge_job_id: 'demo-job-supplier-8d', publish_status: 'published' },
-  { id: 'demo-rel-defect-capa', source_name: 'BGA 焊点虚焊', target_name: 'CAPA-072 批次冻结与复检', relation_type: 'TRIGGERS', confidence: 0.89, source_document_id: 'demo-doc-supplier-8d', source_location: '8D:D5/D6 纠正措施', knowledge_job_id: 'demo-job-supplier-8d', publish_status: 'published' },
-  { id: 'demo-rel-sop-defect', source_name: 'SOP-QA-014 焊点虚焊复检流程', target_name: 'BGA 焊点虚焊', relation_type: 'EVIDENCE_FOR', confidence: 0.87, source_document_id: 'demo-doc-quality-sop', source_location: 'SOP:3.2', knowledge_job_id: 'demo-job-quality-sop', publish_status: 'published' },
-  { id: 'demo-rel-workorder-equipment', source_name: 'WO-260521-017 电控模块工单', target_name: 'SMT-03 回流炉', relation_type: 'USES_EQUIPMENT', confidence: 0.87, source_document_id: 'demo-doc-workorder-exception', source_location: '工单异常记录:line 6', knowledge_job_id: 'demo-job-workorder-exception', publish_status: 'published' },
-  { id: 'demo-rel-product-order', source_name: 'PB-260521-A 电控模块产品批', target_name: 'SO-8821 客户订单', relation_type: 'AFFECTS_ORDER', confidence: 0.8, source_document_id: 'demo-doc-workorder-exception', source_location: '工单异常记录:line 12', knowledge_job_id: 'demo-job-workorder-exception', publish_status: 'published' },
-];
-
-const fallbackGraphEvidence: GraphAssetEvidence[] = [
-  ...fallbackGraphNodes.map((node) => ({ id: `${node.id}:evidence`, asset_type: 'node', asset_name: node.name, source_document_id: node.source_document_id, source_location: node.source_location, confidence: node.confidence, knowledge_job_id: node.knowledge_job_id })),
-  ...fallbackGraphRelationships.map((rel) => ({ id: `${rel.id}:evidence`, asset_type: 'relationship', asset_name: `${rel.source_name} -> ${rel.target_name}`, source_document_id: rel.source_document_id, source_location: rel.source_location, confidence: rel.confidence, knowledge_job_id: rel.knowledge_job_id })),
-];
-
+const fallbackAssets: DataAsset[] = [];
+const fallbackObjects: OntologyObject[] = [];
+const fallbackRelations: OntologyRelation[] = [];
+const fallbackGraphNodes: GraphAssetNode[] = [];
+const fallbackGraphRelationships: GraphAssetRelationship[] = [];
+const fallbackGraphEvidence: GraphAssetEvidence[] = [];
 const fallbackGraphQuality = {
   summary: {
-    nodes: fallbackGraphNodes.length,
-    relationships: fallbackGraphRelationships.length,
+    nodes: 0,
+    relationships: 0,
     missing_evidence: 0,
     low_confidence: 0,
-    unbound_nodes: fallbackGraphNodes.length,
+    unbound_nodes: 0,
   },
-  items: fallbackGraphNodes.map((node) => ({ severity: 'INFO', code: 'UNBOUND_MASTER_DATA', target: node.name, asset_id: node.id })),
+  items: [],
 };
+
 
 function confidencePercent(value: number) {
   return Math.round((Number(value) || 0) * 100);
@@ -422,12 +398,12 @@ type SemanticAssetCenterView = 'data' | 'ontology';
 
 export default function SemanticAssetCenter({ view }: { view?: SemanticAssetCenterView } = {}) {
   const [dataSourceForm] = Form.useForm();
-  const [assets, setAssets] = useState<DataAsset[]>(fallbackAssets);
-  const [objects, setObjects] = useState<OntologyObject[]>(fallbackObjects);
-  const [relations, setRelations] = useState<OntologyRelation[]>(fallbackRelations);
-  const [selectedAssetId, setSelectedAssetId] = useState<number>(fallbackAssets[0].id);
-  const [selectedTableId, setSelectedTableId] = useState<string>(fallbackAssets[0].tables[0].id);
-  const [selectedObjectId, setSelectedObjectId] = useState<string>(fallbackObjects[0].id);
+  const [assets, setAssets] = useState<DataAsset[]>([]);
+  const [objects, setObjects] = useState<OntologyObject[]>([]);
+  const [relations, setRelations] = useState<OntologyRelation[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState<number | undefined>();
+  const [selectedTableId, setSelectedTableId] = useState<string | undefined>();
+  const [selectedObjectId, setSelectedObjectId] = useState<string | undefined>();
   const [assetSearch, setAssetSearch] = useState('');
   const [activeDomain, setActiveDomain] = useState('全部');
   const [sourceModalOpen, setSourceModalOpen] = useState(false);
@@ -481,18 +457,22 @@ export default function SemanticAssetCenter({ view }: { view?: SemanticAssetCent
         listSemanticOntologyObjects(),
         listSemanticOntologyRelations(),
       ]);
-      const nextAssets = assetRes.data?.data?.length ? assetRes.data.data : fallbackAssets;
-      const nextObjects = objectRes.data?.data?.length ? objectRes.data.data : fallbackObjects;
+      const nextAssets = assetRes.data?.data ?? [];
+      const nextObjects = objectRes.data?.data ?? [];
       setAssets(nextAssets);
       setObjects(nextObjects);
-      setRelations(relationRes.data?.data?.length ? relationRes.data.data : fallbackRelations);
+      setRelations(relationRes.data?.data ?? []);
       setSelectedAssetId((prev) => prev ?? nextAssets[0]?.id);
       setSelectedTableId((prev) => nextAssets.flatMap((asset: DataAsset) => asset.tables).some((table: DataAsset['tables'][number]) => table.id === prev) ? prev : nextAssets[0]?.tables[0]?.id);
       setSelectedObjectId((prev) => prev ?? nextObjects[0]?.id);
     } catch {
-      setAssets(fallbackAssets);
-      setObjects(fallbackObjects);
-      setRelations(fallbackRelations);
+      setAssets([]);
+      setObjects([]);
+      setRelations([]);
+      setSelectedAssetId(undefined);
+      setSelectedTableId(undefined);
+      setSelectedObjectId(undefined);
+      message.warning('后端语义资产接口暂不可用，未展示本地兜底数据');
     } finally {
       setLoading(false);
     }
@@ -519,7 +499,7 @@ export default function SemanticAssetCenter({ view }: { view?: SemanticAssetCent
       schema: 'source',
       auth_type: 'password',
       username: 'mf_readonly',
-      password: 'readonly_demo_123',
+      password: '',
       owner: '平台管理员',
       sync_frequency: '每 5 分钟',
       sync_mode: 'metadata',
@@ -530,8 +510,8 @@ export default function SemanticAssetCenter({ view }: { view?: SemanticAssetCent
       allow_ai: true,
       allow_ontology: true,
       allow_graph: false,
-      sync_scope: ['metadata', 'profile', 'sample'],
-      tables: ['equipment', 'work_orders'],
+      sync_scope: ['metadata', 'profile'],
+      tables: [],
     });
     setSourceModalOpen(true);
   };
@@ -1232,11 +1212,11 @@ function KnowledgeGraphCenter() {
       setEvidence(evidenceRes.data?.data ?? []);
       setQuality(qualityRes.data?.data ?? null);
     } catch {
-      setNodes(fallbackGraphNodes);
-      setRelationships(fallbackGraphRelationships);
-      setEvidence(fallbackGraphEvidence);
-      setQuality(fallbackGraphQuality);
-      message.warning('后端图谱接口暂不可用，已展示本地演示案例');
+      setNodes([]);
+      setRelationships([]);
+      setEvidence([]);
+      setQuality(null);
+      message.warning('后端图谱接口暂不可用，未展示本地兜底案例');
     } finally {
       setLoading(false);
     }
@@ -1388,11 +1368,11 @@ function KnowledgeGraphCenterV2({ embedded = false, sourceDocumentId }: { embedd
       setEvidence(evidenceRes.data?.data ?? []);
       setQuality(qualityRes.data?.data ?? null);
     } catch {
-      setNodes(fallbackGraphNodes);
-      setRelationships(fallbackGraphRelationships);
-      setEvidence(fallbackGraphEvidence);
-      setQuality(fallbackGraphQuality);
-      message.warning('后端图谱接口暂不可用，已展示本地演示案例');
+      setNodes([]);
+      setRelationships([]);
+      setEvidence([]);
+      setQuality(null);
+      message.warning('后端图谱接口暂不可用，未展示本地兜底案例');
     } finally {
       setLoading(false);
     }
@@ -1771,7 +1751,7 @@ function KnowledgeExtractionWorkbench() {
             </Space>
           </Col>
           <Col xs={24} lg={14}>
-            <Form form={form} layout="vertical" initialValues={{ domain: 'manufacturing', prompt_name: 'manufacturing_ontology_v1', model_name: 'mock-chat', permission_scope: 'enterprise', owner_user_id: 'demo-user' }}>
+            <Form form={form} layout="vertical" initialValues={{ domain: 'manufacturing', prompt_name: 'manufacturing_ontology_v1', model_name: 'deterministic-extractor', permission_scope: 'enterprise', owner_user_id: 'knowledge-admin' }}>
               <Row gutter={12}>
                 <Col xs={24} md={12}>
                   <Form.Item label="业务领域" name="domain" rules={[{ required: true }]}>
@@ -1795,7 +1775,7 @@ function KnowledgeExtractionWorkbench() {
                 <Col xs={24} md={12}>
                   <Form.Item label="模型" name="model_name" rules={[{ required: true }]}>
                     <Select options={[
-                      { value: 'mock-chat', label: '本地 mock-chat' },
+                      { value: 'deterministic-extractor', label: 'Deterministic extractor' },
                       { value: 'glm-4-flash', label: 'GLM-4-Flash' },
                       { value: 'qwen-plus', label: 'Qwen Plus' },
                       { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
@@ -1932,20 +1912,104 @@ export function KnowledgeCenter() {
       return String(b.updated_at ?? '').localeCompare(String(a.updated_at ?? ''));
     });
   }, [documents, knowledgeSearch]);
-  const knowledgeGroups = useMemo(() => {
-    const groupOrder = ['word', 'docx', 'excel', 'xlsx', 'pdf', 'image', 'markdown'];
-    const grouped = visibleDocuments.reduce<Record<string, KnowledgeDocument[]>>((acc, item) => {
-      const type = normalizeKnowledgeType(item);
-      const key = ['word', 'docx'].includes(type) ? 'docx' : ['excel', 'xlsx'].includes(type) ? 'xlsx' : type;
-      acc[key] = [...(acc[key] ?? []), item];
+  const sourceLabelById = useMemo(() => {
+    const labels = new Map<string, string>();
+    sources.forEach((source) => labels.set(source.id, source.name));
+    labels.set('database', labels.get('database') ?? '数据库知识资产');
+    labels.set('uploaded', labels.get('uploaded') ?? '上传资料');
+    return labels;
+  }, [sources]);
+  const knowledgeTree = useMemo(() => {
+    const typeOrder = ['docx', 'xlsx', 'pdf', 'image', 'markdown'];
+    const expandedKeys: string[] = [];
+    const sourceBuckets = visibleDocuments.reduce<Record<string, KnowledgeDocument[]>>((acc, item) => {
+      const sourceId = item.source_id ?? 'database';
+      acc[sourceId] = [...(acc[sourceId] ?? []), item];
       return acc;
     }, {});
-    return Object.entries(grouped).sort(([a], [b]) => {
-      const aIndex = groupOrder.indexOf(a);
-      const bIndex = groupOrder.indexOf(b);
-      return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+    const sourceNodes = Object.entries(sourceBuckets).map(([sourceId, sourceDocuments]) => {
+      const sourceKey = `source:${sourceId}`;
+      expandedKeys.push(sourceKey);
+      const typeBuckets = sourceDocuments.reduce<Record<string, KnowledgeDocument[]>>((acc, item) => {
+        const type = normalizeKnowledgeTypeGroup(item);
+        acc[type] = [...(acc[type] ?? []), item];
+        return acc;
+      }, {});
+      const typeNodes = Object.entries(typeBuckets)
+        .sort(([a], [b]) => {
+          const aIndex = typeOrder.indexOf(a);
+          const bIndex = typeOrder.indexOf(b);
+          return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+        })
+        .map(([type, typeDocuments]) => {
+          const typeKey = `${sourceKey}:type:${type}`;
+          expandedKeys.push(typeKey);
+          return {
+            key: typeKey,
+            title: (
+              <div className="knowledge-tree-node folder">
+                <span className="knowledge-tree-node-title"><FileSearchOutlined /><strong>{KNOWLEDGE_TYPE_LABELS[type] ?? type.toUpperCase()}</strong></span>
+                <Tag>{typeDocuments.length}</Tag>
+              </div>
+            ),
+            children: typeDocuments.map((item) => {
+              const docId = getKnowledgeDocumentId(item);
+              const linkedObjects = item.linked_objects ?? [];
+              const statusMeta = getKnowledgeDocumentStatusMeta(item);
+              if (docId === selectedDocumentId) expandedKeys.push(`doc:${docId}`);
+              return {
+                key: `doc:${docId}`,
+                title: (
+                  <div className="knowledge-tree-node document">
+                    <span className="knowledge-tree-node-title"><strong>{getKnowledgeDocumentTitle(item)}</strong><Tag color={statusMeta.color}>{statusMeta.label}</Tag></span>
+                    <small>{getKnowledgeDocumentFileName(item)}{linkedObjects.length ? ` · ${linkedObjects.length} 个对象` : ''}</small>
+                  </div>
+                ),
+                children: linkedObjects.map((link, index) => {
+                  const type = link.type ?? link.object_type ?? 'Object';
+                  const objectId = link.id ?? link.object_id ?? index;
+                  const name = link.name ?? link.object_name ?? objectId;
+                  return {
+                    key: `object:${docId}:${type}:${objectId}`,
+                    title: (
+                      <div className="knowledge-tree-node object">
+                        <span className="knowledge-tree-node-title"><BranchesOutlined /><strong>{name}</strong></span>
+                        <small>{type} · {objectId}</small>
+                      </div>
+                    ),
+                  };
+                }),
+              };
+            }),
+          };
+        });
+      return {
+        key: sourceKey,
+        title: (
+          <div className="knowledge-tree-node source">
+            <span className="knowledge-tree-node-title"><DatabaseOutlined /><strong>{sourceLabelById.get(sourceId) ?? sourceId}</strong></span>
+            <Tag>{sourceDocuments.length}</Tag>
+          </div>
+        ),
+        children: typeNodes,
+      };
     });
-  }, [visibleDocuments]);
+    const rootKey = `space:${spaces[0]?.id ?? 'manufacturing'}`;
+    expandedKeys.unshift(rootKey);
+    const treeData: DataNode[] = visibleDocuments.length
+      ? [{
+        key: rootKey,
+        title: (
+          <div className="knowledge-tree-node root">
+            <span className="knowledge-tree-node-title"><ApartmentOutlined /><strong>{spaces[0]?.name ?? '制造业知识库'}</strong></span>
+            <Tag color="processing">{visibleDocuments.length}</Tag>
+          </div>
+        ),
+        children: sourceNodes,
+      }]
+      : [];
+    return { data: treeData, expandedKeys };
+  }, [selectedDocumentId, sourceLabelById, spaces, visibleDocuments]);
   const selectedDocument = visibleDocuments.find((item: any) => (item.id ?? item.document_id) === selectedDocumentId) ?? visibleDocuments[0];
   const selectedTitle = (selectedDocument as any)?.title ?? (selectedDocument as any)?.document_title ?? (selectedDocument as any)?.file_name ?? '暂无知识文档';
   const selectedSummary = (selectedDocument as any)?.summary ?? (selectedDocument ? `来源文件：${(selectedDocument as any)?.source_file_name ?? (selectedDocument as any)?.file_name ?? '数据库文档'}` : '上传或完成种子数据后，知识库目录会按数据库内容自动刷新。');
@@ -1971,22 +2035,11 @@ export function KnowledgeCenter() {
       ?? (selectedDocument as any)?.source_type
       ?? '',
   ).toLowerCase();
-  const selectedIsDemoDocument = false;
   const indexedDocumentCount = documents.filter((item: any) => (item.status ?? '').toLowerCase() === 'indexed').length;
   const pendingExtractCount = documents.filter((item: any) => !((item.linked_objects ?? []).length)).length;
   const publishedDocumentCount = documents.filter((item: any) => (item.linked_objects ?? []).length > 0).length;
-  const documentSourceTags = useMemo(() => {
-    const values = documents.flatMap((item: any) => [
-      item.source_type,
-      item.permission_scope,
-      item.owner_user_id,
-      ...(item.linked_objects ?? []).map((link: any) => `${link.type ?? link.object_type}:${link.id ?? link.object_id}`),
-    ]).filter(Boolean);
-    return Array.from(new Set(values)).slice(0, 8);
-  }, [documents]);
   const selectedIsOcrDocument = Boolean(
     selectedDocumentId
-      && !selectedIsDemoDocument
       && (
         selectedDocumentMime.includes('pdf')
         || selectedDocumentMime.startsWith('image/')
@@ -1999,20 +2052,8 @@ export function KnowledgeCenter() {
         ? ocrBlocks.reduce((sum, block) => sum + Number(block.confidence ?? 0), 0) / ocrBlocks.length
         : 0),
   );
-
-  const extractionEntities = [
-    { name: 'APS', type: '系统', confidence: 96, evidence: '系统定位' },
-    { name: '生产排程', type: '能力', confidence: 92, evidence: '核心功能' },
-    { name: '物料计划', type: '能力', confidence: 88, evidence: '核心功能' },
-    { name: 'ERP', type: '上游系统', confidence: 91, evidence: '与 ERP/MES 的关系' },
-    { name: 'MES', type: '下游系统', confidence: 93, evidence: '与 ERP/MES 的关系' },
-  ];
-
-  const extractionRelations = [
-    ['ERP', '提供长期计划', 'APS'],
-    ['APS', '优化短期排程', 'MES'],
-    ['APS', '约束计算', '生产排程'],
-  ];
+  const ontologyEntities = (ontologyJob?.result?.entities ?? []) as any[];
+  const ontologyRelations = (ontologyJob?.result?.relations ?? []) as any[];
 
   const toChatMessage = (item: any): KnowledgeChatMessage => ({
     id: item.message_id ?? item.id,
@@ -2040,8 +2081,8 @@ export function KnowledgeCenter() {
           : nextDocuments[0]?.id ?? nextDocuments[0]?.document_id ?? ''
       ));
     } catch {
-      setSpaces([{ id: 'manufacturing', name: '制造业知识库', description: 'SOP、8D、设备日志和质量记录。' }]);
-      setSources([{ id: 'uploaded', name: '上传资料', status: 'ready' }]);
+      setSpaces([]);
+      setSources([]);
       setDocuments([]);
       setCards([]);
       setSelectedDocumentId((prev) => prev ?? '');
@@ -2091,7 +2132,7 @@ export function KnowledgeCenter() {
   };
 
   useEffect(() => {
-    if (!selectedDocumentId || selectedDocumentId.startsWith('demo-')) {
+    if (!selectedDocumentId) {
       setChunks([]);
       return;
     }
@@ -2104,7 +2145,7 @@ export function KnowledgeCenter() {
     let cancelled = false;
     const loadIntake = async () => {
       setOntologyJob(null);
-      if (!selectedDocumentId || selectedDocumentId.startsWith('demo-')) {
+      if (!selectedDocumentId) {
         setIntakeRecommendation(null);
         return;
       }
@@ -2133,7 +2174,7 @@ export function KnowledgeCenter() {
   useEffect(() => {
     let cancelled = false;
     const loadMarkdown = async () => {
-      if (!selectedDocumentId || selectedDocumentId.startsWith('demo-')) {
+      if (!selectedDocumentId) {
         setDocumentMarkdown('');
         return;
       }
@@ -2298,7 +2339,7 @@ export function KnowledgeCenter() {
   const handleUpload = async (options: any) => {
     setUploading(true);
     try {
-      const response = await uploadKnowledgeAsset(options.file, { permission_scope: 'enterprise', owner_user_id: 'demo-user' });
+      const response = await uploadKnowledgeAsset(options.file, { permission_scope: 'enterprise', owner_user_id: 'knowledge-admin' });
       const payload = response.data?.data ?? {};
       const uploadedDocumentId = payload.document?.document_id ?? payload.document?.id;
       if (uploadedDocumentId) {
@@ -2324,7 +2365,7 @@ export function KnowledgeCenter() {
       const response = await createKnowledgeDocumentExtractionJob(selectedDocumentId, {
         domain: intakeRecommendation?.document_profile?.likely_domain ?? 'general',
         prompt_name: 'manufacturing_ontology_v1',
-        model_name: 'mock-chat',
+        model_name: 'deterministic-extractor',
       });
       const nextJob = response.data?.data?.job;
       setOntologyJob(nextJob ?? null);
@@ -2472,27 +2513,28 @@ export function KnowledgeCenter() {
               </Space>
             </div>
             <div className="knowledge-directory-tree">
-              {knowledgeGroups.map(([type, items]) => (
-                <div className="knowledge-tree-group" key={type}>
-                  <div className="knowledge-tree-folder"><FileSearchOutlined /> {KNOWLEDGE_TYPE_LABELS[type] ?? type.toUpperCase()} <Tag>{items.length}</Tag></div>
-                  {items.map((item: any) => {
-                    const docId = item.id ?? item.document_id;
-                    const active = docId === selectedDocumentId;
-                    const linkedCount = (item.linked_objects ?? []).length;
-                    const fileName = item.source_file_name ?? item.file_name ?? item.filename ?? item.updated_at ?? '';
-                    return (
-                      <button className={active ? 'knowledge-document-item active' : 'knowledge-document-item'} key={docId} onClick={() => setSelectedDocumentId(docId)}>
-                        <strong>{item.title ?? item.document_title ?? item.file_name}</strong>
-                        <small>{fileName}{item.status ? ` · ${item.status}` : ''}{linkedCount ? ` · ${linkedCount} 个关联对象` : ''}</small>
-                      </button>
-                    );
-                  })}
+              {knowledgeTree.data.length ? (
+                <div className="knowledge-tree-viewport">
+                  <Tree
+                    key={`${knowledgeSearch}-${selectedDocumentId}-${visibleDocuments.length}`}
+                    blockNode
+                    showLine
+                    treeData={knowledgeTree.data}
+                    selectedKeys={selectedDocumentId ? [`doc:${selectedDocumentId}`] : []}
+                    defaultExpandedKeys={knowledgeTree.expandedKeys}
+                    onSelect={(keys) => {
+                      const key = String(keys[0] ?? '');
+                      if (key.startsWith('doc:')) {
+                        setSelectedDocumentId(key.slice(4));
+                        return;
+                      }
+                      if (key.startsWith('object:')) {
+                        setSelectedDocumentId(key.split(':')[1]);
+                      }
+                    }}
+                  />
                 </div>
-              ))}
-              {!knowledgeGroups.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无入库文档" /> : null}
-              <div className="knowledge-source-docs">
-                {documentSourceTags.map((tag) => <Tag key={String(tag)}>{String(tag)}</Tag>)}
-              </div>
+              ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无入库文档" />}
             </div>
             <Upload.Dragger className="knowledge-upload-dragger" customRequest={handleUpload} showUploadList={false} disabled={uploading}>
               <p className="ant-upload-drag-icon"><InboxOutlined /></p>
@@ -2558,42 +2600,50 @@ export function KnowledgeCenter() {
         <aside className="knowledge-rag-panel">
           <Card
             className="knowledge-rag-card knowledge-intake-card"
-            title={<Space><NodeIndexOutlined />AI ontology intake</Space>}
+            title={<Space><NodeIndexOutlined />AI 本体抽取准备</Space>}
             loading={intakeLoading}
           >
             {intakeRecommendation ? (
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                <Alert type="info" showIcon message={intakeRecommendation.document_profile?.title ?? selectedTitle} description={intakeRecommendation.summary} />
+                <Alert
+                  type="info"
+                  showIcon
+                  message={intakeRecommendation.document_profile?.title ?? selectedTitle}
+                  description={getIntakeSummary(intakeRecommendation, selectedTitle, selectedSourceType)}
+                />
                 <div className="knowledge-note-properties compact">
-                  <div><span>type</span><strong>{intakeRecommendation.document_profile?.source_type ?? selectedSourceType}</strong></div>
-                  <div><span>domain</span><strong>{intakeRecommendation.document_profile?.likely_domain ?? 'general'}</strong></div>
-                  <div><span>lines</span><strong>{intakeRecommendation.document_profile?.line_count ?? '-'}</strong></div>
+                  <div><span>类型</span><strong>{getIntakeSourceTypeLabel(intakeRecommendation.document_profile?.source_type ?? selectedSourceType)}</strong></div>
+                  <div><span>领域</span><strong>{getIntakeDomainLabel(intakeRecommendation.document_profile?.likely_domain ?? 'general')}</strong></div>
+                  <div><span>行数</span><strong>{intakeRecommendation.document_profile?.line_count ?? '-'}</strong></div>
                 </div>
-                <Space wrap size={6}>{(intakeRecommendation.capabilities ?? []).map((item) => <Tag key={item}>{item}</Tag>)}</Space>
+                <Space wrap size={6}>{(intakeRecommendation.capabilities ?? []).map((item) => <Tag key={item}>{KNOWLEDGE_INTAKE_CAPABILITY_LABELS[item] ?? item}</Tag>)}</Space>
                 {(intakeRecommendation.suggested_actions ?? []).map((action) => (
                   <div className="knowledge-intake-action" key={action.key}>
                     <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                      <Space wrap><Typography.Text strong>{action.title}</Typography.Text>{action.requires_confirmation ? <Tag color="gold">confirm</Tag> : <Tag>read</Tag>}</Space>
-                      <Typography.Text type="secondary">{action.description}</Typography.Text>
+                      <Space wrap>
+                        <Typography.Text strong>{KNOWLEDGE_INTAKE_ACTION_LABELS[action.key]?.title ?? action.title}</Typography.Text>
+                        {action.requires_confirmation ? <Tag color="gold">需确认</Tag> : <Tag>只读</Tag>}
+                      </Space>
+                      <Typography.Text type="secondary">{KNOWLEDGE_INTAKE_ACTION_LABELS[action.key]?.description ?? action.description}</Typography.Text>
                     </Space>
                   </div>
                 ))}
                 <Button type="primary" icon={<FileSearchOutlined />} loading={ontologyExtracting} disabled={!selectedDocumentId} onClick={startOntologyExtraction} block>
-                  Start ontology extraction
+                  开始本体抽取
                 </Button>
               </Space>
             ) : (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Upload or select an indexed document to start ontology intake." />
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="上传或选择已索引文档后，可开始本体抽取准备。" />
             )}
             {ontologyJob ? (
               <div className="knowledge-ontology-review">
                 <Divider />
                 <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                  <Space wrap><Tag color={ontologyJob.status === 'committed' ? 'green' : ontologyJob.quality_report?.blocking ? 'red' : 'blue'}>{ontologyJob.status}</Tag><Typography.Text code>{ontologyJob.job_id}</Typography.Text></Space>
+                  <Space wrap><Tag color={ontologyJob.status === 'committed' ? 'green' : ontologyJob.quality_report?.blocking ? 'red' : 'blue'}>{KNOWLEDGE_INTAKE_STATUS_LABELS[ontologyJob.status] ?? ontologyJob.status}</Tag><Typography.Text code>{ontologyJob.job_id}</Typography.Text></Space>
                   <Row gutter={8}>
-                    <Col span={8}><div className="knowledge-intake-metric"><Typography.Text type="secondary">generic</Typography.Text><Typography.Title level={5}>{ontologyJob.result.generic_entities?.length ?? ontologyJob.result.entities.length}</Typography.Title></div></Col>
-                    <Col span={8}><div className="knowledge-intake-metric"><Typography.Text type="secondary">domain</Typography.Text><Typography.Title level={5}>{ontologyJob.result.domain_mappings?.length ?? 0}</Typography.Title></div></Col>
-                    <Col span={8}><div className="knowledge-intake-metric"><Typography.Text type="secondary">relations</Typography.Text><Typography.Title level={5}>{ontologyJob.result.relations.length}</Typography.Title></div></Col>
+                    <Col span={8}><div className="knowledge-intake-metric"><Typography.Text type="secondary">通用对象</Typography.Text><Typography.Title level={5}>{ontologyJob.result.generic_entities?.length ?? ontologyJob.result.entities.length}</Typography.Title></div></Col>
+                    <Col span={8}><div className="knowledge-intake-metric"><Typography.Text type="secondary">领域映射</Typography.Text><Typography.Title level={5}>{ontologyJob.result.domain_mappings?.length ?? 0}</Typography.Title></div></Col>
+                    <Col span={8}><div className="knowledge-intake-metric"><Typography.Text type="secondary">关系</Typography.Text><Typography.Title level={5}>{ontologyJob.result.relations.length}</Typography.Title></div></Col>
                   </Row>
                   <Table
                     size="small"
@@ -2601,15 +2651,15 @@ export function KnowledgeCenter() {
                     dataSource={ontologyJob.result.entities}
                     pagination={{ pageSize: 4 }}
                     columns={[
-                      { title: 'Name', dataIndex: 'name', ellipsis: true },
-                      { title: 'Type', dataIndex: 'entity_type', width: 120, render: (value) => <Tag color="blue">{value}</Tag> },
-                      { title: 'Evidence', dataIndex: 'source_location', width: 110 },
+                      { title: '名称', dataIndex: 'name', ellipsis: true },
+                      { title: '类型', dataIndex: 'entity_type', width: 120, render: (value) => <Tag color="blue">{value}</Tag> },
+                      { title: '证据', dataIndex: 'source_location', width: 110 },
                     ]}
                   />
-                  <Alert type={ontologyJob.quality_report?.blocking ? 'error' : 'success'} showIcon message={ontologyJob.quality_report?.blocking ? 'Blocking issues need review' : 'Ready for review and graph publish'} />
+                  <Alert type={ontologyJob.quality_report?.blocking ? 'error' : 'success'} showIcon message={ontologyJob.quality_report?.blocking ? '存在阻断问题，需要先审核' : '已准备好审核并发布到图谱'} />
                   <Space wrap>
-                    <Button icon={<CheckCircleOutlined />} loading={ontologyApproving} onClick={approveOntologyJob}>Approve</Button>
-                    <Button type="primary" icon={<NodeIndexOutlined />} loading={ontologyCommitting} disabled={ontologyJob.quality_report?.blocking} onClick={commitOntologyJob}>Publish to graph</Button>
+                    <Button icon={<CheckCircleOutlined />} loading={ontologyApproving} onClick={approveOntologyJob}>审核通过</Button>
+                    <Button type="primary" icon={<NodeIndexOutlined />} loading={ontologyCommitting} disabled={ontologyJob.quality_report?.blocking} onClick={commitOntologyJob}>发布到图谱</Button>
                   </Space>
                 </Space>
               </div>
@@ -2681,53 +2731,69 @@ export function KnowledgeCenter() {
                 },
                 {
                   key: 'extract',
-                  label: '抽取结果',
+                  label: 'Extraction results',
                   children: (
                     <Space className="knowledge-extract-stack" direction="vertical" size={10} style={{ width: '100%' }}>
-                      <Alert type="success" showIcon message="已生成候选实体 5 个、候选关系 3 条、证据段落 8 处" />
+                      <Alert
+                        type={ontologyJob ? 'success' : 'info'}
+                        showIcon
+                        message={`Entities ${ontologyEntities.length}, relations ${ontologyRelations.length}`}
+                      />
                       <div className="knowledge-result-list">
-                        {extractionEntities.map((item) => (
-                          <Card className="knowledge-result-card" size="small" key={item.name}>
-                            <div className="knowledge-chunk-head"><strong>{item.name}</strong><Tag color="blue">{item.type}</Tag></div>
-                            <Progress percent={item.confidence} size="small" />
-                            <Typography.Text type="secondary">证据：{item.evidence}</Typography.Text>
+                        {ontologyEntities.length ? ontologyEntities.map((item) => (
+                          <Card className="knowledge-result-card" size="small" key={item.candidate_id ?? item.name}>
+                            <div className="knowledge-chunk-head"><strong>{item.name ?? item.candidate_id}</strong><Tag color="blue">{item.entity_type ?? item.type ?? '-'}</Tag></div>
+                            <Progress percent={confidencePercent(Number(item.confidence ?? 0))} size="small" />
+                            <Typography.Text type="secondary">{item.source_location ?? item.evidence ?? '-'}</Typography.Text>
                           </Card>
-                        ))}
+                        )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No extraction results from database" />}
                       </div>
                     </Space>
                   ),
                 },
                 {
                   key: 'publish',
-                  label: '发布清单',
+                  label: 'Publish list',
                   children: (
                     <div className="knowledge-publish-stack">
                       <div className="knowledge-publish-list">
-                        {extractionRelations.map(([source, relation, target]) => (
-                          <div className="knowledge-publish-row" key={`${source}-${target}`}>
-                            <strong>{source}</strong><span>{relation}</span><strong>{target}</strong>
-                          </div>
-                        ))}
+                        {ontologyRelations.length ? ontologyRelations.map((item, index) => {
+                          const source = item.source_name ?? item.source ?? item.source_candidate_id ?? '-';
+                          const target = item.target_name ?? item.target ?? item.target_candidate_id ?? '-';
+                          const relation = item.relation_type ?? item.type ?? item.label ?? '-';
+                          return (
+                            <div className="knowledge-publish-row" key={item.candidate_id ?? `${source}-${target}-${index}`}>
+                              <strong>{source}</strong><span>{relation}</span><strong>{target}</strong>
+                            </div>
+                          );
+                        }) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No relations ready to publish" />}
                       </div>
-                      <Button className="knowledge-publish-action" type="primary" block icon={<NodeIndexOutlined />}>发布到知识图谱</Button>
+                      <Button
+                        className="knowledge-publish-action"
+                        type="primary"
+                        block
+                        icon={<NodeIndexOutlined />}
+                        loading={ontologyCommitting}
+                        disabled={!ontologyJob || !ontologyRelations.length || ontologyJob.quality_report?.blocking}
+                        onClick={commitOntologyJob}
+                      >Publish to graph</Button>
                     </div>
                   ),
                 },
                 {
                   key: 'meta',
-                  label: '属性',
+                  label: 'Attributes',
                   children: (
                     <div className="knowledge-meta-stack">
                       <div className="knowledge-note-properties">
-                      <div><span>知识空间</span><strong>企业信息化</strong></div>
-                      <div><span>自动领域</span><strong>生产制造 / 计划排程</strong></div>
-                      <div><span>索引状态</span><strong>已索引</strong></div>
-                      <div><span>知识卡片</span><strong>{cards.length || 2}</strong></div>
+                        <div><span>Document</span><strong>{selectedTitle}</strong></div>
+                        <div><span>Source type</span><strong>{selectedSourceType}</strong></div>
+                        <div><span>Status</span><strong>{(selectedDocument as any)?.status ?? '-'}</strong></div>
+                        <div><span>Knowledge cards</span><strong>{cards.length}</strong></div>
                       </div>
                     </div>
                   ),
-                },
-              ]}
+                },              ]}
             />
           </Card>
         </aside>
@@ -2764,8 +2830,8 @@ function LegacyKnowledgeCenter() {
       setCards(cardRes.data?.data ?? []);
       setSelectedDocumentId((prev) => prev ?? nextDocuments[0]?.id ?? nextDocuments[0]?.document_id);
     } catch {
-      setSpaces([{ id: 'manufacturing', name: '制造业知识库', description: 'SOP、8D、设备日志和质量记录。' }]);
-      setSources([{ id: 'uploaded', name: '上传资料', status: 'ready' }]);
+      setSpaces([]);
+      setSources([]);
       setDocuments([]);
       setCards([]);
     }
@@ -2800,7 +2866,7 @@ function LegacyKnowledgeCenter() {
   const handleUpload = async (options: any) => {
     setUploading(true);
     try {
-      await uploadKnowledgeAsset(options.file, { permission_scope: 'enterprise', owner_user_id: 'demo-user' });
+      await uploadKnowledgeAsset(options.file, { permission_scope: 'enterprise', owner_user_id: 'knowledge-admin' });
       message.success('资料已入库，可在知识抽取工作台继续发布到图谱');
       options.onSuccess?.({});
       loadKnowledge();

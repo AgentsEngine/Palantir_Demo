@@ -17,6 +17,7 @@ from .low_code_tools import execute_add_form_field, execute_create_form_definiti
 PersistDraft = Callable[..., Awaitable[dict[str, Any]]]
 UpdateDraftStatus = Callable[..., Awaitable[None]]
 AuditEvent = Callable[[dict[str, Any], str, dict[str, Any]], Any]
+AgentEventSink = Callable[[str, dict[str, Any]], Awaitable[None]]
 
 
 class AgentToolExecutor:
@@ -28,14 +29,27 @@ class AgentToolExecutor:
         persist_ai_draft: PersistDraft,
         update_ai_draft_status: UpdateDraftStatus,
         audit_ai_event: AuditEvent,
+        event_sink: AgentEventSink | None = None,
     ) -> dict[str, Any]:
         if run.get("status") != "confirmed":
             return run
         results: list[dict[str, Any]] = []
-        for action in run.get("actions") or []:
+        for index, action in enumerate(run.get("actions") or []):
             skill = action.get("skill")
             payload = action.get("payload") if isinstance(action.get("payload"), dict) else {}
             source_draft_id = str(payload.get("_source_draft_id") or payload.get("_resume_draft_id") or "")
+            step_id = f"confirm-{run.get('run_id') or 'run'}-{index + 1}"
+            if event_sink:
+                await event_sink(
+                    "tool.started",
+                    {
+                        "step_id": step_id,
+                        "tool": self._tool_for_skill(str(skill or ""), payload),
+                        "skill": skill,
+                        "action_index": index + 1,
+                        "summary": action.get("title") or skill,
+                    },
+                )
             result_item = await self._execute_action(
                 skill=str(skill or ""),
                 payload=payload,
@@ -48,11 +62,52 @@ class AgentToolExecutor:
                 source_draft_id=source_draft_id,
             )
             results.append(result_item)
+            if event_sink:
+                await event_sink(
+                    "tool.completed",
+                    {
+                        "step_id": step_id,
+                        "tool": result_item.get("tool"),
+                        "skill": result_item.get("skill"),
+                        "status": result_item.get("status"),
+                        "summary": self._summarize_result(result_item.get("result")),
+                        "result": result_item.get("result"),
+                    },
+                )
 
         run["tool_results"] = results
         if any(item.get("status") == "completed" for item in results):
             run["status"] = "completed"
         return run
+
+    @staticmethod
+    def _tool_for_skill(skill: str, payload: dict[str, Any]) -> str:
+        if skill == "low_code.create_form_definition":
+            return "forms.create_form_definition"
+        if skill == "low_code.add_form_field":
+            return "forms.add_form_field"
+        if skill == "analysis.analyze_form_records":
+            return "forms.query_records"
+        if skill == "forms.get_record":
+            return "forms.get_record"
+        contract = payload.get("_contract") if isinstance(payload.get("_contract"), dict) else {}
+        return str(contract.get("tool") or "ai.drafts.save")
+
+    @staticmethod
+    def _summarize_result(result: Any) -> str:
+        if not isinstance(result, dict):
+            return ""
+        route_path = result.get("route_path")
+        if route_path:
+            return f"route_path={route_path}"
+        record_id = result.get("record_id")
+        form_code = result.get("form_code")
+        if record_id is not None and form_code:
+            return f"{form_code} record_id={record_id}"
+        draft_id = result.get("draft_id")
+        if draft_id:
+            return f"draft_id={draft_id}"
+        return ""
 
     async def _execute_action(
         self,

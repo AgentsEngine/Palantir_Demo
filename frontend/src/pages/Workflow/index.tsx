@@ -9,14 +9,14 @@ import {
   RightOutlined,
   RollbackOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Drawer, Form, Input, Row, Space, Table, Tabs, Tag, Timeline, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Button, Col, Drawer, Form, Input, Row, Space, Tabs, Tag, Timeline, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-type WorkflowTab = 'pending' | 'running' | 'done' | 'draft' | 'returned';
+export type WorkflowTab = 'pending' | 'running' | 'done' | 'draft' | 'returned';
+type WorkflowViewTab = WorkflowTab | 'all';
 
-type WorkflowCase = {
+export type WorkflowCase = {
   id: string;
   title: string;
   app: string;
@@ -39,7 +39,7 @@ const statusMeta: Record<WorkflowTab, { label: string; color: string; icon: JSX.
   returned: { label: '退回待修改', color: 'red', icon: <RollbackOutlined />, description: '需要补充后重新提交' },
 };
 
-const workflowCases: WorkflowCase[] = [
+export const workflowCases: WorkflowCase[] = [
   {
     id: 'WF-20260520-001',
     title: '设备维修申请 - 产线 A03 主轴异响',
@@ -248,6 +248,13 @@ const workflowCases: WorkflowCase[] = [
 ];
 
 const orderedTabs: WorkflowTab[] = ['pending', 'running', 'done', 'draft', 'returned'];
+const approvalTabs: Array<{ key: WorkflowViewTab; label: string; description: string }> = [
+  { key: 'all', label: '全部', description: '全部流程单据' },
+  { key: 'pending', label: '待审批', description: '需要当前用户处理' },
+  { key: 'running', label: '审批中', description: '正在流转' },
+  { key: 'done', label: '已审批', description: '已完成闭环' },
+  { key: 'returned', label: '已退回', description: '需补充后提交' },
+];
 
 function getPriorityColor(priority: WorkflowCase['priority']) {
   if (priority === '高') return 'red';
@@ -331,16 +338,19 @@ function buildFormFields(item: WorkflowCase) {
 export default function WorkflowPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryTab = searchParams.get('tab') as WorkflowTab | null;
-  const initialTab = queryTab && orderedTabs.includes(queryTab) ? queryTab : 'pending';
-  const [activeTab, setActiveTab] = useState<WorkflowTab>(initialTab);
-  const filteredCases = useMemo(() => workflowCases.filter((item) => item.status === activeTab), [activeTab]);
+  const queryTab = searchParams.get('tab') as WorkflowViewTab | null;
+  const validTabs: WorkflowViewTab[] = ['all', ...orderedTabs];
+  const initialTab = queryTab && validTabs.includes(queryTab) ? queryTab : 'pending';
+  const [activeTab, setActiveTab] = useState<WorkflowViewTab>(initialTab);
+  const filteredCases = useMemo(() => (
+    activeTab === 'all' ? workflowCases : workflowCases.filter((item) => item.status === activeTab)
+  ), [activeTab]);
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [detailOpen, setDetailOpen] = useState(false);
-  const selectedCase = filteredCases.find((item) => item.id === selectedId);
+  const selectedCase = workflowCases.find((item) => item.id === selectedId);
 
   const switchTab = (key: string) => {
-    const nextTab = key as WorkflowTab;
+    const nextTab = key as WorkflowViewTab;
     setActiveTab(nextTab);
     setSearchParams({ tab: nextTab });
     setSelectedId(undefined);
@@ -352,63 +362,13 @@ export default function WorkflowPage() {
     setDetailOpen(true);
   };
 
-  const columns: ColumnsType<WorkflowCase> = [
-    {
-      title: '事项名称',
-      dataIndex: 'title',
-      render: (_, record) => (
-        <Space direction="vertical" size={2}>
-          <Typography.Text strong>{record.title}</Typography.Text>
-          <Typography.Text type="secondary">{record.id} · {record.form}</Typography.Text>
-        </Space>
-      ),
-    },
-    { title: '来源应用', dataIndex: 'app', width: 130 },
-    { title: '当前节点', dataIndex: 'currentNode', width: 130 },
-    { title: '发起人', dataIndex: 'initiator', width: 90 },
-    {
-      title: '优先级',
-      dataIndex: 'priority',
-      width: 90,
-      render: (value) => <Tag color={getPriorityColor(value)}>{value}</Tag>,
-    },
-    { title: '更新时间', dataIndex: 'updatedAt', width: 120 },
-    {
-      title: '操作',
-      width: 120,
-      render: (_, record) => activeTab === 'pending'
-        ? (
-          <Button
-            size="small"
-            type="primary"
-            onClick={(event) => {
-              event.stopPropagation();
-              openWorkflowDetail(record);
-            }}
-          >
-            处理
-          </Button>
-        )
-        : (
-          <Button
-            size="small"
-            onClick={(event) => {
-              event.stopPropagation();
-              openWorkflowDetail(record);
-            }}
-          >
-            查看
-          </Button>
-        ),
-    },
-  ];
-
   const renderWorkflowDetail = () => {
     if (!selectedCase) return null;
 
     const formFields = buildFormFields(selectedCase);
-    const basicFields = formFields.slice(0, 4);
-    const businessFields = formFields.slice(4, -1);
+    const detailFields = formFields.slice(0, -1);
+    const basicFields = detailFields.slice(0, 4);
+    const businessFields = detailFields.slice(4);
     const returnReason = formFields[formFields.length - 1];
     const returnActionPanel = (
       <Form layout="vertical" className="workflow-business-form workflow-opinion-form">
@@ -416,20 +376,13 @@ export default function WorkflowPage() {
           <Input.TextArea rows={3} value={returnReason.value} readOnly />
         </Form.Item>
         <Form.Item label="本次处理意见">
-          <Input.TextArea rows={3} placeholder="补充修改说明，重新提交时同步给下一审批节点" />
+          <Input.TextArea rows={4} placeholder="请填写审批意见" />
         </Form.Item>
-        <div className="workflow-form-actions">
-          <Button>保存草稿</Button>
-          <Button type="primary">
-            {selectedCase.status === 'pending' ? '进入处理' : selectedCase.status === 'draft' || selectedCase.status === 'returned' ? '重新提交' : '查看完整记录'} <RightOutlined />
-          </Button>
-        </div>
       </Form>
     );
     const formTabPanel = (
       <div className="workflow-tab-page">
         <Form layout="vertical" className="workflow-business-form">
-          <div className="workflow-form-section-title">业务表单</div>
           <Row gutter={12}>
             {basicFields.map((field) => (
               <Col xs={24} md={12} key={field.label}>
@@ -447,7 +400,6 @@ export default function WorkflowPage() {
             ))}
           </Row>
         </Form>
-        {returnActionPanel}
       </div>
     );
     const progressTabPanel = (
@@ -478,13 +430,12 @@ export default function WorkflowPage() {
             }))}
           />
         </div>
-        {returnActionPanel}
       </div>
     );
 
     return (
       <div className="workflow-detail-content">
-        <div className="workflow-detail-head">
+        <div className="workflow-detail-head workflow-approval-detail-head">
           <FileSearchOutlined />
           <div>
             <Typography.Text strong>{selectedCase.id}</Typography.Text>
@@ -492,6 +443,7 @@ export default function WorkflowPage() {
           </div>
           <Tag color={statusMeta[selectedCase.status].color}>{statusMeta[selectedCase.status].label}</Tag>
         </div>
+        <div className="workflow-approval-stamp">{statusMeta[selectedCase.status].label}</div>
         <Tabs
           className="workflow-detail-tabs"
           items={[
@@ -499,13 +451,14 @@ export default function WorkflowPage() {
             { key: 'progress', label: '流程进度', children: progressTabPanel },
           ]}
         />
+        {returnActionPanel}
       </div>
     );
   };
 
   return (
-    <div className="workflow-page">
-      <section className="workflow-hero-row">
+    <div className="workflow-page workflow-approval-page">
+      <section className="workflow-approval-topbar">
         <div>
           <Typography.Title level={3}>流程中心</Typography.Title>
           <Typography.Text type="secondary">聚合当前用户相关的待审批、流转中、已完成、草稿和退回事项。</Typography.Text>
@@ -516,50 +469,76 @@ export default function WorkflowPage() {
         </Space>
       </section>
 
-      <div className="workflow-status-grid">
-        {orderedTabs.map((key) => {
-          const meta = statusMeta[key];
-          const count = workflowCases.filter((item) => item.status === key).length;
-          return (
-            <button
-              className={'workflow-status-card' + (activeTab === key ? ' active' : '')}
-              key={key}
-              onClick={() => switchTab(key)}
-            >
-              <span className="workflow-status-icon">{meta.icon}</span>
-              <span>
-                <strong>{meta.label}</strong>
-                <small>{meta.description}</small>
+      <Tabs
+        className="workflow-approval-tabs"
+        activeKey={activeTab}
+        onChange={(key) => switchTab(key as WorkflowViewTab)}
+        items={approvalTabs.map((item) => {
+          const count = item.key === 'all'
+            ? workflowCases.length
+            : workflowCases.filter((workflow) => workflow.status === item.key).length;
+          return {
+            key: item.key,
+            label: (
+              <span className="workflow-approval-tab-label">
+                <span>{item.label}</span>
+                <em>{count}</em>
               </span>
-              <Tag color={meta.color}>{count}</Tag>
-            </button>
-          );
+            ),
+          };
         })}
-      </div>
+      />
 
-      <div className="workflow-main-grid">
-        <Card className="workflow-list-card" title={statusMeta[activeTab].label}>
-          <Table
-            dataSource={filteredCases}
-            columns={columns}
-            rowKey="id"
-            size="middle"
-            pagination={false}
-            rowClassName={(record) => record.id === selectedCase?.id ? 'workflow-selected-row' : ''}
-            onRow={(record) => ({ onClick: () => openWorkflowDetail(record) })}
-          />
-        </Card>
+      <div className="workflow-approval-list">
+        {filteredCases.map((item) => (
+          <button className="workflow-approval-card" key={item.id} onClick={() => openWorkflowDetail(item)}>
+            <div className="workflow-approval-card-main">
+              <div className="workflow-approval-card-title">
+                <strong>{item.title}</strong>
+                <Tag color={getPriorityColor(item.priority)}>{item.priority}</Tag>
+              </div>
+              <p>{item.summary}</p>
+              <div className="workflow-approval-card-fields">
+                <span><small>单据编号</small><strong>{item.id}</strong></span>
+                <span><small>流程类型</small><strong>{item.form}</strong></span>
+                <span><small>当前节点</small><strong>{item.currentNode}</strong></span>
+                <span><small>发起人</small><strong>{item.initiator}</strong></span>
+              </div>
+            </div>
+            <div className="workflow-approval-card-side">
+              <Tag color={statusMeta[item.status].color}>{statusMeta[item.status].label}</Tag>
+              <small>{item.updatedAt}</small>
+              <Button size="small" type={item.status === 'pending' ? 'primary' : 'default'}>
+                {item.status === 'pending' ? '处理' : '查看'} <RightOutlined />
+              </Button>
+            </div>
+          </button>
+        ))}
       </div>
 
       <Drawer
-        className="workflow-detail-drawer"
+        className="workflow-detail-drawer workflow-approval-drawer"
         title={selectedCase?.title || '流程详情'}
-        width={520}
+        width="min(560px, calc(100vw - 180px))"
         placement="right"
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
+        extra={selectedCase ? (
+          <Space size={6}>
+            <Button size="small">审批历史</Button>
+            <Button size="small">历史版本</Button>
+            <Button size="small">操作日志</Button>
+          </Space>
+        ) : null}
       >
         {renderWorkflowDetail()}
+        {selectedCase ? (
+          <div className="workflow-approval-drawer-actions">
+            <span />
+            <Button danger disabled={selectedCase.status !== 'pending'}>拒绝</Button>
+            <Button type="primary" disabled={selectedCase.status !== 'pending'}>同意</Button>
+          </div>
+        ) : null}
       </Drawer>
     </div>
   );

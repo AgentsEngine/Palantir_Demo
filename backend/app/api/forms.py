@@ -7,6 +7,7 @@ DDL against business tables.
 from __future__ import annotations
 
 import json
+import copy
 import re
 from datetime import datetime
 from typing import Optional
@@ -135,6 +136,77 @@ class MenuNodeUpdate(BaseModel):
     default_entry: Optional[bool] = None
     sort_order: Optional[int] = None
     config: Optional[dict] = None
+
+
+MENU_NODE_PERMISSION_PREFIX = "menu_node:"
+
+
+def _menu_node_permission_key(node_id: int) -> str:
+    return f"{MENU_NODE_PERMISSION_PREFIX}{node_id}"
+
+
+def _entry_role_ids_from_config(config: Optional[dict]) -> list[int]:
+    if not isinstance(config, dict) or config.get("permission_mode") != "custom":
+        return []
+    role_ids = config.get("role_ids")
+    if not isinstance(role_ids, list):
+        return []
+    normalized: list[int] = []
+    for role_id in role_ids:
+        try:
+            value = int(role_id)
+        except (TypeError, ValueError):
+            continue
+        if value > 0 and value not in normalized:
+            normalized.append(value)
+    return normalized
+
+
+def _normalized_menu_node_config(config: Optional[dict]) -> dict:
+    normalized = dict(config or {})
+    if "permission_mode" in normalized or "role_ids" in normalized:
+        normalized["permission_synced"] = True
+    normalized.pop("permission_rules", None)
+    return normalized
+
+
+async def _sync_menu_node_entry_permissions(db: AsyncSession, node) -> None:
+    """Persist menu entry role shortcuts into the unified role permission table."""
+    from app.models.relational import RolePermission
+
+    permission_key = _menu_node_permission_key(node.id)
+    await db.execute(
+        RolePermission.__table__.delete().where(
+            RolePermission.tenant_id == node.tenant_id,
+            RolePermission.resource_type == "menu",
+            RolePermission.resource_key == permission_key,
+        )
+    )
+    for role_id in _entry_role_ids_from_config(node.config):
+        db.add(RolePermission(
+            tenant_id=node.tenant_id,
+            role_id=role_id,
+            resource_type="menu",
+            resource_key=permission_key,
+            action="view",
+            effect="allow",
+            data_scope="all",
+            condition_json={"managed_by": "application_menu_node", "node_id": node.id},
+            priority=100,
+            enabled=bool(node.visible),
+        ))
+
+
+async def _delete_menu_node_entry_permissions(db: AsyncSession, node) -> None:
+    from app.models.relational import RolePermission
+
+    await db.execute(
+        RolePermission.__table__.delete().where(
+            RolePermission.tenant_id == node.tenant_id,
+            RolePermission.resource_type == "menu",
+            RolePermission.resource_key == _menu_node_permission_key(node.id),
+        )
+    )
 
 
 class FormLayoutUpsert(BaseModel):
@@ -841,6 +913,22 @@ def _published_form_payload(form, version, *, applications: Optional[list] = Non
     snapshot = version.snapshot or {}
     form_snapshot = snapshot.get("form") or {}
     config = form_snapshot.get("config") or form.config or {}
+    live_config = form.config or {}
+    snapshot_view = config.get("viewConfig") if isinstance(config, dict) else None
+    live_view = live_config.get("viewConfig") if isinstance(live_config, dict) else None
+    if (
+        isinstance(live_view, dict)
+        and (
+            not isinstance(snapshot_view, dict)
+            or not (snapshot_view.get("table") or {}).get("columns")
+            or (not (snapshot_view.get("filters") or []) and (live_view.get("filters") or []))
+        )
+    ):
+        config = {**config, "viewConfig": live_view}
+        if live_config.get("formLayout") and not config.get("formLayout"):
+            config["formLayout"] = live_config.get("formLayout")
+        if live_config.get("viewConfigMeta"):
+            config["viewConfigMeta"] = live_config.get("viewConfigMeta")
     payload = {
         **_form_payload(form),
         **{key: value for key, value in form_snapshot.items() if key in {"name", "code", "description", "model_id", "table_name", "storage_mode", "status", "owner_id", "config"}},
@@ -850,6 +938,7 @@ def _published_form_payload(form, version, *, applications: Optional[list] = Non
         "fields": [field for field in snapshot.get("fields", []) if _field_cfg_is_active(field)],
         "permission_design": _permission_design_from_config(config),
     }
+    payload["config"] = config
     if applications is not None:
         payload["applications"] = applications
     return payload
@@ -1035,7 +1124,7 @@ def _publish_impact_report(latest_version, next_version: int, draft_snapshot: di
 
 
 async def _build_publish_preview(db: AsyncSession, tenant_id: int, form) -> tuple[dict, dict]:
-    from app.models.relational import DynamicRecord
+    from app.models.relational import DynamicRecord, FormField
 
     latest = await _latest_form_version(db, tenant_id, form.id)
     next_version = (latest.version + 1) if latest else 1
@@ -1071,7 +1160,27 @@ async def _ensure_application_form_binding(db: AsyncSession, application_id: int
     db.add(ApplicationForm(tenant_id=tenant_id, application_id=application_id, form_id=form_id))
 
 
-def _menu_node_payload(node) -> dict:
+async def _menu_node_payload(db: AsyncSession, node) -> dict:
+    from app.models.relational import RolePermission
+
+    config = dict(node.config or {})
+    permission_key = _menu_node_permission_key(node.id)
+    role_rows = (await db.execute(
+        select(RolePermission.role_id).where(
+            RolePermission.tenant_id == node.tenant_id,
+            RolePermission.resource_type == "menu",
+            RolePermission.resource_key == permission_key,
+            RolePermission.effect == "allow",
+            RolePermission.enabled.is_(True),
+        )
+    )).fetchall()
+    synced_role_ids = sorted({int(row[0]) for row in role_rows})
+    if config.get("permission_synced"):
+        config["role_ids"] = synced_role_ids
+        config["permission_mode"] = "custom" if synced_role_ids else config.get("permission_mode", "inherit")
+    elif synced_role_ids:
+        config["role_ids"] = synced_role_ids
+        config["permission_mode"] = "custom"
     return {
         "id": node.id,
         "application_id": node.application_id,
@@ -1084,7 +1193,7 @@ def _menu_node_payload(node) -> dict:
         "visible": node.visible,
         "default_entry": node.default_entry,
         "sort_order": node.sort_order,
-        "config": node.config or {},
+        "config": config,
     }
 
 
@@ -1141,6 +1250,133 @@ STANDARD_WORKFLOW_FIELDS = [
     {"field_name": "completedAt", "label": "完成时间", "field_type": "datetime", "visible_in_list": False, "visible_in_form": False, "searchable": False, "sortable": True},
     {"field_name": "interactionLog", "label": "处理记录", "field_type": "json", "visible_in_list": False, "visible_in_form": False, "searchable": False, "sortable": False},
 ]
+
+DEFAULT_FORM_DESIGNER_META = {
+    "controlTypeOptions": [
+        {"value": "code", "label": "编码"},
+        {"value": "text", "label": "文本输入"},
+        {"value": "textarea", "label": "多行文本"},
+        {"value": "number", "label": "数值输入"},
+        {"value": "select", "label": "下拉选择"},
+        {"value": "relation", "label": "对象/人员选择"},
+        {"value": "datetime", "label": "日期时间"},
+        {"value": "upload", "label": "附件上传"},
+        {"value": "switch", "label": "开关切换"},
+        {"value": "readonly-text", "label": "只读展示"},
+    ],
+    "typeSettingOptions": {
+        "textFormats": [
+            {"value": "plain", "label": "普通文本"},
+            {"value": "email", "label": "邮箱"},
+            {"value": "phone", "label": "手机号"},
+            {"value": "url", "label": "链接"},
+            {"value": "idNo", "label": "证件号"},
+            {"value": "custom", "label": "自定义正则"},
+        ],
+        "textTrimModes": [
+            {"value": "none", "label": "不处理"},
+            {"value": "trim", "label": "去首尾空格"},
+            {"value": "trimAll", "label": "去全部空格"},
+        ],
+        "textCaseModes": [
+            {"value": "original", "label": "保持原样"},
+            {"value": "upper", "label": "自动大写"},
+            {"value": "lower", "label": "自动小写"},
+        ],
+        "selectionModes": [
+            {"value": "single", "label": "单选"},
+            {"value": "multiple", "label": "多选"},
+        ],
+        "selectionDisplays": [
+            {"value": "dropdown", "label": "下拉"},
+            {"value": "search", "label": "搜索选择"},
+            {"value": "radio", "label": "平铺单选"},
+            {"value": "tags", "label": "标签多选"},
+        ],
+        "dateModes": [
+            {"value": "date", "label": "日期"},
+            {"value": "datetime", "label": "日期时间"},
+            {"value": "range", "label": "日期范围"},
+        ],
+        "defaultDates": [
+            {"value": "none", "label": "无默认值"},
+            {"value": "today", "label": "当天"},
+            {"value": "now", "label": "当前时间"},
+        ],
+        "encodingResetCycles": [
+            {"value": "none", "label": "不重置"},
+            {"value": "day", "label": "按天重置"},
+            {"value": "month", "label": "按月重置"},
+            {"value": "year", "label": "按年重置"},
+            {"value": "dependency", "label": "按依赖字段重置"},
+        ],
+    },
+    "componentLibrary": [
+        {
+            "category": "基础输入",
+            "items": [
+                {"key": "text", "name": "文本控件", "desc": "单行文本输入", "iconKey": "text", "controlType": "text"},
+                {"key": "textarea", "name": "多行文本", "desc": "长文本、备注、说明录入", "iconKey": "textarea", "controlType": "textarea", "defaultWidth": "full"},
+                {"key": "number", "name": "数值控件", "desc": "数量、金额、百分比", "iconKey": "number", "controlType": "number"},
+                {"key": "code", "name": "编码控件", "desc": "自动编号、业务编号、流水号", "iconKey": "code", "controlType": "code"},
+            ],
+        },
+        {
+            "category": "选择控件",
+            "items": [
+                {"key": "select", "name": "下拉选择", "desc": "固定选项、枚举字典", "iconKey": "select", "controlType": "select"},
+                {"key": "relation", "name": "关联对象", "desc": "人员、设备、供应商、物料", "iconKey": "relation", "controlType": "relation"},
+                {"key": "datetime", "name": "日期选择", "desc": "日期、时间、时间范围", "iconKey": "datetime", "controlType": "datetime"},
+                {"key": "switch", "name": "布尔选择", "desc": "是/否、启用/停用", "iconKey": "switch", "controlType": "switch"},
+                {"key": "upload", "name": "附件上传", "desc": "图片、文件、凭证上传", "iconKey": "upload", "controlType": "upload", "defaultWidth": "full"},
+            ],
+        },
+        {
+            "category": "布局容器",
+            "items": [
+                {"key": "container", "name": "容器", "desc": "分组面板、基础信息区", "iconKey": "layout", "controlType": "container", "defaultWidth": "full"},
+                {"key": "two-columns", "name": "多列布局", "desc": "两列、三列、高密度字段排版", "iconKey": "layout", "controlType": "two-columns", "defaultWidth": "full"},
+                {"key": "tabs", "name": "Tab 页", "desc": "切换页签、次要信息收起", "iconKey": "layout", "controlType": "tabs", "defaultWidth": "full"},
+                {"key": "divider", "name": "分割符", "desc": "分割线、区块说明", "iconKey": "divider", "controlType": "divider", "defaultWidth": "full"},
+            ],
+        },
+        {
+            "category": "数据展示",
+            "items": [
+                {"key": "editable-table", "name": "表格", "desc": "可编辑子表、明细行", "iconKey": "table", "controlType": "editable-table", "defaultWidth": "full"},
+                {"key": "readonly-table", "name": "关联表格", "desc": "只读关联表、分页详情", "iconKey": "table", "controlType": "readonly-table", "defaultWidth": "full"},
+                {"key": "summary-card", "name": "数据摘要", "desc": "摘要卡、统计值、关联对象概览", "iconKey": "database", "controlType": "summary-card", "defaultWidth": "full"},
+                {"key": "status-tag", "name": "状态标签", "desc": "状态、等级、结果标识", "iconKey": "tag", "controlType": "status-tag"},
+                {"key": "file-preview", "name": "媒体预览", "desc": "图片、附件、凭证预览", "iconKey": "media", "controlType": "file-preview", "defaultWidth": "full"},
+            ],
+        },
+    ],
+    "commonControlKeys": ["text", "number", "code", "select", "relation", "datetime"],
+}
+
+ALERT_CENTER_DESIGNER_SECTIONS = [
+    {"key": "basic", "title": "基础信息", "desc": "识别告警、说明主题和来源", "fieldKeys": ["alertId", "title", "source", "occurredAt"]},
+    {"key": "device", "title": "设备信息", "desc": "定位设备、等级和影响范围", "fieldKeys": ["device", "level"]},
+    {"key": "handle", "title": "告警处理", "desc": "明确责任人、时限、状态和结论", "fieldKeys": ["owner", "dueAt", "status", "resolution"]},
+    {"key": "evidence", "title": "附件证据", "desc": "上传现场图片、日志和处理凭证", "fieldKeys": ["evidence"]},
+    {"key": "approval", "title": "审批/流转信息", "desc": "展示流程状态、操作记录和关闭轨迹", "fieldKeys": []},
+]
+
+
+def _designer_meta_for_form(form_cfg: dict) -> dict:
+    meta = copy.deepcopy(DEFAULT_FORM_DESIGNER_META)
+    if form_cfg["code"] == "alert-center":
+        meta["businessSections"] = copy.deepcopy(ALERT_CENTER_DESIGNER_SECTIONS)
+    else:
+        meta["businessSections"] = [
+            {
+                "key": "default",
+                "title": "基础信息",
+                "desc": "当前表单的主要录入字段",
+                "fieldKeys": [field["field_name"] for field in form_cfg["fields"]],
+            }
+        ]
+    return meta
 
 
 DEFAULT_BUSINESS_FORMS = [
@@ -1304,6 +1540,12 @@ def _generated_business_record(form_code: str, index: int) -> Optional[dict]:
 def _default_view_config(fields: list[dict]) -> dict:
     visible_fields = [field for field in fields if field.get("visible_in_list", True)]
     searchable_fields = [field for field in fields if field.get("searchable")]
+    if not searchable_fields:
+        searchable_fields = [
+            field
+            for index, field in enumerate(visible_fields)
+            if index < 4 and field.get("field_type") in {"string", "text", "enum", "date", "datetime", "relation", "code"}
+        ][:4]
     return {
         "table": {
             "pageSize": 20,
@@ -1334,6 +1576,123 @@ def _default_view_config(fields: list[dict]) -> dict:
             for index, field in enumerate(searchable_fields)
         ],
     }
+
+
+def _runtime_design_field_payload(field) -> dict:
+    if isinstance(field, dict):
+        return field
+    return _field_payload(field)
+
+
+def _default_form_layout(fields: list[dict]) -> dict:
+    return {
+        "sections": [
+            {
+                "id": "section-business-info",
+                "title": "业务信息",
+                "fields": [
+                    {
+                        "fieldName": field["field_name"],
+                        "label": field.get("label") or field["field_name"],
+                        "colSpan": 2 if field.get("field_type") in {"text", "json"} else 1,
+                    }
+                    for field in fields
+                    if field.get("visible_in_form", True)
+                ],
+            }
+        ],
+    }
+
+
+def _is_analysis_form_config(config: Optional[dict]) -> bool:
+    kind = str((config or {}).get("assemblyKind") or (config or {}).get("kind") or (config or {}).get("type") or "").lower()
+    return kind in {"analysis", "analytics", "dashboard", "report", "bi_report", "metric_dashboard", "list_analysis"}
+
+
+async def _ensure_agent_business_runtime_design(db: AsyncSession, tenant_id: int, form, fields: list) -> bool:
+    from app.models.relational import FormLayout
+
+    config = dict(form.config or {})
+    if _is_analysis_form_config(config):
+        return False
+    if form.storage_mode != "dynamic":
+        return False
+    if not (config.get("createdByAgent") or str(config.get("source") or "").startswith("agent-low-code")):
+        return False
+
+    field_payloads = [_runtime_design_field_payload(field) for field in fields]
+    if not field_payloads:
+        return False
+
+    changed = False
+    has_searchable_field = any(bool(field.get("searchable")) for field in field_payloads)
+    if not has_searchable_field:
+        for index, field in enumerate(fields):
+            payload = field_payloads[index]
+            if index < 4 and payload.get("visible_in_list", True) and payload.get("field_type") in {"string", "text", "enum", "date", "datetime", "relation", "code"}:
+                payload["searchable"] = True
+                if not isinstance(field, dict) and hasattr(field, "searchable"):
+                    field.searchable = True
+                    changed = True
+
+    view_config = config.get("viewConfig")
+    if not isinstance(view_config, dict) or not (view_config.get("table") or {}).get("columns"):
+        view_config = _default_view_config(field_payloads)
+        config["viewConfig"] = view_config
+        config["viewConfigDraft"] = config.get("viewConfigDraft") or view_config
+        changed = True
+    elif not (view_config.get("filters") or []) and not has_searchable_field:
+        next_view_config = _default_view_config(field_payloads)
+        if next_view_config.get("filters"):
+            view_config = {**view_config, "filters": next_view_config["filters"]}
+            config["viewConfig"] = view_config
+            config["viewConfigDraft"] = view_config
+            changed = True
+
+    if not isinstance(config.get("formLayout"), dict):
+        config["formLayout"] = _default_form_layout(field_payloads)
+        changed = True
+
+    if "assemblyKind" not in config:
+        config["assemblyKind"] = "business"
+        changed = True
+
+    meta = dict(config.get("viewConfigMeta") or {})
+    if not meta:
+        now = datetime.now().isoformat()
+        config["viewConfigMeta"] = {
+            "draftVersion": 1,
+            "publishedVersion": 1,
+            "draftSavedAt": now,
+            "publishedAt": now,
+            "status": "published",
+        }
+        changed = True
+
+    if changed:
+        form.config = config
+
+    layout_configs = {
+        "list": {"viewConfig": view_config},
+        "view": {"draft": view_config, "published": view_config, "meta": config.get("viewConfigMeta")},
+        "form": config["formLayout"],
+    }
+    for layout_type, layout_config in layout_configs.items():
+        existing_layout = await db.scalar(
+            select(FormLayout).where(
+                FormLayout.form_id == form.id,
+                FormLayout.tenant_id == tenant_id,
+                FormLayout.layout_type == layout_type,
+            )
+        )
+        if existing_layout is None:
+            db.add(FormLayout(tenant_id=tenant_id, form_id=form.id, layout_type=layout_type, config=layout_config))
+            changed = True
+        elif not existing_layout.config:
+            existing_layout.config = layout_config
+            changed = True
+
+    return changed
 
 
 def _default_workflow_config(form_code: str, form_id: int, workflow_name: str, field_names: list[str]) -> dict:
@@ -1388,6 +1747,7 @@ async def _ensure_default_business_forms(db: AsyncSession, tenant_id: int) -> No
 
     for form_cfg in DEFAULT_BUSINESS_FORMS:
         fields = [*form_cfg["fields"], *STANDARD_WORKFLOW_FIELDS]
+        designer_meta = _designer_meta_for_form(form_cfg)
         form = await db.scalar(select(Form).where(Form.code == form_cfg["code"], Form.tenant_id == tenant_id))
         if form is None:
             form = Form(
@@ -1398,20 +1758,27 @@ async def _ensure_default_business_forms(db: AsyncSession, tenant_id: int) -> No
                 table_name=form_cfg["table_name"],
                 storage_mode="dynamic",
                 status="published",
-                config={"source": "default-business-seed", "viewConfig": _default_view_config(fields), "workflowDesigner": {}},
+                config={
+                    "source": "default-business-seed",
+                    "viewConfig": _default_view_config(fields),
+                    "workflowDesigner": {},
+                    "designerMeta": designer_meta,
+                },
             )
             db.add(form)
             await db.flush()
         else:
+            current_config = form.config or {}
             form.name = form_cfg["name"]
             form.description = form.description or form_cfg["description"]
             form.table_name = form.table_name or form_cfg["table_name"]
             if form.status in {"draft", "active"}:
                 form.status = "published"
             form.config = {
-                **(form.config or {}),
-                "source": (form.config or {}).get("source", "default-business-seed"),
-                "viewConfig": (form.config or {}).get("viewConfig") or _default_view_config(fields),
+                **current_config,
+                "source": current_config.get("source", "default-business-seed"),
+                "viewConfig": current_config.get("viewConfig") or _default_view_config(fields),
+                "designerMeta": current_config.get("designerMeta") or designer_meta,
             }
 
         existing_fields = {
@@ -1697,7 +2064,7 @@ async def list_application_menu_nodes(
         .where(ApplicationMenuNode.application_id == application_id, ApplicationMenuNode.tenant_id == tenant_id)
         .order_by(ApplicationMenuNode.sort_order, ApplicationMenuNode.id)
     )).scalars().all()
-    return {"data": [_menu_node_payload(node) for node in nodes]}
+    return {"data": [await _menu_node_payload(db, node) for node in nodes]}
 
 
 @router.post("/applications/{application_id}/menu-nodes")
@@ -1721,15 +2088,24 @@ async def create_application_menu_node(
         raise HTTPException(404, "Parent menu node not found")
 
     values = body.dict()
+    values["config"] = _normalized_menu_node_config(values.get("config"))
     if values.get("form_id") and not values.get("route_path"):
-        values["route_path"] = f"/dynamic/{values['form_id']}"
+        form_config = form.config or {}
+        form_kind = str(form_config.get("assemblyKind") or form_config.get("kind") or form_config.get("type") or "").lower()
+        values["route_path"] = (
+            f"/form-settings/{form.code}?tab=dashboard"
+            if form_kind in {"analysis", "analytics", "dashboard", "report", "bi_report", "metric_dashboard", "list_analysis"}
+            else f"/dynamic/{form.code}"
+        )
     node = ApplicationMenuNode(tenant_id=tenant_id, application_id=application_id, **values)
     db.add(node)
+    await db.flush()
+    await _sync_menu_node_entry_permissions(db, node)
     if body.form_id is not None:
         await _ensure_application_form_binding(db, application_id, body.form_id)
     await db.commit()
     await db.refresh(node)
-    return {"data": _menu_node_payload(node)}
+    return {"data": await _menu_node_payload(db, node)}
 
 
 @router.put("/applications/{application_id}/menu-nodes/{node_id}")
@@ -1754,14 +2130,23 @@ async def update_application_menu_node(
     if "parent_id" in updates and updates["parent_id"] is not None and (not parent or parent.tenant_id != tenant_id):
         raise HTTPException(404, "Parent menu node not found")
     if updates.get("form_id") and not updates.get("route_path"):
-        updates["route_path"] = f"/dynamic/{updates['form_id']}"
+        form_config = form.config or {}
+        form_kind = str(form_config.get("assemblyKind") or form_config.get("kind") or form_config.get("type") or "").lower()
+        updates["route_path"] = (
+            f"/form-settings/{form.code}?tab=dashboard"
+            if form_kind in {"analysis", "analytics", "dashboard", "report", "bi_report", "metric_dashboard", "list_analysis"}
+            else f"/dynamic/{form.code}"
+        )
+    if "config" in updates:
+        updates["config"] = _normalized_menu_node_config(updates.get("config"))
     for key, value in updates.items():
         setattr(node, key, value)
+    await _sync_menu_node_entry_permissions(db, node)
     if node.form_id is not None:
         await _ensure_application_form_binding(db, application_id, node.form_id)
     await db.commit()
     await db.refresh(node)
-    return {"data": _menu_node_payload(node)}
+    return {"data": await _menu_node_payload(db, node)}
 
 
 @router.delete("/applications/{application_id}/menu-nodes/{node_id}")
@@ -1777,6 +2162,7 @@ async def delete_application_menu_node(
     node = await db.get(ApplicationMenuNode, node_id)
     if not node or node.application_id != application_id or node.tenant_id != tenant_id:
         raise HTTPException(404, "Menu node not found")
+    await _delete_menu_node_entry_permissions(db, node)
     await db.delete(node)
     await db.commit()
     return {"ok": True}
@@ -1903,7 +2289,13 @@ async def get_form(
     if not form or form.tenant_id != tenant_id:
         raise HTTPException(404, "Form not found")
     await _ensure_form_permission(db, user, form_id, "view")
-    fields = await _runtime_form_fields(db, tenant_id, form_id)
+    draft_fields = (await db.execute(
+        select(FormField).where(FormField.form_id == form_id, FormField.tenant_id == tenant_id).order_by(FormField.sort_order, FormField.id)
+    )).scalars().all()
+    if await _ensure_agent_business_runtime_design(db, tenant_id, form, draft_fields):
+        await db.commit()
+        await db.refresh(form)
+    fields = await _runtime_form_fields(db, tenant_id, form_id) if schema == "published" else draft_fields
     if not user.get("is_admin"):
         visible_names = await allowed_form_fields(user, form_id, "view", fields, db)
         fields = [field for field in fields if field.field_name in visible_names]

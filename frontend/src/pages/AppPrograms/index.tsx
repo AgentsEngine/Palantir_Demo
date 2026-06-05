@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppstoreOutlined, ArrowLeftOutlined, BarChartOutlined, CheckCircleOutlined, DatabaseOutlined, DownloadOutlined, ExperimentOutlined, ExpandOutlined, FieldTimeOutlined, FileSearchOutlined, LineChartOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, SettingOutlined, ShopOutlined, ToolOutlined, UploadOutlined, WarningOutlined } from '@ant-design/icons';
-import { Button, Card, Col, DatePicker, Descriptions, Drawer, Empty, Form, Input, Modal, Progress, Row, Select, Space, Statistic, Table, Tabs, Tag, Timeline, Tooltip, Typography } from 'antd';
+import { Button, Card, Col, DatePicker, Descriptions, Drawer, Empty, Form, Input, InputNumber, Modal, Progress, Row, Select, Space, Statistic, Table, Tabs, Tag, Timeline, Tooltip, Typography, message } from 'antd';
 import type { ColumnsType, ColumnType } from 'antd/es/table';
 import { useNavigate, useParams } from 'react-router-dom';
 import DashboardPage from '../Dashboard';
@@ -8,7 +8,14 @@ import MaintenancePage from '../Maintenance';
 import QualityPage from '../Quality';
 import QualityImpactWorkbench from '../QualityImpact';
 import SupplyChainPage from '../SupplyChain';
-import { getAppProgramData } from '@/services/api';
+import {
+  createPlatformDynamicRecord,
+  getAppProgramData,
+  getPlatformForm,
+  listPlatformForms,
+  type PlatformForm,
+  type PlatformFormField,
+} from '@/services/api';
 import {
   normalizeViewConfig,
   sortByOrder,
@@ -53,74 +60,6 @@ interface ProgramDataPayload {
   source?: string;
 }
 
-const lineNames = ['总装 A 线', '总装 B 线', 'SMT-01', 'SMT-02', 'SMT-03', '涂装 C 线', '压铸 D 线', '电控装配线', '终检 E 线', '包装 F 线'];
-const shifts = ['早班', '中班', '夜班'];
-const products = ['电控模块 V2', '伺服驱动器 A1', '智能网关 P8', '工业控制板 C3', '铝壳体 A 型', '传感器组件 S12'];
-const owners = ['李明', '王磊', '周强', '陈晨', '孙浩', '赵敏', '刘洋', '吴越'];
-const stations = ['上料工位', '焊接 OP20', '锁付 OP30', '电检台', '老化房', '终检台', '包装线'];
-const alertSources = ['生产执行', '设备监测', '能源站', '质量系统', '供应链', '仓储物流'];
-const alertTitles = ['产线节拍低于目标', '回流焊温区波动', '空压站压力低', '关键物料到料延迟', 'AOI 连续检出异常', '设备健康分下降', '工单完工延迟', '安全库存低于阈值'];
-
-function pick<T>(items: T[], index: number) {
-  return items[index % items.length];
-}
-
-function makeAlertRows(count = 360): ProgramRow[] {
-  const levels = ['严重', '中等', '提醒'];
-  const statuses = ['待处理', '确认中', '处理中', '已派发', '跟进中', '已关闭'];
-  return Array.from({ length: count }, (_, index) => {
-    const line = pick(lineNames, index);
-    const level = index % 13 === 0 ? '严重' : pick(levels, index);
-    const status = index % 7 === 0 ? '已关闭' : pick(statuses, index + 2);
-    return {
-      key: `ac-${index + 1}`,
-      name: `${line} ${pick(alertTitles, index)}`,
-      source: pick(alertSources, index + 1),
-      level,
-      status,
-      owner: pick(owners, index),
-      occurredAt: `2026-05-${String(1 + (index % 27)).padStart(2, '0')}`,
-    };
-  });
-}
-
-function makeProductionRows(count = 420): ProgramRow[] {
-  return Array.from({ length: count }, (_, index) => {
-    const plan = 760 + ((index * 37) % 1180);
-    const actual = Math.max(0, Math.round(plan * (0.84 + ((index % 15) / 100))));
-    return {
-      key: `po-${index + 1}`,
-      shift: pick(shifts, index),
-      line: pick(lineNames, index),
-      plan,
-      actual,
-      status: actual >= plan * 0.92 ? '正常' : '需关注',
-    };
-  });
-}
-
-function makeLineRows(count = 260): ProgramRow[] {
-  return Array.from({ length: count }, (_, index) => ({
-    key: `ls-${index + 1}`,
-    line: `${pick(lineNames, index)}-${String(1 + (index % 12)).padStart(2, '0')}`,
-    product: pick(products, index + 2),
-    station: pick(stations, index),
-    load: 52 + ((index * 11) % 47),
-  }));
-}
-
-function makePlanRows(count = 380): ProgramRow[] {
-  const statuses = ['草稿', '待确认', '已确认', '需调整'];
-  return Array.from({ length: count }, (_, index) => ({
-    key: `ppe-${index + 1}`,
-    planNo: `PP-2605${String(1 + (index % 27)).padStart(2, '0')}-${String(index + 1).padStart(4, '0')}`,
-    product: pick(products, index),
-    line: pick(lineNames, index + 1),
-    quantity: 420 + ((index * 29) % 1680),
-    status: pick(statuses, index),
-  }));
-}
-
 const programDefinitions: Record<string, ProgramDefinition> = {
   'production-overview': {
     id: 'production-overview',
@@ -143,7 +82,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '实际', dataIndex: 'actual', sorter: (a, b) => Number(a.actual) - Number(b.actual) },
       { title: '状态', dataIndex: 'status', render: (value) => <Tag color={value === '正常' ? 'green' : 'orange'}>{value}</Tag> },
     ],
-    rows: makeProductionRows(),
+    rows: [],
   },
   'oee-trend-report': {
     id: 'oee-trend-report',
@@ -166,11 +105,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '可用率', dataIndex: 'availability', width: 100 },
       { title: '主要原因', dataIndex: 'reason', width: 180 },
     ],
-    rows: [
-      { key: 'oee-1', date: '05-18', line: '总装 A 线', oee: '88.4%', availability: '92.1%', reason: '换型等待 18 分钟' },
-      { key: 'oee-2', date: '05-19', line: '焊装 B 线', oee: '82.7%', availability: '86.9%', reason: '夹具点检延迟' },
-      { key: 'oee-3', date: '05-20', line: '涂装 C 线', oee: '91.6%', availability: '95.2%', reason: '运行稳定' },
-    ],
+    rows: [],
   },
   'line-status': {
     id: 'line-status',
@@ -192,7 +127,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '瓶颈工位', dataIndex: 'station' },
       { title: '负荷', dataIndex: 'load', render: (value) => <Progress percent={Number(value)} size="small" /> },
     ],
-    rows: makeLineRows(),
+    rows: [],
   },
   'line-load-analysis': {
     id: 'line-load-analysis',
@@ -215,11 +150,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '瓶颈工位', dataIndex: 'station', width: 160 },
       { title: '建议动作', dataIndex: 'action', width: 180 },
     ],
-    rows: [
-      { key: 'lla-1', line: '总装 A 线', shift: '早班', load: 92, station: '电检', action: '中班补充 1 名检验员' },
-      { key: 'lla-2', line: '焊装 B 线', shift: '中班', load: 84, station: '夹具 OP20', action: '提前准备换型夹具' },
-      { key: 'lla-3', line: '涂装 C 线', shift: '夜班', load: 63, station: '烘干炉', action: '承接 A 线转移批次' },
-    ],
+    rows: [],
   },
   'production-plan-entry': {
     id: 'production-plan-entry',
@@ -242,7 +173,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '计划数量', dataIndex: 'quantity', width: 110, sorter: (a, b) => Number(a.quantity) - Number(b.quantity) },
       { title: '状态', dataIndex: 'status', width: 100, render: (value) => <Tag color={value === '已确认' ? 'green' : 'orange'}>{value}</Tag> },
     ],
-    rows: makePlanRows(),
+    rows: [],
   },
   'device-health': {
     id: 'device-health',
@@ -264,11 +195,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '主要风险', dataIndex: 'risk' },
       { title: '建议', dataIndex: 'action' },
     ],
-    rows: [
-      { key: 'dh-1', asset: 'CNC-17 主轴', health: 68, risk: '振动升高', action: '48 小时内点检' },
-      { key: 'dh-2', asset: '空压机 2#', health: 81, risk: '油温偏高', action: '观察趋势' },
-      { key: 'dh-3', asset: 'AGV-06', health: 92, risk: '无明显风险', action: '按计划保养' },
-    ],
+    rows: [],
   },
   'device-health-dashboard': {
     id: 'device-health-dashboard',
@@ -291,11 +218,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '主要风险', dataIndex: 'risk', width: 180 },
       { title: '建议动作', dataIndex: 'action', width: 180 },
     ],
-    rows: [
-      { key: 'dhd-1', asset: 'CNC-17 主轴', health: 68, level: '高', risk: '振动升高', action: '48 小时内点检' },
-      { key: 'dhd-2', asset: '空压机 2#', health: 81, level: '中', risk: '油温偏高', action: '观察趋势' },
-      { key: 'dhd-3', asset: 'AGV-06', health: 92, level: '低', risk: '无明显风险', action: '按计划保养' },
-    ],
+    rows: [],
   },
   'fault-prediction': {
     id: 'fault-prediction',
@@ -317,11 +240,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '概率', dataIndex: 'probability' },
       { title: '预计窗口', dataIndex: 'window' },
     ],
-    rows: [
-      { key: 'fp-1', asset: '压铸机 D12', fault: '液压压力衰减', probability: '76%', window: '05-22 上午' },
-      { key: 'fp-2', asset: '机器人 R08', fault: '关节过热', probability: '63%', window: '05-23 夜班' },
-      { key: 'fp-3', asset: '输送线 L05', fault: '电机电流异常', probability: '58%', window: '05-25 中班' },
-    ],
+    rows: [],
   },
   'maintenance-order': {
     id: 'maintenance-order',
@@ -343,11 +262,40 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '负责人', dataIndex: 'owner' },
       { title: '进度', dataIndex: 'status', render: (value) => <Tag color={value === '已完成' ? 'green' : 'processing'}>{value}</Tag> },
     ],
-    rows: [
-      { key: 'mo-1', orderNo: 'WO-260520-018', asset: '涂装风机 F02', owner: '李工', status: '处理中' },
-      { key: 'mo-2', orderNo: 'WO-260520-022', asset: '总装电检台', owner: '陈工', status: '待验收' },
-      { key: 'mo-3', orderNo: 'WO-260520-027', asset: 'AGV 充电桩', owner: '周工', status: '已完成' },
+    rows: [],
+  },
+  'equipment-inspection': {
+    id: 'equipment-inspection',
+    title: '点检计划',
+    subtitle: '按设备、点检项、周期、责任人和执行状态管理设备点检计划，与告警中心使用同一套业务表格交互模板。',
+    kind: 'business',
+    owner: '维护执行',
+    icon: <FileSearchOutlined />,
+    metrics: [
+      { label: '计划总数', value: 360, tone: 'blue' },
+      { label: '待点检', value: 86, tone: 'orange' },
+      { label: '逾期计划', value: 18, tone: 'red' },
+      { label: '完成率', value: 93.4, suffix: '%', tone: 'green' },
     ],
+    focus: ['点检周期', '责任人', '执行状态'],
+    columns: [
+      { title: '点检单号', dataIndex: 'planNo', width: 150 },
+      { title: '设备', dataIndex: 'asset', width: 160 },
+      { title: '点检项', dataIndex: 'item', width: 140 },
+      { title: '周期', dataIndex: 'cycle', width: 100 },
+      { title: '负责人', dataIndex: 'owner', width: 120 },
+      {
+        title: '状态',
+        dataIndex: 'status',
+        width: 110,
+        render: (value) => (
+          <Tag color={value === '逾期' ? 'red' : value === '已完成' ? 'green' : value === '执行中' ? 'blue' : 'orange'}>
+            {String(value)}
+          </Tag>
+        ),
+      },
+    ],
+    rows: [],
   },
   'failure-trend-analysis': {
     id: 'failure-trend-analysis',
@@ -370,11 +318,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '主要原因', dataIndex: 'reason', width: 180 },
       { title: '趋势', dataIndex: 'trend', width: 100 },
     ],
-    rows: [
-      { key: 'fta-1', week: '第 20 周', type: '机器人', count: 11, reason: '关节温升', trend: '下降' },
-      { key: 'fta-2', week: '第 20 周', type: '输送线', count: 9, reason: '电机电流波动', trend: '持平' },
-      { key: 'fta-3', week: '第 20 周', type: '压铸设备', count: 14, reason: '液压压力异常', trend: '上升' },
-    ],
+    rows: [],
   },
   'alert-center': {
     id: 'alert-center',
@@ -396,7 +340,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '等级', dataIndex: 'level', render: (value) => <Tag color={value === '严重' ? 'red' : value === '中等' ? 'orange' : 'blue'}>{value}</Tag> },
       { title: '状态', dataIndex: 'status' },
     ],
-    rows: makeAlertRows(),
+    rows: [],
   },
   'quality-overview': {
     id: 'quality-overview',
@@ -418,11 +362,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '合格率', dataIndex: 'yieldRate' },
       { title: '主要缺陷', dataIndex: 'defect' },
     ],
-    rows: [
-      { key: 'qo-1', family: '动力壳体', sample: 620, yieldRate: '98.4%', defect: '毛刺' },
-      { key: 'qo-2', family: '电控模块', sample: 410, yieldRate: '96.9%', defect: '焊点虚焊' },
-      { key: 'qo-3', family: '内饰组件', sample: 780, yieldRate: '97.6%', defect: '色差' },
-    ],
+    rows: [],
   },
   'inspection-batch': {
     id: 'inspection-batch',
@@ -444,11 +384,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '检验类型', dataIndex: 'type' },
       { title: '结论', dataIndex: 'result', render: (value) => <Tag color={value === '放行' ? 'green' : 'orange'}>{value}</Tag> },
     ],
-    rows: [
-      { key: 'ib-1', batch: 'IQC-0520-17', material: '轴承组件', type: '来料检验', result: '放行' },
-      { key: 'ib-2', batch: 'PQC-0520-08', material: '电控板', type: '过程检验', result: '隔离' },
-      { key: 'ib-3', batch: 'OQC-0520-11', material: '整机套件', type: '出货检验', result: '复检' },
-    ],
+    rows: [],
   },
   'defect-analysis': {
     id: 'defect-analysis',
@@ -470,11 +406,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '数量', dataIndex: 'count' },
       { title: '趋势', dataIndex: 'trend' },
     ],
-    rows: [
-      { key: 'da-1', defect: '焊点虚焊', station: 'SMT-04', count: 40, trend: '上升' },
-      { key: 'da-2', defect: '涂层颗粒', station: '喷涂室 2', count: 27, trend: '持平' },
-      { key: 'da-3', defect: '尺寸偏差', station: 'CNC-09', count: 18, trend: '下降' },
-    ],
+    rows: [],
   },
   'defect-analysis-report': {
     id: 'defect-analysis-report',
@@ -497,11 +429,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '主要原因', dataIndex: 'reason', width: 180 },
       { title: '改善状态', dataIndex: 'status', width: 120 },
     ],
-    rows: [
-      { key: 'dar-1', defect: '尺寸超差', station: 'CNC-07', count: 24, reason: '刀具磨损补偿滞后', status: '处理中' },
-      { key: 'dar-2', defect: '表面划伤', station: '装配-02', count: 18, reason: '周转器具防护不足', status: '已验证' },
-      { key: 'dar-3', defect: '焊点虚焊', station: '焊接-03', count: 13, reason: '温度曲线偏低', status: '待复核' },
-    ],
+    rows: [],
   },
   'process-capability-dashboard': {
     id: 'process-capability-dashboard',
@@ -524,11 +452,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: 'PPK', dataIndex: 'ppk', width: 100 },
       { title: '状态', dataIndex: 'status', width: 120 },
     ],
-    rows: [
-      { key: 'pcd-1', process: 'CNC 精加工', feature: '外径', cpk: 1.18, ppk: 1.12, status: '需改善' },
-      { key: 'pcd-2', process: '压装', feature: '压入力', cpk: 1.56, ppk: 1.49, status: '稳定' },
-      { key: 'pcd-3', process: '终检', feature: '间隙', cpk: 1.33, ppk: 1.28, status: '观察' },
-    ],
+    rows: [],
   },  'quality-event': {
     id: 'quality-event',
     title: '料号追踪',
@@ -549,11 +473,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '归属', dataIndex: 'owner' },
       { title: '状态', dataIndex: 'stage' },
     ],
-    rows: [
-      { key: 'mat-1', eventNo: 'MB-7781', subject: '焊锡膏 S12', owner: '供应链 / 质量', stage: '待判定' },
-      { key: 'mat-2', eventNo: 'INV-7781-A', subject: '待判定库存', owner: '仓储 / 质量', stage: '冻结' },
-      { key: 'mat-3', eventNo: 'PB-260521-A', subject: '电控模块 V2', owner: '生产 / 交付', stage: '隔离' },
-    ],
+    rows: [],
   },
   'supplier-risk': {
     id: 'supplier-risk',
@@ -575,11 +495,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '风险', dataIndex: 'risk', render: (value) => <Tag color={value === '高' ? 'red' : 'orange'}>{value}</Tag> },
       { title: '原因', dataIndex: 'reason' },
     ],
-    rows: [
-      { key: 'sr-1', supplier: '华东精密', category: '铝压铸件', risk: '高', reason: '产能受限' },
-      { key: 'sr-2', supplier: '北辰电子', category: '控制板', risk: '中', reason: '良率波动' },
-      { key: 'sr-3', supplier: '安捷物流', category: '干线运输', risk: '中', reason: '时效延迟' },
-    ],
+    rows: [],
   },
   'supply-overview': {
     id: 'supply-overview',
@@ -601,11 +517,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '在途', dataIndex: 'transit' },
       { title: '风险等级', dataIndex: 'risk' },
     ],
-    rows: [
-      { key: 'so-1', group: '电子元件', days: 6.5, transit: 28, risk: '中' },
-      { key: 'so-2', group: '压铸毛坯', days: 3.2, transit: 11, risk: '高' },
-      { key: 'so-3', group: '包装材料', days: 14.8, transit: 7, risk: '低' },
-    ],
+    rows: [],
   },
   'material-impact': {
     id: 'material-impact',
@@ -627,11 +539,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '影响产线', dataIndex: 'line' },
       { title: '缓解动作', dataIndex: 'action' },
     ],
-    rows: [
-      { key: 'mi-1', material: 'IGBT 模块', gap: 420, line: '电控装配', action: '启用替代供应' },
-      { key: 'mi-2', material: '铝壳体 A 型', gap: 860, line: '总装 A 线', action: '调整排产' },
-      { key: 'mi-3', material: '密封圈 S12', gap: 560, line: '终检返修', action: '加急采购' },
-    ],
+    rows: [],
   },
   'material-impact-report': {
     id: 'material-impact-report',
@@ -654,11 +562,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '预计影响', dataIndex: 'impact', width: 160 },
       { title: '应对动作', dataIndex: 'action', width: 180 },
     ],
-    rows: [
-      { key: 'mir-1', material: '伺服驱动器', target: 'A 线工单 WO-0521', gap: 24, impact: '延迟 6 小时', action: '调用安全库存' },
-      { key: 'mir-2', material: '视觉镜头', target: '客户订单 SO-8831', gap: 16, impact: '交期风险', action: '启用替代型号' },
-      { key: 'mir-3', material: '铝型材', target: '装配 B 线', gap: 310, impact: '班次产能下降', action: '供应商加急' },
-    ],
+    rows: [],
   },
   'supply-risk-dashboard': {
     id: 'supply-risk-dashboard',
@@ -681,11 +585,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '主要原因', dataIndex: 'reason', width: 180 },
       { title: '缓解方案', dataIndex: 'mitigation', width: 180 },
     ],
-    rows: [
-      { key: 'srd-1', supplier: '华东精密件', category: 'CNC 外协', level: '高', reason: '交付连续延期', mitigation: '切换二供产能' },
-      { key: 'srd-2', supplier: '北方电子', category: '控制板', level: '中', reason: '关键芯片短缺', mitigation: '锁定滚动预测' },
-      { key: 'srd-3', supplier: '远航物流', category: '跨区运输', level: '中', reason: '干线波动', mitigation: '增加备用线路' },
-    ],
+    rows: [],
   },  'risk-review': {
     id: 'risk-review',
     title: '风险复核',
@@ -706,11 +606,7 @@ const programDefinitions: Record<string, ProgramDefinition> = {
       { title: '等级', dataIndex: 'level', render: (value) => <Tag color={value === '高' ? 'red' : 'orange'}>{value}</Tag> },
       { title: '处理人', dataIndex: 'owner' },
     ],
-    rows: [
-      { key: 'rr-1', riskNo: 'SR-2605-031', subject: '压铸件供应中断风险', level: '高', owner: '采购一组' },
-      { key: 'rr-2', riskNo: 'SR-2605-045', subject: '进口芯片清关延迟', level: '中', owner: '计划二组' },
-      { key: 'rr-3', riskNo: 'SR-2605-052', subject: '包装材料安全库存不足', level: '中', owner: '仓储组' },
-    ],
+    rows: [],
   },
 };
 
@@ -768,10 +664,12 @@ function AppProgramPage() {
 
   const program = React.useMemo(() => {
     if (!baseProgram) return undefined;
+    const serverRows = Array.isArray(programData?.rows) ? programData.rows : [];
+    const serverMetrics = Array.isArray(programData?.metrics) ? programData.metrics : [];
     return {
       ...baseProgram,
-      metrics: programData?.metrics?.length ? programData.metrics : baseProgram.metrics,
-      rows: programData?.rows?.length ? programData.rows : baseProgram.rows,
+      metrics: serverMetrics,
+      rows: serverRows,
       viewConfig: programData?.viewConfig || baseProgram.viewConfig,
     };
   }, [baseProgram, programData]);
@@ -1209,6 +1107,127 @@ function AlertBusinessProgram({
   );
 }
 
+type BusinessCreateField = Pick<
+  PlatformFormField,
+  'field_name' | 'label' | 'field_type' | 'required' | 'visible_in_form' | 'enum_values' | 'default_value' | 'ui_config' | 'sort_order'
+> & {
+  editable?: boolean;
+};
+
+function isCodeCreateField(field: BusinessCreateField) {
+  const uiConfig = field.ui_config || {};
+  return (
+    field.field_type === 'code'
+    || uiConfig.businessType === 'code'
+    || uiConfig.controlType === 'code'
+    || Boolean(uiConfig.encodingRule)
+  );
+}
+
+function makeAutoCodeValue(field: BusinessCreateField) {
+  const rule = (field.ui_config?.encodingRule || {}) as Record<string, unknown>;
+  const prefix = String(rule.prefix || field.field_name.slice(0, 2).toUpperCase());
+  const now = new Date();
+  const date = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('');
+  const seqLength = Number(rule.sequenceLength || 3);
+  const seq = String(Math.floor(Math.random() * (10 ** Math.min(seqLength, 6)))).padStart(seqLength, '0');
+  return `${prefix}-${date}-${seq}`;
+}
+
+function enumOptionsForCreateField(field: BusinessCreateField) {
+  const raw = field.enum_values;
+  if (!raw) return [];
+  const values = Array.isArray(raw)
+    ? raw
+    : Array.isArray((raw as Record<string, unknown>).values)
+      ? (raw as { values: unknown[] }).values
+      : typeof (raw as Record<string, unknown>).source === 'string'
+        ? String((raw as Record<string, unknown>).source).split(/[、,，/]/).map((item) => item.trim()).filter(Boolean)
+        : Object.entries(raw).map(([value, label]) => ({ value, label }));
+  return values.map((item: any) => (
+    typeof item === 'string'
+      ? { label: item, value: item }
+      : { label: String(item.label ?? item.value), value: String(item.value ?? item.label) }
+  ));
+}
+
+function normalizeBusinessCreateValue(value: unknown) {
+  if (value && typeof value === 'object' && 'format' in value && typeof (value as { format?: unknown }).format === 'function') {
+    return (value as { format: (pattern?: string) => string }).format('YYYY-MM-DDTHH:mm:ss');
+  }
+  return value;
+}
+
+function businessCreateInitialValues(fields: BusinessCreateField[]) {
+  return fields.reduce<Record<string, unknown>>((values, field) => {
+    if (field.default_value !== undefined && field.default_value !== null && field.default_value !== '') {
+      values[field.field_name] = field.default_value;
+    } else if (isCodeCreateField(field)) {
+      values[field.field_name] = makeAutoCodeValue(field);
+    }
+    return values;
+  }, {});
+}
+
+function renderBusinessCreateField(field: BusinessCreateField) {
+  const disabled = field.editable === false || (isCodeCreateField(field) && field.ui_config?.locked !== false);
+  const rules = disabled ? [] : [{ required: field.required, message: `请输入${field.label}` }];
+  const commonProps = {
+    key: field.field_name,
+    name: field.field_name,
+    label: field.label,
+    rules,
+  };
+  if (field.field_type === 'number' || field.field_type === 'integer' || field.field_type === 'decimal') {
+    return (
+      <Form.Item {...commonProps}>
+        <InputNumber style={{ width: '100%' }} disabled={disabled} placeholder={`请输入${field.label}`} />
+      </Form.Item>
+    );
+  }
+  if (field.field_type === 'enum') {
+    return (
+      <Form.Item {...commonProps}>
+        <Select allowClear disabled={disabled} options={enumOptionsForCreateField(field)} placeholder={`请选择${field.label}`} />
+      </Form.Item>
+    );
+  }
+  if (field.field_type === 'date' || field.field_type === 'datetime') {
+    return (
+      <Form.Item {...commonProps}>
+        <DatePicker showTime={field.field_type === 'datetime'} style={{ width: '100%' }} disabled={disabled} placeholder={`请选择${field.label}`} />
+      </Form.Item>
+    );
+  }
+  if (field.field_type === 'boolean') {
+    return (
+      <Form.Item {...commonProps}>
+        <Select
+          disabled={disabled}
+          options={[{ value: true, label: '是' }, { value: false, label: '否' }]}
+          placeholder={`请选择${field.label}`}
+        />
+      </Form.Item>
+    );
+  }
+  if (field.field_type === 'text' || field.field_type === 'json') {
+    return (
+      <Form.Item {...commonProps}>
+        <Input.TextArea rows={3} disabled={disabled} placeholder={`请输入${field.label}`} />
+      </Form.Item>
+    );
+  }
+  return (
+    <Form.Item {...commonProps}>
+      <Input disabled={disabled} placeholder={disabled ? '自动生成' : `请输入${field.label}`} />
+    </Form.Item>
+  );
+}
+
 function BusinessProgram({
   program,
   onSettings,
@@ -1225,9 +1244,24 @@ function BusinessProgram({
   const [filterValues, setFilterValues] = React.useState<Record<string, unknown>>({});
   const [createForm] = Form.useForm();
   const [filterForm] = Form.useForm();
+  const [runtimeForm, setRuntimeForm] = React.useState<PlatformForm | null>(null);
+  const [runtimeFormLoading, setRuntimeFormLoading] = React.useState(false);
+  const [createSubmitting, setCreateSubmitting] = React.useState(false);
   const viewConfig = React.useMemo(() => normalizeViewConfig(program.viewConfig, programFieldsForView(program)), [program]);
   const activeFilters = React.useMemo(() => sortByOrder(viewConfig.filters).filter((filter) => filter.enabled), [viewConfig.filters]);
   const viewColumns = React.useMemo(() => sortByOrder(viewConfig.table.columns).filter((column) => column.enabled), [viewConfig.table.columns]);
+  const runtimeCreateFields = React.useMemo<BusinessCreateField[]>(() => {
+    if (!runtimeForm?.fields?.length) return [];
+    const fieldPermissions = runtimeForm.runtime_field_permissions || {};
+    return [...runtimeForm.fields]
+      .filter((field) => !field.archived && field.visible_in_form && fieldPermissions[field.field_name]?.visible !== false)
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map((field) => ({
+        ...field,
+        required: Boolean(fieldPermissions[field.field_name]?.required ?? field.required),
+        editable: fieldPermissions[field.field_name]?.editable !== false,
+      }));
+  }, [program, runtimeForm]);
   const filteredRows = React.useMemo(() => program.rows.filter((row) => activeFilters.every((filter) => (
     programValueMatchesFilter(row, filter, filterValues[filter.id] ?? filter.defaultValue)
   ))), [activeFilters, filterValues, program.rows]);
@@ -1290,6 +1324,71 @@ function BusinessProgram({
     createForm.resetFields();
   };
 
+  React.useEffect(() => {
+    let cancelled = false;
+    const loadRuntimeForm = async () => {
+      setRuntimeFormLoading(true);
+      try {
+        const formsResponse = await listPlatformForms();
+        const forms = (formsResponse.data?.data || []) as PlatformForm[];
+        const matchedForm = forms.find((form) => form.code === program.id);
+        if (!matchedForm) {
+          if (!cancelled) setRuntimeForm(null);
+          return;
+        }
+        const detailResponse = await getPlatformForm(matchedForm.id, { schema: 'published' });
+        if (!cancelled) {
+          const detail = (detailResponse.data?.data || matchedForm) as PlatformForm;
+          setRuntimeForm(detail.fields?.length ? detail : null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setRuntimeForm(null);
+          console.warn('business form load failed', error);
+        }
+      } finally {
+        if (!cancelled) setRuntimeFormLoading(false);
+      }
+    };
+    void loadRuntimeForm();
+    return () => {
+      cancelled = true;
+    };
+  }, [program.id]);
+
+  const openCreateModal = () => {
+    if (!runtimeForm) {
+      message.warning('当前页面没有绑定后台表单设计，不能新增业务记录');
+      return;
+    }
+    createForm.resetFields();
+    createForm.setFieldsValue(businessCreateInitialValues(runtimeCreateFields));
+    setCreateOpen(true);
+  };
+
+  const submitCreateModal = async () => {
+    const values = await createForm.validateFields();
+    const payload = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [key, normalizeBusinessCreateValue(value)]),
+    );
+    if (!runtimeForm) {
+      message.warning('当前页面还没有绑定后台表单设计，不能写入业务记录');
+      return;
+    }
+    setCreateSubmitting(true);
+    try {
+      await createPlatformDynamicRecord(runtimeForm.id, payload);
+      message.success(`${runtimeForm.name || program.title} 已新增`);
+      closeCreateModal();
+      onReload();
+    } catch (error) {
+      console.error('create dynamic record failed', error);
+      message.error('新增失败，请检查表单字段和权限配置');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
+
   const renderProgramFilterControl = (filter: ViewFilterConfig) => {
     const placeholder = filter.placeholder || filter.label;
     if (filter.controlType === 'dateRange') return <RangePicker />;
@@ -1307,7 +1406,7 @@ function BusinessProgram({
         <div className="app-business-title-row">
           <Typography.Title level={4}>{program.title}</Typography.Title>
           <Space size={8} wrap>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>新增</Button>
+            <Button type="primary" icon={<PlusOutlined />} loading={runtimeFormLoading} onClick={openCreateModal}>新增</Button>
             <Button icon={<UploadOutlined />}>申请</Button>
             <Button>批量处理</Button>
             <Button icon={<ReloadOutlined />} loading={loading} onClick={onReload}>刷新</Button>
@@ -1353,79 +1452,22 @@ function BusinessProgram({
     </div>
 
       <Modal
-        title={`${program.title} - 料号申请`}
+        title={`新增${runtimeForm?.name || program.title}`}
         open={createOpen}
         width={820}
-        okText="提交申请"
+        okText={runtimeForm ? '保存' : '确认'}
         cancelText="取消"
+        confirmLoading={createSubmitting}
         onCancel={closeCreateModal}
-        onOk={async () => {
-          await createForm.validateFields();
-          closeCreateModal();
-        }}
+        onOk={submitCreateModal}
       >
         <Form form={createForm} layout="vertical" className="app-business-create-form">
           <Row gutter={12}>
-            <Col xs={24} md={12}>
-              <Form.Item label="申请单号" name="requestNo" initialValue="MR-260520-001">
-                <Input disabled />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="申请类型" name="requestType" initialValue="料号申请" rules={[{ required: true, message: '请选择申请类型' }]}>
-                <Select options={[{ value: '料号申请', label: '料号申请' }, { value: '替代料申请', label: '替代料申请' }, { value: '风险复核申请', label: '风险复核申请' }]} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="料号" name="partNo" rules={[{ required: true, message: '请输入料号' }]}>
-                <Input placeholder="请输入料号" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="物料名称" name="materialName" rules={[{ required: true, message: '请输入物料名称' }]}>
-                <Input placeholder="请输入物料名称" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="规格型号" name="spec">
-                <Input placeholder="请输入规格型号" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="供应商" name="supplier" rules={[{ required: true, message: '请选择供应商' }]}>
-                <Select placeholder="请选择供应商" options={[{ value: '华东精密件', label: '华东精密件' }, { value: '北辰电子', label: '北辰电子' }, { value: '安捷物流', label: '安捷物流' }]} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="风险类型" name="riskType" rules={[{ required: true, message: '请选择风险类型' }]}>
-                <Select placeholder="请选择" options={[{ value: '交付风险', label: '交付风险' }, { value: '质量风险', label: '质量风险' }, { value: '库存风险', label: '库存风险' }]} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="影响等级" name="riskLevel" rules={[{ required: true, message: '请选择影响等级' }]}>
-                <Select placeholder="请选择" options={[{ value: '高', label: '高' }, { value: '中', label: '中' }, { value: '低', label: '低' }]} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="需求数量" name="quantity" rules={[{ required: true, message: '请输入需求数量' }]}>
-                <Input placeholder="请输入数量" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="期望到货日期" name="expectedDate" rules={[{ required: true, message: '请选择日期' }]}>
-                <DatePicker style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="申请人" name="applicant" initialValue="系统管理员">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={24}>
-              <Form.Item label="申请原因" name="reason" rules={[{ required: true, message: '请输入申请原因' }]}>
-                <Input.TextArea rows={3} placeholder="说明料号申请背景、影响范围和处理建议" />
-              </Form.Item>
-            </Col>
+            {runtimeCreateFields.map((field) => (
+              <Col key={field.field_name} xs={24} md={field.field_type === 'text' || field.field_type === 'json' ? 24 : 12}>
+                {renderBusinessCreateField(field)}
+              </Col>
+            ))}
           </Row>
         </Form>
       </Modal>

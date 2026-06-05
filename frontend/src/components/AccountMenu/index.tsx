@@ -10,7 +10,6 @@ import {
   NodeIndexOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
-  SkinOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { Avatar, Dropdown, Space, Tag } from 'antd';
@@ -60,12 +59,6 @@ export default function AccountMenu({ user, onNavigate, onLogout }: AccountMenuP
         label: '账号中心',
         icon: <UserOutlined />,
         onClick: () => onNavigate('/account-center?section=account'),
-      },
-      {
-        key: 'work-preferences',
-        label: '工作偏好',
-        icon: <SkinOutlined />,
-        onClick: () => onNavigate('/account-center?section=preferences'),
       },
       ...(user?.is_admin
         ? [

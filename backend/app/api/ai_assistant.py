@@ -1,5 +1,6 @@
 """AI Assistant API with database fallback for local availability."""
 
+import asyncio
 import json
 import random
 import uuid
@@ -203,12 +204,80 @@ def _sse(event: str, data: dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
 
 
+def _agent_note_for_step(step: dict[str, Any]) -> str | None:
+    step_id = str(step.get("id") or "")
+    if step_id == "step-identity":
+        return "我先确认当前用户和权限边界。"
+    if step_id == "step-ai-permission":
+        return "权限检查通过后，我再继续读取上下文和业务信息。"
+    if step_id == "step-context-intent":
+        return "我会先判断这次问题需要普通对话、知识检索，还是业务数据上下文。"
+    if step_id == "step-context-builder":
+        sources = step.get("sources") if isinstance(step.get("sources"), dict) else {}
+        return (
+            "我已把最近消息、记忆和证据整理进本轮上下文。"
+            if sources
+            else "我已整理本轮可用的对话上下文。"
+        )
+    if step_id == "step-planner":
+        return "我已经规划好接下来要走的任务路径。"
+    if step_id == "step-knowledge-search":
+        count = step.get("result_count")
+        return f"我先检索知识库和证据，找到了 {count} 条相关结果。" if count is not None else "我先检索知识库和证据。"
+    if step_id == "step-tool-contract":
+        tool = step.get("tool") or "目标工具"
+        return f"在准备执行前，我读取了 {tool} 的工具合约，确认必填字段和写入边界。"
+    if step_id == "step-skill-selection":
+        skill = step.get("skill")
+        return f"我选择用 {skill} 来处理这个动作。" if skill else "我已选择可用工具来处理这个动作。"
+    if step_id.startswith("step-skill-policy"):
+        return "我又复核了一次工具权限，写入类动作会等待你确认。"
+    if step_id == "step-confirmation":
+        return "我已经整理好待确认动作，确认前不会写入系统。"
+    if step_id == "step-answer":
+        return "工具和上下文都整理完了，我开始生成最终回复。"
+    if str(step.get("type") or "") == "tool":
+        tool = step.get("tool")
+        return f"我调用 {tool} 获取结果。" if tool else "我调用工具获取结果。"
+    return None
+
+
+def _tool_event_payload(step: dict[str, Any]) -> dict[str, Any] | None:
+    if str(step.get("type") or "") != "tool":
+        return None
+    tool = step.get("tool")
+    if not tool:
+        return None
+    payload = {
+        "step_id": step.get("id"),
+        "tool": tool,
+        "status": step.get("status") or "completed",
+    }
+    if step.get("result_count") is not None:
+        payload["result_count"] = step.get("result_count")
+    if step.get("summary"):
+        payload["summary"] = step.get("summary")
+    return payload
+
+
 async def _emit_agent_step(event_sink, step: dict[str, Any]) -> None:
     if event_sink:
+        note = _agent_note_for_step(step)
+        if note:
+            await event_sink("assistant.note", {"message": note, "step_id": step.get("id")})
+        tool_payload = _tool_event_payload(step)
+        if tool_payload:
+            await event_sink("tool.started", tool_payload)
         await event_sink("step.completed", {"step": step})
+        if tool_payload:
+            await event_sink("tool.completed", tool_payload)
 
 
-async def _execute_confirmed_agent_run(run: dict[str, Any], current_user: dict[str, Any]) -> dict[str, Any]:
+async def _execute_confirmed_agent_run(
+    run: dict[str, Any],
+    current_user: dict[str, Any],
+    event_sink=None,
+) -> dict[str, Any]:
     """Execute supported confirmed Agent actions through registered backend tools."""
 
     return await agent_tool_executor.execute_confirmed_run(
@@ -217,6 +286,7 @@ async def _execute_confirmed_agent_run(run: dict[str, Any], current_user: dict[s
         persist_ai_draft=_persist_ai_draft,
         update_ai_draft_status=_update_ai_draft_status,
         audit_ai_event=_audit_ai_event,
+        event_sink=event_sink,
     )
 
 
@@ -1264,17 +1334,23 @@ async def agent_chat_stream(body: AgentRequest, user: dict = Depends(get_current
     current_user = _normalize_user(user)
 
     async def event_generator():
-        events: list[tuple[str, dict[str, Any]]] = []
+        queue: asyncio.Queue[tuple[str, dict[str, Any]]] = asyncio.Queue()
 
         async def emit(event: str, data: dict[str, Any]) -> None:
-            events.append((event, data))
+            await queue.put((event, data))
 
         run_id: str | None = None
         yield _sse("run.accepted", {"status": "accepted", "message": body.message})
+        yield _sse("assistant.note", {"message": "我收到请求了，会先整理上下文，再按需要调用工具。"})
+        task = asyncio.create_task(_run_agent_for_user(body, current_user, event_sink=emit))
         try:
-            result = await _run_agent_for_user(body, current_user, event_sink=emit)
-            for event, data in events:
+            while not task.done() or not queue.empty():
+                try:
+                    event, data = await asyncio.wait_for(queue.get(), timeout=0.1)
+                except asyncio.TimeoutError:
+                    continue
                 yield _sse(event, data)
+            result = await task
             payload = result.model_dump()
             run_id = payload.get("run_id")
             persisted = await _persist_agent_turn(body, result, current_user)
@@ -1287,6 +1363,9 @@ async def agent_chat_stream(body: AgentRequest, user: dict = Depends(get_current
             yield _sse("run.failed", {"status": "failed", "detail": exc.detail, "status_code": exc.status_code})
         except Exception as exc:  # noqa: BLE001 - stream should report failures as events
             yield _sse("run.failed", {"status": "failed", "detail": str(exc)})
+        finally:
+            if not task.done():
+                task.cancel()
 
     return StreamingResponse(
         event_generator(),
@@ -1317,9 +1396,13 @@ async def get_ai_agent_run(run_id: str, user: dict = Depends(get_current_user)):
     return {"data": run}
 
 
-@router.post("/agent-runs/{run_id}/confirm")
-async def confirm_ai_agent_run(run_id: str, body: AgentRunConfirmRequest, user: dict = Depends(get_current_user)):
-    current_user = _normalize_user(user)
+async def _confirm_agent_run_for_user(
+    run_id: str,
+    body: AgentRunConfirmRequest,
+    current_user: dict[str, Any],
+    *,
+    event_sink=None,
+) -> dict[str, Any]:
     if not body.confirmed:
         try:
             run = cancel_agent_run(run_id, current_user)
@@ -1328,7 +1411,10 @@ async def confirm_ai_agent_run(run_id: str, body: AgentRunConfirmRequest, user: 
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc
         await _sync_persisted_agent_run_final_state(run_id, current_user, status="cancelled")
         _audit_ai_event(current_user, "agent_run_cancelled", {"run_id": run_id, "source": "confirm_endpoint"})
-        return {"data": run, "ok": True}
+        if event_sink:
+            await event_sink("run.cancelled", {"run_id": run_id, "status": "cancelled", "run": run})
+        return run
+
     if not body.confirmation_token:
         raise HTTPException(status_code=400, detail="Confirmation token is required")
     try:
@@ -1342,10 +1428,63 @@ async def confirm_ai_agent_run(run_id: str, body: AgentRunConfirmRequest, user: 
         except ValueError as persisted_exc:
             status_code = 404 if "not found" in str(persisted_exc).lower() else 400
             raise HTTPException(status_code=status_code, detail=str(persisted_exc)) from persisted_exc
-    run = await _execute_confirmed_agent_run(run, current_user)
+
+    if event_sink:
+        await event_sink(
+            "assistant.note",
+            {
+                "run_id": run_id,
+                "message": "确认已接收，继续执行已审核动作。",
+                "action_count": len(run.get("actions") or []),
+            },
+        )
+    run = await _execute_confirmed_agent_run(run, current_user, event_sink=event_sink)
     await _sync_persisted_agent_run_final_state(run_id, current_user, status=str(run.get("status") or "completed"))
     _audit_ai_event(current_user, "agent_run_confirmed", {"run_id": run_id})
+    return run
+
+
+@router.post("/agent-runs/{run_id}/confirm")
+async def confirm_ai_agent_run(run_id: str, body: AgentRunConfirmRequest, user: dict = Depends(get_current_user)):
+    current_user = _normalize_user(user)
+    run = await _confirm_agent_run_for_user(run_id, body, current_user)
     return {"data": run, "ok": True}
+
+
+@router.post("/agent-runs/{run_id}/confirm/stream")
+async def confirm_ai_agent_run_stream(run_id: str, body: AgentRunConfirmRequest, user: dict = Depends(get_current_user)):
+    current_user = _normalize_user(user)
+
+    async def event_generator():
+        queue: asyncio.Queue[tuple[str, dict[str, Any]]] = asyncio.Queue()
+
+        async def emit(event: str, data: dict[str, Any]) -> None:
+            await queue.put((event, data))
+
+        yield _sse("run.accepted", {"status": "accepted", "run_id": run_id, "confirmed": body.confirmed})
+        task = asyncio.create_task(_confirm_agent_run_for_user(run_id, body, current_user, event_sink=emit))
+        try:
+            while not task.done() or not queue.empty():
+                try:
+                    event, data = await asyncio.wait_for(queue.get(), timeout=0.1)
+                except asyncio.TimeoutError:
+                    continue
+                yield _sse(event, data)
+            run = await task
+            yield _sse("run.completed", {"status": run.get("status") or "completed", "run_id": run_id, "run": run})
+        except HTTPException as exc:
+            yield _sse("run.failed", {"status": "failed", "detail": exc.detail, "status_code": exc.status_code})
+        except Exception as exc:  # noqa: BLE001 - stream should report failures as events
+            yield _sse("run.failed", {"status": "failed", "detail": str(exc)})
+        finally:
+            if not task.done():
+                task.cancel()
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/agent-runs/{run_id}/cancel")
@@ -1394,7 +1533,7 @@ async def save_ai_draft(body: DraftSaveRequest, user: dict = Depends(get_current
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     elif not body.confirmation.get("confirmed"):
-        raise HTTPException(status_code=400, detail="保存前需要用户确认")
+        raise HTTPException(status_code=400, detail="User confirmation is required before saving AI draft")
     record = await _persist_ai_draft(
         current_user,
         skill=body.skill,

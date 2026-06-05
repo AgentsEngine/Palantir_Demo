@@ -17,11 +17,11 @@ import { useLocation } from 'react-router-dom';
 import {
   cancelAgentRun,
   closeAgentConversation,
-  confirmAgentRun,
   createAgentConversation,
   listAgentConversationMessages,
   listAgentConversations,
   streamAgentChat,
+  streamConfirmAgentRun,
   updateAgentConversation,
 } from '@/services/api';
 import { useAiWorkbench } from './context';
@@ -49,6 +49,16 @@ interface AgentProcessStep {
   detail?: string;
 }
 
+interface AgentTraceItem {
+  id: string;
+  kind: 'note' | 'tool' | 'result';
+  content: string;
+  status?: string;
+  tool?: string;
+  stepId?: string;
+  resultCount?: number;
+}
+
 interface AgentActionState {
   skill?: string;
   status?: string;
@@ -74,6 +84,7 @@ interface ChatMessage {
   createdAt: string;
   actions?: MockSkillAction[];
   steps?: AgentProcessStep[];
+  trace?: AgentTraceItem[];
   source?: string;
   contextSources?: Record<string, number | boolean | string>;
   runId?: string;
@@ -351,6 +362,7 @@ function mapServerMessage(message: AgentMessagePayload): ChatMessage {
     content: message.content || '',
     actions: isAssistant ? mapAgentActions(message.actions) : undefined,
     steps: isAssistant ? mapAgentSteps(message.steps) : undefined,
+    trace: isAssistant ? mapTraceFromSteps(message.steps) : undefined,
     createdAt: formatServerTime(message.created_at),
     source: isAssistant && message.model_name ? `model: ${message.model_name}` : undefined,
     contextSources: isAssistant ? getContextSources({ steps: message.steps }) : undefined,
@@ -428,6 +440,83 @@ function mapAgentStep(step: Record<string, unknown>): AgentProcessStep {
     status: String(step.status || 'completed'),
     detail: getAgentStepDetail(step),
   };
+}
+
+function traceNoteFromStep(step: Record<string, unknown>): string | undefined {
+  const id = String(step.id || '');
+  if (id === 'step-confirmation') return '我已经整理好待确认动作，确认前不会写入系统。';
+  return undefined;
+}
+
+function mapTraceFromSteps(steps?: Array<Record<string, unknown>>): AgentTraceItem[] | undefined {
+  const trace = (steps || [])
+    .map((step, index) => {
+      const tool = stringifyStepValue(step.tool);
+      if (String(step.type || '') === 'tool' && tool) {
+        return {
+          id: `history-trace-tool-${String(step.id || index)}`,
+          kind: 'result' as const,
+          content: getTraceToolText(step, true),
+          status: String(step.status || 'completed'),
+          tool,
+          resultCount: typeof step.result_count === 'number' ? step.result_count : undefined,
+        };
+      }
+      const content = traceNoteFromStep(step);
+      if (!content) return undefined;
+      return {
+        id: `history-trace-${String(step.id || index)}`,
+        kind: 'note' as const,
+        content,
+      };
+    })
+    .filter(Boolean) as AgentTraceItem[];
+  return trace.length ? trace : undefined;
+}
+
+function getTraceText(data: Record<string, unknown>): string {
+  return String(data.message || data.summary || data.detail || '').trim();
+}
+
+function getTraceToolText(data: Record<string, unknown>, completed: boolean): string {
+  const tool = stringifyStepValue(data.tool) || '工具';
+  const resultCount = data.result_count !== undefined ? ` · 结果 ${data.result_count}` : '';
+  const summary = data.summary ? ` · ${stringifyStepValue(data.summary)}` : '';
+  return completed
+    ? `${tool} 已完成${resultCount}${summary}`
+    : `调用 ${tool}`;
+}
+
+function appendAgentTraceItem(
+  trace: AgentTraceItem[] | undefined,
+  item: AgentTraceItem,
+): AgentTraceItem[] {
+  const previous = trace || [];
+  const filtered = item.stepId
+    ? previous.filter((existing) => existing.stepId !== item.stepId)
+    : previous;
+  const next = [...filtered, item];
+  return next.slice(-10);
+}
+
+function createTraceItem(event: string, data: Record<string, unknown>): AgentTraceItem | undefined {
+  if (event === 'assistant.note') {
+    return undefined;
+  }
+  if (event === 'tool.started' || event === 'tool.completed') {
+    const completed = event === 'tool.completed';
+    const stepId = String(data.step_id || data.tool || Date.now());
+    return {
+      id: `trace-tool-${stepId}`,
+      kind: completed ? 'result' : 'tool',
+      content: getTraceToolText(data, completed),
+      status: completed ? String(data.status || 'completed') : 'active',
+      tool: stringifyStepValue(data.tool),
+      stepId,
+      resultCount: typeof data.result_count === 'number' ? data.result_count : undefined,
+    };
+  }
+  return undefined;
 }
 
 function mapServerConversation(
@@ -664,28 +753,6 @@ function getExecutionResult(result: Record<string, unknown>): AgentExecutionResu
     kind: 'generic',
     title: '已确认执行',
   };
-}
-
-function isStepComplete(status: string): boolean {
-  return ['completed', 'skipped', 'waiting_confirmation'].includes(status);
-}
-
-function getVisibleAgentSteps(steps?: AgentProcessStep[]): AgentProcessStep[] {
-  if (!steps?.length) return [];
-  return steps.slice(-5);
-}
-
-function getAgentProcessTitle(steps: AgentProcessStep[], hasContent: boolean): string {
-  if (steps.some((step) => step.status === 'failed' || step.status === 'blocked')) return 'Agent 遇到问题';
-  if (hasContent || steps.some((step) => step.status === 'waiting_confirmation')) return 'Agent 已整理完成';
-  return 'Agent 正在处理';
-}
-
-function isAgentProcessActive(steps: AgentProcessStep[], hasContent: boolean): boolean {
-  if (hasContent) return false;
-  if (steps.some((step) => step.status === 'failed' || step.status === 'blocked')) return false;
-  if (steps.some((step) => step.status === 'waiting_confirmation')) return false;
-  return true;
 }
 
 function getStatusLabel(status: MockSkillStatus) {
@@ -1053,6 +1120,14 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
         page: AI_WORKBENCH_PAGE,
         context: runtimeContext,
       }, ({ event, data }) => {
+        const traceItem = createTraceItem(event, data);
+        if (traceItem) {
+          updateSessionMessage(sessionId, assistantMessageId, (message) => ({
+            ...message,
+            trace: appendAgentTraceItem(message.trace, traceItem),
+          }));
+          return;
+        }
         if (event === 'run.accepted') {
           updateSessionMessage(sessionId, assistantMessageId, (message) => ({
             ...message,
@@ -1136,12 +1211,9 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
     const token = getConfirmationToken(message.confirmationPayload);
     if (!runId || !token || !activeSession) return;
     setConfirmingRunId(runId);
-    try {
-      const response = await confirmAgentRun(runId, {
-        confirmation_token: token,
-        confirmed: true,
-      });
-      const run = (response.data?.data || {}) as Record<string, unknown>;
+    const sessionId = activeSession.id;
+
+    const applyCompletedRun = (run: Record<string, unknown>) => {
       const results = Array.isArray(run.tool_results) ? run.tool_results : [];
       const completed = results.find((item) => (
         item && typeof item === 'object' && (item as Record<string, unknown>).status === 'completed'
@@ -1151,41 +1223,61 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
         : {};
       const executionResult = getExecutionResult(result);
       const routePath = executionResult.href || '';
-      const nextMessages = messages.map((item) => (
-        item.id === message.id
-          ? (() => {
-            const currentContent = item.fullContent || item.content;
-            return {
-              ...item,
-              content: routePath
-                ? `${currentContent}\n\n已确认执行，表单已创建：${routePath}`
-                : `${currentContent}\n\n已确认执行。`,
-              fullContent: undefined,
-              typing: false,
-              requiresConfirmation: false,
-              actionState: undefined,
-              executionResult,
-              source: 'backend Agent: confirmed execution',
-            };
-          })()
-          : item
-      ));
-      setSessionMessages(activeSession.id, nextMessages);
-    } catch (error) {
-      const detail = (error as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
-        || (error as { message?: string })?.message
-        || 'unknown error';
-      const nextMessages = messages.map((item) => (
-        item.id === message.id
-          ? {
+      updateSessionMessage(sessionId, message.id, (item) => {
+        const currentContent = item.fullContent || item.content;
+        return {
+          ...item,
+          content: routePath
+            ? `${currentContent}\n\n已确认执行，表单已创建：${routePath}`
+            : `${currentContent}\n\n已确认执行。`,
+          fullContent: undefined,
+          typing: false,
+          requiresConfirmation: false,
+          actionState: undefined,
+          executionResult,
+          source: 'backend Agent: confirmed execution',
+        };
+      });
+    };
+
+    try {
+      await streamConfirmAgentRun(runId, {
+        confirmation_token: token,
+        confirmed: true,
+      }, ({ event, data }) => {
+        const traceItem = createTraceItem(event, data);
+        if (traceItem) {
+          updateSessionMessage(sessionId, message.id, (item) => ({
+            ...item,
+            trace: appendAgentTraceItem(item.trace, traceItem),
+          }));
+          return;
+        }
+        if (event === 'run.completed') {
+          const run = asRecord(data.run);
+          applyCompletedRun(run);
+          return;
+        }
+        if (event === 'run.failed') {
+          const detail = String(data.detail || 'unknown error');
+          updateSessionMessage(sessionId, message.id, (item) => ({
             ...item,
             content: `${item.fullContent || item.content}\n\n确认执行失败：${detail}`,
             fullContent: undefined,
             typing: false,
-          }
-          : item
-      ));
-      setSessionMessages(activeSession.id, nextMessages);
+          }));
+        }
+      });
+    } catch (error) {
+      const detail = (error as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
+        || (error as { message?: string })?.message
+        || 'unknown error';
+      updateSessionMessage(sessionId, message.id, (item) => ({
+        ...item,
+        content: `${item.fullContent || item.content}\n\n确认执行失败：${detail}`,
+        fullContent: undefined,
+        typing: false,
+      }));
     } finally {
       setConfirmingRunId(undefined);
     }
@@ -1252,37 +1344,43 @@ export default function AiChatWidget({ pageTitle, applicationName }: AiChatWidge
           <div className="ai-workbench-chat">
           <div className="ai-chat-body" ref={bodyRef}>
             {messages.map((message) => {
-              const processSteps = message.role === 'assistant' ? getVisibleAgentSteps(message.steps) : [];
-              const hasProcess = processSteps.length > 0;
               const hasContent = Boolean(message.content.trim());
               const isTypingAssistant = message.role === 'assistant' && Boolean(message.typing);
               const hasAnswer = hasContent || Boolean(message.fullContent?.trim());
-              const isPendingAssistant = message.role === 'assistant' && hasProcess && !hasAnswer;
+              const hasTraceOrSteps = Boolean(message.trace?.length || message.steps?.length);
+              const isPendingAssistant = message.role === 'assistant' && hasTraceOrSteps && !hasAnswer;
               const canShowAssistantMeta = message.role === 'assistant' && !isTypingAssistant;
-              const isProcessActive = hasProcess && isAgentProcessActive(processSteps, hasAnswer);
               const actionStateReview = message.role === 'assistant' ? getActionStateReview(message.actionState) : undefined;
+              const traceItems = message.trace || [];
+              const completedToolCount = traceItems.filter((item) => item.kind === 'result').length;
+              const runningToolCount = traceItems.filter((item) => item.kind === 'tool').length;
+              const toolTraceCount = completedToolCount + runningToolCount;
+              const traceSummary = runningToolCount
+                ? `正在运行 ${runningToolCount} 个工具`
+                : toolTraceCount
+                  ? `已运行 ${completedToolCount} 个工具`
+                  : '已整理确认信息';
 
               return (
               <div className={`ai-chat-message ${message.role}`} key={message.id}>
                 <div className="ai-chat-bubble">
-                  {hasProcess ? (
-                    <div className="ai-agent-process">
-                      <div className="ai-agent-process-title">
-                        <span className={`ai-agent-process-dot ${isProcessActive ? 'active' : 'done'}`} />
-                        <span>{getAgentProcessTitle(processSteps, hasAnswer)}</span>
-                      </div>
-                      <div className="ai-agent-process-steps">
-                        {processSteps.map((step) => (
-                          <div className={`ai-agent-process-step ${isStepComplete(step.status) ? 'done' : 'active'}`} key={step.id}>
-                            <span className="ai-agent-process-dot" />
+                  {message.role === 'assistant' && traceItems.length ? (
+                    <details className="ai-agent-trace" open={isPendingAssistant}>
+                      <summary>{traceSummary}</summary>
+                      <div className="ai-agent-trace-list">
+                        {traceItems.map((item) => (
+                          <div className={`ai-agent-trace-item ${item.kind}`} key={item.id}>
+                            <span className="ai-agent-trace-marker" />
                             <div>
-                              <span>{step.label}</span>
-                              {step.detail ? <small>{step.detail}</small> : null}
+                              {item.kind === 'tool' ? <small>工具调用</small> : null}
+                              {item.kind === 'result' ? <small>工具结果</small> : null}
+                              {item.kind === 'note' ? <small>状态</small> : null}
+                              <span>{item.content}</span>
                             </div>
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </details>
                   ) : null}
                   <Typography.Text className={isPendingAssistant ? 'ai-chat-pending-text' : undefined} type={isPendingAssistant ? 'secondary' : undefined}>
                     {hasContent ? message.content : (isPendingAssistant ? '正在处理...' : '')}

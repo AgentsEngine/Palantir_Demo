@@ -17,6 +17,7 @@ from app.api.deps import current_tenant_id, current_user_id, get_current_user, g
 from app.config import settings
 from app.core.audit import write_audit_log
 from app.core.db import safe_db_call
+from app.core.permissions import has_permission
 from app.services.tenant_onboarding import assert_tenant_quota
 
 router = APIRouter()
@@ -54,7 +55,7 @@ DEFAULT_MENUS = [
     {"id": 1001, "parent_id": None, "title": "生产态势", "icon": "DashboardOutlined", "route_path": "/dashboard", "sort_order": 10, "is_visible": True},
     {"id": 1002, "parent_id": None, "title": "预测性维护", "icon": "ToolOutlined", "route_path": "/maintenance", "sort_order": 20, "is_visible": True},
     {"id": 1003, "parent_id": None, "title": "质量分析", "icon": "SafetyCertificateOutlined", "route_path": "/quality", "sort_order": 30, "is_visible": True},
-    {"id": 1004, "parent_id": None, "title": "供应链风险", "icon": "ShopOutlined", "route_path": "/supply-chain", "sort_order": 40, "is_visible": True},
+    {"id": 1004, "parent_id": None, "title": "供应链风险", "icon": "ShopOutlined", "route_path": "/program/supply-overview", "sort_order": 40, "is_visible": True},
     {"id": 1005, "parent_id": None, "title": "料号关系追踪", "icon": "SafetyCertificateOutlined", "route_path": "/program/quality-event", "sort_order": 35, "is_visible": True},
 ]
 
@@ -76,8 +77,8 @@ DEFAULT_APPLICATIONS = [
     },
     {
         "id": 4, "name": "供应链风险", "code": "supply-risk", "description": "供应商交付、库存水位、风险预警和替代方案。",
-        "icon": "ShopOutlined", "default_route": "/supply-chain", "sort_order": 40, "status": "published", "is_pinned": False,
-        "menu_routes": ["/supply-chain"], "role_names": ["admin", "production_manager", "supply_chain_manager", "warehouse_operator", "viewer"],
+        "icon": "ShopOutlined", "default_route": "/program/supply-overview", "sort_order": 40, "status": "published", "is_pinned": False,
+        "menu_routes": ["/program/supply-overview"], "role_names": ["admin", "production_manager", "supply_chain_manager", "warehouse_operator", "viewer"],
     },
 ]
 
@@ -183,32 +184,24 @@ async def _user_can_access_menu_node(db: AsyncSession, user: dict, node, role_id
         return True
     config = node.config or {}
     inherited = await _user_can_access_application(db, user, node.application_id)
-    rules = config.get("permission_rules")
     role_id_set = set(role_ids)
 
-    if not isinstance(rules, list) or not rules:
-        if config.get("permission_mode") == "custom":
-            configured_role_ids = {
-                int(value)
-                for value in (config.get("role_ids") or [])
-                if str(value).isdigit()
-            }
-            return bool(role_id_set.intersection(configured_role_ids))
+    if config.get("permission_mode") != "custom":
         return inherited
 
-    matched_allow = False
-    for rule in rules:
-        if not isinstance(rule, dict):
-            continue
-        if not _rule_actions_match(rule.get("actions"), "view"):
-            continue
-        if not _menu_rule_subject_matches(rule, user, role_id_set, inherited):
-            continue
-        if rule.get("effect") == "deny":
-            return False
-        if rule.get("effect", "allow") == "allow":
-            matched_allow = True
-    return matched_allow
+    permission_key = f"menu_node:{node.id}"
+    if await has_permission(user, "menu", permission_key, "view", db):
+        return True
+
+    if config.get("permission_synced"):
+        return False
+
+    configured_role_ids = {
+        int(value)
+        for value in (config.get("role_ids") or [])
+        if str(value).isdigit()
+    }
+    return bool(role_id_set.intersection(configured_role_ids))
 
 
 def _menu_tree(items: list[dict]) -> list[dict]:
@@ -502,7 +495,12 @@ async def list_application_menus(app_id: int, user: dict = Depends(get_current_u
                 "parent_id": None,
                 "title": binding.alias or form.name,
                 "icon": "FormOutlined",
-                "route_path": f"/dynamic/{form.id}",
+                "route_path": (
+                    f"/form-settings/{form.code}?tab=dashboard"
+                    if str((form.config or {}).get("assemblyKind") or (form.config or {}).get("kind") or (form.config or {}).get("type") or "").lower()
+                    in {"analysis", "analytics", "dashboard", "report", "bi_report", "metric_dashboard", "list_analysis"}
+                    else f"/dynamic/{form.code}"
+                ),
                 "sort_order": binding.sort_order,
                 "is_visible": True,
                 "is_default": False,

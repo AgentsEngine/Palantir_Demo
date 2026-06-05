@@ -43,6 +43,7 @@ const formRouteMap: Record<string, { route: string; icon: string }> = {
   'fault-prediction': { route: '/program/fault-prediction', icon: 'ToolOutlined' },
   'failure-trend-analysis': { route: '/program/failure-trend-analysis', icon: 'ToolOutlined' },
   'maintenance-order': { route: '/program/maintenance-order', icon: 'AppstoreOutlined' },
+  'equipment-inspection': { route: '/program/equipment-inspection', icon: 'AppstoreOutlined' },
   'alert-center': { route: '/program/alert-center', icon: 'SafetyCertificateOutlined' },
   'quality-overview': { route: '/program/quality-overview', icon: 'SafetyCertificateOutlined' },
   'inspection-batch': { route: '/program/inspection-batch', icon: 'SafetyCertificateOutlined' },

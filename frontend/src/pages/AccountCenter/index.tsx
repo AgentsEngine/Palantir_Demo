@@ -51,6 +51,7 @@ import {
   adminListUsers,
   closeAgentConversation,
   deleteAIMemory,
+  getClosedLoopConfig,
   getAISettings,
   listAgentConversations,
   listAIMemories,
@@ -146,7 +147,7 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
   const identityDefaultTab = activeSection === 'roles' ? 'roles' : activeSection === 'orgs' ? 'orgs' : activeSection === 'users' ? 'users' : 'overview';
   const normalizedSection = ['users', 'roles', 'orgs'].includes(activeSection)
     ? 'identity-access'
-    : activeSection === 'ai-personal'
+    : activeSection === 'ai-personal' || activeSection === 'preferences'
       ? 'account'
     : activeSection === 'palantir-config' || activeSection === 'data-ontology'
       ? 'data-assets'
@@ -155,6 +156,7 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
       : activeSection;
   const roles = user?.roles?.length ? user.roles.map((role: any) => role.label || role.name).join(' / ') : '-';
   const roleLabel = user?.is_admin ? '系统管理员' : user?.roles?.[0]?.label || '业务用户';
+  const accountDefaultSubTab = activeSection === 'preferences' ? 'preferences' : 'profile';
 
   const items = useMemo(() => {
     const baseItems = [
@@ -162,13 +164,15 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
         key: 'account',
         label: '账号中心',
         icon: <UserOutlined />,
-        children: <AccountProfilePanel user={user} roleLabel={roleLabel} roles={roles} currentApplication={currentApplication} />,
-      },
-      {
-        key: 'preferences',
-        label: '工作偏好',
-        icon: <SkinOutlined />,
-        children: <PreferencePanel />,
+        children: (
+          <AccountProfilePanel
+            user={user}
+            roleLabel={roleLabel}
+            roles={roles}
+            currentApplication={currentApplication}
+            defaultActiveKey={accountDefaultSubTab}
+          />
+        ),
       },
     ];
 
@@ -231,7 +235,7 @@ export default function AccountCenter({ currentApplication }: AccountCenterProps
         children: <AuditPanel />,
       },
     ];
-  }, [currentApplication, identityDefaultTab, roleLabel, roles, user]);
+  }, [accountDefaultSubTab, currentApplication, identityDefaultTab, roleLabel, roles, user]);
 
   return (
     <div className="account-center-page">
@@ -261,6 +265,55 @@ function AccountProfilePanel({
   roleLabel,
   roles,
   currentApplication,
+  defaultActiveKey,
+}: {
+  user: any;
+  roleLabel: string;
+  roles: string;
+  currentApplication?: CurrentApplication | null;
+  defaultActiveKey: string;
+}) {
+  const [activeSubTab, setActiveSubTab] = useState(defaultActiveKey);
+
+  useEffect(() => {
+    setActiveSubTab(defaultActiveKey);
+  }, [defaultActiveKey]);
+
+  return (
+    <Tabs
+      className="account-profile-subtabs"
+      activeKey={activeSubTab}
+      onChange={setActiveSubTab}
+      items={[
+        {
+          key: 'profile',
+          label: '身份与安全',
+          icon: <UserOutlined />,
+          children: (
+            <AccountSecurityPanel
+              user={user}
+              roleLabel={roleLabel}
+              roles={roles}
+              currentApplication={currentApplication}
+            />
+          ),
+        },
+        {
+          key: 'preferences',
+          label: '工作偏好',
+          icon: <SkinOutlined />,
+          children: <PreferencePanel />,
+        },
+      ]}
+    />
+  );
+}
+
+function AccountSecurityPanel({
+  user,
+  roleLabel,
+  roles,
+  currentApplication,
 }: {
   user: any;
   roleLabel: string;
@@ -282,7 +335,7 @@ function AccountProfilePanel({
       <Card title="安全设置" className="account-panel-card">
         <Form layout="vertical">
           <Form.Item label="当前密码">
-            <Input.Password placeholder="Demo 中暂不校验真实密码" />
+            <Input.Password placeholder="当前环境暂不校验真实密码" />
           </Form.Item>
           <Form.Item label="新密码">
             <Input.Password placeholder="请输入新密码" />
@@ -779,32 +832,50 @@ function AIPlatformPanelV2() {
           <div className="ai-platform-workbench">
             <aside className="ai-platform-side">
               <Card size="small" title="模型服务接入" className="account-panel-card ai-connection-card">
-                <Form.Item name="aiEnabled" label="启用 AI" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item name="provider" label="模型服务商">
-                  <Select options={[
-                    { label: 'GLM', value: 'glm' },
-                    { label: 'OpenAI Compatible', value: 'openai-compatible' },
-                    { label: 'OpenAI', value: 'openai' },
-                    { label: 'Azure OpenAI', value: 'azure-openai' },
-                    { label: 'DeepSeek', value: 'deepseek' },
-                    { label: 'Qwen', value: 'qwen' },
-                    { label: 'Local Model', value: 'local' },
-                  ]} onChange={applyProviderPreset} />
-                </Form.Item>
-                <Form.Item name="baseUrl" label="Base URL"><Input placeholder="https://open.bigmodel.cn/api/paas/v4" /></Form.Item>
-                <Space size={[6, 6]} wrap className="ai-provider-presets">
-                  <Button size="small" onClick={() => applyGlmPreset('api')}>GLM 普通 API</Button>
-                  <Button size="small" onClick={() => applyGlmPreset('coding')}>GLM Coding Plan</Button>
-                </Space>
-                <Form.Item name="apiKey" label="API Key"><Input.Password placeholder="由后端密钥库托管；Demo 可先为空" /></Form.Item>
-                <Row gutter={12}>
-                  <Col span={12}><Form.Item name="organization" label="Organization"><Input placeholder="可选" /></Form.Item></Col>
-                  <Col span={12}><Form.Item name="project" label="Project"><Input placeholder="可选" /></Form.Item></Col>
-                </Row>
+                <div className="ai-connection-section">
+                  <div className="ai-connection-head">
+                    <div>
+                      <Text strong>服务链路</Text>
+                      <Text type="secondary">{currentProvider}</Text>
+                    </div>
+                    <Form.Item name="aiEnabled" valuePropName="checked" noStyle><Switch /></Form.Item>
+                  </div>
+                  <Form.Item name="provider" label="模型服务商">
+                    <Select options={[
+                      { label: 'GLM', value: 'glm' },
+                      { label: 'OpenAI Compatible', value: 'openai-compatible' },
+                      { label: 'OpenAI', value: 'openai' },
+                      { label: 'Azure OpenAI', value: 'azure-openai' },
+                      { label: 'DeepSeek', value: 'deepseek' },
+                      { label: 'Qwen', value: 'qwen' },
+                      { label: 'Local Model', value: 'local' },
+                    ]} onChange={applyProviderPreset} />
+                  </Form.Item>
+                </div>
+
+                <div className="ai-connection-section">
+                  <div className="ai-connection-section-head">
+                    <Text strong>接入凭据</Text>
+                    <Tag color="blue">托管密钥</Tag>
+                  </div>
+                  <Form.Item name="baseUrl" label="Base URL"><Input placeholder="https://open.bigmodel.cn/api/paas/v4" /></Form.Item>
+                  <Form.Item name="apiKey" label="API Key"><Input.Password placeholder="由后端密钥库托管；可先为空" /></Form.Item>
+                  <div className="ai-provider-presets">
+                    <Button size="small" onClick={() => applyGlmPreset('api')}>GLM 普通 API</Button>
+                    <Button size="small" onClick={() => applyGlmPreset('coding')}>GLM Coding Plan</Button>
+                  </div>
+                  <div className="ai-connection-field-grid">
+                    <Form.Item name="organization" label="Organization"><Input placeholder="可选" /></Form.Item>
+                    <Form.Item name="project" label="Project"><Input placeholder="可选" /></Form.Item>
+                  </div>
+                </div>
+
                 <div className="ai-provider-summary">
-                  <span>当前链路</span>
-                  <strong>{currentProvider} / {currentChatModel}</strong>
-                  <Text type="secondary">知识 Agent、页面助手、报表生成都会优先使用这条链路。</Text>
+                  <div>
+                    <span>当前链路</span>
+                    <strong>{currentProvider} / {currentChatModel}</strong>
+                  </div>
+                  <Text type="secondary">知识 Agent、页面助手、报表生成优先使用。</Text>
                 </div>
               </Card>
             </aside>
@@ -1034,44 +1105,87 @@ function AIPlatformPanelV2() {
 
             <aside className="ai-platform-side">
               <Card size="small" title="安全、审计与额度" className="account-panel-card ai-policy-card">
-                <Form.Item name="highRiskConfirm" label="高风险动作二次确认" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item name="sensitiveMasking" label="敏感字段脱敏" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item name={['safetyPolicy', 'highRiskConfirm']} label="Agent 高风险确认" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item name={['safetyPolicy', 'sensitiveMasking']} label="上下文敏感信息脱敏" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item name={['safetyPolicy', 'blockSecretMemory']} label="禁止密钥写入记忆" valuePropName="checked"><Switch /></Form.Item>
-                <Row gutter={12}>
-                  <Col span={12}><Form.Item name={['safetyPolicy', 'maxToolSteps']} label="最大工具步数"><Input type="number" min={1} max={20} /></Form.Item></Col>
-                  <Col span={12}><Form.Item name={['safetyPolicy', 'toolTimeoutSeconds']} label="工具超时秒数"><Input type="number" min={5} max={180} /></Form.Item></Col>
-                </Row>
-                <Form.Item name="forbiddenActions" label="禁止动作清单">
-                  <Select mode="multiple" options={[
-                    { label: '自动下单', value: 'auto_order' },
-                    { label: '删除数据', value: 'delete_data' },
-                    { label: '修改权限', value: 'change_permission' },
-                    { label: '发布配置', value: 'publish_config' },
-                  ]} />
-                </Form.Item>
-                <Divider />
-                <Form.Item name="auditEnabled" label="保存对话日志" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item name="recordToolCalls" label="记录工具调用" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item name="retentionDays" label="历史保留天数">
-                  <Select options={[{ label: '30 天', value: 30 }, { label: '90 天', value: 90 }, { label: '180 天', value: 180 }, { label: '365 天', value: 365 }]} />
-                </Form.Item>
-                <Row gutter={12}>
-                  <Col span={12}><Form.Item name="dailyLimit" label="平台日额度"><Input type="number" min={1} /></Form.Item></Col>
-                  <Col span={12}><Form.Item name="userDailyLimit" label="用户日额度"><Input type="number" min={1} /></Form.Item></Col>
-                </Row>
-                <div className="ai-scope-preview">
-                  <Text type="secondary">已开放范围</Text>
-                  <Space size={[4, 4]} wrap>{activeDomains.map((domain: string) => <Tag key={domain}>{aiDomainOptions.find((item) => item.value === domain)?.label || domain}</Tag>)}</Space>
-                  <Text type="secondary">可调用工具</Text>
-                  <Space size={[4, 4]} wrap>{activeTools.map((tool: string) => <Tag color="blue" key={tool}>{tool}</Tag>)}</Space>
+                <div className="ai-policy-section">
+                  <div className="ai-policy-section-head">
+                    <Text strong>安全护栏</Text>
+                    <Tag color="blue">确认 / 脱敏 / 记忆</Tag>
+                  </div>
+                  <div className="ai-policy-toggle-list">
+                    <div className="ai-policy-toggle-item">
+                      <span>高风险动作二次确认</span>
+                      <Form.Item name="highRiskConfirm" valuePropName="checked" noStyle><Switch /></Form.Item>
+                    </div>
+                    <div className="ai-policy-toggle-item">
+                      <span>敏感字段脱敏</span>
+                      <Form.Item name="sensitiveMasking" valuePropName="checked" noStyle><Switch /></Form.Item>
+                    </div>
+                    <div className="ai-policy-toggle-item">
+                      <span>Agent 高风险确认</span>
+                      <Form.Item name={['safetyPolicy', 'highRiskConfirm']} valuePropName="checked" noStyle><Switch /></Form.Item>
+                    </div>
+                    <div className="ai-policy-toggle-item">
+                      <span>上下文敏感信息脱敏</span>
+                      <Form.Item name={['safetyPolicy', 'sensitiveMasking']} valuePropName="checked" noStyle><Switch /></Form.Item>
+                    </div>
+                    <div className="ai-policy-toggle-item">
+                      <span>禁止密钥写入记忆</span>
+                      <Form.Item name={['safetyPolicy', 'blockSecretMemory']} valuePropName="checked" noStyle><Switch /></Form.Item>
+                    </div>
+                  </div>
+                  <div className="ai-policy-field-grid">
+                    <Form.Item name={['safetyPolicy', 'maxToolSteps']} label="最大工具步数"><Input type="number" min={1} max={20} /></Form.Item>
+                    <Form.Item name={['safetyPolicy', 'toolTimeoutSeconds']} label="工具超时秒数"><Input type="number" min={5} max={180} /></Form.Item>
+                  </div>
+                  <Form.Item name="forbiddenActions" label="禁止动作清单" className="ai-policy-compact-item">
+                    <Select mode="multiple" options={[
+                      { label: '自动下单', value: 'auto_order' },
+                      { label: '删除数据', value: 'delete_data' },
+                      { label: '修改权限', value: 'change_permission' },
+                      { label: '发布配置', value: 'publish_config' },
+                    ]} />
+                  </Form.Item>
                 </div>
-                <Space className="ai-platform-actions" direction="vertical">
-                  <Button block icon={<ApiOutlined />} onClick={handleTestConnection}>测试后端 AI</Button>
-                  <Button block icon={<ApiOutlined />} onClick={() => message.success('Demo 连通性检查通过')}>本地检查</Button>
-                  <Button block type="primary" icon={<RobotOutlined />} onClick={handleSaveToBackend}>保存 AI 设置</Button>
-                </Space>
+
+                <div className="ai-policy-section">
+                  <div className="ai-policy-section-head">
+                    <Text strong>审计与额度</Text>
+                    <Tag color="green">日志 / 配额</Tag>
+                  </div>
+                  <div className="ai-policy-toggle-list compact">
+                    <div className="ai-policy-toggle-item">
+                      <span>保存对话日志</span>
+                      <Form.Item name="auditEnabled" valuePropName="checked" noStyle><Switch /></Form.Item>
+                    </div>
+                    <div className="ai-policy-toggle-item">
+                      <span>记录工具调用</span>
+                      <Form.Item name="recordToolCalls" valuePropName="checked" noStyle><Switch /></Form.Item>
+                    </div>
+                  </div>
+                  <Form.Item name="retentionDays" label="历史保留天数" className="ai-policy-compact-item">
+                    <Select options={[{ label: '30 天', value: 30 }, { label: '90 天', value: 90 }, { label: '180 天', value: 180 }, { label: '365 天', value: 365 }]} />
+                  </Form.Item>
+                  <div className="ai-policy-field-grid">
+                    <Form.Item name="dailyLimit" label="平台日额度"><Input type="number" min={1} /></Form.Item>
+                    <Form.Item name="userDailyLimit" label="用户日额度"><Input type="number" min={1} /></Form.Item>
+                  </div>
+                </div>
+
+                <div className="ai-scope-preview">
+                  <div className="ai-scope-row">
+                    <Text type="secondary">开放范围</Text>
+                    <Space size={[4, 4]} wrap>{activeDomains.map((domain: string) => <Tag key={domain}>{aiDomainOptions.find((item) => item.value === domain)?.label || domain}</Tag>)}</Space>
+                  </div>
+                  <div className="ai-scope-row">
+                    <Text type="secondary">可调用工具</Text>
+                    <Space size={[4, 4]} wrap>{activeTools.map((tool: string) => <Tag color="blue" key={tool}>{tool}</Tag>)}</Space>
+                  </div>
+                </div>
+
+                <div className="ai-platform-actions">
+                  <Button icon={<ApiOutlined />} onClick={handleTestConnection}>测试后端 AI</Button>
+                  <Button icon={<ApiOutlined />} onClick={() => message.success('本地连通性检查通过')}>本地检查</Button>
+                  <Button type="primary" icon={<RobotOutlined />} onClick={handleSaveToBackend}>保存 AI 设置</Button>
+                </div>
               </Card>
             </aside>
           </div>
@@ -1108,45 +1222,71 @@ type ClosedLoopEdge = {
   frontendVisible: boolean;
 };
 
-const closedLoopNodes: ClosedLoopNode[] = [
-  { id: 'quality-event', name: '质量异常事件', type: 'QualityEvent', domain: '质量', status: 'published', riskLevel: 'critical', module: '质量异常闭环', roles: ['质量经理', '生产主管', '平台管理员'], fields: ['event_id', 'severity', 'status', 'risk_score', 'owner'], actions: ['AI 影响分析', '冻结批次', '生成 CAPA'], description: '承载缺陷超阈值后形成的业务事件，是闭环编排的中心对象。' },
-  { id: 'defect', name: '焊点虚焊缺陷', type: 'Defect', domain: '质量', status: 'published', riskLevel: 'high', module: '质量分析', roles: ['质量经理', '质量工程师'], fields: ['defect_type', 'defect_rate', 'station', 'severity'], actions: ['发起复检', '缺陷归因'], description: '来自检验、AOI 或人工复核的缺陷事实，用于触发规则和影响分析。' },
-  { id: 'batch', name: 'MB-7781 物料批次', type: 'MaterialBatch', domain: '供应链', status: 'published', riskLevel: 'high', module: '数据资产中心', roles: ['采购', '质量经理', '生产主管'], fields: ['batch_no', 'material_code', 'supplier_id', 'lot_status'], actions: ['冻结批次', '让步放行审批'], description: '与供应商、工单、缺陷关联的物料批次主数据对象。' },
-  { id: 'supplier', name: '北辰电子材料', type: 'Supplier', domain: '供应链', status: 'published', riskLevel: 'medium', module: '供应链风险', roles: ['采购', '质量经理'], fields: ['supplier_id', 'rating', 'risk_level', 'delivery_score'], actions: ['通知采购', '供应商 8D 跟进'], description: '质量事件关联到供应商后，用于形成采购和供应风险处置。' },
-  { id: 'workorder', name: 'WO-260521-017 工单', type: 'WorkOrder', domain: '生产', status: 'published', riskLevel: 'medium', module: '生产计划', roles: ['生产主管', '质量经理'], fields: ['work_order_id', 'line_id', 'plan_qty', 'delivery_date'], actions: ['调整排产', '通知班组'], description: '质量异常影响的生产工单，用于连接交付和产线执行。' },
-  { id: 'capa', name: 'CAPA-072 整改闭环', type: 'CAPA', domain: '工作流', status: 'review', riskLevel: 'high', module: '流程中心', roles: ['质量经理', '质量工程师'], fields: ['capa_id', 'owner', 'due_date', 'verify_result'], actions: ['审批整改', '验证关闭'], description: '由质量事件生成的纠正预防措施，必须人工确认后进入工作流。' },
-  { id: 'ai-action', name: 'AI 建议草稿', type: 'AIAction', domain: 'AI', status: 'review', riskLevel: 'high', module: 'AI 助手', roles: ['质量经理', '平台管理员'], fields: ['prompt', 'summary', 'suggested_actions', 'confidence'], actions: ['生成草稿', '等待人工确认'], description: 'AI 只负责解释风险和生成草稿，高风险动作不能自动执行。' },
-  { id: 'role', name: '角色工作台', type: 'RolePolicy', domain: '权限', status: 'published', riskLevel: 'low', module: '用户与权限', roles: ['平台管理员'], fields: ['role', 'data_scope', 'allowed_actions', 'audit_required'], actions: ['控制可见性', '限制高危动作'], description: '决定不同角色能看到哪些节点、关系和动作按钮。' },
-  { id: 'audit', name: '审计链路', type: 'AuditTrail', domain: '审计', status: 'published', riskLevel: 'low', module: '审计与日志', roles: ['平台管理员', '审计员'], fields: ['actor', 'action', 'target', 'timestamp', 'before_after'], actions: ['记录配置', '记录确认', '追溯执行'], description: '记录配置变更、AI 建议、人工确认和工作流执行结果。' },
-];
+const CLOSED_LOOP_TEXT = {
+  all: '\u5168\u90e8',
+  dataRelationView: '\u6570\u636e\u5173\u7cfb\u89c6\u56fe',
+  hierarchyView: '\u5c42\u7ea7\u89c6\u56fe',
+  permissionView: '\u6743\u9650\u89c6\u56fe',
+  actionFlowView: '\u52a8\u4f5c\u6d41\u89c6\u56fe',
+  loadFailed: '\u95ed\u73af\u914d\u7f6e\u6570\u636e\u52a0\u8f7d\u5931\u8d25',
+  centerTitle: '\u95ed\u73af\u914d\u7f6e\u4e2d\u5fc3',
+  centerDescription: '\u524d\u7aef\u4ec5\u6e32\u67d3\u540e\u7aef\u4ece\u6570\u636e\u5e93\u6574\u7406\u51fa\u7684\u5bf9\u8c61\u3001\u5173\u7cfb\u548c\u6cbb\u7406\u7b56\u7565\u3002',
+  refresh: '\u5237\u65b0',
+  fitCanvas: '\u9002\u914d\u753b\u5e03',
+  businessObjects: '\u4e1a\u52a1\u5bf9\u8c61',
+  frontendRelations: '\u524d\u7aef\u5173\u7cfb',
+  actionEntries: '\u52a8\u4f5c\u5165\u53e3',
+  roleCoverage: '\u89d2\u8272\u8986\u76d6',
+  highRiskItems: '\u9ad8\u98ce\u9669\u9879',
+  policies: '\u6cbb\u7406\u7b56\u7565',
+  dbObjects: '\u6570\u636e\u5e93\u5bf9\u8c61',
+  noObjects: '\u6570\u636e\u5e93\u6682\u65e0\u95ed\u73af\u5bf9\u8c61',
+  readingDb: '\u6b63\u5728\u8bfb\u53d6\u6570\u636e\u5e93...',
+  noFilteredData: '\u5f53\u524d\u7b5b\u9009\u6761\u4ef6\u4e0b\u6682\u65e0\u6570\u636e',
+  relationDetail: '\u5173\u7cfb\u8be6\u60c5',
+  objectDetail: '\u5bf9\u8c61\u8be6\u60c5',
+  chooseOne: '\u8bf7\u9009\u62e9\u4e00\u4e2a\u5bf9\u8c61\u6216\u5173\u7cfb',
+  governanceView: '\u6cbb\u7406\u89c6\u56fe',
+  relations: '\u5173\u7cfb',
+  frontendVisible: '\u524d\u7aef\u53ef\u89c1',
+  domain: '\u4e1a\u52a1\u57df',
+  module: '\u627f\u8f7d\u6a21\u5757',
+  visibleRoles: '\u53ef\u89c1\u89d2\u8272',
+  keyFields: '\u5173\u952e\u5b57\u6bb5',
+  noFields: '\u65e0\u5b57\u6bb5',
+  actions: '\u5173\u8054\u52a8\u4f5c',
+  noActions: '\u65e0\u52a8\u4f5c',
+  sourceObject: '\u6e90\u5bf9\u8c61',
+  targetObject: '\u76ee\u6807\u5bf9\u8c61',
+  condition: '\u89e6\u53d1\u6761\u4ef6',
+  evidence: '\u8bc1\u636e',
+  yes: '\u662f',
+  backendOnly: '\u4ec5\u540e\u7aef\u6cbb\u7406',
+  noRelations: '\u6570\u636e\u5e93\u6682\u65e0\u5173\u7cfb\u6570\u636e',
+  relation: '\u5173\u7cfb',
+  type: '\u7c7b\u578b',
+  risk: '\u98ce\u9669',
+  publish: '\u53d1\u5e03',
+  frontendGraph: '\u524d\u7aef\u56fe\u8c31',
+  visible: '\u53ef\u89c1',
+  backstage: '\u540e\u53f0',
+  noPolicies: '\u6570\u636e\u5e93\u6682\u65e0\u6cbb\u7406\u7b56\u7565',
+  policy: '\u7b56\u7565',
+  scope: '\u8303\u56f4',
+  guard: '\u7ea6\u675f',
+  coverage: '\u8986\u76d6\u7387',
+};
 
-const closedLoopEdges: ClosedLoopEdge[] = [
-  { id: 'edge-defect-event', source: 'defect', target: 'quality-event', type: 'TRIGGERS', label: '规则触发', condition: '缺陷率 > 2.0% 且严重度 >= Major', status: 'published', riskLevel: 'critical', evidence: '质量检验规则 / defect_rate_threshold', frontendVisible: true },
-  { id: 'edge-event-batch', source: 'quality-event', target: 'batch', type: 'AFFECTS', label: '影响批次', condition: 'event.material_batch_id = batch.batch_no', status: 'published', riskLevel: 'high', evidence: '知识库图谱 / 物料批次关系', frontendVisible: true },
-  { id: 'edge-batch-supplier', source: 'batch', target: 'supplier', type: 'SUPPLIED_BY', label: '供应来源', condition: 'batch.supplier_id = supplier.id', status: 'published', riskLevel: 'medium', evidence: '数据资产中心 / supplier master', frontendVisible: true },
-  { id: 'edge-event-workorder', source: 'quality-event', target: 'workorder', type: 'IMPACTS', label: '影响工单', condition: '批次已投产或占用生产计划', status: 'published', riskLevel: 'medium', evidence: 'Graph impact-analysis', frontendVisible: true },
-  { id: 'edge-event-ai', source: 'quality-event', target: 'ai-action', type: 'SUGGESTS', label: 'AI 草稿', condition: '人工点击 AI 影响分析', status: 'review', riskLevel: 'high', evidence: 'AI Assistant tool call', frontendVisible: false },
-  { id: 'edge-ai-capa', source: 'ai-action', target: 'capa', type: 'DRAFTS', label: '生成 CAPA 草稿', condition: '质量经理确认 AI 建议后', status: 'review', riskLevel: 'high', evidence: '人工确认记录', frontendVisible: false },
-  { id: 'edge-role-event', source: 'role', target: 'quality-event', type: 'CAN_VIEW', label: '角色可见', condition: 'role in [quality_manager, production_manager]', status: 'published', riskLevel: 'low', evidence: '用户与权限配置', frontendVisible: false },
-  { id: 'edge-capa-audit', source: 'capa', target: 'audit', type: 'AUDITED_BY', label: '审计留痕', condition: 'CAPA 创建、审批、关闭全量记录', status: 'published', riskLevel: 'low', evidence: '审计与日志', frontendVisible: false },
-  { id: 'edge-ai-audit', source: 'ai-action', target: 'audit', type: 'AUDITED_BY', label: 'AI 留痕', condition: 'AI 建议和工具调用必须记录', status: 'published', riskLevel: 'medium', evidence: 'AI 工具调用日志', frontendVisible: false },
-];
-
-const domainOptions = ['全部', '质量', '供应链', '生产', '工作流', 'AI', '权限', '审计'];
-const roleOptions = ['全部', '质量经理', '质量工程师', '生产主管', '采购', '平台管理员', '审计员'];
-const riskOptions = ['全部', 'low', 'medium', 'high', 'critical'];
-const statusOptions = ['全部', 'published', 'review', 'draft'];
+const ALL_OPTION = CLOSED_LOOP_TEXT.all;
+const riskOptions = [ALL_OPTION, 'low', 'medium', 'high', 'critical'];
+const statusOptions = [ALL_OPTION, 'published', 'review', 'draft'];
 
 const closedLoopTypeColors: Record<string, string> = {
-  QualityEvent: '#c83f49',
-  Defect: '#d46b08',
-  MaterialBatch: '#1677ff',
-  Supplier: '#2f7d5b',
-  WorkOrder: '#5b4ca3',
-  CAPA: '#a43d3d',
-  AIAction: '#2f5f73',
+  Form: '#1677ff',
+  Application: '#2f5f73',
   RolePolicy: '#7353ba',
-  AuditTrail: '#5d6972',
+  KnowledgeObject: '#2f7d5b',
+  default: '#8c8c8c',
 };
 
 const riskColor: Record<string, string> = {
@@ -1156,28 +1296,71 @@ const riskColor: Record<string, string> = {
   critical: 'red',
 };
 
+type ClosedLoopPolicy = { key: string; policy: string; scope: string; guard: string; coverage: number };
+
+type ClosedLoopSelection = { kind: 'node'; data: ClosedLoopNode } | { kind: 'edge'; data: ClosedLoopEdge } | null;
+
+function uniqueOptions(values: Array<string | undefined>) {
+  return [ALL_OPTION, ...Array.from(new Set(values.filter((value): value is string => Boolean(value))))];
+}
+
 function ClosedLoopConfigCenter() {
-  const [selectedDomain, setSelectedDomain] = useState('全部');
-  const [selectedRole, setSelectedRole] = useState('全部');
-  const [selectedRisk, setSelectedRisk] = useState('全部');
-  const [selectedStatus, setSelectedStatus] = useState('全部');
-  const [layoutMode, setLayoutMode] = useState('业务闭环视图');
-  const [selected, setSelected] = useState<{ kind: 'node'; data: ClosedLoopNode } | { kind: 'edge'; data: ClosedLoopEdge }>({ kind: 'node', data: closedLoopNodes[0] });
+  const [nodes, setNodes] = useState<ClosedLoopNode[]>([]);
+  const [edges, setEdges] = useState<ClosedLoopEdge[]>([]);
+  const [policies, setPolicies] = useState<ClosedLoopPolicy[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedDomain, setSelectedDomain] = useState(ALL_OPTION);
+  const [selectedRole, setSelectedRole] = useState(ALL_OPTION);
+  const [selectedRisk, setSelectedRisk] = useState(ALL_OPTION);
+  const [selectedStatus, setSelectedStatus] = useState(ALL_OPTION);
+  const [layoutMode, setLayoutMode] = useState(CLOSED_LOOP_TEXT.dataRelationView);
+  const [selected, setSelected] = useState<ClosedLoopSelection>(null);
   const cyContainerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
 
-  const filteredNodes = useMemo(() => {
-    return closedLoopNodes.filter((node) => {
-      const domainMatched = selectedDomain === '全部' || node.domain === selectedDomain;
-      const roleMatched = selectedRole === '全部' || node.roles.includes(selectedRole);
-      const riskMatched = selectedRisk === '全部' || node.riskLevel === selectedRisk;
-      const statusMatched = selectedStatus === '全部' || node.status === selectedStatus;
-      return domainMatched && roleMatched && riskMatched && statusMatched;
-    });
-  }, [selectedDomain, selectedRisk, selectedRole, selectedStatus]);
+  const loadClosedLoopConfig = async () => {
+    setLoading(true);
+    try {
+      const response = await getClosedLoopConfig();
+      const payload = response.data?.data ?? {};
+      const nextNodes = Array.isArray(payload.nodes) ? payload.nodes as ClosedLoopNode[] : [];
+      const nextEdges = Array.isArray(payload.edges) ? payload.edges as ClosedLoopEdge[] : [];
+      const nextPolicies = Array.isArray(payload.policies) ? payload.policies as ClosedLoopPolicy[] : [];
+      setNodes(nextNodes);
+      setEdges(nextEdges);
+      setPolicies(nextPolicies);
+      setSelected((prev) => {
+        if (prev?.kind === 'node' && nextNodes.some((node) => node.id === prev.data.id)) return prev;
+        if (prev?.kind === 'edge' && nextEdges.some((edge) => edge.id === prev.data.id)) return prev;
+        return nextNodes[0] ? { kind: 'node', data: nextNodes[0] } : null;
+      });
+    } catch (error: any) {
+      setNodes([]);
+      setEdges([]);
+      setPolicies([]);
+      setSelected(null);
+      message.warning(error?.response?.data?.detail ?? CLOSED_LOOP_TEXT.loadFailed);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadClosedLoopConfig();
+  }, []);
+
+  const domainOptions = useMemo(() => uniqueOptions(nodes.map((node) => node.domain)), [nodes]);
+  const roleOptions = useMemo(() => uniqueOptions(nodes.flatMap((node) => node.roles || [])), [nodes]);
+  const filteredNodes = useMemo(() => nodes.filter((node) => {
+    const domainMatched = selectedDomain === ALL_OPTION || node.domain === selectedDomain;
+    const roleMatched = selectedRole === ALL_OPTION || (node.roles || []).includes(selectedRole);
+    const riskMatched = selectedRisk === ALL_OPTION || node.riskLevel === selectedRisk;
+    const statusMatched = selectedStatus === ALL_OPTION || node.status === selectedStatus;
+    return domainMatched && roleMatched && riskMatched && statusMatched;
+  }), [nodes, selectedDomain, selectedRisk, selectedRole, selectedStatus]);
 
   const filteredNodeIds = useMemo(() => new Set(filteredNodes.map((node) => node.id)), [filteredNodes]);
-  const filteredEdges = useMemo(() => closedLoopEdges.filter((edge) => filteredNodeIds.has(edge.source) && filteredNodeIds.has(edge.target)), [filteredNodeIds]);
+  const filteredEdges = useMemo(() => edges.filter((edge) => filteredNodeIds.has(edge.source) && filteredNodeIds.has(edge.target)), [edges, filteredNodeIds]);
 
   useEffect(() => {
     if (!cyContainerRef.current) return;
@@ -1189,7 +1372,7 @@ function ClosedLoopConfigCenter() {
           id: node.id,
           label: node.name,
           shortLabel: node.type,
-          color: closedLoopTypeColors[node.type] || '#8c8c8c',
+          color: closedLoopTypeColors[node.type] || closedLoopTypeColors.default,
           riskLevel: node.riskLevel,
         },
       })),
@@ -1217,58 +1400,10 @@ function ClosedLoopConfigCenter() {
       container: cyContainerRef.current,
       elements,
       style: [
-        {
-          selector: 'node',
-          style: {
-            'background-color': 'data(color)',
-            label: 'data(label)',
-            color: '#172026',
-            'font-size': 11,
-            'font-weight': 700,
-            'text-valign': 'bottom',
-            'text-halign': 'center',
-            'text-margin-y': 8,
-            'text-wrap': 'wrap',
-            'text-max-width': '112px',
-            width: 58,
-            height: 58,
-            'border-width': 4,
-            'border-color': '#fff',
-            'overlay-opacity': 0,
-          },
-        },
-        {
-          selector: 'node:selected',
-          style: {
-            'border-color': '#172026',
-            'border-width': 5,
-          },
-        },
-        {
-          selector: 'edge',
-          style: {
-            width: 2,
-            'line-color': '#b9c5ce',
-            'target-arrow-color': '#b9c5ce',
-            'target-arrow-shape': 'triangle',
-            'curve-style': 'bezier',
-            label: 'data(label)',
-            'font-size': 10,
-            color: '#52616b',
-            'text-background-color': '#fff',
-            'text-background-opacity': 0.9,
-            'text-background-padding': '3px',
-            'text-rotation': 'autorotate',
-          },
-        },
-        {
-          selector: 'edge:selected',
-          style: {
-            width: 4,
-            'line-color': '#2f5f73',
-            'target-arrow-color': '#2f5f73',
-          },
-        },
+        { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: '#172026', 'font-size': 11, 'font-weight': 700, 'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': 8, 'text-wrap': 'wrap', 'text-max-width': '112px', width: 58, height: 58, 'border-width': 4, 'border-color': '#fff', 'overlay-opacity': 0 } },
+        { selector: 'node:selected', style: { 'border-color': '#172026', 'border-width': 5 } },
+        { selector: 'edge', style: { width: 2, 'line-color': '#b9c5ce', 'target-arrow-color': '#b9c5ce', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', label: 'data(label)', 'font-size': 10, color: '#52616b', 'text-background-color': '#fff', 'text-background-opacity': 0.9, 'text-background-padding': '3px', 'text-rotation': 'autorotate' } },
+        { selector: 'edge:selected', style: { width: 4, 'line-color': '#2f5f73', 'target-arrow-color': '#2f5f73' } },
       ] as any,
       layout: getClosedLoopLayout(layoutMode),
       minZoom: 0.35,
@@ -1277,12 +1412,12 @@ function ClosedLoopConfigCenter() {
     });
 
     cy.on('tap', 'node', (event) => {
-      const node = closedLoopNodes.find((item) => item.id === event.target.id());
+      const node = nodes.find((item) => item.id === event.target.id());
       if (node) setSelected({ kind: 'node', data: node });
     });
 
     cy.on('tap', 'edge', (event) => {
-      const edge = closedLoopEdges.find((item) => item.id === event.target.id());
+      const edge = edges.find((item) => item.id === event.target.id());
       if (edge) setSelected({ kind: 'edge', data: edge });
     });
 
@@ -1291,36 +1426,35 @@ function ClosedLoopConfigCenter() {
       cy.destroy();
       cyRef.current = null;
     };
-  }, [filteredEdges, filteredNodes, layoutMode]);
+  }, [edges, filteredEdges, filteredNodes, layoutMode, nodes]);
 
   const metrics = [
-    { label: '业务对象', value: closedLoopNodes.filter((node) => !['RolePolicy', 'AuditTrail'].includes(node.type)).length },
-    { label: '图谱关系', value: closedLoopEdges.filter((edge) => edge.frontendVisible).length },
-    { label: '业务动作', value: closedLoopNodes.reduce((sum, node) => sum + node.actions.length, 0) },
-    { label: '角色策略', value: new Set(closedLoopNodes.flatMap((node) => node.roles)).size },
-    { label: '风险策略', value: closedLoopEdges.filter((edge) => ['high', 'critical'].includes(edge.riskLevel)).length },
-    { label: '审计覆盖率', value: '100%' },
+    { label: CLOSED_LOOP_TEXT.businessObjects, value: nodes.filter((node) => !['RolePolicy'].includes(node.type)).length },
+    { label: CLOSED_LOOP_TEXT.frontendRelations, value: edges.filter((edge) => edge.frontendVisible).length },
+    { label: CLOSED_LOOP_TEXT.actionEntries, value: nodes.reduce((sum, node) => sum + (node.actions || []).length, 0) },
+    { label: CLOSED_LOOP_TEXT.roleCoverage, value: new Set(nodes.flatMap((node) => node.roles || [])).size },
+    { label: CLOSED_LOOP_TEXT.highRiskItems, value: edges.filter((edge) => ['high', 'critical'].includes(edge.riskLevel)).length },
+    { label: CLOSED_LOOP_TEXT.policies, value: policies.length },
   ];
 
   return (
     <div className="closed-loop-config-center">
       <section className="closed-loop-hero">
         <div>
-          <Typography.Text className="closed-loop-kicker">ManuFoundry Operations Ontology</Typography.Text>
-          <Typography.Title level={4}>运营闭环配置中心</Typography.Title>
-          <Typography.Text type="secondary">把业务对象、图谱关系、AI 草稿、人工确认、工作流动作和审计记录编排成可发布的运营闭环。</Typography.Text>
+          <Typography.Text className="closed-loop-kicker">Database-backed operations ontology</Typography.Text>
+          <Typography.Title level={4}>{CLOSED_LOOP_TEXT.centerTitle}</Typography.Title>
+          <Typography.Text type="secondary">{CLOSED_LOOP_TEXT.centerDescription}</Typography.Text>
         </div>
         <Space wrap>
-          <Tag color="processing">后台配置</Tag>
-          <Tag color="success">人工确认后执行</Tag>
-          <Button icon={<NodeIndexOutlined />} onClick={() => cyRef.current?.fit(undefined, 32)}>适配画布</Button>
+          <Button onClick={loadClosedLoopConfig} loading={loading}>{CLOSED_LOOP_TEXT.refresh}</Button>
+          <Button icon={<NodeIndexOutlined />} onClick={() => cyRef.current?.fit(undefined, 32)}>{CLOSED_LOOP_TEXT.fitCanvas}</Button>
         </Space>
       </section>
 
       <Row gutter={[12, 12]} className="closed-loop-metrics">
         {metrics.map((metric) => (
           <Col xs={12} md={8} xl={4} key={metric.label}>
-            <Card size="small">
+            <Card size="small" loading={loading}>
               <Typography.Text type="secondary">{metric.label}</Typography.Text>
               <Typography.Title level={3}>{metric.value}</Typography.Title>
             </Card>
@@ -1330,20 +1464,13 @@ function ClosedLoopConfigCenter() {
 
       <div className="closed-loop-workbench">
         <aside className="closed-loop-left">
-          <Typography.Text strong>配置域</Typography.Text>
-          {[
-            ['业务对象', '本体对象、字段和主数据绑定'],
-            ['对象关系', '图谱边、影响路径和证据'],
-            ['业务动作', '冻结、复检、CAPA、通知'],
-            ['角色工作台', '角色入口和数据范围'],
-            ['AI 权限', '草稿、工具和高危动作策略'],
-            ['审计闭环', '配置、确认、执行留痕'],
-          ].map(([title, desc]) => (
-            <button className="closed-loop-domain-item" key={title} type="button">
-              <span>{title}</span>
-              <small>{desc}</small>
+          <Typography.Text strong>{CLOSED_LOOP_TEXT.dbObjects}</Typography.Text>
+          {nodes.length ? nodes.map((node) => (
+            <button className="closed-loop-domain-item" key={node.id} type="button" onClick={() => setSelected({ kind: 'node', data: node })}>
+              <span>{node.name}</span>
+              <small>{node.type} / {node.module}</small>
             </button>
-          ))}
+          )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={CLOSED_LOOP_TEXT.noObjects} />}
         </aside>
 
         <main className="closed-loop-canvas-panel">
@@ -1354,32 +1481,30 @@ function ClosedLoopConfigCenter() {
               <Select value={selectedRisk} options={riskOptions.map((value) => ({ value, label: value }))} onChange={setSelectedRisk} style={{ width: 130 }} />
               <Select value={selectedStatus} options={statusOptions.map((value) => ({ value, label: value }))} onChange={setSelectedStatus} style={{ width: 140 }} />
             </Space>
-            <Segmented
-              value={layoutMode}
-              onChange={(value) => setLayoutMode(String(value))}
-              options={['业务闭环视图', '数据关系视图', '权限视图', '动作流视图']}
-            />
+            <Segmented value={layoutMode} onChange={(value) => setLayoutMode(String(value))} options={[CLOSED_LOOP_TEXT.dataRelationView, CLOSED_LOOP_TEXT.hierarchyView, CLOSED_LOOP_TEXT.permissionView, CLOSED_LOOP_TEXT.actionFlowView]} />
           </div>
           <div className="closed-loop-canvas" ref={cyContainerRef}>
-            {!filteredNodes.length && <Empty description="没有符合筛选条件的闭环对象" />}
+            {!filteredNodes.length && <Empty description={loading ? CLOSED_LOOP_TEXT.readingDb : CLOSED_LOOP_TEXT.noFilteredData} />}
           </div>
         </main>
 
         <aside className="closed-loop-right">
-          <Typography.Text strong>{selected.kind === 'node' ? '对象详情' : '关系详情'}</Typography.Text>
+          <Typography.Text strong>{selected?.kind === 'edge' ? CLOSED_LOOP_TEXT.relationDetail : CLOSED_LOOP_TEXT.objectDetail}</Typography.Text>
           <Divider />
-          {selected.kind === 'node' ? <ClosedLoopNodeDetail node={selected.data} /> : <ClosedLoopEdgeDetail edge={selected.data} />}
+          {selected?.kind === 'node'
+            ? <ClosedLoopNodeDetail node={selected.data} />
+            : selected?.kind === 'edge'
+              ? <ClosedLoopEdgeDetail edge={selected.data} nodes={nodes} />
+              : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={CLOSED_LOOP_TEXT.chooseOne} />}
         </aside>
       </div>
 
-      <Card className="closed-loop-governance" title="治理链路">
+      <Card className="closed-loop-governance" title={CLOSED_LOOP_TEXT.governanceView} loading={loading}>
         <Tabs
           items={[
-            { key: 'rules', label: '规则触发', children: <ClosedLoopEdgeTable data={closedLoopEdges.filter((edge) => edge.type === 'TRIGGERS' || edge.type === 'AFFECTS' || edge.type === 'IMPACTS')} /> },
-            { key: 'actions', label: '动作编排', children: <ClosedLoopEdgeTable data={closedLoopEdges.filter((edge) => ['SUGGESTS', 'DRAFTS'].includes(edge.type))} /> },
-            { key: 'roles', label: '角色可见性', children: <ClosedLoopEdgeTable data={closedLoopEdges.filter((edge) => edge.type === 'CAN_VIEW')} /> },
-            { key: 'ai', label: 'AI 安全策略', children: <ClosedLoopPolicyTable /> },
-            { key: 'audit', label: '审计记录', children: <ClosedLoopEdgeTable data={closedLoopEdges.filter((edge) => edge.type === 'AUDITED_BY')} /> },
+            { key: 'relations', label: CLOSED_LOOP_TEXT.relations, children: <ClosedLoopEdgeTable data={edges} /> },
+            { key: 'frontend', label: CLOSED_LOOP_TEXT.frontendVisible, children: <ClosedLoopEdgeTable data={edges.filter((edge) => edge.frontendVisible)} /> },
+            { key: 'policy', label: CLOSED_LOOP_TEXT.policies, children: <ClosedLoopPolicyTable policies={policies} /> },
           ]}
         />
       </Card>
@@ -1388,9 +1513,9 @@ function ClosedLoopConfigCenter() {
 }
 
 function getClosedLoopLayout(layoutMode: string): cytoscape.LayoutOptions {
-  if (layoutMode === '数据关系视图') return { name: 'dagre', rankDir: 'LR', spacingFactor: 1.15, fit: true, padding: 36 } as cytoscape.LayoutOptions;
-  if (layoutMode === '权限视图') return { name: 'concentric', fit: true, padding: 42, minNodeSpacing: 42 } as cytoscape.LayoutOptions;
-  if (layoutMode === '动作流视图') return { name: 'breadthfirst', directed: true, fit: true, padding: 42, spacingFactor: 1.1 } as cytoscape.LayoutOptions;
+  if (layoutMode === CLOSED_LOOP_TEXT.dataRelationView) return { name: 'dagre', rankDir: 'LR', spacingFactor: 1.15, fit: true, padding: 36 } as cytoscape.LayoutOptions;
+  if (layoutMode === CLOSED_LOOP_TEXT.permissionView) return { name: 'concentric', fit: true, padding: 42, minNodeSpacing: 42 } as cytoscape.LayoutOptions;
+  if (layoutMode === CLOSED_LOOP_TEXT.actionFlowView) return { name: 'breadthfirst', directed: true, fit: true, padding: 42, spacingFactor: 1.1 } as cytoscape.LayoutOptions;
   return { name: 'dagre', rankDir: 'TB', spacingFactor: 1.08, fit: true, padding: 36 } as cytoscape.LayoutOptions;
 }
 
@@ -1399,46 +1524,46 @@ function ClosedLoopNodeDetail({ node }: { node: ClosedLoopNode }) {
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
       <Space wrap>
         <Tag color="blue">{node.type}</Tag>
-        <Tag color={riskColor[node.riskLevel]}>{node.riskLevel}</Tag>
+        <Tag color={riskColor[node.riskLevel] || 'default'}>{node.riskLevel}</Tag>
         <Tag color={node.status === 'published' ? 'green' : 'gold'}>{node.status}</Tag>
       </Space>
       <Typography.Title level={5}>{node.name}</Typography.Title>
       <Typography.Paragraph type="secondary">{node.description}</Typography.Paragraph>
       <Descriptions size="small" column={1} bordered>
-        <Descriptions.Item label="业务域">{node.domain}</Descriptions.Item>
-        <Descriptions.Item label="承载模块">{node.module}</Descriptions.Item>
-        <Descriptions.Item label="可见角色">{node.roles.join(' / ')}</Descriptions.Item>
+        <Descriptions.Item label={CLOSED_LOOP_TEXT.domain}>{node.domain}</Descriptions.Item>
+        <Descriptions.Item label={CLOSED_LOOP_TEXT.module}>{node.module}</Descriptions.Item>
+        <Descriptions.Item label={CLOSED_LOOP_TEXT.visibleRoles}>{node.roles.join(' / ') || '-'}</Descriptions.Item>
       </Descriptions>
       <div>
-        <Typography.Text type="secondary">关键字段</Typography.Text>
-        <div className="closed-loop-tag-cloud">{node.fields.map((field) => <Tag key={field}>{field}</Tag>)}</div>
+        <Typography.Text type="secondary">{CLOSED_LOOP_TEXT.keyFields}</Typography.Text>
+        <div className="closed-loop-tag-cloud">{node.fields.length ? node.fields.map((field) => <Tag key={field}>{field}</Tag>) : <Tag>{CLOSED_LOOP_TEXT.noFields}</Tag>}</div>
       </div>
       <div>
-        <Typography.Text type="secondary">关联动作</Typography.Text>
-        <div className="closed-loop-tag-cloud">{node.actions.map((action) => <Tag color="processing" key={action}>{action}</Tag>)}</div>
+        <Typography.Text type="secondary">{CLOSED_LOOP_TEXT.actions}</Typography.Text>
+        <div className="closed-loop-tag-cloud">{node.actions.length ? node.actions.map((action) => <Tag color="processing" key={action}>{action}</Tag>) : <Tag>{CLOSED_LOOP_TEXT.noActions}</Tag>}</div>
       </div>
     </Space>
   );
 }
 
-function ClosedLoopEdgeDetail({ edge }: { edge: ClosedLoopEdge }) {
-  const source = closedLoopNodes.find((node) => node.id === edge.source);
-  const target = closedLoopNodes.find((node) => node.id === edge.target);
+function ClosedLoopEdgeDetail({ edge, nodes }: { edge: ClosedLoopEdge; nodes: ClosedLoopNode[] }) {
+  const source = nodes.find((node) => node.id === edge.source);
+  const target = nodes.find((node) => node.id === edge.target);
 
   return (
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
       <Space wrap>
         <Tag color="purple">{edge.type}</Tag>
-        <Tag color={riskColor[edge.riskLevel]}>{edge.riskLevel}</Tag>
+        <Tag color={riskColor[edge.riskLevel] || 'default'}>{edge.riskLevel}</Tag>
         <Tag color={edge.status === 'published' ? 'green' : 'gold'}>{edge.status}</Tag>
       </Space>
       <Typography.Title level={5}>{edge.label}</Typography.Title>
       <Descriptions size="small" column={1} bordered>
-        <Descriptions.Item label="起点">{source?.name ?? edge.source}</Descriptions.Item>
-        <Descriptions.Item label="终点">{target?.name ?? edge.target}</Descriptions.Item>
-        <Descriptions.Item label="触发条件">{edge.condition}</Descriptions.Item>
-        <Descriptions.Item label="来源证据">{edge.evidence}</Descriptions.Item>
-        <Descriptions.Item label="前台可见">{edge.frontendVisible ? '是' : '否，仅后台治理'}</Descriptions.Item>
+        <Descriptions.Item label={CLOSED_LOOP_TEXT.sourceObject}>{source?.name ?? edge.source}</Descriptions.Item>
+        <Descriptions.Item label={CLOSED_LOOP_TEXT.targetObject}>{target?.name ?? edge.target}</Descriptions.Item>
+        <Descriptions.Item label={CLOSED_LOOP_TEXT.condition}>{edge.condition}</Descriptions.Item>
+        <Descriptions.Item label={CLOSED_LOOP_TEXT.evidence}>{edge.evidence}</Descriptions.Item>
+        <Descriptions.Item label={CLOSED_LOOP_TEXT.frontendVisible}>{edge.frontendVisible ? CLOSED_LOOP_TEXT.yes : CLOSED_LOOP_TEXT.backendOnly}</Descriptions.Item>
       </Descriptions>
     </Space>
   );
@@ -1451,42 +1576,36 @@ function ClosedLoopEdgeTable({ data }: { data: ClosedLoopEdge[] }) {
       rowKey="id"
       dataSource={data}
       pagination={false}
+      locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={CLOSED_LOOP_TEXT.noRelations} /> }}
       columns={[
-        { title: '关系', dataIndex: 'label', width: 130 },
-        { title: '类型', dataIndex: 'type', width: 130, render: (value) => <Tag color="purple">{value}</Tag> },
-        { title: '触发条件', dataIndex: 'condition', ellipsis: true },
-        { title: '风险', dataIndex: 'riskLevel', width: 100, render: (value) => <Tag color={riskColor[value]}>{value}</Tag> },
-        { title: '发布', dataIndex: 'status', width: 100, render: (value) => <Tag color={value === 'published' ? 'green' : 'gold'}>{value}</Tag> },
-        { title: '前台图谱', dataIndex: 'frontendVisible', width: 110, render: (value) => <Tag color={value ? 'success' : 'default'}>{value ? '可见' : '后台'}</Tag> },
+        { title: CLOSED_LOOP_TEXT.relation, dataIndex: 'label', width: 130 },
+        { title: CLOSED_LOOP_TEXT.type, dataIndex: 'type', width: 130, render: (value) => <Tag color="purple">{value}</Tag> },
+        { title: CLOSED_LOOP_TEXT.condition, dataIndex: 'condition', ellipsis: true },
+        { title: CLOSED_LOOP_TEXT.risk, dataIndex: 'riskLevel', width: 100, render: (value) => <Tag color={riskColor[value] || 'default'}>{value}</Tag> },
+        { title: CLOSED_LOOP_TEXT.publish, dataIndex: 'status', width: 100, render: (value) => <Tag color={value === 'published' ? 'green' : 'gold'}>{value}</Tag> },
+        { title: CLOSED_LOOP_TEXT.frontendGraph, dataIndex: 'frontendVisible', width: 110, render: (value) => <Tag color={value ? 'success' : 'default'}>{value ? CLOSED_LOOP_TEXT.visible : CLOSED_LOOP_TEXT.backstage}</Tag> },
       ]}
     />
   );
 }
 
-function ClosedLoopPolicyTable() {
-  const policies = [
-    { key: 'ai-draft', policy: 'AI 只生成处置草稿', scope: 'AI 建议、CAPA 草稿、风险解释', guard: '不可直接执行冻结、放行、删除等动作', coverage: 100 },
-    { key: 'confirm', policy: '高风险动作人工确认', scope: '冻结批次、生成 CAPA、供应商整改', guard: '质量经理确认后进入工作流', coverage: 100 },
-    { key: 'audit', policy: '工具调用审计', scope: 'AI 工具调用、配置变更、动作审批', guard: '记录 actor/action/target/before_after', coverage: 100 },
-    { key: 'visibility', policy: '角色数据边界', scope: '前台图谱、动作按钮、配置入口', guard: '按角色和数据范围过滤', coverage: 92 },
-  ];
-
+function ClosedLoopPolicyTable({ policies }: { policies: ClosedLoopPolicy[] }) {
   return (
     <Table
       size="small"
       rowKey="key"
       dataSource={policies}
       pagination={false}
+      locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={CLOSED_LOOP_TEXT.noPolicies} /> }}
       columns={[
-        { title: '策略', dataIndex: 'policy', width: 170 },
-        { title: '覆盖范围', dataIndex: 'scope', ellipsis: true },
-        { title: '保护机制', dataIndex: 'guard', ellipsis: true },
-        { title: '覆盖率', dataIndex: 'coverage', width: 150, render: (value) => <Progress size="small" percent={value} /> },
+        { title: CLOSED_LOOP_TEXT.policy, dataIndex: 'policy', width: 170 },
+        { title: CLOSED_LOOP_TEXT.scope, dataIndex: 'scope', ellipsis: true },
+        { title: CLOSED_LOOP_TEXT.guard, dataIndex: 'guard', ellipsis: true },
+        { title: CLOSED_LOOP_TEXT.coverage, dataIndex: 'coverage', width: 150, render: (value) => <Progress size="small" percent={value} /> },
       ]}
     />
   );
 }
-
 function AuditPanel() {
   const [logs, setLogs] = useState<AuditLogRecord[]>([]);
   const [usersById, setUsersById] = useState<Record<number, string>>({});

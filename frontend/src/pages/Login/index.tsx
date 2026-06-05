@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Divider, Form, Input, Modal, Select, Space, Typography, message } from 'antd';
+import { Alert, Button, Card, Divider, Form, Input, Modal, Select, Typography, message } from 'antd';
 import {
   ApiOutlined,
   BulbOutlined,
@@ -19,8 +19,15 @@ import { useAuthStore } from '@/stores/authStore';
 
 const demoAccounts = [
   { name: 'admin', label: '平台管理员', role: '全局配置', pass: 'admin123' },
-  { name: 'zhangsan', label: '生产经理', role: '生产态势', pass: '123456' },
-  { name: 'lisi', label: '质量工程师', role: '质量分析', pass: '123456' },
+  { name: 'pm_li', label: '李明', role: '生产经理 / 审批负责人', pass: '123456' },
+  { name: 'qe_wang', label: '王敏', role: '质量工程师', pass: '123456' },
+  { name: 'mm_zhou', label: '周强', role: '设备维护经理', pass: '123456' },
+  { name: 'me_sun', label: '孙浩', role: '维修工程师', pass: '123456' },
+  { name: 'pe_huang', label: '黄婷', role: '工艺工程师', pass: '123456' },
+  { name: 'scm_liu', label: '刘洋', role: '供应链经理', pass: '123456' },
+  { name: 'wh_feng', label: '冯宇', role: '仓储操作员', pass: '123456' },
+  { name: 'ds_he', label: '何静', role: '数据专员', pass: '123456' },
+  { name: 'auditor_gu', label: '顾安', role: '审计观察员', pass: '123456' },
 ];
 
 const commandSlides = [
@@ -77,6 +84,7 @@ export default function LoginPage() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [mfaOpen, setMfaOpen] = useState(false);
   const [mfaPending, setMfaPending] = useState<{ username: string; password: string } | null>(null);
+  const [loginForm] = Form.useForm();
   const [mfaForm] = Form.useForm();
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
@@ -192,6 +200,12 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemoLogin = (account: (typeof demoAccounts)[number]) => {
+    const values = { username: account.name, password: account.pass };
+    loginForm.setFieldsValue({ environment: 'demo', ...values });
+    void handleLogin(values);
   };
 
   const submitMfa = async () => {
@@ -319,6 +333,7 @@ export default function LoginPage() {
         </div>
 
         <Form
+          form={loginForm}
           layout="vertical"
           onFinish={handleLogin}
           initialValues={{ environment: 'demo', username: 'admin', password: 'admin123' }}
@@ -363,11 +378,12 @@ export default function LoginPage() {
                 type="text"
                 className="demo-account-button"
                 icon={<CheckCircleOutlined />}
-                onClick={() => handleLogin({ username: account.name, password: account.pass })}
+                onClick={() => handleDemoLogin(account)}
               >
                 <span>
                   <strong>{account.label}</strong>
                   <small>{account.role}</small>
+                  <small>{account.name} / {account.pass}</small>
                 </span>
               </Button>
             ))}

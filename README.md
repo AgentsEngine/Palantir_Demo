@@ -1,6 +1,6 @@
 # ManuFoundry / Palantir Demo
 
-Current version: 0.3.5
+Current version: 0.3.6
 
 ManuFoundry is a manufacturing low-code data workspace prototype. It combines configurable applications, forms, menus, identity access, knowledge assets, graph exploration, quality impact analysis, and an evolving AI Agent layer for assisted business configuration.
 
@@ -18,16 +18,16 @@ This repository is still in active development and is intended for demo and prod
 - AI assistant APIs, provider abstraction, prompt/tool scaffolding, knowledge context, and low-code action guidance.
 - AI Agent work in progress, inspired by OpenClaw and Harness Agent style architecture: model invocation boundaries, task planning drafts, tool calls, knowledge context, action review, and safety policies.
 
-## 0.3.5 Focus
+## 0.3.6 Focus
 
-- AI Agent action drafts, action state, structured payloads, and dynamic record draft persistence.
-- Improved low-code Agent skills, tool registration, intent routing, and policy checks.
-- Form settings upgrades for fields, views, menu nodes, and publishing workflows.
-- Reference data management entry in system administration.
-- Release popup now shows after refresh and supports long update lists with scrolling.
-- Private deployment, rollback, health check, smoke test, and CI workflow improvements.
+- AI workspace conversations now support history, archive, restore, delete, and inline rename flows.
+- Dynamic forms now expose permission design and runtime field permissions for lists, details, filters, sorting, and published views.
+- Knowledge Center can run ontology intake and extraction from already-indexed documents, with governed approval before graph publishing.
+- System administration improves organization auditing, organization code validation, user CSV import, and role or organization binding.
+- Application access and authentication boundaries are tighter: invalid tokens no longer become anonymous users, and hidden apps are blocked by backend APIs.
+- Production deployment notes cover checks, server updates, release metadata, and public health verification.
 
-See [docs/operations/release-0.3.5.md](docs/operations/release-0.3.5.md) for the detailed release notes.
+See [docs/operations/release-0.3.6.md](docs/operations/release-0.3.6.md) for the detailed release notes.
 
 ## Tech Stack
 

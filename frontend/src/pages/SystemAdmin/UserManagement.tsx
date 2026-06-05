@@ -1,6 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Table, Tag, Typography, Upload, message } from 'antd';
+import {
+  Button,
+  Descriptions,
+  Empty,
+  Form,
+  Input,
+  Modal,
+  Pagination,
+  Popconfirm,
+  Select,
+  Space,
+  Switch,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
+  Upload,
+  message,
+} from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   adminCreateUser,
@@ -51,6 +69,9 @@ export default function UserManagement() {
   const [importing, setImporting] = useState(false);
   const [importFiles, setImportFiles] = useState<UploadFile[]>([]);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [userPage, setUserPage] = useState(1);
+  const [userPageSize, setUserPageSize] = useState(100);
   const [form] = Form.useForm();
   const [securityForm] = Form.useForm();
 
@@ -74,6 +95,16 @@ export default function UserManagement() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (!users.length) {
+      setSelectedUserId(null);
+      return;
+    }
+    if (!selectedUserId || !users.some((user) => user.id === selectedUserId)) {
+      setSelectedUserId(users[0].id);
+    }
+  }, [users, selectedUserId]);
 
   const openCreate = () => {
     setEditingUser(null);
@@ -157,6 +188,12 @@ export default function UserManagement() {
     setSessionsOpen(true);
   };
 
+  const deleteUser = async (record: UserItem) => {
+    await adminDeleteUser(record.id);
+    message.success('用户已删除');
+    fetchData();
+  };
+
   const importUsers = async () => {
     const file = importFiles[0]?.originFileObj;
     if (!file) {
@@ -210,9 +247,19 @@ export default function UserManagement() {
     }
   };
 
+  const selectedUser = useMemo(
+    () => users.find((user) => user.id === selectedUserId) || null,
+    [users, selectedUserId],
+  );
+
+  const pagedUsers = useMemo(() => {
+    const start = (userPage - 1) * userPageSize;
+    return users.slice(start, start + userPageSize);
+  }, [users, userPage, userPageSize]);
+
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+    <div className="user-management-console">
+      <div className="user-management-toolbar">
         <div>
           <Typography.Title level={5} style={{ margin: 0 }}>用户管理</Typography.Title>
           <Typography.Text type="secondary">账号、角色、组织、SSO 绑定、MFA 状态和会话治理。</Typography.Text>
@@ -224,66 +271,101 @@ export default function UserManagement() {
         </Space>
       </div>
 
-      <Table
-        dataSource={users}
-        rowKey="id"
-        loading={loading}
-        size="small"
-        columns={[
-          { title: '账号', dataIndex: 'username', width: 130 },
-          { title: '姓名', dataIndex: 'display_name', width: 160 },
-          { title: '邮箱', dataIndex: 'email', width: 220, ellipsis: true },
-          {
-            title: '角色',
-            dataIndex: 'roles',
-            width: 240,
-            render: (items: RoleItem[]) => items?.map((role) => <Tag key={role.id} color="blue">{role.label}</Tag>),
-          },
-          {
-            title: '组织',
-            dataIndex: 'org_units',
-            width: 220,
-            render: (items: UserItem['org_units']) => items?.length
-              ? items.map((org) => <Tag key={org.id} color={org.is_primary ? 'green' : 'default'}>{org.name}</Tag>)
-              : <Typography.Text type="secondary">未分配</Typography.Text>,
-          },
-          {
-            title: '安全状态',
-            width: 210,
-            render: (_value, record: UserItem) => (
-              <Space size={4} wrap>
-                {record.is_active ? <Tag color="green">启用</Tag> : <Tag>停用</Tag>}
-                {record.is_admin && <Tag color="red">管理员</Tag>}
-                {record.locked_until && <Tag color="red">锁定</Tag>}
-                {record.force_password_change && <Tag color="orange">强制改密</Tag>}
-                {record.mfa_enabled && <Tag color="blue">MFA</Tag>}
-                {record.sso_subject && <Tag color="purple">SSO</Tag>}
-              </Space>
-            ),
-          },
-          {
-            title: '最近登录',
-            width: 180,
-            render: (_value, record: UserItem) => record.last_login_at || '-',
-          },
-          {
-            title: '操作',
-            width: 210,
-            render: (_value, record: UserItem) => (
-              <Space size={4}>
-                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-                <Button size="small" onClick={() => openSecurity(record)}>安全</Button>
-                <Button size="small" onClick={() => openSessions(record)}>会话</Button>
-                {record.username !== 'admin' && (
-                  <Popconfirm title="确定删除该用户？" onConfirm={async () => { await adminDeleteUser(record.id); fetchData(); }}>
-                    <Button size="small" danger icon={<DeleteOutlined />} />
-                  </Popconfirm>
-                )}
-              </Space>
-            ),
-          },
-        ]}
-      />
+      <div className="user-management-workbench">
+        <div className="user-list-panel">
+          <Table
+            dataSource={pagedUsers}
+            rowKey="id"
+            loading={loading}
+            size="small"
+            className="user-management-table"
+            scroll={{ x: 1180, y: 'calc(100vh / var(--app-ui-scale) - 598px)' }}
+            pagination={false}
+            rowClassName={(record) => (record.id === selectedUserId ? 'user-row-selected' : '')}
+            onRow={(record) => ({
+              onClick: () => setSelectedUserId(record.id),
+            })}
+            columns={[
+              { title: '账号', dataIndex: 'username', width: 130 },
+              { title: '姓名', dataIndex: 'display_name', width: 150 },
+              { title: '邮箱', dataIndex: 'email', width: 210, ellipsis: true },
+              {
+                title: '角色',
+                dataIndex: 'roles',
+                width: 210,
+                render: (items: RoleItem[]) => items?.map((role) => <Tag key={role.id} color="blue">{role.label}</Tag>),
+              },
+              {
+                title: '组织',
+                dataIndex: 'org_units',
+                width: 200,
+                render: (items: UserItem['org_units']) => items?.length
+                  ? items.map((org) => <Tag key={org.id} color={org.is_primary ? 'green' : 'default'}>{org.name}</Tag>)
+                  : <Typography.Text type="secondary">未分配</Typography.Text>,
+              },
+              {
+                title: '安全状态',
+                width: 190,
+                render: (_value, record: UserItem) => (
+                  <Space size={4} wrap>
+                    {record.is_active ? <Tag color="green">启用</Tag> : <Tag>停用</Tag>}
+                    {record.is_admin && <Tag color="red">管理员</Tag>}
+                    {record.locked_until && <Tag color="red">锁定</Tag>}
+                    {record.force_password_change && <Tag color="orange">强制改密</Tag>}
+                    {record.mfa_enabled && <Tag color="blue">MFA</Tag>}
+                    {record.sso_subject && <Tag color="purple">SSO</Tag>}
+                  </Space>
+                ),
+              },
+              {
+                title: '最近登录',
+                width: 160,
+                render: (_value, record: UserItem) => record.last_login_at || '-',
+              },
+              {
+                title: '操作',
+                width: 190,
+                fixed: 'right',
+                render: (_value, record: UserItem) => (
+                  <Space size={4} onClick={(event) => event.stopPropagation()}>
+                    <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
+                    <Button size="small" onClick={() => openSecurity(record)}>安全</Button>
+                    <Button size="small" onClick={() => openSessions(record)}>会话</Button>
+                    {record.username !== 'admin' && (
+                      <Popconfirm title="确定删除该用户？" onConfirm={() => deleteUser(record)}>
+                        <Button size="small" danger icon={<DeleteOutlined />} />
+                      </Popconfirm>
+                    )}
+                  </Space>
+                ),
+              },
+            ]}
+          />
+          <div className="user-management-pagination">
+            <Pagination
+              current={userPage}
+              pageSize={userPageSize}
+              total={users.length}
+              showSizeChanger
+              pageSizeOptions={[20, 50, 100, 200]}
+              showTotal={(total) => `共 ${total} 个用户`}
+              onChange={(page, pageSize) => {
+                setUserPage(page);
+                setUserPageSize(pageSize);
+              }}
+            />
+          </div>
+        </div>
+
+        <UserPreviewPanel
+          user={selectedUser}
+          totalUsers={users.length}
+          onEdit={openEdit}
+          onSecurity={openSecurity}
+          onSessions={openSessions}
+          onDelete={deleteUser}
+        />
+      </div>
 
       <Modal title={editingUser ? '编辑用户' : '新建用户'} open={modalOpen} onOk={submitUser} onCancel={() => setModalOpen(false)} destroyOnClose>
         <Form form={form} layout="vertical">
@@ -382,6 +464,165 @@ export default function UserManagement() {
 
 function splitList(value?: string) {
   return (value || '').split(/[;；]/).map((item) => item.trim()).filter(Boolean);
+}
+
+function UserPreviewPanel({
+  user,
+  totalUsers,
+  onEdit,
+  onSecurity,
+  onSessions,
+  onDelete,
+}: {
+  user: UserItem | null;
+  totalUsers: number;
+  onEdit: (record: UserItem) => void;
+  onSecurity: (record: UserItem) => void;
+  onSessions: (record: UserItem) => void;
+  onDelete: (record: UserItem) => Promise<void>;
+}) {
+  const [activeTab, setActiveTab] = useState('overview');
+
+  if (!user) {
+    return (
+      <aside className="user-preview-panel">
+        <Empty description="选择一个用户查看账号治理信息" />
+      </aside>
+    );
+  }
+
+  const primaryOrg = user.org_units?.find((org) => org.is_primary) || user.org_units?.[0];
+  const securityItems = [
+    { label: '账号启用', active: user.is_active, tag: user.is_active ? '启用' : '停用', color: user.is_active ? 'green' : 'default' },
+    { label: '管理员', active: user.is_admin, tag: user.is_admin ? '是' : '否', color: user.is_admin ? 'red' : 'default' },
+    { label: 'MFA', active: Boolean(user.mfa_enabled), tag: user.mfa_enabled ? '已启用' : '未启用', color: user.mfa_enabled ? 'blue' : 'default' },
+    { label: 'SSO', active: Boolean(user.sso_subject), tag: user.sso_subject ? '已绑定' : '未绑定', color: user.sso_subject ? 'purple' : 'default' },
+  ];
+
+  const tabs = [
+    {
+      key: 'overview',
+      label: '详情',
+      children: (
+        <div className="user-detail-grid">
+          <section className="user-info-card">
+            <Typography.Text strong>基本信息</Typography.Text>
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label="账号">{user.username}</Descriptions.Item>
+              <Descriptions.Item label="姓名">{user.display_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="邮箱">{user.email || '-'}</Descriptions.Item>
+              <Descriptions.Item label="主组织">{primaryOrg?.name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="岗位">{primaryOrg?.position_title || '-'}</Descriptions.Item>
+              <Descriptions.Item label="最近登录">{user.last_login_at || '-'}</Descriptions.Item>
+              <Descriptions.Item label="登录 IP">{user.last_login_ip || '-'}</Descriptions.Item>
+            </Descriptions>
+          </section>
+        </div>
+      ),
+    },
+    {
+      key: 'summary',
+      label: '账号概览',
+      children: (
+        <section className="user-impact-card">
+          <Typography.Text strong>账号概览</Typography.Text>
+          <div className="user-preview-stats">
+            <div><span>角色</span><strong>{user.roles?.length || 0}</strong></div>
+            <div><span>组织</span><strong>{user.org_units?.length || 0}</strong></div>
+            <div><span>全局用户</span><strong>{totalUsers}</strong></div>
+            <div><span>安全标记</span><strong>{securityItems.filter((item) => item.active).length}</strong></div>
+          </div>
+        </section>
+      ),
+    },
+    {
+      key: 'access',
+      label: `角色组织 (${(user.roles?.length || 0) + (user.org_units?.length || 0)})`,
+      children: (
+        <div className="user-access-list">
+          <section className="user-section-card">
+            <Typography.Text strong>角色</Typography.Text>
+            <div className="user-tag-cloud">
+              {user.roles?.length
+                ? user.roles.map((role) => <Tag key={role.id} color="blue">{role.label}</Tag>)
+                : <Typography.Text type="secondary">未分配角色</Typography.Text>}
+            </div>
+          </section>
+          <section className="user-section-card">
+            <Typography.Text strong>组织</Typography.Text>
+            <div className="user-org-list">
+              {user.org_units?.length ? user.org_units.map((org) => (
+                <div key={org.id}>
+                  <span>{org.name}</span>
+                  <Tag color={org.is_primary ? 'green' : 'default'}>{org.is_primary ? '主组织' : '成员'}</Tag>
+                  <small>{org.position_title || '-'}</small>
+                </div>
+              )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="未分配组织" />}
+            </div>
+          </section>
+        </div>
+      ),
+    },
+    {
+      key: 'security',
+      label: '安全',
+      children: (
+        <div className="user-security-list">
+          {securityItems.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <Tag color={item.color}>{item.tag}</Tag>
+            </div>
+          ))}
+          <section className="user-section-card">
+            <Typography.Text strong>治理状态</Typography.Text>
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label="锁定">{user.locked_until || '未锁定'}</Descriptions.Item>
+              <Descriptions.Item label="强制改密">{user.force_password_change ? '是' : '否'}</Descriptions.Item>
+              <Descriptions.Item label="SSO Provider">{user.sso_provider || '-'}</Descriptions.Item>
+              <Descriptions.Item label="SSO Subject">{user.sso_subject || '-'}</Descriptions.Item>
+            </Descriptions>
+          </section>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <aside className="user-preview-panel">
+      <div className="user-preview-head">
+        <div>
+          <Space size={6} wrap>
+            <Typography.Title level={5}>{user.display_name || user.username}</Typography.Title>
+            {user.is_active ? <Tag color="green">启用</Tag> : <Tag>停用</Tag>}
+            {user.is_admin && <Tag color="red">管理员</Tag>}
+          </Space>
+          <Typography.Text type="secondary">{user.username} / {user.email || '未配置邮箱'}</Typography.Text>
+        </div>
+      </div>
+
+      <Tabs
+        className="user-preview-tabs"
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabs}
+      />
+
+      <section className="user-action-card">
+        <Typography.Text strong>快速操作</Typography.Text>
+        <Space wrap>
+          <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(user)}>编辑</Button>
+          <Button size="small" onClick={() => onSecurity(user)}>安全</Button>
+          <Button size="small" onClick={() => onSessions(user)}>会话</Button>
+          {user.username !== 'admin' && (
+            <Popconfirm title="确定删除该用户？" onConfirm={() => onDelete(user)}>
+              <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          )}
+        </Space>
+      </section>
+    </aside>
+  );
 }
 
 function parseCsv(text: string): ImportRow[] {

@@ -1,0 +1,36 @@
+.dynamic-business-page {
+  min-height: calc(100vh - 72px);
+}
+
+.dynamic-business-content {
+  padding: 16px;
+}
+
+.dynamic-business-title-row .ant-space-item:nth-child(3) {
+  display: block;
+}
+
+.dynamic-business-title-row .ant-typography {
+  font-weight: 700;
+}
+
+.dynamic-business-filter {
+  margin-bottom: 10px;
+}
+
+.dynamic-business-list-toolbar {
+  min-height: 34px;
+  padding: 4px 0 10px;
+}
+
+.dynamic-business-table {
+  min-height: 360px;
+}
+
+.dynamic-business-modal .ant-modal-body {
+  background: #fbfcfd;
+}
+
+.dynamic-business-create-form .ant-form-item {
+  margin-bottom: 14px;
+}

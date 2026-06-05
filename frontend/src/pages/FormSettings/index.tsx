@@ -3,13 +3,13 @@ import {
   AlertOutlined,
   ApartmentOutlined,
   ArrowLeftOutlined,
+  BarChartOutlined,
   CalendarOutlined,
   CheckSquareOutlined,
   CheckCircleOutlined,
   CopyOutlined,
   DatabaseOutlined,
   DeleteOutlined,
-  DragOutlined,
   EyeOutlined,
   FileImageOutlined,
   FileSearchOutlined,
@@ -36,14 +36,15 @@ import {
   UserSwitchOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Button, Checkbox, Input, InputNumber, Modal, Popover, Segmented, Select, Space, Switch, Tabs, Tag, Tooltip, Typography, message } from 'antd';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Button, Checkbox, Input, InputNumber, Modal, Popover, Segmented, Select, Space, Spin, Switch, Tabs, Tag, Tooltip, Typography, message } from 'antd';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   adminListOrgUnits,
   adminListRoles,
   createPlatformForm,
   createPlatformFormField,
   deletePlatformFormPermission,
+  getPlatformForm,
   listPlatformFormLayouts,
   listPlatformFormPermissions,
   listPlatformForms,
@@ -59,6 +60,7 @@ import {
   wfGetDefinition,
   wfUpdateDefinition,
   type PlatformForm,
+  type PlatformFormField,
   type PlatformFormPublishReport,
 } from '@/services/api';
 import {
@@ -84,7 +86,7 @@ import ProfessionalFlowDesigner, {
 } from './ProfessionalFlowDesigner';
 import './style.css';
 
-type DesignerTab = 'form' | 'filter' | 'flow' | 'permission';
+type DesignerTab = 'form' | 'dataset' | 'dashboard' | 'filter' | 'style' | 'flow' | 'permission';
 type ComponentPanel = 'components' | 'fieldTypes';
 type ControlSource = 'field' | 'component';
 type ControlWidth = 'quarter' | 'half' | 'threeQuarter' | 'full';
@@ -119,6 +121,75 @@ type FieldBusinessType =
   | 'relation'
   | 'attachment'
   | 'code';
+
+type AnalyticsWidgetType = 'metric-card' | 'line' | 'bar' | 'pie' | 'rank-table' | 'detail-table';
+
+interface AnalyticsDataset {
+  id: string;
+  name: string;
+  sourceType: 'businessForm' | 'ontology' | 'sql' | 'api';
+  source: string;
+  refreshMode: 'realtime' | 'scheduled' | 'manual';
+  dimensions: string[];
+  measures: string[];
+}
+
+interface AnalyticsMetric {
+  id: string;
+  name: string;
+  expression: string;
+  datasetId: string;
+  format: 'number' | 'percent' | 'currency' | 'duration';
+  threshold: string;
+}
+
+interface AnalyticsWidget {
+  id: string;
+  title: string;
+  type: AnalyticsWidgetType;
+  datasetId: string;
+  metricIds: string[];
+  dimension?: string;
+  width: 'quarter' | 'half' | 'full';
+  interaction: 'none' | 'filter' | 'drilldown' | 'navigate';
+}
+
+interface AnalyticsStyle {
+  preset: 'clean' | 'executive' | 'factory' | 'dark';
+  background: string;
+  componentGap: number;
+  cardRadius: number;
+  cardBorder: 'none' | 'light' | 'strong';
+  chartPalette: 'manufacturing' | 'business' | 'warning' | 'mono';
+  tableDensity: 'compact' | 'standard' | 'comfortable';
+  filterTheme: 'inline' | 'panel' | 'toolbar';
+}
+
+interface AnalyticsDesign {
+  datasets: AnalyticsDataset[];
+  metrics: AnalyticsMetric[];
+  widgets: AnalyticsWidget[];
+  globalFilters: string[];
+  interactions: Array<{
+    sourceWidgetId: string;
+    targetWidgetId: string;
+    action: 'filter' | 'drilldown' | 'navigate';
+  }>;
+  style: AnalyticsStyle;
+}
+
+function makeDefaultAnalyticsStyle(): AnalyticsStyle {
+  return {
+    preset: 'clean',
+    background: '#f6f8fa',
+    componentGap: 12,
+    cardRadius: 8,
+    cardBorder: 'light',
+    chartPalette: 'manufacturing',
+    tableDensity: 'standard',
+    filterTheme: 'toolbar',
+  };
+}
 
 interface ControlRuleCondition {
   sourceField?: string;
@@ -172,6 +243,33 @@ interface EncodingRule {
   uniquenessScope?: EncodingUniquenessScope;
 }
 
+interface ControlTypeSettings {
+  minLength?: number;
+  maxLength?: number;
+  textFormat?: string;
+  trimMode?: string;
+  caseMode?: string;
+  rows?: number;
+  min?: number;
+  max?: number;
+  precision?: number;
+  unit?: string;
+  thousandSeparator?: boolean;
+  selectionMode?: string;
+  displayMode?: string;
+  allowClear?: boolean;
+  allowCreateOption?: boolean;
+  dateMode?: string;
+  defaultDate?: string;
+  disablePast?: boolean;
+  maxFiles?: number;
+  maxFileSize?: number;
+  fileTypes?: string;
+  defaultChecked?: boolean;
+  checkedText?: string;
+  uncheckedText?: string;
+}
+
 interface DesignerField {
   key: string;
   name: string;
@@ -186,6 +284,7 @@ interface DesignerField {
   defaultValue?: string;
   validation?: string;
   optionSource?: string;
+  encodingRule?: EncodingRule;
 }
 
 interface DesignerConfig {
@@ -227,6 +326,7 @@ interface LayoutControl {
   optionSource?: string;
   dataSourceKind?: ReferenceSourceKind;
   encodingRule?: EncodingRule;
+  typeSettings?: ControlTypeSettings;
   width: ControlWidth;
   rules: ControlRules;
 }
@@ -262,6 +362,53 @@ interface BusinessSection {
   fieldKeys: string[];
 }
 
+interface DesignerOption {
+  value: string;
+  label: string;
+}
+
+interface DesignerMetaConfig {
+  controlTypeOptions?: DesignerOption[];
+  typeSettingOptions?: {
+    textFormats?: DesignerOption[];
+    textTrimModes?: DesignerOption[];
+    textCaseModes?: DesignerOption[];
+    selectionModes?: DesignerOption[];
+    selectionDisplays?: DesignerOption[];
+    dateModes?: DesignerOption[];
+    defaultDates?: DesignerOption[];
+    encodingResetCycles?: DesignerOption[];
+  };
+  componentLibrary?: Array<{
+    category: string;
+    items: Array<{
+      key: string;
+      name: string;
+      desc?: string;
+      controlType: string;
+      defaultWidth?: ControlWidth;
+      iconKey?: string;
+    }>;
+  }>;
+  commonControlKeys?: string[];
+  businessSections?: BusinessSection[];
+}
+
+interface DesignerMeta {
+  controlTypeOptions: DesignerOption[];
+  textFormatOptions: DesignerOption[];
+  textTrimModeOptions: DesignerOption[];
+  textCaseModeOptions: DesignerOption[];
+  selectionModeOptions: DesignerOption[];
+  selectionDisplayOptions: DesignerOption[];
+  dateModeOptions: DesignerOption[];
+  defaultDateOptions: DesignerOption[];
+  encodingResetCycleOptions: DesignerOption[];
+  componentGroups: Array<{ category: string; items: ComponentDefinition[] }>;
+  commonControlKeys: string[];
+  businessSections?: BusinessSection[];
+}
+
 interface PublishCheckItem {
   level: PublishCheckLevel;
   title: string;
@@ -283,6 +430,8 @@ interface ViewConfigMeta {
   status?: 'draft' | 'published';
 }
 
+type VersionPanelSelection = 'draft' | 'published' | 'previous';
+
 interface PermissionDesignDraft {
   page: Record<string, boolean>;
   actions: Record<string, boolean>;
@@ -301,6 +450,14 @@ interface PermissionDesignDraft {
 }
 
 type PermissionDraftMap = Record<string, PermissionDesignDraft>;
+
+interface FormPermissionRow {
+  id: number;
+  role_id: number;
+  action: string;
+  effect: 'allow' | 'deny' | string;
+  field_name?: string | null;
+}
 
 interface WorkflowDefinitionPayload {
   id: number;
@@ -322,14 +479,28 @@ interface WorkflowBindingPayload {
 }
 
 const permissionActionDefinitions = [
-  { key: 'view', name: '查看', desc: '打开页面、查看列表和详情', risk: 'low' },
-  { key: 'create', name: '新增', desc: '创建业务记录或提交申请', risk: 'medium' },
-  { key: 'edit', name: '编辑', desc: '修改已存在的告警记录', risk: 'medium' },
+  { key: 'view', name: '查看页面', desc: '打开菜单、查看列表和详情', risk: 'low' },
+  { key: 'create', name: '新增入口', desc: '显示新增按钮并打开新增表单，不代表已提交', risk: 'medium' },
+  { key: 'import', name: '导入入口', desc: '显示批量导入入口，按导入流程写入数据', risk: 'high' },
+  { key: 'export', name: '导出入口', desc: '下载列表或报表数据', risk: 'high' },
+  { key: 'saveDraft', name: '保存草稿', desc: '保存未提交的表单草稿', risk: 'medium' },
+  { key: 'submit', name: '提交表单', desc: '提交当前表单并触发后续流程', risk: 'medium' },
+  { key: 'edit', name: '修改记录', desc: '修改已存在的告警记录', risk: 'medium' },
   { key: 'delete', name: '删除', desc: '移除记录，高风险动作', risk: 'high' },
-  { key: 'import', name: '导入', desc: '批量写入告警数据', risk: 'high' },
-  { key: 'export', name: '导出', desc: '下载列表或报表数据', risk: 'high' },
-  { key: 'approve', name: '审批', desc: '处理流程节点和关闭告警', risk: 'medium' },
+  { key: 'approve', name: '审批处理', desc: '处理流程节点、同意、驳回或关闭', risk: 'medium' },
 ] as const;
+
+const permissionActionGroups = [
+  { key: 'entry', title: '列表入口与批量动作', desc: '控制列表页和工具栏入口', actionKeys: ['view', 'create', 'import', 'export'] },
+  { key: 'form', title: '表单内动作', desc: '控制打开表单后的底部按钮', actionKeys: ['saveDraft', 'submit', 'edit', 'delete'] },
+  { key: 'workflow', title: '流程动作', desc: '控制流程节点处理按钮', actionKeys: ['approve'] },
+];
+
+function getDefaultPermissionActionEnabled(roleKind: 'system' | 'manager' | 'operator', actionKey: string) {
+  if (actionKey === 'view') return true;
+  if (actionKey === 'delete') return roleKind === 'system';
+  return roleKind !== 'operator';
+}
 
 function makePermissionDesignDraft(roleKind: 'system' | 'manager' | 'operator', orgUnits: number[]): PermissionDesignDraft {
   return {
@@ -341,15 +512,12 @@ function makePermissionDesignDraft(roleKind: 'system' | 'manager' | 'operator', 
       preview: roleKind !== 'operator',
       publish: roleKind === 'system',
     },
-    actions: {
-      view: true,
-      create: roleKind !== 'operator',
-      edit: roleKind !== 'operator',
-      delete: roleKind === 'system',
-      import: roleKind !== 'operator',
-      export: roleKind !== 'operator',
-      approve: roleKind !== 'operator',
-    },
+    actions: Object.fromEntries(
+      permissionActionDefinitions.map((definition) => [
+        definition.key,
+        getDefaultPermissionActionEnabled(roleKind, definition.key),
+      ]),
+    ),
     fields: {},
     data: {
       scope: roleKind === 'system' ? 'all' : roleKind === 'manager' ? 'org_tree' : 'assigned',
@@ -371,6 +539,69 @@ function permissionDraftsFromConfig(config?: Record<string, unknown> | null): Pe
   if (!permissionDesign || typeof permissionDesign !== 'object') return {};
   const roles = (permissionDesign as { roles?: unknown }).roles;
   return roles && typeof roles === 'object' ? roles as PermissionDraftMap : {};
+}
+
+function getPermissionRoleKind(roleIndex: number, roleName = ''): 'system' | 'manager' | 'operator' {
+  const normalized = roleName.toLowerCase();
+  if (roleIndex === 0 || normalized.includes('admin') || normalized.includes('system')) return 'system';
+  if (roleIndex < 4 || normalized.includes('manager') || normalized.includes('lead')) return 'manager';
+  return 'operator';
+}
+
+function defaultRoleFieldPermission(field: DesignerField, index: number, roleKind: 'system' | 'manager' | 'operator') {
+  return {
+    visible: true,
+    editable: !field.locked && (roleKind === 'system' || index < 5),
+    required: Boolean(field.required),
+    exportable: roleKind !== 'operator' || index <= 4,
+  };
+}
+
+function permissionDraftsFromRows(
+  rows: FormPermissionRow[],
+  roles: Array<{ id: number; name: string; label: string }>,
+  fields: DesignerField[],
+  orgUnits: number[],
+): PermissionDraftMap {
+  const roleById = new Map(roles.map((role) => [role.id, role]));
+  const roleIndexById = new Map(roles.map((role, index) => [role.id, index]));
+  const drafts: PermissionDraftMap = {};
+
+  for (const row of rows) {
+    const role = roleById.get(row.role_id);
+    const roleName = role?.label || role?.name || `role-${row.role_id}`;
+    const roleKind = getPermissionRoleKind(roleIndexById.get(row.role_id) ?? 99, role?.name || roleName);
+    const draft = drafts[roleName] || makePermissionDesignDraft(roleKind, orgUnits);
+    const enabled = row.effect !== 'deny';
+
+    if (!row.field_name) {
+      if (permissionActionDefinitions.some((definition) => definition.key === row.action)) {
+        draft.actions[row.action] = enabled;
+      }
+      drafts[roleName] = draft;
+      continue;
+    }
+
+    const field = fields.find((item) => item.key === row.field_name);
+    if (!field) {
+      drafts[roleName] = draft;
+      continue;
+    }
+    const fieldIndex = Math.max(fields.findIndex((item) => item.key === row.field_name), 0);
+    const current = draft.fields[row.field_name] || defaultRoleFieldPermission(field, fieldIndex, roleKind);
+    if (row.action === 'view') current.visible = enabled;
+    if (row.action === 'edit') current.editable = enabled;
+    if (row.action === 'export') current.exportable = enabled;
+    if (row.action === 'create') current.required = enabled;
+    draft.fields[row.field_name] = current;
+    drafts[roleName] = draft;
+  }
+
+  return drafts;
+}
+
+function mergePermissionDraftSources(primary: PermissionDraftMap, fallback: PermissionDraftMap): PermissionDraftMap {
+  return Object.keys(primary).length ? primary : fallback;
 }
 
 function sanitizePermissionDesignDraft(draft: PermissionDesignDraft): PermissionDesignDraft {
@@ -418,7 +649,7 @@ const previewDeviceOptions = [
   { value: 'mobile', label: '手机', icon: <MobileOutlined /> },
 ];
 
-const controlTypeOptions = [
+const defaultControlTypeOptions = [
   { value: 'code', label: '编码' },
   { value: 'text', label: '文本输入' },
   { value: 'textarea', label: '多行文本' },
@@ -429,6 +660,51 @@ const controlTypeOptions = [
   { value: 'upload', label: '附件上传' },
   { value: 'switch', label: '开关切换' },
   { value: 'readonly-text', label: '只读展示' },
+];
+
+const defaultTextFormatOptions = [
+  { value: 'plain', label: '普通文本' },
+  { value: 'email', label: '邮箱' },
+  { value: 'phone', label: '手机号' },
+  { value: 'url', label: '链接' },
+  { value: 'idNo', label: '证件号' },
+  { value: 'custom', label: '自定义正则' },
+];
+
+const defaultTextTrimModeOptions = [
+  { value: 'none', label: '不处理' },
+  { value: 'trim', label: '去首尾空格' },
+  { value: 'trimAll', label: '去全部空格' },
+];
+
+const defaultTextCaseModeOptions = [
+  { value: 'original', label: '保持原样' },
+  { value: 'upper', label: '自动大写' },
+  { value: 'lower', label: '自动小写' },
+];
+
+const defaultSelectionModeOptions = [
+  { value: 'single', label: '单选' },
+  { value: 'multiple', label: '多选' },
+];
+
+const defaultSelectionDisplayOptions = [
+  { value: 'dropdown', label: '下拉' },
+  { value: 'search', label: '搜索选择' },
+  { value: 'radio', label: '平铺单选' },
+  { value: 'tags', label: '标签多选' },
+];
+
+const defaultDateModeOptions = [
+  { value: 'date', label: '日期' },
+  { value: 'datetime', label: '日期时间' },
+  { value: 'range', label: '日期范围' },
+];
+
+const defaultDateValueOptions = [
+  { value: 'none', label: '无默认值' },
+  { value: 'today', label: '当天' },
+  { value: 'now', label: '当前时间' },
 ];
 
 const fieldBusinessTypeOptions: Array<{ value: FieldBusinessType; label: string }> = [
@@ -444,7 +720,7 @@ const fieldBusinessTypeOptions: Array<{ value: FieldBusinessType; label: string 
   { value: 'code', label: '编码' },
 ];
 
-const encodingResetCycleOptions = [
+const defaultEncodingResetCycleOptions = [
   { value: 'none', label: '不重置' },
   { value: 'day', label: '按天重置' },
   { value: 'month', label: '按月重置' },
@@ -1019,6 +1295,24 @@ const defaultConfig: DesignerConfig = {
   roles: ['系统管理员'],
 };
 
+function isNumericFormRouteId(value: string) {
+  return /^\d+$/.test(value.trim());
+}
+
+async function resolvePlatformFormForConfig(configId: string) {
+  if (isNumericFormRouteId(configId)) {
+    const detailResponse = await getPlatformForm(configId);
+    const form = detailResponse.data?.data as PlatformForm | undefined;
+    return form || null;
+  }
+  const formsResponse = await listPlatformForms();
+  const forms = (formsResponse.data?.data || []) as PlatformForm[];
+  const matchedForm = forms.find((form) => form.code === configId);
+  if (!matchedForm) return null;
+  const detailResponse = await getPlatformForm(matchedForm.id);
+  return (detailResponse.data?.data || matchedForm) as PlatformForm;
+}
+
 const tabs = [
   { key: 'form', label: '表单设计', icon: <FormOutlined /> },
   { key: 'filter', label: '数据筛选', icon: <SearchOutlined /> },
@@ -1026,7 +1320,115 @@ const tabs = [
   { key: 'permission', label: '权限设计', icon: <LockOutlined /> },
 ];
 
-const componentGroups: Array<{ category: string; items: ComponentDefinition[] }> = [
+const analyticsTabs = [
+  { key: 'dashboard', label: '看板画布', icon: <BarChartOutlined /> },
+  { key: 'dataset', label: '数据与指标', icon: <DatabaseOutlined /> },
+  { key: 'filter', label: '筛选联动', icon: <SearchOutlined /> },
+  { key: 'style', label: '样式主题', icon: <SettingOutlined /> },
+  { key: 'permission', label: '权限发布', icon: <LockOutlined /> },
+];
+
+function inferDesignerKindFromMeta(kindValue?: unknown, codeValue?: unknown, tabValue?: unknown): DesignerConfig['kind'] {
+  const kind = String(kindValue || '').toLowerCase();
+  const code = String(codeValue || '').toLowerCase();
+  const tab = String(tabValue || '').toLowerCase();
+  if (
+    ['analysis', 'analytics', 'dashboard', 'report', 'bi_report', 'metric_dashboard', 'list_analysis'].includes(kind)
+    || ['dashboard', 'dataset', 'style'].includes(tab)
+    || code.includes('dashboard')
+    || code.includes('overview')
+    || code.includes('report')
+    || code.includes('analysis')
+  ) {
+    return 'analysis';
+  }
+  return 'business';
+}
+
+function inferFormDesignerKind(form: PlatformForm): DesignerConfig['kind'] {
+  const config = (form.config || {}) as Record<string, unknown>;
+  return inferDesignerKindFromMeta(config.assemblyKind || config.kind || config.type, form.code);
+}
+
+function makeDefaultAnalyticsDesign(config: DesignerConfig): AnalyticsDesign {
+  const dimensionFields = config.fields.filter((field) => field.searchable || field.businessType === 'enum').slice(0, 4);
+  const measureFields = config.fields.filter((field) => field.businessType === 'number' || field.type.includes('数值')).slice(0, 4);
+  const firstDimension = dimensionFields[0]?.key || 'category';
+  const primaryDatasetId = `${config.id}-dataset`;
+  const metrics: AnalyticsMetric[] = [
+    {
+      id: 'metric-total',
+      name: `${config.name}总数`,
+      expression: 'count(*)',
+      datasetId: primaryDatasetId,
+      format: 'number',
+      threshold: '正常 >= 0',
+    },
+    {
+      id: 'metric-risk',
+      name: '高风险项',
+      expression: `${firstDimension} = 高`,
+      datasetId: primaryDatasetId,
+      format: 'number',
+      threshold: '红色 > 0',
+    },
+    {
+      id: 'metric-rate',
+      name: '完成率',
+      expression: 'closed / total',
+      datasetId: primaryDatasetId,
+      format: 'percent',
+      threshold: '绿色 >= 90%',
+    },
+  ];
+  return {
+    datasets: [
+      {
+        id: primaryDatasetId,
+        name: `${config.name}数据集`,
+        sourceType: 'businessForm',
+        source: config.id,
+        refreshMode: 'realtime',
+        dimensions: dimensionFields.length ? dimensionFields.map((field) => field.key) : ['category', 'status', 'owner'],
+        measures: measureFields.length ? measureFields.map((field) => field.key) : ['count', 'rate', 'duration'],
+      },
+    ],
+    metrics,
+    widgets: [
+      { id: 'widget-total', title: '核心指标', type: 'metric-card', datasetId: primaryDatasetId, metricIds: ['metric-total', 'metric-risk', 'metric-rate'], width: 'full', interaction: 'none' },
+      { id: 'widget-trend', title: '趋势分析', type: 'line', datasetId: primaryDatasetId, metricIds: ['metric-total'], dimension: 'date', width: 'half', interaction: 'filter' },
+      { id: 'widget-rank', title: '风险排行', type: 'rank-table', datasetId: primaryDatasetId, metricIds: ['metric-risk'], dimension: firstDimension, width: 'half', interaction: 'drilldown' },
+      { id: 'widget-detail', title: '明细列表', type: 'detail-table', datasetId: primaryDatasetId, metricIds: ['metric-total'], dimension: firstDimension, width: 'full', interaction: 'navigate' },
+    ],
+    globalFilters: ['dateRange', firstDimension, 'owner'].filter(Boolean),
+    interactions: [
+      { sourceWidgetId: 'widget-trend', targetWidgetId: 'widget-detail', action: 'filter' },
+      { sourceWidgetId: 'widget-rank', targetWidgetId: 'widget-detail', action: 'drilldown' },
+    ],
+    style: makeDefaultAnalyticsStyle(),
+  };
+}
+
+function normalizeAnalyticsDesign(value: unknown, fallback: AnalyticsDesign): AnalyticsDesign {
+  if (!value || typeof value !== 'object') return fallback;
+  const draft = value as Partial<AnalyticsDesign>;
+  return {
+    datasets: Array.isArray(draft.datasets) && draft.datasets.length ? draft.datasets as AnalyticsDataset[] : fallback.datasets,
+    metrics: Array.isArray(draft.metrics) && draft.metrics.length ? draft.metrics as AnalyticsMetric[] : fallback.metrics,
+    widgets: Array.isArray(draft.widgets) && draft.widgets.length ? draft.widgets as AnalyticsWidget[] : fallback.widgets,
+    globalFilters: Array.isArray(draft.globalFilters) ? draft.globalFilters.map(String) : fallback.globalFilters,
+    interactions: Array.isArray(draft.interactions) ? draft.interactions as AnalyticsDesign['interactions'] : fallback.interactions,
+    style: { ...fallback.style, ...(isRecord(draft.style) ? draft.style : {}) } as AnalyticsStyle,
+  };
+}
+
+function getStoredAnalyticsDesign(form: PlatformForm | null | undefined, designerConfig: DesignerConfig): AnalyticsDesign {
+  const fallback = makeDefaultAnalyticsDesign(designerConfig);
+  const config = (form?.config || {}) as Record<string, unknown>;
+  return normalizeAnalyticsDesign(config.analyticsDesignDraft || config.analyticsDesign, fallback);
+}
+
+const defaultComponentGroups: Array<{ category: string; items: ComponentDefinition[] }> = [
   {
     category: '基础输入',
     items: [
@@ -1034,17 +1436,16 @@ const componentGroups: Array<{ category: string; items: ComponentDefinition[] }>
       { key: 'textarea', category: '基础输入', name: '多行文本', desc: '长文本、备注、说明录入', icon: <FormOutlined />, controlType: 'textarea', defaultWidth: 'full' },
       { key: 'number', category: '基础输入', name: '数值控件', desc: '数量、金额、百分比', icon: <NumberOutlined />, controlType: 'number' },
       { key: 'code', category: '基础输入', name: '编码控件', desc: '自动编号、业务编号、流水号', icon: <NumberOutlined />, controlType: 'code' },
-      { key: 'readonly-text', category: '基础输入', name: '只读文本', desc: '展示计算值、引用值', icon: <FileSearchOutlined />, controlType: 'readonly-text' },
     ],
   },
   {
-    category: '选择器',
+    category: '选择控件',
     items: [
-      { key: 'select', category: '选择器', name: '选择控件', desc: '下拉、单选、多选', icon: <SelectOutlined />, controlType: 'select' },
-      { key: 'relation', category: '选择器', name: '对象选择', desc: '人员、设备、供应商、物料', icon: <LinkOutlined />, controlType: 'relation' },
-      { key: 'datetime', category: '选择器', name: '日期控件', desc: '日期、时间、时间范围', icon: <CalendarOutlined />, controlType: 'datetime' },
-      { key: 'switch', category: '选择器', name: '开关控件', desc: '是否、启用、状态切换', icon: <SwitcherOutlined />, controlType: 'switch' },
-      { key: 'upload', category: '选择器', name: '附件控件', desc: '图片、文件、凭证上传', icon: <PaperClipOutlined />, controlType: 'upload', defaultWidth: 'full' },
+      { key: 'select', category: '选择控件', name: '下拉选择', desc: '固定选项、枚举字典', icon: <SelectOutlined />, controlType: 'select' },
+      { key: 'relation', category: '选择控件', name: '关联对象', desc: '人员、设备、供应商、物料', icon: <LinkOutlined />, controlType: 'relation' },
+      { key: 'datetime', category: '选择控件', name: '日期选择', desc: '日期、时间、时间范围', icon: <CalendarOutlined />, controlType: 'datetime' },
+      { key: 'switch', category: '选择控件', name: '布尔选择', desc: '是/否、启用/停用', icon: <SwitcherOutlined />, controlType: 'switch' },
+      { key: 'upload', category: '选择控件', name: '附件上传', desc: '图片、文件、凭证上传', icon: <PaperClipOutlined />, controlType: 'upload', defaultWidth: 'full' },
     ],
   },
   {
@@ -1066,21 +1467,129 @@ const componentGroups: Array<{ category: string; items: ComponentDefinition[] }>
       { key: 'file-preview', category: '数据展示', name: '媒体预览', desc: '图片、附件、凭证预览', icon: <FileImageOutlined />, controlType: 'file-preview', defaultWidth: 'full' },
     ],
   },
-  {
-    category: '业务控件',
-    items: [
-      { key: 'approval-comment', category: '业务控件', name: '审批处理', desc: '审批意见、处理说明、签批记录', icon: <UserSwitchOutlined />, controlType: 'approval-comment', defaultWidth: 'full' },
-      { key: 'operation-log', category: '业务控件', name: '操作记录', desc: '操作日志、变更记录、审计轨迹', icon: <FileSearchOutlined />, controlType: 'operation-log', defaultWidth: 'full' },
-      { key: 'status-flow', category: '业务控件', name: '状态流转', desc: '流程状态、节点进度、关闭归档', icon: <UserSwitchOutlined />, controlType: 'status-flow', defaultWidth: 'full' },
-      { key: 'risk-level', category: '业务控件', name: '风险校验', desc: '风险等级、校验提示、异常规则', icon: <TagsOutlined />, controlType: 'risk-level' },
-    ],
-  },
 ];
 
-const commonControlKeys = ['text', 'number', 'code', 'select', 'relation', 'datetime'];
-const commonControls = commonControlKeys
-  .map((key) => componentGroups.flatMap((group) => group.items).find((item) => item.key === key))
-  .filter((item): item is ComponentDefinition => Boolean(item));
+const defaultCommonControlKeys = ['text', 'number', 'code', 'select', 'relation', 'datetime'];
+
+const componentIconMap: Record<string, React.ReactNode> = {
+  text: <FormOutlined />,
+  textarea: <FormOutlined />,
+  form: <FormOutlined />,
+  number: <NumberOutlined />,
+  code: <NumberOutlined />,
+  select: <SelectOutlined />,
+  relation: <LinkOutlined />,
+  datetime: <CalendarOutlined />,
+  switch: <SwitcherOutlined />,
+  upload: <PaperClipOutlined />,
+  table: <TableOutlined />,
+  database: <DatabaseOutlined />,
+  tag: <TagsOutlined />,
+  media: <FileImageOutlined />,
+  layout: <HolderOutlined />,
+  divider: <FileSearchOutlined />,
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function isControlWidth(value: unknown): value is ControlWidth {
+  return value === 'quarter' || value === 'half' || value === 'threeQuarter' || value === 'full';
+}
+
+function normalizeDesignerOptions(raw: unknown, fallback: DesignerOption[]): DesignerOption[] {
+  if (!Array.isArray(raw)) return fallback;
+  const options = raw
+    .map((item) => {
+      if (!isRecord(item)) return null;
+      const value = typeof item.value === 'string' ? item.value : '';
+      const label = typeof item.label === 'string' ? item.label : '';
+      return value && label ? { value, label } : null;
+    })
+    .filter((item): item is DesignerOption => Boolean(item));
+  return options.length ? options : fallback;
+}
+
+function normalizeComponentGroups(
+  raw: unknown,
+  fallback: Array<{ category: string; items: ComponentDefinition[] }>,
+): Array<{ category: string; items: ComponentDefinition[] }> {
+  if (!Array.isArray(raw)) return fallback;
+  const groups = raw
+    .map((group) => {
+      if (!isRecord(group) || typeof group.category !== 'string' || !Array.isArray(group.items)) return null;
+      const category = group.category;
+      const items = group.items
+        .map((item) => {
+          if (!isRecord(item)) return null;
+          const key = typeof item.key === 'string' ? item.key : '';
+          const name = typeof item.name === 'string' ? item.name : '';
+          const controlType = typeof item.controlType === 'string' ? item.controlType : '';
+          if (!key || !name || !controlType) return null;
+          const iconKey = typeof item.iconKey === 'string' ? item.iconKey : controlType;
+          const definition: ComponentDefinition = {
+            key,
+            category,
+            name,
+            desc: typeof item.desc === 'string' ? item.desc : '',
+            icon: componentIconMap[iconKey] || componentIconMap[controlType] || <FormOutlined />,
+            controlType,
+            defaultWidth: isControlWidth(item.defaultWidth) ? item.defaultWidth : undefined,
+          };
+          return definition;
+        })
+        .filter((item): item is ComponentDefinition => Boolean(item));
+      return items.length ? { category, items } : null;
+    })
+    .filter((group): group is { category: string; items: ComponentDefinition[] } => Boolean(group));
+  return groups.length ? groups : fallback;
+}
+
+function normalizeStringList(raw: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(raw)) return fallback;
+  const values = raw.filter((item): item is string => typeof item === 'string' && item.length > 0);
+  return values.length ? values : fallback;
+}
+
+function normalizeBusinessSections(raw: unknown, fallback: BusinessSection[]): BusinessSection[] {
+  if (!Array.isArray(raw)) return fallback;
+  const sections = raw
+    .map((item) => {
+      if (!isRecord(item)) return null;
+      const key = typeof item.key === 'string' ? item.key : '';
+      const title = typeof item.title === 'string' ? item.title : '';
+      if (!key || !title) return null;
+      return {
+        key,
+        title,
+        desc: typeof item.desc === 'string' ? item.desc : '',
+        fieldKeys: normalizeStringList(item.fieldKeys, []),
+      };
+    })
+    .filter((item): item is BusinessSection => Boolean(item));
+  return sections.length ? sections : fallback;
+}
+
+function getDesignerMeta(form: PlatformForm | null | undefined): DesignerMeta {
+  const config = isRecord(form?.config) ? form?.config : {};
+  const meta = isRecord(config?.designerMeta) ? config.designerMeta as DesignerMetaConfig : {};
+  const typeSettingOptions = isRecord(meta.typeSettingOptions) ? meta.typeSettingOptions : {};
+  return {
+    controlTypeOptions: normalizeDesignerOptions(meta.controlTypeOptions, defaultControlTypeOptions),
+    textFormatOptions: normalizeDesignerOptions(typeSettingOptions.textFormats, defaultTextFormatOptions),
+    textTrimModeOptions: normalizeDesignerOptions(typeSettingOptions.textTrimModes, defaultTextTrimModeOptions),
+    textCaseModeOptions: normalizeDesignerOptions(typeSettingOptions.textCaseModes, defaultTextCaseModeOptions),
+    selectionModeOptions: normalizeDesignerOptions(typeSettingOptions.selectionModes, defaultSelectionModeOptions),
+    selectionDisplayOptions: normalizeDesignerOptions(typeSettingOptions.selectionDisplays, defaultSelectionDisplayOptions),
+    dateModeOptions: normalizeDesignerOptions(typeSettingOptions.dateModes, defaultDateModeOptions),
+    defaultDateOptions: normalizeDesignerOptions(typeSettingOptions.defaultDates, defaultDateValueOptions),
+    encodingResetCycleOptions: normalizeDesignerOptions(typeSettingOptions.encodingResetCycles, defaultEncodingResetCycleOptions),
+    componentGroups: normalizeComponentGroups(meta.componentLibrary, defaultComponentGroups),
+    commonControlKeys: normalizeStringList(meta.commonControlKeys, defaultCommonControlKeys),
+    businessSections: Array.isArray(meta.businessSections) ? meta.businessSections : undefined,
+  };
+}
 
 const alertBusinessSections: BusinessSection[] = [
   { key: 'basic', title: '基础信息', desc: '识别告警、说明主题和来源', fieldKeys: ['alertId', 'title', 'source', 'occurredAt'] },
@@ -1149,6 +1658,13 @@ function inferFieldControlType(field?: DesignerField) {
   return 'text';
 }
 
+function getEffectiveControlTypeForControl(control?: LayoutControl, field?: DesignerField) {
+  if (!control) return '';
+  if (control.source === 'field' && isEncodingField(field)) return 'code';
+  if (control.controlType === 'field') return inferFieldControlType(field);
+  return control.controlType;
+}
+
 function isDataSourceControlType(controlType?: string) {
   return controlType === 'select' || controlType === 'relation';
 }
@@ -1168,7 +1684,7 @@ function getReferenceConfig(kind?: ReferenceSourceKind) {
   return referenceSourceRegistry[kind || 'static'];
 }
 
-function fieldInput(field: DesignerField, placeholderOverride?: string, disabled = false, optionSourceOverride?: string, controlTypeOverride?: string) {
+function fieldInput(field: DesignerField, placeholderOverride?: string, disabled = false, optionSourceOverride?: string, controlTypeOverride?: string, typeSettings?: ControlTypeSettings) {
   const placeholder = placeholderOverride || field.placeholder;
   const controlType = controlTypeOverride && controlTypeOverride !== 'field' ? controlTypeOverride : inferFieldControlType(field);
   if (controlType === 'select' || controlType === 'relation') {
@@ -1181,10 +1697,11 @@ function fieldInput(field: DesignerField, placeholderOverride?: string, disabled
     return <Button disabled={disabled} icon={<PaperClipOutlined />}>{placeholder || '选择文件'}</Button>;
   }
   if (controlType === 'textarea') {
-    return <Input.TextArea disabled={disabled} placeholder={placeholder} autoSize={{ minRows: 2, maxRows: 4 }} />;
+    const rows = typeSettings?.rows || 2;
+    return <Input.TextArea disabled={disabled} maxLength={typeSettings?.maxLength} placeholder={placeholder} autoSize={{ minRows: rows, maxRows: Math.max(rows, 4) }} />;
   }
   if (controlType === 'number') {
-    return <Input disabled={disabled} placeholder={placeholder} suffix="#" />;
+    return <Input disabled={disabled} placeholder={placeholder} suffix={typeSettings?.unit || '#'} />;
   }
   if (controlType === 'switch') {
     return <Segmented disabled={disabled} options={['否', '是']} value="否" />;
@@ -1192,7 +1709,7 @@ function fieldInput(field: DesignerField, placeholderOverride?: string, disabled
   if (controlType === 'readonly-text' || controlType === 'code') {
     return <Input disabled value={placeholder || field.name} />;
   }
-  return <Input disabled={disabled} placeholder={placeholder} />;
+  return <Input disabled={disabled} maxLength={typeSettings?.maxLength} placeholder={placeholder} />;
 }
 
 function designerFieldsToViewFields(fields: DesignerField[]) {
@@ -1204,6 +1721,150 @@ function designerFieldsToViewFields(fields: DesignerField[]) {
     sortable: field.sortable,
     visibleInList: field.listVisible,
   }));
+}
+
+function getPlatformUiString(field: PlatformFormField, key: string) {
+  const value = field.ui_config?.[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getPlatformFieldString(field: PlatformFormField, key: 'business_type' | 'control_type' | 'data_source') {
+  const value = field[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getPlatformEnumValues(field: PlatformFormField) {
+  const values = field.enum_values?.values;
+  return Array.isArray(values) ? values.map(String).filter(Boolean) : [];
+}
+
+function getPlatformValidationText(field: PlatformFormField) {
+  const validation = field.validation;
+  if (!validation) return undefined;
+  const messageText = validation.message || validation.detail || validation.rule;
+  if (typeof messageText === 'string') return messageText;
+  return undefined;
+}
+
+function getPlatformEncodingRule(field: PlatformFormField): EncodingRule | undefined {
+  const rawRule = field.encoding_rule || field.ui_config?.encodingRule;
+  if (!rawRule || typeof rawRule !== 'object' || Array.isArray(rawRule)) return undefined;
+  const fallbackField: DesignerField = {
+    key: field.field_name,
+    name: field.label || field.field_name,
+    type: '文本 / 自动编号',
+    businessType: 'code',
+    placeholder: `自动生成${field.label || field.field_name}`,
+  };
+  const fallback = makeEncodingRule(fallbackField);
+  const rule = rawRule as Partial<EncodingRule>;
+  return {
+    ...fallback,
+    ...rule,
+    segments: Array.isArray(rule.segments) ? rule.segments : fallback.segments,
+  };
+}
+
+function mapPlatformBusinessType(rawBusinessType: string | undefined, rawType: string, controlType?: string, dataSource?: string, widget?: string): FieldBusinessType {
+  if (rawBusinessType === 'code' || controlType === 'code' || rawType === 'code') return 'code';
+  if (rawBusinessType === 'enum' || rawType === 'enum') return 'enum';
+  if (rawBusinessType === 'datetime' || rawType === 'datetime') return 'datetime';
+  if (rawBusinessType === 'date' || rawType === 'date') return 'date';
+  if (rawBusinessType === 'number' || rawType === 'number') return 'number';
+  if (dataSource === 'users') return 'person';
+  if (rawBusinessType === 'relation' || rawType === 'relation' || Boolean(dataSource)) return 'relation';
+  if (widget === 'upload') return 'attachment';
+  if (rawType === 'json' && dataSource) return 'relation';
+  if (rawType === 'text') return 'longText';
+  return 'text';
+}
+
+function mapPlatformFieldType(field: PlatformFormField): Pick<DesignerField, 'type' | 'businessType' | 'optionSource' | 'placeholder' | 'encodingRule'> {
+  const rawType = String(field.field_type || 'string');
+  const controlType = getPlatformFieldString(field, 'control_type') || getPlatformUiString(field, 'controlType');
+  const widget = getPlatformUiString(field, 'widget');
+  const dataSource = getPlatformFieldString(field, 'data_source') || getPlatformUiString(field, 'dataSource') || getPlatformUiString(field, 'relation');
+  const rawBusinessType = getPlatformFieldString(field, 'business_type') || getPlatformUiString(field, 'businessType');
+  const encodingRule = getPlatformEncodingRule(field);
+  const businessType = encodingRule ? 'code' : mapPlatformBusinessType(rawBusinessType, rawType, controlType, dataSource, widget);
+  const enumSource = getPlatformEnumValues(field).join('、') || undefined;
+  const label = field.label || field.field_name;
+
+  if (businessType === 'code') {
+    return { type: '文本 / 自动编号', businessType, placeholder: `自动生成${label}`, encodingRule };
+  }
+  if (businessType === 'enum') {
+    return { type: '下拉选择', businessType, optionSource: enumSource, placeholder: enumSource || `请选择${label}` };
+  }
+  if (businessType === 'datetime' || businessType === 'date') {
+    return { type: '日期控件', businessType, placeholder: `选择${label}` };
+  }
+  if (businessType === 'number') {
+    return { type: '数值控件', businessType, placeholder: `请输入${label}` };
+  }
+  if (businessType === 'person' || businessType === 'relation') {
+    return {
+      type: '关联对象',
+      businessType,
+      optionSource: businessType === 'person' ? '组织人员' : dataSource,
+      placeholder: `选择${label}`,
+    };
+  }
+  if (businessType === 'attachment' || (rawType === 'json' && field.field_name.toLowerCase().includes('evidence'))) {
+    return { type: '附件控件', businessType: 'attachment', placeholder: `上传${label}` };
+  }
+  if (businessType === 'longText') {
+    return { type: '多行文本', businessType, placeholder: `填写${label}` };
+  }
+  return { type: '文本输入', businessType, placeholder: `请输入${label}` };
+}
+
+function platformFieldsToDesignerFields(fields?: PlatformFormField[]) {
+  return (fields || [])
+    .filter((field) => !field.archived)
+    .sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0))
+    .map((field): DesignerField => {
+      const mapped = mapPlatformFieldType(field);
+      return {
+        key: field.field_name,
+        name: field.label || field.field_name,
+        type: mapped.type,
+        businessType: mapped.businessType,
+        placeholder: mapped.placeholder,
+        locked: mapped.businessType === 'code',
+        required: field.required,
+        listVisible: field.visible_in_list,
+        searchable: field.searchable,
+        sortable: field.sortable,
+        defaultValue: field.default_value || undefined,
+        validation: getPlatformValidationText(field),
+        optionSource: mapped.optionSource,
+        encodingRule: mapped.encodingRule,
+      };
+    });
+}
+
+function areDesignerFieldsSame(left?: DesignerField[], right?: DesignerField[]) {
+  if (!left || !right) return false;
+  if (left.length !== right.length) return false;
+  return left.every((field, index) => {
+    const other = right[index];
+    return other
+      && field.key === other.key
+      && field.name === other.name
+      && field.type === other.type
+      && field.businessType === other.businessType
+      && field.placeholder === other.placeholder
+      && field.locked === other.locked
+      && field.required === other.required
+      && field.listVisible === other.listVisible
+      && field.searchable === other.searchable
+      && field.sortable === other.sortable
+      && field.defaultValue === other.defaultValue
+      && field.validation === other.validation
+      && field.optionSource === other.optionSource
+      && JSON.stringify(field.encodingRule || null) === JSON.stringify(other.encodingRule || null);
+  });
 }
 
 function makeDesignerViewConfig(config: DesignerConfig): ViewConfig {
@@ -1326,6 +1987,33 @@ function getWorkflowDesignerMeta(form?: PlatformForm | null): WorkflowDesignerMe
   return meta && typeof meta === 'object' ? meta as WorkflowDesignerMeta : {};
 }
 
+function makeRuntimeFormLayout(controls: LayoutControl[], fields: DesignerField[]) {
+  const fieldByKey = new Map(fields.map((field) => [field.key, field]));
+  return {
+    sections: [
+      {
+        id: 'section-business-info',
+        title: '业务信息',
+        fields: controls
+          .filter((control) => Boolean(control.fieldKey) && control.rules.visible.enabled)
+          .map((control) => {
+            const field = fieldByKey.get(String(control.fieldKey));
+            return {
+              fieldName: String(control.fieldKey),
+              label: control.name || field?.name || String(control.fieldKey),
+              colSpan: control.width === 'full' ? 2 : 1,
+              controlType: getEffectiveControlTypeForControl(control, field),
+              required: Boolean(control.rules.required.enabled || field?.required),
+              readonly: Boolean(control.rules.readonly.enabled),
+              placeholder: control.placeholder || field?.placeholder,
+              helpText: control.helpText,
+            };
+          }),
+      },
+    ],
+  };
+}
+
 function getViewConfigMeta(form?: PlatformForm | null): ViewConfigMeta {
   const config = form?.config || {};
   const meta = config.viewConfigMeta;
@@ -1381,18 +2069,46 @@ function makeWorkflowConfigPayload(flowConfig: FlowDesignerConfig, form: Platfor
   };
 }
 
+function getDefaultTypeSettings(controlType: string, field?: DesignerField): ControlTypeSettings {
+  if (controlType === 'text' || controlType === 'textarea') {
+    return {
+      minLength: field?.required ? 1 : 0,
+      maxLength: controlType === 'textarea' ? 500 : 80,
+      textFormat: 'plain',
+      trimMode: 'trim',
+      caseMode: 'original',
+      rows: controlType === 'textarea' ? 3 : undefined,
+    };
+  }
+  if (controlType === 'number') return { precision: 0, thousandSeparator: false };
+  if (controlType === 'select' || controlType === 'relation') {
+    return {
+      selectionMode: 'single',
+      displayMode: controlType === 'select' ? 'dropdown' : 'search',
+      allowClear: true,
+      allowCreateOption: false,
+    };
+  }
+  if (controlType === 'datetime') return { dateMode: 'datetime', defaultDate: 'none', disablePast: false };
+  if (controlType === 'upload') return { maxFiles: 5, maxFileSize: 20, fileTypes: '图片、PDF、Office、日志文件' };
+  if (controlType === 'switch') return { defaultChecked: false, checkedText: '是', uncheckedText: '否' };
+  return {};
+}
+
 function makeFieldControl(field: DesignerField): LayoutControl {
+  const controlType = inferFieldControlType(field);
   return {
     id: `field-${field.key}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     source: 'field',
-    controlType: inferFieldControlType(field),
+    controlType: 'field',
     name: field.name,
     fieldKey: field.key,
     placeholder: field.placeholder,
     helpText: '',
     optionSource: field.optionSource,
-    dataSourceKind: inferReferenceSourceKind(field, inferFieldControlType(field)),
-    encodingRule: isEncodingField(field) ? makeEncodingRule(field) : undefined,
+    dataSourceKind: inferReferenceSourceKind(field, controlType),
+    encodingRule: isEncodingField(field) ? field.encodingRule || makeEncodingRule(field) : undefined,
+    typeSettings: getDefaultTypeSettings(controlType, field),
     width: getFieldBusinessType(field) === 'longText' ? 'full' : 'half',
     rules: makeControlRules(Boolean(field.required), field),
   };
@@ -1408,6 +2124,7 @@ function makeComponentControl(component: ComponentDefinition): LayoutControl {
     placeholder: component.desc,
     helpText: '',
     optionSource: ['select', 'relation'].includes(component.controlType) ? component.desc : undefined,
+    typeSettings: getDefaultTypeSettings(component.controlType),
     width: component.defaultWidth || 'half',
     rules: makeControlRules(),
   };
@@ -1580,11 +2297,50 @@ function getFlowConnectorPath(from: FlowNode, fromSide: FlowPortSide, to: FlowNo
 export default function FormSettingsPage() {
   const { formId } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<DesignerTab>('form');
+  const [searchParams] = useSearchParams();
+  const staticBaseConfig = useMemo(
+    () => {
+      if (formId && configs[formId]) return configs[formId];
+      const fallbackId = formId || defaultConfig.id;
+      const requestedTab = searchParams.get('tab');
+      return {
+        ...defaultConfig,
+        id: fallbackId,
+        kind: inferDesignerKindFromMeta(defaultConfig.kind, fallbackId, requestedTab),
+      };
+    },
+    [formId, searchParams],
+  );
+  const isPlatformFormRoute = Boolean(formId && isNumericFormRouteId(formId));
+  const [databaseFieldsByForm, setDatabaseFieldsByForm] = useState<Record<string, DesignerField[]>>({});
+  const [databaseMetaByForm, setDatabaseMetaByForm] = useState<Record<string, {
+    dataSource?: string;
+    description?: string;
+    kind?: DesignerConfig['kind'];
+    name?: string;
+    code?: string;
+  }>>({});
+  const baseConfig = useMemo<DesignerConfig>(() => {
+    const databaseFields = databaseFieldsByForm[staticBaseConfig.id];
+    const databaseMeta = databaseMetaByForm[staticBaseConfig.id];
+    if (!databaseFields?.length && !databaseMeta) return staticBaseConfig;
+    return {
+      ...staticBaseConfig,
+      id: databaseMeta?.code || staticBaseConfig.id,
+      name: databaseMeta?.name || staticBaseConfig.name,
+      createTitle: databaseMeta?.name ? `新增${databaseMeta.name}` : staticBaseConfig.createTitle,
+      kind: databaseMeta?.kind || staticBaseConfig.kind,
+      fields: databaseFields?.length ? databaseFields : staticBaseConfig.fields,
+      dataSource: databaseMeta?.dataSource || staticBaseConfig.dataSource,
+      description: databaseMeta?.description || staticBaseConfig.description,
+    };
+  }, [databaseFieldsByForm, databaseMetaByForm, staticBaseConfig]);
+  const [activeTab, setActiveTab] = useState<DesignerTab>(() => (staticBaseConfig.kind === 'analysis' ? 'dashboard' : 'form'));
   const [componentPanel, setComponentPanel] = useState<ComponentPanel>('components');
   const [version, setVersion] = useState('v0.1');
-  const baseConfig = (formId && configs[formId]) || { ...defaultConfig, id: formId || defaultConfig.id };
   const [viewConfig, setViewConfig] = useState<ViewConfig>(() => makeDesignerViewConfig(baseConfig));
+  const [analyticsDesign, setAnalyticsDesign] = useState<AnalyticsDesign>(() => makeDefaultAnalyticsDesign(baseConfig));
+  const [selectedAnalyticsWidgetId, setSelectedAnalyticsWidgetId] = useState('');
   const [expandedViewRow, setExpandedViewRow] = useState<string>('filter-0');
   const [filterFieldPickerOpen, setFilterFieldPickerOpen] = useState(false);
   const [tableFieldPickerOpen, setTableFieldPickerOpen] = useState(false);
@@ -1605,6 +2361,7 @@ export default function FormSettingsPage() {
   const [publishCheckOpen, setPublishCheckOpen] = useState(false);
   const [serverPublishReport, setServerPublishReport] = useState<PlatformFormPublishReport | null>(null);
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
+  const [selectedVersionKey, setSelectedVersionKey] = useState<VersionPanelSelection>('draft');
   const [draggedControlId, setDraggedControlId] = useState('');
   const [dropHint, setDropHint] = useState<{ controlId: string; position: DropPosition } | null>(null);
   const [isCanvasDragActive, setCanvasDragActive] = useState(false);
@@ -1617,6 +2374,29 @@ export default function FormSettingsPage() {
   }>(() => ({ open: false, draft: makeEncodingSegment('fixed', baseConfig.fields) }));
   const [professionalFlowConfig, setProfessionalFlowConfig] = useState<FlowDesignerConfig>(() => makeProfessionalFlowConfig(baseConfig));
   const [platformForm, setPlatformForm] = useState<PlatformForm | null>(null);
+  const viewConfigMeta = getViewConfigMeta(platformForm);
+  const [formPermissionRows, setFormPermissionRows] = useState<FormPermissionRow[]>([]);
+  const [isResolvingPlatformConfig, setResolvingPlatformConfig] = useState(isPlatformFormRoute);
+  const designerMeta = useMemo(() => getDesignerMeta(platformForm), [platformForm]);
+  const {
+    controlTypeOptions,
+    textFormatOptions,
+    textTrimModeOptions,
+    textCaseModeOptions,
+    selectionModeOptions,
+    selectionDisplayOptions,
+    dateModeOptions,
+    defaultDateOptions,
+    encodingResetCycleOptions,
+    componentGroups,
+    commonControlKeys,
+  } = designerMeta;
+  const commonControls = useMemo(
+    () => commonControlKeys
+      .map((key) => componentGroups.flatMap((group) => group.items).find((item) => item.key === key))
+      .filter((item): item is ComponentDefinition => Boolean(item)),
+    [commonControlKeys, componentGroups],
+  );
   const [workflowMeta, setWorkflowMeta] = useState<WorkflowDesignerMeta>({});
   const [isPersistingFlow, setPersistingFlow] = useState(false);
   const [isPersistingPermissions, setPersistingPermissions] = useState(false);
@@ -1627,10 +2407,24 @@ export default function FormSettingsPage() {
   const permissionRoles = identityRoles.length ? identityRoles : baseConfig.roles;
   const permissionOrgUnits = identityOrgUnits.filter((org) => org.status !== 'inactive');
   const permissionOrgUnitIds = permissionOrgUnits.map((org) => org.id);
+  const permissionOrgUnitKey = permissionOrgUnitIds.join(',');
   const permissionOrgUnitOptions = permissionOrgUnits.map((org) => ({
     value: org.id,
     label: org.code ? `${org.name} / ${org.code}` : org.name,
   }));
+  useEffect(() => {
+    if (versionPanelOpen) {
+      setSelectedVersionKey('draft');
+    }
+  }, [versionPanelOpen]);
+  useEffect(() => {
+    if (!platformForm) return;
+    const configDrafts = permissionDraftsFromConfig(platformForm.config);
+    const rowDrafts = formPermissionRows.length
+      ? permissionDraftsFromRows(formPermissionRows, identityRoleRecords, baseConfig.fields, permissionOrgUnitIds)
+      : {};
+    setPermissionDrafts(mergePermissionDraftSources(configDrafts, rowDrafts));
+  }, [baseConfig.fields, formPermissionRows, identityRoleRecords, permissionOrgUnitKey, platformForm]);
   const [selectedPermissionRole, setSelectedPermissionRole] = useState('');
   const [fieldPermissionQuery, setFieldPermissionQuery] = useState('');
   const [fieldPermissionFilter, setFieldPermissionFilter] = useState<'all' | 'hidden' | 'editable' | 'required' | 'exportable'>('all');
@@ -1693,6 +2487,25 @@ export default function FormSettingsPage() {
     scaleX: number;
     scaleY: number;
   } | null>(null);
+  const isAnalysisDesigner = baseConfig.kind === 'analysis';
+  const designerTabs = isAnalysisDesigner ? analyticsTabs : tabs;
+  const isNoLeftTab = (['permission', 'filter', 'style', 'flow', 'dataset', 'dashboard'] as DesignerTab[]).includes(activeTab);
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab') as DesignerTab | null;
+    if (!requestedTab) return;
+    if (designerTabs.some((item) => item.key === requestedTab) && activeTab !== requestedTab) {
+      setActiveTab(requestedTab);
+      setSelectedControlId('');
+    }
+  }, [activeTab, designerTabs, searchParams]);
+
+  useEffect(() => {
+    if (!designerTabs.some((item) => item.key === activeTab)) {
+      setActiveTab(designerTabs[0].key as DesignerTab);
+      setSelectedControlId('');
+    }
+  }, [activeTab, designerTabs]);
 
   useEffect(() => {
     Promise.all([adminListRoles(), adminListOrgUnits()])
@@ -1727,10 +2540,17 @@ export default function FormSettingsPage() {
 
   useEffect(() => {
     const nextControls = baseConfig.fields.map(makeFieldControl);
+    const requestedTab = searchParams.get('tab') as DesignerTab | null;
+    const nextTabs = baseConfig.kind === 'analysis' ? analyticsTabs : tabs;
+    const nextDefaultTab = baseConfig.kind === 'analysis' ? 'dashboard' : 'form';
+    const nextTab = requestedTab && nextTabs.some((item) => item.key === requestedTab) ? requestedTab : nextDefaultTab;
+    setActiveTab(nextTab);
     setLayoutControls(nextControls);
     setSelectedControlId(nextControls[0]?.id || '');
     setSelectedAssetKey(baseConfig.fields[0]?.key || '');
     setViewConfig(makeDesignerViewConfig(baseConfig));
+    setAnalyticsDesign(makeDefaultAnalyticsDesign(baseConfig));
+    setSelectedAnalyticsWidgetId('');
     setExpandedViewRow('filter-0');
     setFilterFieldPickerOpen(false);
     setTableFieldPickerOpen(false);
@@ -1752,14 +2572,20 @@ export default function FormSettingsPage() {
     setRuleOverrides({});
     setRuleModal(null);
     setProfessionalFlowConfig(makeProfessionalFlowConfig(baseConfig));
-    setPlatformForm(null);
+    setPlatformForm((current) => {
+      if (!current) return null;
+      if (current.code === staticBaseConfig.id || String(current.id) === staticBaseConfig.id) return current;
+      if (isPlatformFormRoute && String(current.id) === String(formId)) return current;
+      return null;
+    });
+    setFormPermissionRows([]);
     setWorkflowMeta({});
     setPermissionDrafts({});
     const nextFlowNodes = makeFlowNodes(baseConfig.flowSteps);
     setFlowNodes(nextFlowNodes);
     setFlowConnections(makeFlowConnections(nextFlowNodes));
     setPendingFlowPort(null);
-  }, [baseConfig.id, baseConfig.version, baseConfig.fields, baseConfig.flowSteps]);
+  }, [baseConfig.id, baseConfig.kind, baseConfig.version, baseConfig.fields, baseConfig.flowSteps, formId, isPlatformFormRoute, searchParams, staticBaseConfig.id]);
 
   useEffect(() => {
     if (!previewFlowNodeOptions.length) {
@@ -1774,17 +2600,50 @@ export default function FormSettingsPage() {
   useEffect(() => {
     let cancelled = false;
     const loadPersistedFlow = async () => {
+      const shouldResolveRemoteConfig = !configs[staticBaseConfig.id];
+      if (shouldResolveRemoteConfig) setResolvingPlatformConfig(true);
       try {
-        const formsResponse = await listPlatformForms();
-        const forms = (formsResponse.data?.data || []) as PlatformForm[];
-        const matchedForm = forms.find((form) => form.code === baseConfig.id);
-        if (!matchedForm || cancelled) return;
-        setPlatformForm(matchedForm);
-        setPermissionDrafts(permissionDraftsFromConfig(matchedForm.config));
-        let persistedViewConfig = getStoredViewConfig(matchedForm, baseConfig);
+        const formDetail = await resolvePlatformFormForConfig(staticBaseConfig.id);
+        if (!formDetail || cancelled) return;
+        if (cancelled) return;
+        const databaseFields = platformFieldsToDesignerFields(formDetail.fields);
+        setDatabaseFieldsByForm((current) => {
+          if (!databaseFields.length) return current;
+          if (areDesignerFieldsSame(current[staticBaseConfig.id], databaseFields)) return current;
+          return { ...current, [staticBaseConfig.id]: databaseFields };
+        });
+        setDatabaseMetaByForm((current) => ({
+          ...current,
+          [staticBaseConfig.id]: {
+            name: formDetail.name || baseConfig.name,
+            code: formDetail.code || baseConfig.id,
+            dataSource: formDetail.table_name || baseConfig.dataSource,
+            description: formDetail.description || baseConfig.description,
+            kind: inferFormDesignerKind(formDetail),
+          },
+        }));
+        setPlatformForm(formDetail);
+        const storedAnalyticsDesign = getStoredAnalyticsDesign(formDetail, {
+          ...baseConfig,
+          kind: inferFormDesignerKind(formDetail),
+        });
+        setAnalyticsDesign(storedAnalyticsDesign);
+        setSelectedAnalyticsWidgetId(storedAnalyticsDesign.widgets[0]?.id || '');
+        setPermissionDrafts(permissionDraftsFromConfig(formDetail.config));
+        try {
+          const permissionsResponse = await listPlatformFormPermissions(formDetail.id);
+          if (!cancelled) {
+            setFormPermissionRows((permissionsResponse.data?.data || []) as FormPermissionRow[]);
+          }
+        } catch (error) {
+          console.warn('form permissions load failed', error);
+          if (!cancelled) setFormPermissionRows([]);
+        }
+        const viewSourceFields = databaseFields.length ? databaseFields : baseConfig.fields;
+        let persistedViewConfig = getStoredViewConfig(formDetail, baseConfig);
         if (!persistedViewConfig) {
           try {
-            const layoutsResponse = await listPlatformFormLayouts(matchedForm.id);
+            const layoutsResponse = await listPlatformFormLayouts(formDetail.id);
             const layouts = (layoutsResponse.data?.data || []) as Array<{ layout_type?: string; config?: Record<string, unknown> }>;
             const viewLayout = layouts.find((layout) => layout.layout_type === 'view');
             const layoutConfig = viewLayout?.config || {};
@@ -1792,7 +2651,7 @@ export default function FormSettingsPage() {
             if (layoutView) {
               persistedViewConfig = normalizeViewConfig(
                 layoutView,
-                designerFieldsToViewFields(baseConfig.fields),
+                designerFieldsToViewFields(viewSourceFields),
                 baseConfig.filters.map((filter) => filter.key),
               );
             }
@@ -1803,7 +2662,7 @@ export default function FormSettingsPage() {
         if (persistedViewConfig && !cancelled) {
           setViewConfig(persistedViewConfig);
         }
-        const meta = getWorkflowDesignerMeta(matchedForm);
+        const meta = getWorkflowDesignerMeta(formDetail);
         setWorkflowMeta(meta);
         const workflowId = meta.draftWorkflowId || meta.publishedWorkflowId;
         if (!workflowId) return;
@@ -1825,17 +2684,23 @@ export default function FormSettingsPage() {
         if (!cancelled) {
           message.warning('未能加载后端流程草稿，当前使用本地默认配置');
         }
+      } finally {
+        if (!cancelled) setResolvingPlatformConfig(false);
       }
     };
     loadPersistedFlow();
     return () => {
       cancelled = true;
     };
-  }, [baseConfig.id, baseConfig.name, baseConfig.version, baseConfig.fields, baseConfig.flowSteps]);
+  }, [baseConfig.id, baseConfig.name, baseConfig.version, baseConfig.fields, baseConfig.flowSteps, staticBaseConfig.id]);
 
   const selectedControl = useMemo(
     () => layoutControls.find((control) => control.id === selectedControlId),
     [layoutControls, selectedControlId],
+  );
+  const canvasFieldKeySet = useMemo(
+    () => new Set(layoutControls.map((control) => control.fieldKey).filter(Boolean)),
+    [layoutControls],
   );
   const selectedField = useMemo(
     () => {
@@ -1847,11 +2712,7 @@ export default function FormSettingsPage() {
     },
     [activeTab, baseConfig.fields, baseConfig.filters, selectedAssetKey, selectedControl],
   );
-  const selectedEffectiveControlType = selectedControl
-    ? selectedControl.controlType === 'field'
-      ? inferFieldControlType(selectedField)
-      : selectedControl.controlType
-    : '';
+  const selectedEffectiveControlType = getEffectiveControlTypeForControl(selectedControl, selectedField);
   const selectedControlUsesDataSource = Boolean(
     selectedControl && isDataSourceControlType(selectedEffectiveControlType),
   );
@@ -1880,13 +2741,54 @@ export default function FormSettingsPage() {
   const filteredFields = baseConfig.fields.filter((field) => matchesLibrarySearch(`${field.name} ${field.key} ${field.type} ${field.optionSource || ''}`));
   const libraryFields = activeTab === 'filter' ? baseConfig.filters : baseConfig.fields;
   const filteredLibraryFields = libraryFields.filter((field) => matchesLibrarySearch(`${field.name} ${field.key} ${field.type} ${field.optionSource || ''}`));
-  const alertSections = baseConfig.id === 'alert-center' ? alertBusinessSections : [
+  const fallbackBusinessSections = baseConfig.id === 'alert-center' ? alertBusinessSections : [
     { key: 'default', title: '基础信息', desc: '当前表单的主要录入字段', fieldKeys: baseConfig.fields.map((field) => field.key) },
   ];
+  const alertSections = normalizeBusinessSections(designerMeta.businessSections, fallbackBusinessSections);
   const searchableFieldCount = baseConfig.fields.filter((field) => field.searchable).length;
   const requiredControlsInCanvas = layoutControls.filter((control) => control.rules.required.enabled).length;
   const hiddenRequiredControls = layoutControls.filter((control) => !control.rules.visible.enabled && control.rules.required.enabled);
   const publishChecks = useMemo<PublishCheckItem[]>(() => {
+    if (isAnalysisDesigner) {
+      const widgetsWithoutMetric = analyticsDesign.widgets.filter((widget) => !widget.metricIds.length);
+      const invalidWidgetDatasets = analyticsDesign.widgets.filter((widget) => !analyticsDesign.datasets.some((dataset) => dataset.id === widget.datasetId));
+      const interactiveWidgets = analyticsDesign.widgets.filter((widget) => widget.interaction !== 'none');
+      const hasDetailTarget = analyticsDesign.widgets.some((widget) => widget.type === 'detail-table' || widget.type === 'rank-table');
+      return [
+        {
+          level: analyticsDesign.datasets.length ? 'suggestion' : 'error',
+          title: '数据集绑定',
+          detail: analyticsDesign.datasets.length ? `已配置 ${analyticsDesign.datasets.length} 个数据集，主数据源为 ${analyticsDesign.datasets[0]?.source || '-'}` : 'BI 看板至少需要一个数据集。',
+        },
+        {
+          level: analyticsDesign.metrics.length ? 'suggestion' : 'error',
+          title: '指标定义',
+          detail: analyticsDesign.metrics.length ? `已配置 ${analyticsDesign.metrics.length} 个指标，可用于指标卡、趋势图和排行。` : '请至少定义一个可计算指标。',
+        },
+        {
+          level: widgetsWithoutMetric.length ? 'error' : 'suggestion',
+          title: '图表指标绑定',
+          detail: widgetsWithoutMetric.length ? `以下组件缺少指标：${widgetsWithoutMetric.map((widget) => widget.title).join('、')}` : '所有图表组件均已绑定指标。',
+        },
+        {
+          level: invalidWidgetDatasets.length ? 'error' : 'suggestion',
+          title: '图表数据集绑定',
+          detail: invalidWidgetDatasets.length ? `以下组件绑定的数据集不存在：${invalidWidgetDatasets.map((widget) => widget.title).join('、')}` : '所有图表组件均绑定有效数据集。',
+        },
+        {
+          level: analyticsDesign.globalFilters.length ? 'suggestion' : 'warning',
+          title: '全局筛选器',
+          detail: analyticsDesign.globalFilters.length ? `已配置 ${analyticsDesign.globalFilters.length} 个全局筛选器。` : '建议配置时间、组织或状态等全局筛选器。',
+        },
+        {
+          level: interactiveWidgets.length && !hasDetailTarget ? 'warning' : 'suggestion',
+          title: '联动与下钻',
+          detail: interactiveWidgets.length
+            ? `已配置 ${interactiveWidgets.length} 个可交互组件${hasDetailTarget ? '，并具备明细承接组件。' : '，建议增加明细表或排行表作为承接。'}`
+            : '当前看板为纯展示模式，可按需增加点击筛选、下钻或跳转动作。',
+        },
+      ];
+    }
     const canvasFieldKeys = new Set(layoutControls.map((control) => control.fieldKey).filter(Boolean));
     const missingRequired = baseConfig.fields.filter((field) => field.required && !canvasFieldKeys.has(field.key));
     const enumWithoutSource = baseConfig.fields.filter((field) => field.type.includes('下拉') && !field.optionSource);
@@ -1957,7 +2859,7 @@ export default function FormSettingsPage() {
           : '流程结构、节点规则和触发绑定已通过核心发布校验。',
     });
     return checks;
-  }, [baseConfig.fields, baseConfig.id, hiddenRequiredControls, layoutControls, professionalFlowConfig, searchableFieldCount, viewConfig]);
+  }, [analyticsDesign, baseConfig.fields, baseConfig.id, hiddenRequiredControls, isAnalysisDesigner, layoutControls, professionalFlowConfig, searchableFieldCount, viewConfig]);
   const serverPublishChecks = useMemo<PublishCheckItem[]>(() => {
     if (!serverPublishReport) return [];
     const items = serverPublishReport.items.map((item) => ({
@@ -2043,6 +2945,359 @@ export default function FormSettingsPage() {
       />
     );
   };
+
+  const renderTypeSpecificProperties = () => {
+    if (!selectedControl) return null;
+    const typeSettings = {
+      ...getDefaultTypeSettings(selectedEffectiveControlType, selectedField),
+      ...(selectedControl.typeSettings || {}),
+    };
+    if (selectedEffectiveControlType === 'text' || selectedEffectiveControlType === 'textarea') {
+      return (
+        <section className="designer-prop-section">
+          <strong className="designer-prop-section-title">文本设置</strong>
+          <label>
+            <span>字符范围</span>
+            <div className="designer-inline-fields">
+              <InputNumber
+                min={0}
+                placeholder="最少"
+                value={typeSettings.minLength}
+                onChange={(minLength) => updateSelectedTypeSettings({ minLength: Number(minLength || 0) })}
+              />
+              <InputNumber
+                min={1}
+                placeholder="最多"
+                value={typeSettings.maxLength}
+                onChange={(maxLength) => updateSelectedTypeSettings({ maxLength: Number(maxLength || 0) })}
+              />
+            </div>
+          </label>
+          <label><span>文本格式</span><Select value={typeSettings.textFormat || 'plain'} options={textFormatOptions} onChange={(textFormat) => updateSelectedTypeSettings({ textFormat })} /></label>
+          <label><span>空格处理</span><Select value={typeSettings.trimMode || 'trim'} options={textTrimModeOptions} onChange={(trimMode) => updateSelectedTypeSettings({ trimMode })} /></label>
+          <label><span>大小写</span><Select value={typeSettings.caseMode || 'original'} options={textCaseModeOptions} onChange={(caseMode) => updateSelectedTypeSettings({ caseMode })} /></label>
+          {selectedEffectiveControlType === 'textarea' && (
+            <label><span>默认行数</span><InputNumber min={2} max={12} value={typeSettings.rows || 3} onChange={(rows) => updateSelectedTypeSettings({ rows: Number(rows || 3) })} /></label>
+          )}
+        </section>
+      );
+    }
+    if (selectedEffectiveControlType === 'number') {
+      return (
+        <section className="designer-prop-section">
+          <strong className="designer-prop-section-title">数值设置</strong>
+          <label>
+            <span>取值范围</span>
+            <div className="designer-inline-fields">
+              <InputNumber placeholder="最小" value={typeSettings.min} onChange={(min) => updateSelectedTypeSettings({ min: min === null ? undefined : Number(min) })} />
+              <InputNumber placeholder="最大" value={typeSettings.max} onChange={(max) => updateSelectedTypeSettings({ max: max === null ? undefined : Number(max) })} />
+            </div>
+          </label>
+          <label><span>小数位</span><InputNumber min={0} max={6} value={typeSettings.precision ?? 0} onChange={(precision) => updateSelectedTypeSettings({ precision: Number(precision || 0) })} /></label>
+          <label><span>单位后缀</span><Input allowClear placeholder="例如：小时、件、%" value={typeSettings.unit || ''} onChange={(event) => updateSelectedTypeSettings({ unit: event.target.value })} /></label>
+          <label><span>千分位</span><Switch size="small" checked={Boolean(typeSettings.thousandSeparator)} onChange={(thousandSeparator) => updateSelectedTypeSettings({ thousandSeparator })} /></label>
+        </section>
+      );
+    }
+    if (selectedEffectiveControlType === 'select' || selectedEffectiveControlType === 'relation') {
+      return (
+        <section className="designer-prop-section">
+          <strong className="designer-prop-section-title">{selectedEffectiveControlType === 'relation' ? '关联设置' : '选择设置'}</strong>
+          <label><span>选择模式</span><Select value={typeSettings.selectionMode || 'single'} options={selectionModeOptions} onChange={(selectionMode) => updateSelectedTypeSettings({ selectionMode })} /></label>
+          <label><span>展示方式</span><Select value={typeSettings.displayMode || (selectedEffectiveControlType === 'relation' ? 'search' : 'dropdown')} options={selectionDisplayOptions} onChange={(displayMode) => updateSelectedTypeSettings({ displayMode })} /></label>
+          <label><span>允许清空</span><Switch size="small" checked={typeSettings.allowClear !== false} onChange={(allowClear) => updateSelectedTypeSettings({ allowClear })} /></label>
+          {selectedEffectiveControlType === 'select' && (
+            <label><span>允许临时项</span><Switch size="small" checked={Boolean(typeSettings.allowCreateOption)} onChange={(allowCreateOption) => updateSelectedTypeSettings({ allowCreateOption })} /></label>
+          )}
+        </section>
+      );
+    }
+    if (selectedEffectiveControlType === 'datetime') {
+      return (
+        <section className="designer-prop-section">
+          <strong className="designer-prop-section-title">日期设置</strong>
+          <label><span>日期类型</span><Select value={typeSettings.dateMode || 'datetime'} options={dateModeOptions} onChange={(dateMode) => updateSelectedTypeSettings({ dateMode })} /></label>
+          <label><span>默认值</span><Select value={typeSettings.defaultDate || 'none'} options={defaultDateOptions} onChange={(defaultDate) => updateSelectedTypeSettings({ defaultDate })} /></label>
+          <label><span>禁选过去</span><Switch size="small" checked={Boolean(typeSettings.disablePast)} onChange={(disablePast) => updateSelectedTypeSettings({ disablePast })} /></label>
+        </section>
+      );
+    }
+    if (selectedEffectiveControlType === 'upload') {
+      return (
+        <section className="designer-prop-section">
+          <strong className="designer-prop-section-title">上传设置</strong>
+          <label><span>文件数量</span><InputNumber min={1} max={20} value={typeSettings.maxFiles || 5} onChange={(maxFiles) => updateSelectedTypeSettings({ maxFiles: Number(maxFiles || 1) })} /></label>
+          <label><span>单个大小</span><InputNumber min={1} max={200} addonAfter="MB" value={typeSettings.maxFileSize || 20} onChange={(maxFileSize) => updateSelectedTypeSettings({ maxFileSize: Number(maxFileSize || 1) })} /></label>
+          <label><span>文件类型</span><Input allowClear value={typeSettings.fileTypes || ''} onChange={(event) => updateSelectedTypeSettings({ fileTypes: event.target.value })} /></label>
+        </section>
+      );
+    }
+    if (selectedEffectiveControlType === 'switch') {
+      return (
+        <section className="designer-prop-section">
+          <strong className="designer-prop-section-title">布尔设置</strong>
+          <label><span>默认状态</span><Switch size="small" checked={Boolean(typeSettings.defaultChecked)} onChange={(defaultChecked) => updateSelectedTypeSettings({ defaultChecked })} /></label>
+          <label><span>开启文案</span><Input value={typeSettings.checkedText || '是'} onChange={(event) => updateSelectedTypeSettings({ checkedText: event.target.value })} /></label>
+          <label><span>关闭文案</span><Input value={typeSettings.uncheckedText || '否'} onChange={(event) => updateSelectedTypeSettings({ uncheckedText: event.target.value })} /></label>
+        </section>
+      );
+    }
+    return null;
+  };
+
+  const renderControlIdentityProperties = () => {
+    if (!selectedControl) return null;
+    return (
+      <section className="designer-prop-section">
+        <strong className="designer-prop-section-title">控件身份</strong>
+        <label>
+          <span>控件名称</span>
+          <Input
+            value={selectedControl.name}
+            onChange={(event) => updateSelectedControl({ name: event.target.value })}
+          />
+        </label>
+        <label>
+          <span>控件类型</span>
+          <Select
+            disabled={isEncodingField(selectedField)}
+            value={selectedEffectiveControlType}
+            options={controlTypeOptions}
+            onChange={(controlType) => {
+              const nextWidth = controlType === 'textarea' || controlType === 'upload' ? 'full' : selectedControl.width;
+              updateSelectedControl({
+                controlType,
+                width: nextWidth as ControlWidth,
+                typeSettings: getDefaultTypeSettings(controlType, selectedField),
+              });
+            }}
+          />
+        </label>
+        <label className="designer-prop-locked">
+          <span>绑定字段</span>
+          <Input value={selectedField ? selectedField.name : '未绑定字段'} disabled />
+        </label>
+        <label className="designer-prop-locked">
+          <span>字段类型</span>
+          <Input value={getFieldStorageTypeLabel(selectedField)} disabled suffix="数据库字段" />
+        </label>
+        {selectedControlUsesEncoding && (
+          <label className="designer-prop-locked">
+            <span>业务特性</span>
+            <Input value="编码" disabled suffix="控件能力" />
+          </label>
+        )}
+      </section>
+    );
+  };
+
+  const renderDataSourceProperties = () => {
+    if (!selectedControl || !selectedControlUsesDataSource) return null;
+    return (
+      <section className="designer-prop-section">
+        <strong className="designer-prop-section-title">数据来源</strong>
+        <label>
+          <span>来源类型</span>
+          <Select
+            value={selectedReferenceSourceKind}
+            options={referenceSourceKindOptions}
+            onChange={(dataSourceKind) => {
+              const config = getReferenceConfig(dataSourceKind);
+              updateSelectedControl({
+                dataSourceKind,
+                optionSource: config.objects[0]?.value,
+              });
+            }}
+          />
+        </label>
+        {selectedReferenceSourceKind === 'static' ? (
+          <label>
+            <span>选项值</span>
+            <Input
+              allowClear
+              placeholder={selectedReferenceConfig.placeholder}
+              value={selectedControl.optionSource || selectedField?.optionSource || ''}
+              onChange={(event) => updateSelectedControl({ optionSource: event.target.value })}
+            />
+          </label>
+        ) : (
+          <label>
+            <span>引用对象</span>
+            <Select
+              value={selectedControl.optionSource || selectedReferenceConfig.objects[0]?.value}
+              options={selectedReferenceConfig.objects}
+              placeholder={selectedReferenceConfig.placeholder}
+              onChange={(optionSource) => updateSelectedControl({ optionSource })}
+            />
+          </label>
+        )}
+        <label>
+          <span>显示字段</span>
+          <Select
+            value={selectedReferenceConfig.labelFields[0]?.value}
+            options={selectedReferenceConfig.labelFields}
+          />
+        </label>
+        <label>
+          <span>值字段</span>
+          <Select
+            value={selectedReferenceConfig.valueFields[0]?.value}
+            options={selectedReferenceConfig.valueFields}
+          />
+        </label>
+        <label>
+          <span>选项预览</span>
+          <Select
+            value={
+              selectedReferenceSourceKind === 'static'
+                ? optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)[0]?.value
+                : selectedReferenceConfig.preview[0]
+            }
+            options={
+              selectedReferenceSourceKind === 'static'
+                ? optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)
+                : selectedReferenceConfig.preview.map((item) => ({ value: item, label: item }))
+            }
+          />
+        </label>
+      </section>
+    );
+  };
+
+  const renderEncodingProperties = () => {
+    if (!selectedControlUsesEncoding || !selectedEncodingRule) return null;
+    return (
+      <section className="designer-prop-section designer-prop-section-primary">
+        <strong className="designer-prop-section-title">编码规则</strong>
+        <label>
+          <span>生成方式</span>
+          <Select
+            value={selectedEncodingRule.generationMode || 'auto'}
+            options={encodingGenerationModeOptions}
+            onChange={(generationMode) => updateSelectedEncodingRule({
+              generationMode,
+              allowManualOverride: generationMode === 'autoEditable' || generationMode === 'manual',
+            })}
+          />
+        </label>
+        <label>
+          <span>生成时机</span>
+          <Select
+            value={selectedEncodingRule.generationTiming || 'create'}
+            options={encodingGenerationTimingOptions}
+            onChange={(generationTiming) => updateSelectedEncodingRule({ generationTiming })}
+          />
+        </label>
+        <label>
+          <span>唯一范围</span>
+          <Select
+            value={selectedEncodingRule.uniquenessScope || 'form'}
+            options={encodingUniquenessScopeOptions}
+            onChange={(uniquenessScope) => updateSelectedEncodingRule({ uniquenessScope, unique: uniquenessScope !== 'dependency' || selectedEncodingSegments.length > 0 })}
+          />
+        </label>
+        <div className="designer-prop-row-wide encoding-segment-list">
+          <Button
+            block
+            icon={<PlusOutlined />}
+            onClick={() => openEncodingSegmentEditor()}
+            size="small"
+          >
+            新增编码段
+          </Button>
+          {selectedEncodingSegments.map((segment, index) => (
+            <div className="encoding-segment-card" key={segment.id}>
+              <button
+                className="encoding-segment-main"
+                onClick={() => openEncodingSegmentEditor(segment, index)}
+                type="button"
+              >
+                <strong>{segment.name || getEncodingSegmentTypeLabel(segment.type)}</strong>
+                <small>
+                  {getEncodingSegmentTypeLabel(segment.type)} · {segment.length || 0} 位 · 示例 {renderEncodingSegmentSample(segment, baseConfig.fields) || '-'}
+                </small>
+              </button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => removeEncodingSegment(index)}
+                size="small"
+                type="text"
+              />
+            </div>
+          ))}
+        </div>
+        <label><span>组成说明</span><Input value={getEncodingComposition(selectedEncodingRule, baseConfig.fields)} readOnly /></label>
+        <label><span>编码示例</span><Input value={renderEncodingSample(selectedEncodingRule, baseConfig.fields)} readOnly /></label>
+      </section>
+    );
+  };
+
+  const renderDisplayProperties = () => {
+    if (!selectedControl) return null;
+    return (
+      <section className="designer-prop-section">
+        <strong className="designer-prop-section-title">布局</strong>
+        <label className="designer-prop-row-wide">
+          <span>控件宽度</span>
+          <div className="designer-width-picker">
+            {controlWidthOptions.map((option) => (
+              <button
+                className={`designer-width-option ${selectedControl.width === option.value ? 'designer-width-option-active' : ''}`}
+                key={option.value}
+                onClick={() => updateSelectedControl({ width: option.value as ControlWidth })}
+                type="button"
+              >
+                <span>{option.label}</span>
+              </button>
+            ))}
+          </div>
+        </label>
+      </section>
+    );
+  };
+
+  const renderDefaultRuleProperties = () => (
+    <section className="designer-prop-section">
+      <strong className="designer-prop-section-title">默认交互规则</strong>
+      <label><span>默认显示</span>{controlRuleToggle('visible')}</label>
+      <label><span>默认只读</span>{controlRuleToggle('readonly')}</label>
+      <label><span>默认必输</span>{controlRuleToggle('required')}</label>
+      <label><span>唯一校验</span>{controlRuleToggle('unique')}</label>
+      <label><span>默认脱敏</span>{controlRuleToggle('masked')}</label>
+      <label><span>允许复制</span>{controlRuleToggle('copyable')}</label>
+      {selectedControlUsesOptionSort && <label><span>选项排序</span>{controlRuleToggle('optionSort')}</label>}
+      {hiddenRequiredControls.length > 0 && <Tag color="red">存在隐藏且必填冲突</Tag>}
+    </section>
+  );
+
+  const renderAutomationProperties = () => (
+    <section className="designer-prop-section">
+      <strong className="designer-prop-section-title">提示与联动</strong>
+      <label>
+        <span>占位提示</span>
+        <Input
+          allowClear
+          placeholder={selectedField?.placeholder || selectedControl?.desc || '请输入占位提示'}
+          value={selectedControl?.placeholder || ''}
+          onChange={(event) => updateSelectedControl({ placeholder: event.target.value })}
+        />
+      </label>
+      <label>
+        <span>帮助说明</span>
+        <Input
+          allowClear
+          placeholder="可在此补充录入说明"
+          value={selectedControl?.helpText || ''}
+          onChange={(event) => updateSelectedControl({ helpText: event.target.value })}
+        />
+      </label>
+      <label><span>变更触发</span>{genericRuleToggle(false, '变更触发')}</label>
+      <label><span>联动刷新</span><Input value="未绑定联动规则" readOnly /></label>
+      <label><span>异常提示</span><Input value="使用字段校验提示" readOnly /></label>
+      <label><span>角色差异</span><Input value="在权限设计中统一配置" readOnly /></label>
+    </section>
+  );
 
   const markUnsaved = () => setHasUnsavedChanges(true);
 
@@ -2185,9 +3440,7 @@ export default function FormSettingsPage() {
 
   const ensurePlatformForm = async () => {
     if (platformForm) return platformForm;
-    const formsResponse = await listPlatformForms();
-    const forms = (formsResponse.data?.data || []) as PlatformForm[];
-    const matchedForm = forms.find((form) => form.code === baseConfig.id);
+    const matchedForm = await resolvePlatformFormForConfig(staticBaseConfig.id);
     if (matchedForm) {
       setPlatformForm(matchedForm);
       setPermissionDrafts(permissionDraftsFromConfig(matchedForm.config));
@@ -2293,6 +3546,8 @@ export default function FormSettingsPage() {
         }));
       });
       await Promise.all(fieldPermissions.map((permission) => upsertPlatformFormPermission(form.id, permission)));
+      const refreshedPermissions = await listPlatformFormPermissions(form.id);
+      setFormPermissionRows((refreshedPermissions.data?.data || []) as FormPermissionRow[]);
       const nextPermissionDrafts = Object.fromEntries(
         Object.entries({ ...permissionDrafts, [activePermissionRole]: draft })
           .map(([roleName, roleDraft]) => [roleName, sanitizePermissionDesignDraft(roleDraft)]),
@@ -2339,6 +3594,7 @@ export default function FormSettingsPage() {
     const now = new Date().toISOString();
     const draftVersion = Number(currentMeta.draftVersion || currentMeta.publishedVersion || 0);
     const publishedVersion = Number(currentMeta.publishedVersion || 0);
+    const runtimeFormLayout = makeRuntimeFormLayout(layoutControls, baseConfig.fields);
     const nextMeta: ViewConfigMeta = mode === 'draft'
       ? {
           ...currentMeta,
@@ -2358,12 +3614,14 @@ export default function FormSettingsPage() {
       ? {
           ...currentConfig,
           viewConfigDraft: nextViewConfig,
+          formLayout: runtimeFormLayout,
           viewConfigMeta: nextMeta,
         }
       : {
           ...currentConfig,
           viewConfig: nextViewConfig,
           viewConfigDraft: nextViewConfig,
+          formLayout: runtimeFormLayout,
           viewConfigMeta: nextMeta,
         };
     const response = await updatePlatformForm(form.id, { config: nextConfig });
@@ -2374,6 +3632,63 @@ export default function FormSettingsPage() {
         draft: nextConfig.viewConfigDraft,
         published: nextConfig.viewConfig,
         meta: nextConfig.viewConfigMeta,
+      },
+    });
+    await upsertPlatformFormLayout(form.id, 'form', {
+      layout_type: 'form',
+      config: runtimeFormLayout,
+    });
+    setPlatformForm(updatedForm);
+    return updatedForm;
+  };
+
+  const updateFormAnalyticsDesign = async (
+    form: PlatformForm,
+    nextAnalyticsDesign: AnalyticsDesign,
+    mode: 'draft' | 'published',
+  ) => {
+    const currentConfig = { ...(form.config || {}) } as Record<string, unknown>;
+    const now = new Date().toISOString();
+    const currentMeta = (currentConfig.analyticsDesignMeta || {}) as Record<string, unknown>;
+    const draftVersion = Number(currentMeta.draftVersion || currentMeta.publishedVersion || 0);
+    const publishedVersion = Number(currentMeta.publishedVersion || 0);
+    const nextMeta = mode === 'draft'
+      ? {
+          ...currentMeta,
+          draftVersion: draftVersion + 1,
+          draftSavedAt: now,
+          status: 'draft',
+        }
+      : {
+          ...currentMeta,
+          draftVersion: Math.max(draftVersion, publishedVersion + 1),
+          publishedVersion: publishedVersion + 1,
+          draftSavedAt: now,
+          publishedAt: now,
+          status: 'published',
+        };
+    const nextConfig: Record<string, unknown> = mode === 'draft'
+      ? {
+          ...currentConfig,
+          assemblyKind: 'analysis',
+          analyticsDesignDraft: nextAnalyticsDesign,
+          analyticsDesignMeta: nextMeta,
+        }
+      : {
+          ...currentConfig,
+          assemblyKind: 'analysis',
+          analyticsDesign: nextAnalyticsDesign,
+          analyticsDesignDraft: nextAnalyticsDesign,
+          analyticsDesignMeta: nextMeta,
+        };
+    const response = await updatePlatformForm(form.id, { config: nextConfig });
+    const updatedForm = (response.data?.data || { ...form, config: nextConfig }) as PlatformForm;
+    await upsertPlatformFormLayout(form.id, 'analytics', {
+      layout_type: 'analytics',
+      config: {
+        draft: nextConfig.analyticsDesignDraft,
+        published: nextConfig.analyticsDesign,
+        meta: nextConfig.analyticsDesignMeta,
       },
     });
     setPlatformForm(updatedForm);
@@ -2409,6 +3724,15 @@ export default function FormSettingsPage() {
     setPersistingFlow(true);
     try {
       const form = await ensurePlatformForm();
+      if (isAnalysisDesigner) {
+        await updateFormViewConfig(form, viewConfig, 'draft');
+        const updatedForm = await updateFormAnalyticsDesign(form, analyticsDesign, 'draft');
+        const meta = ((updatedForm.config || {}).analyticsDesignMeta || {}) as Record<string, unknown>;
+        setVersion(`v${Number(meta.draftVersion || 1)}`);
+        setHasUnsavedChanges(false);
+        message.success('BI 看板草稿已保存，数据集、指标、画布和联动配置不会影响已发布页面');
+        return;
+      }
       const formWithView = await updateFormViewConfig(form, viewConfig, 'draft');
       const meta = getWorkflowDesignerMeta(formWithView);
       const saved = await saveWorkflowDefinition('draft', formWithView, meta.draftWorkflowId);
@@ -2429,6 +3753,13 @@ export default function FormSettingsPage() {
     setPersistingFlow(true);
     try {
       const form = await ensurePlatformForm();
+      if (isAnalysisDesigner) {
+        const formWithView = await updateFormViewConfig(form, viewConfig, 'draft');
+        await updateFormAnalyticsDesign(formWithView, analyticsDesign, 'draft');
+        setServerPublishReport(null);
+        setPublishCheckOpen(true);
+        return;
+      }
       const formWithView = await updateFormViewConfig(form, viewConfig, 'draft');
       const response = await previewPlatformFormPublish(formWithView.id);
       setServerPublishReport(response.data?.data as PlatformFormPublishReport);
@@ -2450,6 +3781,20 @@ export default function FormSettingsPage() {
     setPersistingFlow(true);
     try {
       const form = await ensurePlatformForm();
+      if (isAnalysisDesigner) {
+        const formWithViewDraft = await updateFormViewConfig(form, viewConfig, 'draft');
+        const formWithAnalyticsDraft = await updateFormAnalyticsDesign(formWithViewDraft, analyticsDesign, 'draft');
+        const formWithViewPublished = await updateFormViewConfig(formWithAnalyticsDraft, viewConfig, 'published');
+        const updatedForm = await updateFormAnalyticsDesign(formWithViewPublished, analyticsDesign, 'published');
+        const formVersionResponse = await publishPlatformForm(updatedForm.id);
+        const schemaVersion = Number(formVersionResponse.data?.data?.version || ((updatedForm.config || {}).analyticsDesignMeta as any)?.publishedVersion || 1);
+        setServerPublishReport((formVersionResponse.data?.data?.impact_report || null) as PlatformFormPublishReport | null);
+        setVersion(`v${schemaVersion}`);
+        setPublishCheckOpen(false);
+        setHasUnsavedChanges(false);
+        message.success('BI 看板配置已发布，运行页会读取新的数据集、指标、图表和联动配置');
+        return;
+      }
       const formWithView = await updateFormViewConfig(form, viewConfig, 'draft');
       const meta = getWorkflowDesignerMeta(formWithView);
       const saved = await saveWorkflowDefinition('published', formWithView, meta.draftWorkflowId || meta.publishedWorkflowId);
@@ -2713,6 +4058,17 @@ export default function FormSettingsPage() {
     updateSelectedControl({ encodingRule: { ...currentRule, ...patch } });
   };
 
+  const updateSelectedTypeSettings = (patch: Partial<ControlTypeSettings>) => {
+    if (!selectedControl) return;
+    updateSelectedControl({
+      typeSettings: {
+        ...getDefaultTypeSettings(selectedEffectiveControlType, selectedField),
+        ...(selectedControl.typeSettings || {}),
+        ...patch,
+      },
+    });
+  };
+
   const syncEncodingSegments = (segments: EncodingSegment[]) => {
     const dependencies = Array.from(new Set(
       segments
@@ -2926,11 +4282,16 @@ export default function FormSettingsPage() {
   const renderComponentInput = (control: LayoutControl) => {
     const disabled = control.rules.readonly.enabled;
     const placeholder = control.placeholder || control.desc || `请输入${control.name}`;
+    const typeSettings = {
+      ...getDefaultTypeSettings(control.controlType),
+      ...(control.typeSettings || {}),
+    };
     if (control.controlType === 'textarea') {
-      return <Input.TextArea disabled={disabled} placeholder={placeholder} autoSize={{ minRows: 2, maxRows: 4 }} />;
+      const rows = typeSettings.rows || 2;
+      return <Input.TextArea disabled={disabled} maxLength={typeSettings.maxLength} placeholder={placeholder} autoSize={{ minRows: rows, maxRows: Math.max(rows, 4) }} />;
     }
     if (control.controlType === 'number') {
-      return <Input disabled={disabled} placeholder={placeholder} suffix="#" />;
+      return <Input disabled={disabled} placeholder={placeholder} suffix={typeSettings.unit || '#'} />;
     }
     if (['select', 'relation'].includes(control.controlType)) {
       return <Select disabled={disabled} placeholder={placeholder} options={optionSourceToOptions(control.optionSource, placeholder)} />;
@@ -2942,16 +4303,17 @@ export default function FormSettingsPage() {
       return <Button disabled={disabled} icon={<PaperClipOutlined />}>选择文件</Button>;
     }
     if (control.controlType === 'switch') {
-      return <Segmented disabled={disabled} options={['否', '是']} value="否" />;
+      return <Segmented disabled={disabled} options={[typeSettings.uncheckedText || '否', typeSettings.checkedText || '是']} value={typeSettings.defaultChecked ? typeSettings.checkedText || '是' : typeSettings.uncheckedText || '否'} />;
     }
     if (control.controlType === 'readonly-text' || control.controlType === 'code') {
       return <Input disabled value={control.controlType === 'code' ? '自动生成编号' : '系统计算或引用值'} />;
     }
-    return <Input disabled={disabled} placeholder={placeholder} />;
+    return <Input disabled={disabled} maxLength={typeSettings.maxLength} placeholder={placeholder} />;
   };
 
   const renderCanvasControl = (control: LayoutControl) => {
     const field = baseConfig.fields.find((item) => item.key === control.fieldKey);
+    const effectiveControlType = getEffectiveControlTypeForControl(control, field);
     const dragClass = `${draggedControlId === control.id ? 'canvas-control-dragging' : ''} ${dropHint?.controlId === control.id ? `canvas-drop-${dropHint.position}` : ''}`;
     const ruleClass = `${!control.rules.visible.enabled ? 'canvas-control-hidden-preview' : ''} ${control.rules.readonly.enabled ? 'canvas-control-readonly-preview' : ''}`;
     if (control.source === 'field' && field) {
@@ -2968,7 +4330,7 @@ export default function FormSettingsPage() {
           {renderControlActions(control)}
           <label>
             {renderControlLabel(control)}
-            {fieldInput(field, control.placeholder, control.rules.readonly.enabled, control.optionSource, control.controlType)}
+            {fieldInput(field, control.placeholder, control.rules.readonly.enabled, control.optionSource, effectiveControlType, control.typeSettings)}
             {control.helpText && <small className="designer-control-help">{control.helpText}</small>}
           </label>
         </div>
@@ -3162,7 +4524,7 @@ export default function FormSettingsPage() {
             <div className={`designer-preview-control ${controlWidthClass(previewDevice === 'mobile' ? 'full' : control.width)}`} key={control.id}>
               <span className={required ? 'designer-required-label' : undefined}>{control.name}</span>
               {control.source === 'field' && field
-                ? fieldInput(field, control.placeholder, readonly, control.optionSource, control.controlType)
+                ? fieldInput(field, control.placeholder, readonly, control.optionSource, control.controlType, control.typeSettings)
                 : renderComponentInput({ ...control, rules: { ...control.rules, readonly: { ...control.rules.readonly, enabled: readonly } } })}
               {field && permission && (
                 <small className="designer-preview-node-permission">
@@ -3181,7 +4543,79 @@ export default function FormSettingsPage() {
   const sortedViewFilters = sortByOrder(viewConfig.filters);
   const sortedViewColumns = sortByOrder(viewConfig.table.columns);
   const enabledViewColumns = sortedViewColumns.filter((column) => column.enabled);
-  const viewConfigMeta = getViewConfigMeta(platformForm);
+  const versionListItems = useMemo(() => {
+    const draftVersion = Number(viewConfigMeta.draftVersion || 1);
+    const publishedVersion = Number(viewConfigMeta.publishedVersion || 0);
+    const draftHasChanges = hasUnsavedChanges || viewConfigMeta.status === 'draft';
+    return [
+      {
+        key: 'draft',
+        name: `当前草稿 v${draftVersion}`,
+        type: '草稿',
+        status: draftHasChanges ? '待发布' : '无差异',
+        date: viewConfigMeta.draftSavedAt ? viewConfigMeta.draftSavedAt.slice(0, 10) : '本地编辑中',
+        note: draftHasChanges ? '存在未发布修改' : '与线上版本一致',
+        tone: draftHasChanges ? 'warning' : 'success',
+        active: selectedVersionKey === 'draft',
+      },
+      {
+        key: 'published',
+        name: publishedVersion ? `已发布 v${publishedVersion}` : '尚未发布',
+        type: '线上',
+        status: publishedVersion ? '线上生效' : '无线上版本',
+        date: viewConfigMeta.publishedAt ? viewConfigMeta.publishedAt.slice(0, 10) : '暂无发布时间',
+        note: publishedVersion ? '当前线上可见版本' : '发布后生成线上版本',
+        tone: publishedVersion ? 'published' : 'muted',
+        active: selectedVersionKey === 'published',
+      },
+      ...(publishedVersion > 1 ? [{
+        key: 'previous',
+        name: `上一发布 v${publishedVersion - 1}`,
+        type: '历史',
+        status: '可回滚目标',
+        date: '历史快照',
+        note: `可恢复到 v${publishedVersion - 1}`,
+        tone: 'history',
+        active: selectedVersionKey === 'previous',
+      }] : []),
+    ] as Array<{
+      key: VersionPanelSelection;
+      name: string;
+      type: string;
+      status: string;
+      date: string;
+      note: string;
+      tone: string;
+      active: boolean;
+    }>;
+  }, [hasUnsavedChanges, selectedVersionKey, viewConfigMeta.draftSavedAt, viewConfigMeta.draftVersion, viewConfigMeta.publishedAt, viewConfigMeta.publishedVersion, viewConfigMeta.status]);
+  const selectedVersionItem = versionListItems.find((item) => item.key === selectedVersionKey) || versionListItems[0];
+  const selectedVersionDetails = useMemo(() => {
+    const draftVersion = Number(viewConfigMeta.draftVersion || 1);
+    const publishedVersion = Number(viewConfigMeta.publishedVersion || 0);
+    if (selectedVersionItem?.key === 'published') {
+      return [
+        ['版本类型', '已发布版本'],
+        ['版本号', publishedVersion ? `v${publishedVersion}` : '尚未发布'],
+        ['生效状态', publishedVersion ? '线上生效' : '未生效'],
+        ['发布时间', viewConfigMeta.publishedAt ? viewConfigMeta.publishedAt.slice(0, 10) : '暂无'],
+      ];
+    }
+    if (selectedVersionItem?.key === 'previous') {
+      return [
+        ['版本类型', '历史发布版本'],
+        ['版本号', `v${Math.max(publishedVersion - 1, 1)}`],
+        ['生效状态', '可回滚目标'],
+        ['发布时间', '历史快照'],
+      ];
+    }
+    return [
+      ['版本类型', '当前草稿'],
+      ['版本号', `v${draftVersion}`],
+      ['草稿状态', hasUnsavedChanges || viewConfigMeta.status === 'draft' ? '待发布' : '无差异'],
+      ['保存时间', viewConfigMeta.draftSavedAt ? viewConfigMeta.draftSavedAt.slice(0, 10) : '本地编辑中'],
+    ];
+  }, [hasUnsavedChanges, selectedVersionItem?.key, viewConfigMeta.draftSavedAt, viewConfigMeta.draftVersion, viewConfigMeta.publishedAt, viewConfigMeta.publishedVersion, viewConfigMeta.status]);
 
   const renderViewFilterControl = (filter: ViewFilterConfig) => {
     const placeholder = filter.placeholder || filter.label;
@@ -3345,6 +4779,474 @@ export default function FormSettingsPage() {
     </div>
   );
 
+  const updateAnalyticsDesign = (updater: (current: AnalyticsDesign) => AnalyticsDesign) => {
+    setAnalyticsDesign((current) => updater(current));
+    markUnsaved();
+  };
+
+  const updateAnalyticsDataset = (id: string, patch: Partial<AnalyticsDataset>) => {
+    updateAnalyticsDesign((current) => ({
+      ...current,
+      datasets: current.datasets.map((dataset) => (dataset.id === id ? { ...dataset, ...patch } : dataset)),
+    }));
+  };
+
+  const updateAnalyticsMetric = (id: string, patch: Partial<AnalyticsMetric>) => {
+    updateAnalyticsDesign((current) => ({
+      ...current,
+      metrics: current.metrics.map((metric) => (metric.id === id ? { ...metric, ...patch } : metric)),
+    }));
+  };
+
+  const updateAnalyticsWidget = (id: string, patch: Partial<AnalyticsWidget>) => {
+    updateAnalyticsDesign((current) => ({
+      ...current,
+      widgets: current.widgets.map((widget) => (widget.id === id ? { ...widget, ...patch } : widget)),
+    }));
+  };
+
+  const updateAnalyticsStyle = (patch: Partial<AnalyticsStyle>) => {
+    updateAnalyticsDesign((current) => ({
+      ...current,
+      style: { ...makeDefaultAnalyticsStyle(), ...(current.style || {}), ...patch },
+    }));
+  };
+
+  const addAnalyticsDataset = () => {
+    const datasetId = `dataset-${Date.now()}`;
+    updateAnalyticsDesign((current) => ({
+      ...current,
+      datasets: [
+        ...current.datasets,
+        {
+          id: datasetId,
+          name: '新数据集',
+          sourceType: 'businessForm',
+          source: baseConfig.id,
+          refreshMode: 'realtime',
+          dimensions: ['date', 'status'],
+          measures: ['count'],
+        },
+      ],
+    }));
+  };
+
+  const addAnalyticsMetric = () => {
+    const datasetId = analyticsDesign.datasets[0]?.id || `${baseConfig.id}-dataset`;
+    updateAnalyticsDesign((current) => ({
+      ...current,
+      metrics: [
+        ...current.metrics,
+        {
+          id: `metric-${Date.now()}`,
+          name: '新指标',
+          expression: 'count(*)',
+          datasetId,
+          format: 'number',
+          threshold: '按需配置',
+        },
+      ],
+    }));
+  };
+
+  const addAnalyticsWidget = (type: AnalyticsWidgetType) => {
+    const datasetId = analyticsDesign.datasets[0]?.id || `${baseConfig.id}-dataset`;
+    const metricId = analyticsDesign.metrics[0]?.id;
+    const widgetId = `widget-${Date.now()}`;
+    updateAnalyticsDesign((current) => ({
+      ...current,
+      widgets: [
+        ...current.widgets,
+        {
+          id: widgetId,
+          title: type === 'metric-card' ? '指标卡' : type === 'detail-table' ? '明细表' : '新图表',
+          type,
+          datasetId,
+          metricIds: metricId ? [metricId] : [],
+          dimension: current.datasets[0]?.dimensions[0],
+          width: type === 'metric-card' || type === 'detail-table' ? 'full' : 'half',
+          interaction: type === 'detail-table' ? 'navigate' : 'filter',
+        },
+      ],
+    }));
+    setSelectedAnalyticsWidgetId(widgetId);
+  };
+
+  const analyticsMetricOptions = analyticsDesign.metrics.map((metric) => ({ value: metric.id, label: metric.name }));
+  const analyticsDatasetOptions = analyticsDesign.datasets.map((dataset) => ({ value: dataset.id, label: dataset.name }));
+  const analyticsWidgetOptions = analyticsDesign.widgets.map((widget) => ({ value: widget.id, label: widget.title }));
+  const selectedAnalyticsWidget = analyticsDesign.widgets.find((widget) => widget.id === selectedAnalyticsWidgetId) || analyticsDesign.widgets[0];
+  const analyticsStyle = { ...makeDefaultAnalyticsStyle(), ...(analyticsDesign.style || {}) };
+  const analyticsCanvasStyle: React.CSSProperties = {
+    background: analyticsStyle.background,
+    gap: analyticsStyle.componentGap,
+  };
+  const analyticsWidgetStyle: React.CSSProperties = {
+    borderRadius: analyticsStyle.cardRadius,
+    borderColor: analyticsStyle.cardBorder === 'none' ? 'transparent' : analyticsStyle.cardBorder === 'strong' ? '#2c6e84' : '#dce5ec',
+  };
+
+  const renderAnalyticsDatasetDesigner = () => (
+    <div className="analytics-designer analytics-dataset-designer">
+      <section className="analytics-section">
+        <div className="analytics-section-head">
+          <div>
+            <strong>数据源与数据集</strong>
+            <span>配置看板取数来源、刷新策略、维度字段和可计算字段。</span>
+          </div>
+          <Space size={6}>
+            <Tag color="blue">{analyticsDesign.datasets.length} 个数据集</Tag>
+            <Button size="small" icon={<PlusOutlined />} onClick={addAnalyticsDataset}>新增数据集</Button>
+          </Space>
+        </div>
+        <div className="analytics-dataset-grid">
+          {analyticsDesign.datasets.map((dataset) => (
+            <div className="analytics-dataset-card" key={dataset.id}>
+              <div className="analytics-card-title">
+                <DatabaseOutlined />
+                <Input value={dataset.name} onChange={(event) => updateAnalyticsDataset(dataset.id, { name: event.target.value })} />
+              </div>
+              <div className="analytics-card-form-grid">
+                <label><span>来源类型</span><Select value={dataset.sourceType} options={[
+                  { value: 'businessForm', label: '业务表单' },
+                  { value: 'ontology', label: '本体对象' },
+                  { value: 'sql', label: 'SQL 数据集' },
+                  { value: 'api', label: 'API 数据源' },
+                ]} onChange={(sourceType) => updateAnalyticsDataset(dataset.id, { sourceType })} /></label>
+                <label><span>来源</span><Input value={dataset.source} onChange={(event) => updateAnalyticsDataset(dataset.id, { source: event.target.value })} /></label>
+                <label><span>刷新策略</span><Select value={dataset.refreshMode} options={[
+                  { value: 'realtime', label: '实时读取' },
+                  { value: 'scheduled', label: '定时刷新' },
+                  { value: 'manual', label: '手动刷新' },
+                ]} onChange={(refreshMode) => updateAnalyticsDataset(dataset.id, { refreshMode })} /></label>
+              </div>
+              <div className="analytics-card-form-grid analytics-card-form-grid-wide">
+                <label><span>维度字段</span><Select mode="tags" value={dataset.dimensions} onChange={(dimensions) => updateAnalyticsDataset(dataset.id, { dimensions })} /></label>
+                <label><span>指标字段</span><Select mode="tags" value={dataset.measures} onChange={(measures) => updateAnalyticsDataset(dataset.id, { measures })} /></label>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="analytics-section">
+        <div className="analytics-section-head">
+          <div>
+            <strong>指标口径</strong>
+            <span>定义聚合公式、格式、阈值和所属数据集，供看板组件引用。</span>
+          </div>
+          <Button size="small" icon={<PlusOutlined />} onClick={addAnalyticsMetric}>新增指标</Button>
+        </div>
+        <div className="analytics-metric-list">
+          {analyticsDesign.metrics.map((metric) => (
+            <div className="analytics-metric-row" key={metric.id}>
+              <Input value={metric.name} onChange={(event) => updateAnalyticsMetric(metric.id, { name: event.target.value })} />
+              <Select value={metric.datasetId} options={analyticsDatasetOptions} onChange={(datasetId) => updateAnalyticsMetric(metric.id, { datasetId })} />
+              <Input value={metric.expression} onChange={(event) => updateAnalyticsMetric(metric.id, { expression: event.target.value })} />
+              <Select value={metric.format} options={[
+                { value: 'number', label: '数值' },
+                { value: 'percent', label: '百分比' },
+                { value: 'currency', label: '金额' },
+                { value: 'duration', label: '时长' },
+              ]} onChange={(format) => updateAnalyticsMetric(metric.id, { format })} />
+              <Input value={metric.threshold} onChange={(event) => updateAnalyticsMetric(metric.id, { threshold: event.target.value })} />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+
+  const renderAnalyticsWidgetPreview = (widget: AnalyticsWidget) => {
+    if (widget.type === 'metric-card') {
+      return (
+        <div className="analytics-widget-metrics">
+          {widget.metricIds.map((metricId) => analyticsDesign.metrics.find((metric) => metric.id === metricId)).filter(Boolean).map((metric) => (
+            <div key={metric!.id}><span>{metric!.name}</span><strong>{metric!.format === 'percent' ? '93.4%' : '360'}</strong></div>
+          ))}
+        </div>
+      );
+    }
+    if (widget.type === 'detail-table' || widget.type === 'rank-table') {
+      return (
+        <div className="analytics-widget-table">
+          <div><span>对象</span><span>指标</span><span>状态</span></div>
+          {[1, 2, 3].map((row) => <div key={row}><span>样例 {row}</span><span>{row * 12}</span><span>正常</span></div>)}
+        </div>
+      );
+    }
+    return (
+      <div className={`analytics-widget-chart analytics-widget-chart-${widget.type}`}>
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+    );
+  };
+
+  const renderAnalyticsDashboardDesigner = () => (
+    <div className="analytics-board-workbench">
+      <aside className="analytics-board-left form-designer-left">
+        <div className="designer-panel-head">
+          <strong>控件</strong>
+          <span>BI 组件库</span>
+        </div>
+        <div className="designer-library-search">
+          <Input allowClear prefix={<SearchOutlined />} placeholder="搜索图表、指标或筛选器" />
+          <small>拖拽式控件入口，点击即可添加到中间看板画布。</small>
+        </div>
+        <div className="designer-component-library">
+          <section className="designer-component-group">
+            <div className="designer-group-title">
+              <span>分析组件</span>
+              <small>点击添加</small>
+            </div>
+            <div className="designer-component-list analytics-control-list">
+              {[
+                { type: 'metric-card' as const, name: '指标卡', desc: '展示核心 KPI 和同比环比' },
+                { type: 'line' as const, name: '折线图', desc: '展示时间趋势' },
+                { type: 'bar' as const, name: '柱状图', desc: '展示分类对比' },
+                { type: 'pie' as const, name: '饼图', desc: '展示占比结构' },
+                { type: 'rank-table' as const, name: '排行表', desc: '展示 Top N 排名' },
+                { type: 'detail-table' as const, name: '明细表', desc: '承接下钻和跳转' },
+              ].map((item) => (
+                <button className="designer-component analytics-control-item" data-desc={item.desc} key={item.type} type="button" onClick={() => addAnalyticsWidget(item.type)}>
+                  <span>{item.name}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <main className="analytics-board-middle form-designer-canvas">
+        <div className="canvas-board create-form-canvas analytics-dashboard-shell">
+          <div className="create-form-modal analytics-dashboard-modal">
+            <section className="create-form-grid analytics-dashboard-canvas" style={analyticsCanvasStyle}>
+              {analyticsDesign.widgets.map((widget) => (
+                <button
+                  className={`analytics-widget analytics-widget-${widget.width} ${selectedAnalyticsWidget?.id === widget.id ? 'analytics-widget-selected' : ''}`}
+                  key={widget.id}
+                  style={analyticsWidgetStyle}
+                  type="button"
+                  onClick={() => setSelectedAnalyticsWidgetId(widget.id)}
+                >
+                  <div className="analytics-widget-head">
+                    <strong>{widget.title}</strong>
+                    <Tag>{widget.type}</Tag>
+                  </div>
+                  {renderAnalyticsWidgetPreview(widget)}
+                </button>
+              ))}
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <aside className="analytics-board-right form-designer-right">
+        <div className="designer-panel-head">
+          <strong>属性</strong>
+          <span>{selectedAnalyticsWidget?.title || '画布'}</span>
+        </div>
+        <div className="designer-prop-summary">
+          <span className="designer-prop-summary-badge">{selectedAnalyticsWidget ? '组件' : '画布'}</span>
+          <strong>{selectedAnalyticsWidget?.title || baseConfig.name}</strong>
+          <small>{selectedAnalyticsWidget ? `${selectedAnalyticsWidget.type} · ${selectedAnalyticsWidget.metricIds.length} 个指标` : `${analyticsDesign.widgets.length} 个组件`}</small>
+        </div>
+
+        <div className="designer-props">
+          {selectedAnalyticsWidget && (
+            <section className="designer-prop-section designer-prop-section-primary">
+              <strong className="designer-prop-section-title">组件属性</strong>
+              <label><span>标题</span><Input value={selectedAnalyticsWidget.title} onChange={(event) => updateAnalyticsWidget(selectedAnalyticsWidget.id, { title: event.target.value })} /></label>
+              <label><span>图表类型</span><Select value={selectedAnalyticsWidget.type} options={[
+                { value: 'metric-card', label: '指标卡' },
+                { value: 'line', label: '折线图' },
+                { value: 'bar', label: '柱状图' },
+                { value: 'pie', label: '饼图' },
+                { value: 'rank-table', label: '排行表' },
+                { value: 'detail-table', label: '明细表' },
+              ]} onChange={(type) => updateAnalyticsWidget(selectedAnalyticsWidget.id, { type })} /></label>
+              <label><span>占位宽度</span><Select value={selectedAnalyticsWidget.width} options={[{ value: 'quarter', label: '25%' }, { value: 'half', label: '50%' }, { value: 'full', label: '100%' }]} onChange={(width) => updateAnalyticsWidget(selectedAnalyticsWidget.id, { width })} /></label>
+            </section>
+          )}
+
+          {selectedAnalyticsWidget && (
+            <section className="designer-prop-section">
+              <strong className="designer-prop-section-title">数据绑定</strong>
+              <label><span>数据集</span><Select value={selectedAnalyticsWidget.datasetId} options={analyticsDatasetOptions} onChange={(datasetId) => updateAnalyticsWidget(selectedAnalyticsWidget.id, { datasetId })} /></label>
+              <label>
+                <span>指标</span>
+                <Select
+                  mode="multiple"
+                  value={selectedAnalyticsWidget.metricIds}
+                  options={analyticsMetricOptions}
+                  onChange={(metricIds) => updateAnalyticsWidget(selectedAnalyticsWidget.id, { metricIds })}
+                  placeholder="选择当前组件指标"
+                />
+              </label>
+              <label><span>维度</span><Input value={selectedAnalyticsWidget.dimension || ''} onChange={(event) => updateAnalyticsWidget(selectedAnalyticsWidget.id, { dimension: event.target.value })} /></label>
+            </section>
+          )}
+
+          {selectedAnalyticsWidget && (
+            <section className="designer-prop-section">
+              <strong className="designer-prop-section-title">交互行为</strong>
+              <label><span>点击动作</span><Select value={selectedAnalyticsWidget.interaction} options={[
+                { value: 'none', label: '无交互' },
+                { value: 'filter', label: '点击筛选' },
+                { value: 'drilldown', label: '下钻明细' },
+                { value: 'navigate', label: '跳转业务页' },
+              ]} onChange={(interaction) => updateAnalyticsWidget(selectedAnalyticsWidget.id, { interaction })} /></label>
+            </section>
+          )}
+        </div>
+
+      </aside>
+    </div>
+  );
+
+  const renderAnalyticsFilterDesigner = () => (
+    <div className="analytics-designer analytics-filter-designer">
+      <section className="analytics-section">
+        <div className="analytics-section-head">
+          <div>
+            <strong>全局筛选器</strong>
+            <span>作用于整个看板，可绑定日期、组织、状态、供应商等维度。</span>
+          </div>
+          <Tag color="blue">{analyticsDesign.globalFilters.length} 个筛选器</Tag>
+        </div>
+        <Select
+          mode="tags"
+          className="analytics-full-control"
+          value={analyticsDesign.globalFilters}
+          onChange={(globalFilters) => updateAnalyticsDesign((current) => ({ ...current, globalFilters }))}
+          placeholder="输入或选择筛选字段"
+        />
+      </section>
+      <section className="analytics-section">
+        <div className="analytics-section-head">
+          <div>
+            <strong>组件联动</strong>
+            <span>配置点击图表后的筛选、下钻或跳转业务动作。</span>
+          </div>
+          <Button size="small" icon={<PlusOutlined />} onClick={() => updateAnalyticsDesign((current) => ({
+            ...current,
+            interactions: [
+              ...current.interactions,
+              {
+                sourceWidgetId: current.widgets[0]?.id || '',
+                targetWidgetId: current.widgets[current.widgets.length - 1]?.id || '',
+                action: 'filter',
+              },
+            ],
+          }))}>新增联动</Button>
+        </div>
+        <div className="analytics-interaction-list">
+          {analyticsDesign.interactions.map((interaction, index) => (
+            <div className="analytics-interaction-row" key={`${interaction.sourceWidgetId}-${interaction.targetWidgetId}-${index}`}>
+              <Select value={interaction.sourceWidgetId} options={analyticsWidgetOptions} onChange={(sourceWidgetId) => updateAnalyticsDesign((current) => ({
+                ...current,
+                interactions: current.interactions.map((item, itemIndex) => itemIndex === index ? { ...item, sourceWidgetId } : item),
+              }))} />
+              <Select value={interaction.action} options={[
+                { value: 'filter', label: '筛选目标组件' },
+                { value: 'drilldown', label: '下钻明细' },
+                { value: 'navigate', label: '跳转业务页' },
+              ]} onChange={(action) => updateAnalyticsDesign((current) => ({
+                ...current,
+                interactions: current.interactions.map((item, itemIndex) => itemIndex === index ? { ...item, action } : item),
+              }))} />
+              <Select value={interaction.targetWidgetId} options={analyticsWidgetOptions} onChange={(targetWidgetId) => updateAnalyticsDesign((current) => ({
+                ...current,
+                interactions: current.interactions.map((item, itemIndex) => itemIndex === index ? { ...item, targetWidgetId } : item),
+              }))} />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+
+  const renderAnalyticsStyleDesigner = () => (
+    <div className="analytics-designer analytics-style-designer">
+      <section className="analytics-section">
+        <div className="analytics-section-head">
+          <div>
+            <strong>主题预设</strong>
+            <span>先选择看板整体气质，再按业务场景微调组件与图表样式。</span>
+          </div>
+          <Tag color="blue">组件样式优先于看板主题</Tag>
+        </div>
+        <div className="analytics-style-preset-grid">
+          {[
+            { value: 'clean' as const, label: '清爽运营', desc: '白底、轻边框，适合日常管理看板' },
+            { value: 'executive' as const, label: '经营驾驶舱', desc: '高对比指标卡，适合管理层总览' },
+            { value: 'factory' as const, label: '工厂现场', desc: '偏设备与产线监控，强调状态识别' },
+            { value: 'dark' as const, label: '深色大屏', desc: '适合投屏、战情室和全天候展示' },
+          ].map((preset) => (
+            <button
+              className={`analytics-style-preset ${analyticsStyle.preset === preset.value ? 'analytics-style-preset-active' : ''}`}
+              key={preset.value}
+              type="button"
+              onClick={() => updateAnalyticsStyle({ preset: preset.value })}
+            >
+              <strong>{preset.label}</strong>
+              <span>{preset.desc}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="analytics-section">
+        <div className="analytics-section-head">
+          <div>
+            <strong>画布与组件</strong>
+            <span>控制整张看板的背景、间距、卡片形态和视觉密度。</span>
+          </div>
+        </div>
+        <div className="analytics-style-form-grid">
+          <label><span>画布背景</span><Input value={analyticsStyle.background} onChange={(event) => updateAnalyticsStyle({ background: event.target.value })} /></label>
+          <label><span>组件间距</span><InputNumber min={0} max={32} value={analyticsStyle.componentGap} onChange={(componentGap) => updateAnalyticsStyle({ componentGap: Number(componentGap || 0) })} /></label>
+          <label><span>卡片圆角</span><InputNumber min={0} max={20} value={analyticsStyle.cardRadius} onChange={(cardRadius) => updateAnalyticsStyle({ cardRadius: Number(cardRadius || 0) })} /></label>
+          <label><span>卡片边框</span><Select value={analyticsStyle.cardBorder} options={[
+            { value: 'none', label: '无边框' },
+            { value: 'light', label: '轻边框' },
+            { value: 'strong', label: '强调边框' },
+          ]} onChange={(cardBorder) => updateAnalyticsStyle({ cardBorder })} /></label>
+        </div>
+      </section>
+
+      <section className="analytics-section">
+        <div className="analytics-section-head">
+          <div>
+            <strong>图表、表格与筛选器</strong>
+            <span>统一配置图表色板、表格密度和过滤组件主题。</span>
+          </div>
+        </div>
+        <div className="analytics-style-form-grid">
+          <label><span>图表配色</span><Select value={analyticsStyle.chartPalette} options={[
+            { value: 'manufacturing', label: '制造蓝绿' },
+            { value: 'business', label: '经营彩色' },
+            { value: 'warning', label: '风险预警' },
+            { value: 'mono', label: '单色专业' },
+          ]} onChange={(chartPalette) => updateAnalyticsStyle({ chartPalette })} /></label>
+          <label><span>表格密度</span><Select value={analyticsStyle.tableDensity} options={[
+            { value: 'compact', label: '紧凑' },
+            { value: 'standard', label: '标准' },
+            { value: 'comfortable', label: '宽松' },
+          ]} onChange={(tableDensity) => updateAnalyticsStyle({ tableDensity })} /></label>
+          <label><span>筛选器样式</span><Select value={analyticsStyle.filterTheme} options={[
+            { value: 'toolbar', label: '顶部工具栏' },
+            { value: 'inline', label: '嵌入画布' },
+            { value: 'panel', label: '侧边筛选面板' },
+          ]} onChange={(filterTheme) => updateAnalyticsStyle({ filterTheme })} /></label>
+        </div>
+      </section>
+    </div>
+  );
+
   const toolbarToolPanel = (
     <div className="designer-top-tool-panel">
       <section>
@@ -3382,7 +5284,11 @@ export default function FormSettingsPage() {
   );
 
   const activeTabKey: string = activeTab;
-  const permissionActionRows = permissionActionDefinitions.map((item) => ({ ...item, enabled: activePermissionDraft.actions[item.key] !== false }));
+  const permissionActionRows = permissionActionDefinitions.map((item) => ({
+    ...item,
+    enabled: activePermissionDraft.actions[item.key] ?? getDefaultPermissionActionEnabled(activePermissionRoleKind, item.key),
+  }));
+  const permissionActionRowsByKey = Object.fromEntries(permissionActionRows.map((item) => [item.key, item]));
   const enabledPermissionActionCount = permissionActionRows.filter((item) => item.enabled).length;
   const editablePermissionFieldCount = baseConfig.fields.filter((field, index) => getRoleFieldPermission(field, index).editable).length;
   const requiredPermissionFieldCount = baseConfig.fields.filter((field, index) => getRoleFieldPermission(field, index).required).length;
@@ -3406,6 +5312,29 @@ export default function FormSettingsPage() {
     (safeFieldPermissionPage - 1) * permissionFieldPageSize,
     safeFieldPermissionPage * permissionFieldPageSize,
   );
+  const currentDesignerTabLabel = designerTabs.find((item) => item.key === activeTab)?.label || '';
+  const hasStaticDesignerConfig = Boolean(configs[staticBaseConfig.id]);
+  const hasResolvedRemoteDesignerConfig = Boolean(
+    databaseMetaByForm[staticBaseConfig.id]
+    || platformForm?.code === staticBaseConfig.id
+    || String(platformForm?.id) === staticBaseConfig.id,
+  );
+  const shouldDelayUnknownBusinessFallback = (
+    isResolvingPlatformConfig
+    && !hasStaticDesignerConfig
+    && !hasResolvedRemoteDesignerConfig
+    && staticBaseConfig.kind !== 'analysis'
+  );
+
+  if (shouldDelayUnknownBusinessFallback) {
+    return (
+      <div className="form-designer-page">
+        <div style={{ paddingTop: 48, textAlign: 'center' }}><Spin /></div>
+        <div style={{ padding: 48, textAlign: 'center', color: '#667085' }}>正在加载设计器配置...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="form-designer-page">
       <header className="form-designer-toolbar">
@@ -3420,7 +5349,7 @@ export default function FormSettingsPage() {
             setActiveTab(key as DesignerTab);
             setSelectedControlId('');
           }}
-          items={tabs.map((item) => ({ key: item.key, label: <span>{item.icon}{item.label}</span> }))}
+          items={designerTabs.map((item) => ({ key: item.key, label: <span>{item.icon}{item.label}</span> }))}
         />
         <Space className="form-designer-actions" size={4} wrap={false}>
           {hasUnsavedChanges && <Tag className="designer-unsaved-tag" color="orange">未保存</Tag>}
@@ -3444,13 +5373,13 @@ export default function FormSettingsPage() {
         </Space>
       </header>
 
-      <section className={`form-designer-shell ${activeTab === 'permission' || activeTab === 'filter' || activeTab === 'flow' ? 'form-designer-shell-no-left' : ''} ${activeTab === 'filter' ? 'form-designer-shell-data-view' : ''} ${activeTab === 'permission' ? 'form-designer-shell-permission' : ''}`}>
-        {!(['permission', 'filter', 'flow'] as DesignerTab[]).includes(activeTab) && (
+      <section className={`form-designer-shell ${isNoLeftTab ? 'form-designer-shell-no-left' : ''} ${activeTab === 'filter' || activeTab === 'style' || activeTab === 'dataset' || activeTab === 'dashboard' ? 'form-designer-shell-data-view' : ''} ${activeTab === 'permission' ? 'form-designer-shell-permission' : ''}`}>
+        {!isNoLeftTab && (
           <aside className="form-designer-left">
             <div className="designer-panel-head">
               <strong>控件</strong>
               {activeTab !== 'form' && (
-                <span>{tabs.find((item) => item.key === activeTab)?.label}</span>
+                <span>{currentDesignerTabLabel}</span>
               )}
             </div>
             {(activeTab === 'form' || activeTab === 'filter') && (
@@ -3462,7 +5391,7 @@ export default function FormSettingsPage() {
                   value={librarySearch}
                   onChange={(event) => setLibrarySearch(event.target.value)}
                 />
-                <small>字段库绑定业务数据，控件库负责展示和布局。</small>
+                <small>字段库来自当前表单数据表，控件库负责展示和布局。</small>
               </div>
             )}
 
@@ -3525,12 +5454,9 @@ export default function FormSettingsPage() {
                             event.dataTransfer.setData('componentKey', item.key);
                             setCanvasDragActive(true);
                           }}
+                          title={`${item.name} / ${item.desc}`}
                         >
-                          <span className="designer-component-icon">{item.icon}</span>
-                          <div>
-                            <strong>{item.name}</strong>
-                            <small>{item.desc}</small>
-                          </div>
+                          <span>{item.name}</span>
                         </div>
                       ))}
                     </div>
@@ -3554,12 +5480,9 @@ export default function FormSettingsPage() {
                               event.dataTransfer.setData('componentKey', item.key);
                               setCanvasDragActive(true);
                             }}
+                            title={`${item.name} / ${item.desc}`}
                           >
-                            <span className="designer-component-icon">{item.icon}</span>
-                            <div>
-                              <strong>{item.name}</strong>
-                              <small>{item.desc}</small>
-                            </div>
+                            <span>{item.name}</span>
                           </div>
                         ))}
                       </div>
@@ -3572,43 +5495,34 @@ export default function FormSettingsPage() {
                     <strong>{activeTab === 'filter' ? '筛选字段' : '字段库'}</strong>
                     <span>{filteredLibraryFields.length} / {libraryFields.length} 个</span>
                   </div>
-                  {activeTab === 'form' && <div className="designer-template-grid">
-                    {fieldTemplates.filter((field) => matchesLibrarySearch(`${field.name} ${field.type}`)).map((field) => (
-                      <button key={field.key} type="button" onClick={() => addTemplateField(field)}>
-                        <span>{field.name}</span>
-                        <small>{field.type}</small>
-                      </button>
-                    ))}
-                  </div>}
                   <div className="designer-field-list">
-                    {filteredLibraryFields.map((field) => (
-                      <div
-                        className={`designer-field ${selectedAssetKey === field.key ? 'designer-field-active' : ''}`}
-                        draggable={activeTab === 'form'}
-                        key={field.key}
-                        onClick={() => {
-                          setSelectedAssetKey(field.key);
-                          setSelectedControlId('');
-                        }}
-                        onDragStart={(event) => activeTab === 'form' && event.dataTransfer.setData('fieldKey', field.key)}
-                      >
-                        <DragOutlined />
-                        <span>{field.name}</span>
-                        {field.locked && <Tag color="orange">锁定</Tag>}
-                      </div>
-                    ))}
+                    {filteredLibraryFields.map((field) => {
+                      const isFieldOnCanvas = canvasFieldKeySet.has(field.key);
+                      return (
+                        <div
+                          className={`designer-field ${selectedAssetKey === field.key ? 'designer-field-active' : ''} ${isFieldOnCanvas ? 'designer-field-used' : ''}`}
+                          draggable={activeTab === 'form'}
+                          key={field.key}
+                          onClick={() => {
+                            setSelectedAssetKey(field.key);
+                            setSelectedControlId('');
+                          }}
+                          onDragStart={(event) => activeTab === 'form' && event.dataTransfer.setData('fieldKey', field.key)}
+                          title={`${field.name} / ${field.key} / ${field.type}`}
+                        >
+                          <span>{field.name}</span>
+                          {isFieldOnCanvas && <CheckCircleOutlined className="designer-field-check" />}
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
             </>
           ) : (
-            <div className="designer-component-list">
-              <div className="designer-component">
-                <span className="designer-component-icon">{tabs.find((item) => item.key === activeTab)?.icon}</span>
-                <div>
-                  <strong>{tabs.find((item) => item.key === activeTab)?.label}</strong>
-                  <small>这里配置页面级规则，不拖入表单新增画布。</small>
-                </div>
+              <div className="designer-component-list">
+                <div className="designer-component" title="页面级规则配置">
+                <span>{currentDesignerTabLabel}</span>
               </div>
             </div>
           )}
@@ -3616,6 +5530,18 @@ export default function FormSettingsPage() {
         )}
 
         <main className="form-designer-canvas">
+          {activeTabKey === 'dataset' && (
+            <div className="data-view-canvas">
+              {renderAnalyticsDatasetDesigner()}
+            </div>
+          )}
+
+          {activeTabKey === 'dashboard' && (
+            <div className="data-view-canvas">
+              {renderAnalyticsDashboardDesigner()}
+            </div>
+          )}
+
           {activeTabKey === 'form' && (
             <div
               className="canvas-board create-form-canvas"
@@ -3656,8 +5582,11 @@ export default function FormSettingsPage() {
                   {isCanvasDragActive && !dropHint && <div className="canvas-drop-end-indicator">拖到这里放在末尾</div>}
                 </div>
                 <div className="create-form-actions">
-                  <Button>取消</Button>
-                  <Button type="primary">提交</Button>
+                  <div className="create-form-action-buttons">
+                    <Button>取消</Button>
+                    <Button>保存草稿</Button>
+                    <Button type="primary">提交</Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3665,7 +5594,13 @@ export default function FormSettingsPage() {
 
           {activeTabKey === 'filter' && (
             <div className="data-view-canvas">
-              {renderDataViewDesigner()}
+              {isAnalysisDesigner ? renderAnalyticsFilterDesigner() : renderDataViewDesigner()}
+            </div>
+          )}
+
+          {activeTabKey === 'style' && (
+            <div className="data-view-canvas">
+              {renderAnalyticsStyleDesigner()}
             </div>
           )}
 
@@ -3816,29 +5751,45 @@ export default function FormSettingsPage() {
                     <div className="permission-card-head">
                       <div>
                         <div className="permission-section-title">2. 动作权限</div>
-                        <span>控制按钮、接口动作和批量操作入口</span>
+                        <span>按角色分别控制列表入口、表单内按钮和流程处理动作</span>
                       </div>
                       <Tag color="green">{enabledPermissionActionCount} / {permissionActionRows.length} 已启用</Tag>
                     </div>
-                    <div className="permission-action-grid">
-                      {permissionActionRows.map((item) => (
-                        <Tooltip
-                          key={item.key}
-                          title={`${item.desc}；风险等级：${item.risk === 'high' ? '高' : item.risk === 'medium' ? '中' : '低'}`}
-                          placement="top"
-                        >
-                          <label className={`permission-toggle-row permission-action-toggle-row ${item.enabled ? 'permission-action-toggle-on' : 'permission-action-toggle-off'}`}>
-                            <strong>{item.name}</strong>
-                            <Switch
-                              size="small"
-                              checked={item.enabled}
-                              onChange={(checked) => updateActivePermissionDraft((draft) => ({
-                                ...draft,
-                                actions: { ...draft.actions, [item.key]: checked },
-                              }))}
-                            />
-                          </label>
-                        </Tooltip>
+                    <div className="permission-action-groups">
+                      {permissionActionGroups.map((group) => (
+                        <div className="permission-action-group" key={group.key}>
+                          <div className="permission-action-group-title">
+                            <strong>{group.title}</strong>
+                            <small>{group.desc}</small>
+                          </div>
+                          <div className="permission-action-grid">
+                            {group.actionKeys.map((actionKey) => {
+                              const item = permissionActionRowsByKey[actionKey];
+                              if (!item) return null;
+                              return (
+                                <Tooltip
+                                  key={item.key}
+                                  title={`${item.desc}；风险等级：${item.risk === 'high' ? '高' : item.risk === 'medium' ? '中' : '低'}`}
+                                  placement="top"
+                                >
+                                  <label className={`permission-toggle-row permission-action-toggle-row ${item.enabled ? 'permission-action-toggle-on' : 'permission-action-toggle-off'}`}>
+                                    <span>
+                                      <strong>{item.name}</strong>
+                                    </span>
+                                    <Switch
+                                      size="small"
+                                      checked={item.enabled}
+                                      onChange={(checked) => updateActivePermissionDraft((draft) => ({
+                                        ...draft,
+                                        actions: { ...draft.actions, [item.key]: checked },
+                                      }))}
+                                    />
+                                  </label>
+                                </Tooltip>
+                              );
+                            })}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </section>
@@ -3956,7 +5907,7 @@ export default function FormSettingsPage() {
           )}
         </main>
 
-        {!(['permission', 'filter', 'flow'] as DesignerTab[]).includes(activeTab) && (
+        {!isAnalysisDesigner && !(['permission', 'filter', 'flow'] as DesignerTab[]).includes(activeTab) && (
         <aside className="form-designer-right">
           <div className="designer-panel-head">
             <strong>属性</strong>
@@ -3967,7 +5918,7 @@ export default function FormSettingsPage() {
             <strong>{selectedControl?.name || selectedField?.name || baseConfig.name}</strong>
             <small>
               {selectedControl
-                ? `${selectedControl.controlType} · ${controlWidthLabel(selectedControl.width)}`
+                ? `${selectedEffectiveControlType} · ${controlWidthLabel(selectedControl.width)}`
                 : selectedField
                   ? `${selectedField.type} · ${selectedField.locked ? '锁定字段' : '可配置字段'}`
                   : `${baseConfig.dataSource} · ${baseConfig.primaryKey}`}
@@ -3976,238 +5927,15 @@ export default function FormSettingsPage() {
 
           {selectedControl ? (
             <div className="designer-props">
-                        <section className="designer-prop-section">
-                          <strong className="designer-prop-section-title">控件身份</strong>
-                          <label>
-                            <span>控件名称</span>
-                            <Input
-                              value={selectedControl.name}
-                              onChange={(event) => updateSelectedControl({ name: event.target.value })}
-                            />
-                          </label>
-                          <label>
-                            <span>控件类型</span>
-                            <Select
-                              value={selectedEffectiveControlType}
-                              options={controlTypeOptions}
-                              onChange={(controlType) => {
-                                const nextWidth = controlType === 'textarea' || controlType === 'upload' ? 'full' : selectedControl.width;
-                                updateSelectedControl({ controlType, width: nextWidth as ControlWidth });
-                              }}
-                            />
-                          </label>
-                          <label className="designer-prop-locked">
-                            <span>字段来源</span>
-                            <Input value={selectedField ? selectedField.name : '未绑定字段'} disabled />
-                          </label>
-                          <label className="designer-prop-locked">
-                            <span>字段类型</span>
-                            <Input value={getFieldStorageTypeLabel(selectedField)} disabled suffix="数据库字段" />
-                          </label>
-                          {selectedControlUsesEncoding && (
-                            <label className="designer-prop-locked">
-                              <span>业务特性</span>
-                              <Input value="编码" disabled suffix="控件能力" />
-                            </label>
-                          )}
-                      </section>
-                      {selectedControlUsesDataSource && (
-                        <section className="designer-prop-section">
-                          <strong className="designer-prop-section-title">数据源与选项</strong>
-                          <label>
-                            <span>来源类型</span>
-                            <Select
-                              value={selectedReferenceSourceKind}
-                              options={referenceSourceKindOptions}
-                              onChange={(dataSourceKind) => {
-                                const config = getReferenceConfig(dataSourceKind);
-                                updateSelectedControl({
-                                  dataSourceKind,
-                                  optionSource: config.objects[0]?.value,
-                                });
-                              }}
-                            />
-                          </label>
-                          <label>
-                            <span>配置位置</span>
-                            <Input
-                              value={selectedReferenceConfig.setup}
-                              readOnly
-                            />
-                          </label>
-                          {selectedReferenceSourceKind === 'static' ? (
-                            <label>
-                              <span>选项值</span>
-                              <Input
-                                allowClear
-                                placeholder={selectedReferenceConfig.placeholder}
-                                value={selectedControl.optionSource || selectedField?.optionSource || ''}
-                                onChange={(event) => updateSelectedControl({ optionSource: event.target.value })}
-                              />
-                            </label>
-                          ) : (
-                            <label>
-                              <span>引用对象</span>
-                              <Select
-                                value={selectedControl.optionSource || selectedReferenceConfig.objects[0]?.value}
-                                options={selectedReferenceConfig.objects}
-                                placeholder={selectedReferenceConfig.placeholder}
-                                onChange={(optionSource) => updateSelectedControl({ optionSource })}
-                              />
-                            </label>
-                          )}
-                          <label>
-                            <span>值字段</span>
-                            <Select
-                              value={selectedReferenceConfig.valueFields[0]?.value}
-                              options={selectedReferenceConfig.valueFields}
-                            />
-                          </label>
-                          <label>
-                            <span>显示字段</span>
-                            <Select
-                              value={selectedReferenceConfig.labelFields[0]?.value}
-                              options={selectedReferenceConfig.labelFields}
-                            />
-                          </label>
-                          <label>
-                            <span>选项预览</span>
-                            <Select
-                              value={
-                                selectedReferenceSourceKind === 'static'
-                                  ? optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)[0]?.value
-                                  : selectedReferenceConfig.preview[0]
-                              }
-                              options={
-                                selectedReferenceSourceKind === 'static'
-                                  ? optionSourceToOptions(selectedControl.optionSource || selectedField?.optionSource, selectedControl.placeholder || selectedField?.placeholder)
-                                  : selectedReferenceConfig.preview.map((item) => ({ value: item, label: item }))
-                              }
-                            />
-                          </label>
-                        </section>
-                      )}
-                      <section className="designer-prop-section">
-                        <strong className="designer-prop-section-title">布局</strong>
-                          <label className="designer-prop-row-wide">
-                            <span>控件宽度</span>
-                            <div className="designer-width-picker">
-                            {controlWidthOptions.map((option) => (
-                              <button
-                                className={`designer-width-option ${selectedControl.width === option.value ? 'designer-width-option-active' : ''}`}
-                                key={option.value}
-                                onClick={() => updateSelectedControl({ width: option.value as ControlWidth })}
-                                type="button"
-                              >
-                                <span>{option.label}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </label>
-                      </section>
-                        <section className="designer-prop-section">
-                          <strong className="designer-prop-section-title">默认交互规则</strong>
-                          <label><span>默认显示</span>{controlRuleToggle('visible')}</label>
-                          <label><span>默认只读</span>{controlRuleToggle('readonly')}</label>
-                          <label><span>默认必输</span>{controlRuleToggle('required')}</label>
-                          <label><span>唯一校验</span>{controlRuleToggle('unique')}</label>
-                          <label><span>默认脱敏</span>{controlRuleToggle('masked')}</label>
-                          <label><span>允许复制</span>{controlRuleToggle('copyable')}</label>
-                          {selectedControlUsesOptionSort && <label><span>选项排序</span>{controlRuleToggle('optionSort')}</label>}
-                          {hiddenRequiredControls.length > 0 && <Tag color="red">存在隐藏且必填冲突</Tag>}
-                        </section>
-                        <section className="designer-prop-section">
-                          <strong className="designer-prop-section-title">提示与联动</strong>
-                          <label>
-                            <span>占位提示</span>
-                            <Input
-                              allowClear
-                              placeholder={selectedField?.placeholder || selectedControl.desc || '请输入占位提示'}
-                              value={selectedControl.placeholder || ''}
-                              onChange={(event) => updateSelectedControl({ placeholder: event.target.value })}
-                            />
-                          </label>
-                          <label>
-                            <span>帮助说明</span>
-                            <Input
-                              allowClear
-                              placeholder="可在此补充录入说明"
-                              value={selectedControl.helpText || ''}
-                              onChange={(event) => updateSelectedControl({ helpText: event.target.value })}
-                            />
-                          </label>
-                          <label><span>变更触发</span>{genericRuleToggle(false, '变更触发')}</label>
-                          <label><span>联动刷新</span><Input value="未绑定联动规则" readOnly /></label>
-                          <label><span>异常提示</span><Input value="使用字段校验提示" readOnly /></label>
-                        <label><span>角色差异</span><Input value="在权限设计中统一配置" readOnly /></label>
-                      </section>
-                      {selectedControlUsesEncoding && selectedEncodingRule && (
-                        <section className="designer-prop-section">
-                          <strong className="designer-prop-section-title">编码规则</strong>
-                          <label>
-                            <span>生成方式</span>
-                            <Select
-                              value={selectedEncodingRule.generationMode || 'auto'}
-                              options={encodingGenerationModeOptions}
-                              onChange={(generationMode) => updateSelectedEncodingRule({
-                                generationMode,
-                                allowManualOverride: generationMode === 'autoEditable' || generationMode === 'manual',
-                              })}
-                            />
-                          </label>
-                          <label>
-                            <span>生成时机</span>
-                            <Select
-                              value={selectedEncodingRule.generationTiming || 'create'}
-                              options={encodingGenerationTimingOptions}
-                              onChange={(generationTiming) => updateSelectedEncodingRule({ generationTiming })}
-                            />
-                          </label>
-                          <label>
-                            <span>唯一范围</span>
-                            <Select
-                              value={selectedEncodingRule.uniquenessScope || 'form'}
-                              options={encodingUniquenessScopeOptions}
-                              onChange={(uniquenessScope) => updateSelectedEncodingRule({ uniquenessScope, unique: uniquenessScope !== 'dependency' || selectedEncodingSegments.length > 0 })}
-                            />
-                          </label>
-                          <div className="designer-prop-row-wide encoding-segment-list">
-                            <Button
-                              block
-                              icon={<PlusOutlined />}
-                              onClick={() => openEncodingSegmentEditor()}
-                              size="small"
-                            >
-                              新增编码段
-                            </Button>
-                            {selectedEncodingSegments.map((segment, index) => (
-                              <div className="encoding-segment-card" key={segment.id}>
-                                <button
-                                  className="encoding-segment-main"
-                                  onClick={() => openEncodingSegmentEditor(segment, index)}
-                                  type="button"
-                                >
-                                  <strong>{segment.name || getEncodingSegmentTypeLabel(segment.type)}</strong>
-                                  <small>
-                                    {getEncodingSegmentTypeLabel(segment.type)} · {segment.length || 0} 位 · 示例 {renderEncodingSegmentSample(segment, baseConfig.fields) || '-'}
-                                  </small>
-                                </button>
-                                <Button
-                                  danger
-                                  icon={<DeleteOutlined />}
-                                  onClick={() => removeEncodingSegment(index)}
-                                  size="small"
-                                  type="text"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                          <label><span>组成说明</span><Input value={getEncodingComposition(selectedEncodingRule, baseConfig.fields)} readOnly /></label>
-                          <label><span>编码示例</span><Input value={renderEncodingSample(selectedEncodingRule, baseConfig.fields)} readOnly /></label>
-                        </section>
-                      )}
-                      {renderTableProperties()}
-                    </div>
+              {renderControlIdentityProperties()}
+              {renderDisplayProperties()}
+              {renderDefaultRuleProperties()}
+              {renderAutomationProperties()}
+              {renderTypeSpecificProperties()}
+              {renderDataSourceProperties()}
+              {renderEncodingProperties()}
+              {renderTableProperties()}
+            </div>
           ) : (
             <div className="designer-props">
               <section className="designer-prop-section">
@@ -4240,7 +5968,7 @@ export default function FormSettingsPage() {
         onOk={saveEncodingSegmentDraft}
         open={encodingSegmentEditor.open}
         title={typeof encodingSegmentEditor.index === 'number' ? '编辑编码段' : '新增编码段'}
-        width={560}
+        width={520}
       >
         <div className="encoding-segment-form">
           <label>
@@ -4379,23 +6107,25 @@ export default function FormSettingsPage() {
               </label>
             </>
           )}
-          <label>
-            <span>字段变化重算</span>
-            <Checkbox
-              checked={Boolean(encodingSegmentEditor.draft.regenerateOnChange)}
-              onChange={(event) => updateEncodingSegmentDraft({ regenerateOnChange: event.target.checked })}
-            />
-          </label>
-          <label>
-            <span>生成后锁定</span>
-            <Checkbox
-              checked={encodingSegmentEditor.draft.lockAfterGenerated !== false}
-              onChange={(event) => updateEncodingSegmentDraft({ lockAfterGenerated: event.target.checked })}
-            />
-          </label>
-          <div className="encoding-segment-preview">
-            <span>段示例</span>
-            <strong>{renderEncodingSegmentSample(encodingSegmentEditor.draft, baseConfig.fields) || '-'}</strong>
+          <div className="encoding-segment-meta">
+            <div className="encoding-segment-options">
+              <Checkbox
+                checked={Boolean(encodingSegmentEditor.draft.regenerateOnChange)}
+                onChange={(event) => updateEncodingSegmentDraft({ regenerateOnChange: event.target.checked })}
+              >
+                字段变化时重新计算
+              </Checkbox>
+              <Checkbox
+                checked={encodingSegmentEditor.draft.lockAfterGenerated !== false}
+                onChange={(event) => updateEncodingSegmentDraft({ lockAfterGenerated: event.target.checked })}
+              >
+                生成后锁定
+              </Checkbox>
+            </div>
+            <div className="encoding-segment-preview">
+              <span>段示例</span>
+              <strong>{renderEncodingSegmentSample(encodingSegmentEditor.draft, baseConfig.fields) || '-'}</strong>
+            </div>
           </div>
         </div>
       </Modal>
@@ -4521,20 +6251,99 @@ export default function FormSettingsPage() {
 
       <Modal
         centered
+        className="designer-version-modal"
         footer={null}
         onCancel={() => setVersionPanelOpen(false)}
         open={versionPanelOpen}
         title="草稿与已发布版本"
+        width={820}
       >
-        <div className="designer-version-panel">
-          <div><span>已发布版本</span><strong>数据视图 v{viewConfigMeta.publishedVersion || 0}{viewConfigMeta.publishedAt ? ` · ${viewConfigMeta.publishedAt.slice(0, 10)}` : ''}</strong></div>
-          <div><span>当前草稿</span><strong>{hasUnsavedChanges || viewConfigMeta.status === 'draft' ? `存在未发布修改 · 草稿 v${viewConfigMeta.draftVersion || 1}` : '无差异'}</strong></div>
-          <div><span>变更摘要</span><strong>筛选条件、表格列、流程配置和业务发布规则</strong></div>
-          <Space wrap>
-            <Button onClick={saveDraft} loading={isPersistingFlow} icon={<SaveOutlined />}>保存草稿</Button>
-            <Button danger onClick={() => { setHasUnsavedChanges(false); setVersionPanelOpen(false); message.success('已回滚到上一发布版本'); }}>回滚上一版</Button>
-            <Button type="primary" onClick={() => { setVersionPanelOpen(false); void publishConfig(); }}>发布当前草稿</Button>
-          </Space>
+        <div className="designer-version-layout">
+          <aside className="designer-version-list">
+            <div className="designer-version-list-head">
+              <div>
+                <strong>版本列表</strong>
+                <small>选择一个版本查看详情</small>
+              </div>
+              <span>{versionListItems.length} 个</span>
+            </div>
+            <div className="designer-version-list-columns">
+              <span>版本</span>
+              <span>类型</span>
+              <span>状态</span>
+              <span>时间</span>
+            </div>
+            {versionListItems.map((item) => (
+              <button
+                className={`designer-version-list-item ${item.active ? 'designer-version-list-item-active' : ''}`}
+                key={item.key}
+                onClick={() => setSelectedVersionKey(item.key)}
+                type="button"
+              >
+                <span>{item.name}</span>
+                <small>{item.type}</small>
+                <em className={`designer-version-status designer-version-status-${item.tone}`}>{item.status}</em>
+                <i>{item.date}</i>
+                <b>{item.note}</b>
+              </button>
+            ))}
+          </aside>
+
+          <div className="designer-version-detail">
+            <div className="designer-version-detail-head">
+              <div>
+                <span>当前选中版本</span>
+                <strong>{selectedVersionItem?.name}</strong>
+                <small>{selectedVersionItem?.note}</small>
+              </div>
+              <Tag color={selectedVersionItem?.tone === 'warning' ? 'orange' : selectedVersionItem?.tone === 'published' ? 'green' : 'default'}>
+                {selectedVersionItem?.status}
+              </Tag>
+            </div>
+            <div className="designer-version-summary">
+              <div>
+                <span>线上版本</span>
+                <strong>v{viewConfigMeta.publishedVersion || 0}</strong>
+              </div>
+              <div>
+                <span>草稿版本</span>
+                <strong>v{viewConfigMeta.draftVersion || 1}</strong>
+              </div>
+              <div>
+                <span>发布影响</span>
+                <strong>{publishErrorCount ? `${publishErrorCount} 阻断` : `${publishWarningCount} 提醒`}</strong>
+              </div>
+            </div>
+            <div className="designer-version-detail-table">
+              {selectedVersionDetails.map(([label, value]) => (
+                <div key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+              <div>
+                <span>包含内容</span>
+                <strong>数据视图、流程、权限规则</strong>
+              </div>
+            </div>
+            <div className="designer-version-actions">
+              <Button
+                danger
+                disabled={!viewConfigMeta.publishedVersion}
+                onClick={() => {
+                  setHasUnsavedChanges(false);
+                  setVersionPanelOpen(false);
+                  message.success('已回滚到上一发布版本');
+                }}
+              >
+                丢弃草稿，恢复到已发布 v{viewConfigMeta.publishedVersion || 0}
+              </Button>
+              <Space size={8} wrap>
+                <Button onClick={saveDraft} loading={isPersistingFlow} icon={<SaveOutlined />}>保存草稿</Button>
+                <Button type="primary" onClick={() => { setVersionPanelOpen(false); void publishConfig(); }}>发布草稿</Button>
+              </Space>
+            </div>
+          </div>
         </div>
       </Modal>
 
