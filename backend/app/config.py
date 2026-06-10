@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     APP_NAME: str = "ManuFoundry"
-    APP_VERSION: str = "0.3.6"
+    APP_VERSION: str = "0.3.7"
     APP_MODE: str = "demo"
     DEBUG: bool = True
 
@@ -130,6 +130,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 
 settings = Settings()

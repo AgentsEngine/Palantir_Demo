@@ -59,7 +59,8 @@ visibility, and a cleaner administration experience for long-running demos.
 - Updated demo knowledge assets and added scripts for demo external sources,
   business form materialization/repair, configuration repair, and WeChat article
   generation assets.
-- Added GitHub workflow files for CI and deployment automation.
+- Synced release metadata across `release.json`, `backend/release.json`,
+  backend `APP_VERSION`, frontend package metadata, and the release popup.
 
 ## Operational Notes
 
@@ -70,9 +71,8 @@ visibility, and a cleaner administration experience for long-running demos.
   to zero.
 - The public demo can still fall back to built-in manufacturing data assets when
   a tenant has no persisted business rows or scanned external sources.
-- The current release metadata endpoint may still report `0.3.6` until version
-  metadata is intentionally bumped; this document records the post-0.3.6 update
-  batch deployed on 2026-06-10.
+- Release metadata should report `0.3.7` after the server is rebuilt and the
+  frontend/backend containers are restarted.
 
 ## Verification Targets
 

@@ -1,25 +1,25 @@
 {
-  "version": "0.3.6",
-  "released_at": "2026-06-05",
-  "title": "AI 工作区、运行态权限与知识本体增强",
-  "summary": "0.3.6 聚焦 AI 多会话工作区、动态表单运行态字段权限、知识文档本体 intake、组织与用户治理、生产认证边界以及 GitHub/服务器发布链路。",
+  "version": "0.3.7",
+  "released_at": "2026-06-10",
+  "title": "对象关系中心、数据源元数据与运行态应用增强",
+  "summary": "0.3.7 聚焦对象与关系中心持久化、外部数据源元数据扫描、动态应用运行态渲染、流程待办聚合、账号头像和系统管理体验刷新。",
   "highlights": [
-    "AI 工作区支持多会话历史、归档、恢复、删除和重命名，待确认动作文案与状态更清晰。",
-    "动态表单补齐 permission_design 与 runtime_field_permissions，后端按字段权限约束列表、详情、筛选和排序。",
-    "知识中心支持从已入库文档发起 ontology intake 与抽取任务，抽取结果扩展通用实体、领域映射、属性候选和文档画像。",
-    "系统管理增强组织审计、组织编码唯一性检查、用户 CSV 批量导入和角色/组织绑定体验。",
-    "应用访问和认证边界收紧，无效 token 不再降级为匿名用户，角色不可见应用在菜单和详情接口被拦截。",
-    "完善生产部署说明，覆盖测试、构建、服务器更新和健康检查。"
+    "对象与关系中心支持持久化对象、字段、关系、映射、候选审核、版本发布和发布日志。",
+    "数据源支持元数据扫描、表字段画像、样例行、同步状态和从元数据生成本体候选。",
+    "语义资产中心整合外部数据资产、应用数据库表和制造业演示资产，形成统一数据资产目录。",
+    "动态应用页面支持从服务端运行态定义渲染业务表单和分析看板。",
+    "流程中心支持跨应用、表单、记录和状态的统一业务待办列表与源记录跳转。",
+    "账号中心和身份管理支持用户头像 URL，并刷新用户、角色、组织和管理页面交互。"
   ],
   "details": [
-    "后端 AI runtime、planner、tool executor 和 low-code tools 增强上下文恢复、待确认动作保护、动态记录草稿和工具执行状态。",
-    "表单 API 和动态页面消费 published schema、viewConfig、权限设计和运行态字段权限，减少前端硬编码表格布局。",
-    "知识抽取链路从一次性上传扩展为已入库文档 intake、候选抽取、人工批准和图谱发布的可治理路径。",
-    "组织 CRUD 写入审计日志，用户管理支持按角色名/标签和组织名批量导入绑定。",
-    "前端 AI 工作区、表单设计器、应用程序页、账号中心和系统管理页面完成样式与交互整理，适配更长时段演示。",
-    "知识资产示例文件刷新，保持 CAPA、SMT、供应商 8D 和客户沟通场景与检索/抽取结果一致。",
-    "生产部署流程保留服务器本地 .env，并验证 frontend、health、readiness、release 和 productization readiness。",
-    "版本信息同步到 release.json、backend/release.json、backend APP_VERSION、frontend package metadata 和发布弹窗。"
+    "新增 0027_ontology_center 和 0028_user_avatar_url 迁移，扩展本体、元数据和用户头像相关数据表。",
+    "新增 metadata_scan_service、ontology_candidate_service 和 ontology_service，承接扫描、候选、审核、映射、发布和影响分析逻辑。",
+    "扩展 semantic-assets 与 data-sources API，支持数据资产扫描、候选生成、候选审批、对象/关系维护、版本发布和映射查询。",
+    "优化表单发布、版本预览、应用表单绑定、菜单节点、布局、动作、权限、流程绑定和动态记录运行态行为。",
+    "优化 App Programs 和 Workflow 前端，让配置化业务应用、分析看板和流程待办直接消费服务端运行态数据。",
+    "刷新 Semantic Asset Center、Form Settings、Account Center、User/Role/Organization/Admin 等页面的企业工作台体验。",
+    "更新知识资产示例和演示脚本，补充外部数据源、业务表单物化、配置修复和身份数据种子工具。",
+    "生产部署已同步 GitHub 与服务器，服务端数据库迁移到 0028_user_avatar_url。"
   ],
   "show_popup": true
 }
